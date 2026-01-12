@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16
+    container_name: afapi_postgres
+    environment:
+      POSTGRES_DB: afapi_dev
+      POSTGRES_USER: afapi
+      POSTGRES_PASSWORD: afapi
+    ports:
+      - "5433:5432"
+    volumes:
+      - afapi_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U afapi -d afapi_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  afapi_pgdata:
