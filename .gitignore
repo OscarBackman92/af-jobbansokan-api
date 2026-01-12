@@ -14,3 +14,14 @@ db.sqlite3
 # IDE
 .vscode/
 .idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage / test
+.coverage
+htmlcov/
+
+# Logs
+*.log
