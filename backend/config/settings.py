@@ -10,53 +10,61 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+from __future__ import annotations
+
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
 
+# -------------------------------------------------------------------------------------------------
+# Paths & Environment
+# -------------------------------------------------------------------------------------------------
 
+# Build paths inside the project like this: BASE_DIR / "subdir".
+BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
+# Load .env from repo root (one level above backend/)
 load_dotenv(BASE_DIR.parent / ".env")
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = "django-insecure-cs0*&dy+b1)$4%nrj-sbr#mw@u7p8w#6e!2u(dp(6kfn6=+on_"
+# -------------------------------------------------------------------------------------------------
+# Core settings
+# -------------------------------------------------------------------------------------------------
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-insecure-secret-key")
-
-
-# SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
-
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
-
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
-
+# -------------------------------------------------------------------------------------------------
 # Application definition
+# -------------------------------------------------------------------------------------------------
 
 INSTALLED_APPS = [
+    # Django core
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
     # Third party
     "rest_framework",
+    "rest_framework.authtoken",
     "drf_spectacular",
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "rest_framework_simplejwt.token_blacklist",
     # Local apps
     "core",
 ]
 
 MIDDLEWARE = [
+    "allauth.account.middleware.AccountMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -75,7 +83,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                "django.template.context_processors.request",
+                "django.template.context_processors.request",  # required by allauth
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
@@ -85,9 +93,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-
+# -------------------------------------------------------------------------------------------------
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+# -------------------------------------------------------------------------------------------------
 
 DATABASES = {
     "default": {
@@ -100,54 +108,78 @@ DATABASES = {
     }
 }
 
-
+# -------------------------------------------------------------------------------------------------
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+# -------------------------------------------------------------------------------------------------
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-
+# -------------------------------------------------------------------------------------------------
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
+# -------------------------------------------------------------------------------------------------
 
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "UTC"
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
+# -------------------------------------------------------------------------------------------------
+# Static files
+# -------------------------------------------------------------------------------------------------
 
 STATIC_URL = "static/"
 
+# -------------------------------------------------------------------------------------------------
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+# -------------------------------------------------------------------------------------------------
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# -------------------------------------------------------------------------------------------------
+# DRF + OpenAPI
+# -------------------------------------------------------------------------------------------------
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
+    ),
 }
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "AF Job Application API",
     "DESCRIPTION": "API for registering and sharing verifiable job application events.",
     "VERSION": "0.1.0",
 }
+
+# -------------------------------------------------------------------------------------------------
+# Auth (dj-rest-auth + SimpleJWT)
+# -------------------------------------------------------------------------------------------------
+
+REST_USE_JWT = True
+JWT_AUTH_COOKIE = None  # keep JWT out of cookies for API usage
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
+# -------------------------------------------------------------------------------------------------
+# allauth
+# -------------------------------------------------------------------------------------------------
+
+SITE_ID = 1
+ACCOUNT_AUTHENTICATION_METHOD = "username"
+ACCOUNT_EMAIL_REQUIRED = False
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = "none"
