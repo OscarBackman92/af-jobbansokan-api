@@ -1,5 +1,6 @@
 from django.urls import path
+from .views import me
 
 urlpatterns = [
-    # framtida endpoints här
+    path("me/", me),
 ]
