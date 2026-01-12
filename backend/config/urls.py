@@ -1,20 +1,32 @@
 from django.contrib import admin
-from django.urls import path, include
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from django.urls import include, path
+
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+)
+
+from rest_framework.permissions import AllowAny
 
 from core.views import health
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # health (public)
     path("health/", health),
-    # Versioned API root
-    path("api/v1/", include("core.urls")),
-    # OpenAPI + Swagger UI
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/schema/",
+        SpectacularAPIView.as_view(permission_classes=[AllowAny]),
+        name="schema",
+    ),
     path(
         "api/docs/",
-        SpectacularSwaggerView.as_view(url_name="schema"),
+        SpectacularSwaggerView.as_view(
+            url_name="schema",
+            permission_classes=[AllowAny],
+        ),
         name="swagger-ui",
     ),
+    path("dj-rest-auth/", include("dj_rest_auth.urls")),
+    path("dj-rest-auth/registration/", include("dj_rest_auth.registration.urls")),
+    path("api/v1/", include("core.urls")),
 ]
