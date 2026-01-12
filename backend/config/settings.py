@@ -18,9 +18,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# -------------------------------------------------------------------------------------------------
 # Paths & Environment
-# -------------------------------------------------------------------------------------------------
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
@@ -28,17 +26,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 # Load .env from repo root (one level above backend/)
 load_dotenv(BASE_DIR.parent / ".env")
 
-# -------------------------------------------------------------------------------------------------
 # Core settings
-# -------------------------------------------------------------------------------------------------
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-insecure-secret-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
-# -------------------------------------------------------------------------------------------------
 # Application definition
-# -------------------------------------------------------------------------------------------------
 
 INSTALLED_APPS = [
     # Django core
@@ -93,9 +87,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# -------------------------------------------------------------------------------------------------
-# Database
-# -------------------------------------------------------------------------------------------------
+# Database-
 
 DATABASES = {
     "default": {
@@ -108,9 +100,7 @@ DATABASES = {
     }
 }
 
-# -------------------------------------------------------------------------------------------------
 # Password validation
-# -------------------------------------------------------------------------------------------------
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -119,30 +109,22 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# -------------------------------------------------------------------------------------------------
 # Internationalization
-# -------------------------------------------------------------------------------------------------
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# -------------------------------------------------------------------------------------------------
 # Static files
-# -------------------------------------------------------------------------------------------------
 
 STATIC_URL = "static/"
 
-# -------------------------------------------------------------------------------------------------
 # Default primary key field type
-# -------------------------------------------------------------------------------------------------
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# -------------------------------------------------------------------------------------------------
 # DRF + OpenAPI
-# -------------------------------------------------------------------------------------------------
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -160,12 +142,13 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
 }
 
-# -------------------------------------------------------------------------------------------------
 # Auth (dj-rest-auth + SimpleJWT)
-# -------------------------------------------------------------------------------------------------
 
-REST_USE_JWT = True
-JWT_AUTH_COOKIE = None  # keep JWT out of cookies for API usage
+REST_AUTH = {
+    "USE_JWT": True,
+    "JWT_AUTH_COOKIE": None,
+    "JWT_AUTH_REFRESH_COOKIE": None,
+}  # keep JWT out of cookies for API usage
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
@@ -174,9 +157,7 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
-# -------------------------------------------------------------------------------------------------
 # allauth
-# -------------------------------------------------------------------------------------------------
 
 SITE_ID = 1
 ACCOUNT_AUTHENTICATION_METHOD = "username"
