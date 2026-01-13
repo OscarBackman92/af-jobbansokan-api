@@ -3,15 +3,20 @@ from django.db import models
 
 
 class JobApplication(models.Model):
-    """A job application created by a job seeker."""
-
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="job_applications",
     )
-    company = models.CharField(max_length=255)
-    role = models.CharField(max_length=255)
+
+    posting = models.ForeignKey(
+        "JobPosting",
+        on_delete=models.CASCADE,
+        related_name="applications",
+    )
+
+    cover_letter = models.TextField(blank=True)
+
     applied_at = models.DateField()
     status = models.CharField(
         max_length=50,
@@ -26,7 +31,7 @@ class JobApplication(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return f"{self.company} – {self.role}"
+        return f"{self.owner} -> {self.posting}"
 
 
 class Organization(models.Model):
