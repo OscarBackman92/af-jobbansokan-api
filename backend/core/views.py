@@ -1,13 +1,12 @@
-"""Core API views."""
-
 from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import JobApplication
-from .serializers import JobApplicationSerializer
+from .models import JobApplication, JobPosting
+from .permissions import IsEmployerAdminOrReadOnly
+from .serializers import JobApplicationSerializer, JobPostingSerializer
 
 
 @extend_schema(
@@ -41,17 +40,25 @@ def me(request):
 
 
 class JobApplicationViewSet(viewsets.ModelViewSet):
-    """CRUD for job applications, scoped to the current user."""
-
     serializer_class = JobApplicationSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """Return only the current user's job applications."""
-        return JobApplication.objects.filter(owner=self.request.user).order_by(
-            "-created_at"
-        )
+        return JobApplication.objects.filter(owner=self.request.user).order_by("-created_at")
 
     def perform_create(self, serializer):
-        """Ensure owner is always the current user."""
         serializer.save(owner=self.request.user)
+
+class JobPostingViewSet(viewsets.ModelViewSet):
+    serializer_class = JobPostingSerializer
+    permission_classes = [IsEmployerAdminOrReadOnly]
+
+    def get_queryset(self):
+        # Public read of all postings (for MVP).
+        # Later we can filter by org, published flag, etc.
+        return JobPosting.objects.all().order_by("-created_at")
+
+    def perform_create(self, serializer):
+        # Writer must be employer admin -> safe to assume profile exists.
+        org = self.request.user.employer_profile.organization
+        serializer.save(organization=org)
