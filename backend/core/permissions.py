@@ -5,8 +5,8 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 class IsEmployerAdminOrReadOnly(BasePermission):
     """
-    Allow public read (GET/HEAD/OPTIONS).
-    Allow write only for authenticated users with EmployerProfile role=admin.
+    Public read.
+    Write only for authenticated employer admins.
     """
 
     def has_permission(self, request, view) -> bool:
@@ -19,3 +19,16 @@ class IsEmployerAdminOrReadOnly(BasePermission):
 
         profile = getattr(user, "employer_profile", None)
         return bool(profile and profile.role == "admin")
+
+
+class IsEmployer(BasePermission):
+    """
+    Allows access only to authenticated users with an EmployerProfile.
+    """
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+
+        return hasattr(user, "employer_profile")
