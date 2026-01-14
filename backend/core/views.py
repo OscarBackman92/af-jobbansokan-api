@@ -5,8 +5,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import JobApplication, JobPosting
-from .permissions import IsEmployerAdminOrReadOnly
-from .serializers import JobApplicationSerializer, JobPostingSerializer
+from .permissions import IsEmployerAdminOrReadOnly, IsEmployer
+from .serializers import JobApplicationSerializer, JobPostingSerializer, EmployerJobApplicationSerializer
 
 
 @extend_schema(
@@ -62,3 +62,17 @@ class JobPostingViewSet(viewsets.ModelViewSet):
         # Writer must be employer admin -> safe to assume profile exists.
         org = self.request.user.employer_profile.organization
         serializer.save(organization=org)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsEmployer])
+def employer_applications(request):
+    org = request.user.employer_profile.organization
+    qs = (
+        JobApplication.objects.select_related("posting", "posting__organization", "owner")
+        .filter(posting__organization=org)
+        .order_by("-created_at")
+    )
+
+    serializer = EmployerJobApplicationSerializer(qs, many=True)
+    return Response(serializer.data)

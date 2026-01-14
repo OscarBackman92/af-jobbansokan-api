@@ -8,15 +8,11 @@ class JobApplication(models.Model):
         on_delete=models.CASCADE,
         related_name="job_applications",
     )
-
     posting = models.ForeignKey(
         "JobPosting",
         on_delete=models.CASCADE,
         related_name="applications",
     )
-
-    cover_letter = models.TextField(blank=True)
-
     applied_at = models.DateField()
     status = models.CharField(
         max_length=50,
