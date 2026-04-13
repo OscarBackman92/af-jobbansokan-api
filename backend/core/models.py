@@ -2,6 +2,48 @@ from django.conf import settings
 from django.db import models
 
 
+class AuditLog(models.Model):
+    """Immutable record of every security-relevant event in the system."""
+
+    ACTION_CHOICES = [
+        ("login",               "Login"),
+        ("login_failed",        "Login failed"),
+        ("logout",              "Logout"),
+        ("application.create",  "Application created"),
+        ("application.update",  "Application updated"),
+        ("application.delete",  "Application deleted"),
+        ("application.view",    "Application viewed"),
+        ("posting.create",      "Posting created"),
+        ("posting.update",      "Posting updated"),
+        ("posting.delete",      "Posting deleted"),
+        ("employer.view",       "Employer viewed applications"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="audit_logs",
+    )
+    action = models.CharField(max_length=64, choices=ACTION_CHOICES, db_index=True)
+    resource = models.CharField(max_length=64, blank=True)
+    resource_id = models.CharField(max_length=64, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    detail = models.JSONField(default=dict, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
+        indexes = [
+            models.Index(fields=["user", "timestamp"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"[{self.timestamp:%Y-%m-%d %H:%M:%S}] {self.action} by {self.user_id}"
+
+
 class JobApplication(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -11,6 +12,7 @@ from rest_framework.permissions import AllowAny
 from core.views import health
 
 urlpatterns = [
+    path("", RedirectView.as_view(url="/api/docs/", permanent=False)),
     path("admin/", admin.site.urls),
     path("health/", health),
     path(

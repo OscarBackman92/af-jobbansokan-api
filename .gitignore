@@ -25,3 +25,16 @@ htmlcov/
 
 # Logs
 *.log
+
+# Claude Code session files
+.claude/
+
+# Frontend build output
+frontend/dist/
+frontend/node_modules/
+
+# Secrets / certificates
+*.pem
+*.key
+*.cert
+*.p12
