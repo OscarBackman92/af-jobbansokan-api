@@ -1,14 +1,11 @@
+from core.views import health
 from django.contrib import admin
 from django.urls import include, path
-
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
 )
-
 from rest_framework.permissions import AllowAny
-
-from core.views import health
 
 urlpatterns = [
     path("admin/", admin.site.urls),
