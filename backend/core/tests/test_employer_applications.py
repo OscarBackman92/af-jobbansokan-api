@@ -32,7 +32,7 @@ def test_lists_only_own_org_and_logs_disclosure(
     api_client.force_authenticate(employer_member)
     response = api_client.get(URL)
     assert response.status_code == 200
-    assert [item["id"] for item in response.json()] == [visible.id]
+    assert [item["id"] for item in response.json()["results"]] == [visible.id]
 
     entry = AuditLog.objects.get(action=AuditLog.ACTION_APPLICATIONS_DISCLOSED)
     assert entry.actor == employer_member

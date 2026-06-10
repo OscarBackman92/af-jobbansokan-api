@@ -8,7 +8,7 @@ URL = "/api/v1/postings/"
 def test_anyone_can_list_postings(api_client, posting):
     response = api_client.get(URL)
     assert response.status_code == 200
-    assert [item["id"] for item in response.json()] == [posting.id]
+    assert [item["id"] for item in response.json()["results"]] == [posting.id]
 
 
 def test_non_employer_cannot_create(api_client, applicant):

@@ -1,7 +1,7 @@
 from django.utils.dateparse import parse_date
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from rest_framework import mixins, viewsets
+from rest_framework import generics, mixins, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -141,29 +141,34 @@ class JobPostingViewSet(viewsets.ModelViewSet):
         serializer.save(organization=org)
 
 
-@extend_schema(responses={200: EmployerJobApplicationSerializer(many=True)})
-@api_view(["GET"])
-@permission_classes([IsAuthenticated, IsEmployer])
-def employer_applications(request):
+class EmployerApplicationsView(generics.ListAPIView):
     """List applications to the employer's own organization.
 
     Every call is audit logged as a disclosure of applicant data.
     """
-    org = request.user.employer_profile.organization
-    qs = (
-        JobApplication.objects.select_related(
-            "posting", "posting__organization", "owner"
-        )
-        .filter(posting__organization=org)
-        .order_by("-created_at")
-    )
 
-    applications = list(qs)
-    log_event(
-        request.user,
-        AuditLog.ACTION_APPLICATIONS_DISCLOSED,
-        organization_id=org.id,
-        application_count=len(applications),
-    )
-    serializer = EmployerJobApplicationSerializer(applications, many=True)
-    return Response(serializer.data)
+    serializer_class = EmployerJobApplicationSerializer
+    permission_classes = [IsAuthenticated, IsEmployer]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # schema generation
+            return JobApplication.objects.none()
+        org = self.request.user.employer_profile.organization
+        return (
+            JobApplication.objects.select_related(
+                "posting", "posting__organization", "owner"
+            )
+            .filter(posting__organization=org)
+            .order_by("-created_at")
+        )
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        disclosed = response.data["results"]
+        log_event(
+            request.user,
+            AuditLog.ACTION_APPLICATIONS_DISCLOSED,
+            organization_id=request.user.employer_profile.organization_id,
+            application_count=len(disclosed),
+        )
+        return response
