@@ -17,6 +17,8 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
 
 class JobPostingSerializer(serializers.ModelSerializer):
+    """Lean list serializer — descriptions can be several kB each."""
+
     organization = OrganizationSerializer(read_only=True)
     # Explicit default so the UniqueConstraint on (source, external_id)
     # does not make this field required for manual postings.
@@ -36,6 +38,13 @@ class JobPostingSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "organization", "created_at"]
+
+
+class JobPostingDetailSerializer(JobPostingSerializer):
+    """Full posting, including description and link to the original ad."""
+
+    class Meta(JobPostingSerializer.Meta):
+        fields = JobPostingSerializer.Meta.fields + ["description", "webpage_url"]
 
 
 class JobApplicationSerializer(serializers.ModelSerializer):

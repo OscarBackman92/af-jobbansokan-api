@@ -153,6 +153,7 @@ function Postings({ token }) {
   const [page, setPage] = useState(null);
   const [url, setUrl] = useState("/api/v1/postings/");
   const [message, setMessage] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => {
     request(url).then(setPage).catch((err) => setMessage(err.message));
@@ -196,7 +197,11 @@ function Postings({ token }) {
         <tbody>
           {page.results.map((p) => (
             <tr key={p.id}>
-              <td>{p.title}</td>
+              <td>
+                <button className="linklike" onClick={() => setSelectedId(p.id)}>
+                  {p.title}
+                </button>
+              </td>
               <td>{p.company_name}</td>
               <td>{p.location || "—"}</td>
               <td><span className="badge neutral">{p.source}</span></td>
@@ -225,6 +230,59 @@ function Postings({ token }) {
           Nästa →
         </button>
       </div>
+      {selectedId && (
+        <PostingDetail
+          id={selectedId}
+          onApply={() => apply(selectedId)}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
     </section>
+  );
+}
+
+function PostingDetail({ id, onApply, onClose }) {
+  const [posting, setPosting] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    request(`/api/v1/postings/${id}/`)
+      .then(setPosting)
+      .catch((err) => setError(err.message));
+  }, [id]);
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        {error && <p className="error">{error}</p>}
+        {!posting && !error && <p className="muted">Laddar annons…</p>}
+        {posting && (
+          <>
+            <div className="row-between">
+              <h2>{posting.title}</h2>
+              <button className="secondary small" onClick={onClose}>
+                Stäng ✕
+              </button>
+            </div>
+            <p className="muted">
+              {posting.company_name}
+              {posting.location && ` — ${posting.location}`}
+              {posting.published_at && ` · publicerad ${posting.published_at}`}
+            </p>
+            <div className="description">
+              {posting.description || "Ingen beskrivning tillgänglig för den här annonsen."}
+            </div>
+            <div className="row-between">
+              <button onClick={onApply}>Sök jobbet</button>
+              {posting.webpage_url && (
+                <a href={posting.webpage_url} target="_blank" rel="noreferrer">
+                  Originalannons ↗
+                </a>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

@@ -14,6 +14,8 @@ SAMPLE_HITS = [
         "employer": {"name": "Acme AB"},
         "workplace_address": {"municipality": "Stockholm"},
         "publication_date": "2026-06-01T08:00:00",
+        "description": {"text": "Vi söker en backendutvecklare."},
+        "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/29000001",
     },
     {
         "id": "29000002",
@@ -59,6 +61,8 @@ def test_to_posting_fields_maps_hit():
         "title": "Backend Developer",
         "company_name": "Acme AB",
         "location": "Stockholm",
+        "description": "Vi söker en backendutvecklare.",
+        "webpage_url": ("https://arbetsformedlingen.se/platsbanken/annonser/29000001"),
         "published_at": "2026-06-01",
     }
 
@@ -69,6 +73,8 @@ def test_to_posting_fields_handles_missing_data():
         "title": "Data Engineer",
         "company_name": "",
         "location": "",
+        "description": "",
+        "webpage_url": "",
         "published_at": None,
     }
 

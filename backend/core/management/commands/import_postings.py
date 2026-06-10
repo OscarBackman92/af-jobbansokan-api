@@ -20,10 +20,13 @@ def to_posting_fields(hit: dict) -> dict:
     employer = (hit.get("employer") or {}).get("name") or ""
     workplace = hit.get("workplace_address") or {}
     publication_date = (hit.get("publication_date") or "")[:10]
+    description = (hit.get("description") or {}).get("text") or ""
     return {
         "title": hit.get("headline") or "",
         "company_name": employer,
         "location": workplace.get("municipality") or "",
+        "description": description,
+        "webpage_url": (hit.get("webpage_url") or "")[:500],
         "published_at": publication_date or None,
     }
 
