@@ -11,6 +11,10 @@ __pycache__/
 db.sqlite3
 .env
 
+# Frontend
+node_modules/
+frontend/dist/
+
 # IDE
 .vscode/
 .idea/
