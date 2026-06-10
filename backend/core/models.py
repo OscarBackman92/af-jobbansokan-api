@@ -87,12 +87,14 @@ class AuditLog(models.Model):
     ACTION_APPLICATION_DELETED = "application.deleted"
     ACTION_APPLICATIONS_DISCLOSED = "applications.disclosed"
     ACTION_PARTNER_DISCLOSED = "applications.disclosed_partner"
+    ACTION_IDENTITY_VERIFIED = "identity.verified"
 
     ACTION_CHOICES = [
         (ACTION_APPLICATION_CREATED, "Application created"),
         (ACTION_APPLICATION_DELETED, "Application deleted"),
         (ACTION_APPLICATIONS_DISCLOSED, "Applications disclosed"),
         (ACTION_PARTNER_DISCLOSED, "Applications disclosed to partner"),
+        (ACTION_IDENTITY_VERIFIED, "Identity verified"),
     ]
 
     actor = models.ForeignKey(
@@ -112,6 +114,27 @@ class AuditLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.action} by {self.actor} at {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class ApplicantProfile(models.Model):
+    """A verified, pseudonymized identity for an applicant.
+
+    Holds only a keyed hash of the personal identity number — the raw
+    number is never persisted. Partner lookups by personnummer resolve
+    through the same hash. See docs/08-identity-bankid.md.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="applicant_profile",
+    )
+    personal_number_hash = models.CharField(max_length=64, unique=True)
+    method = models.CharField(max_length=32, default="bankid-mock")
+    verified_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.user.get_username()} ({self.method})"
 
 
 class PartnerClient(models.Model):

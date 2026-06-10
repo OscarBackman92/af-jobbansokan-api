@@ -20,6 +20,13 @@
 - POST /dj-rest-auth/login/, /dj-rest-auth/logout/, /dj-rest-auth/token/refresh/
 - POST /dj-rest-auth/registration/
 
+### Auth (mock BankID — see docs/08-identity-bankid.md)
+
+- POST /api/v1/auth/bankid/initiate/ `{personal_number}` → `{order_ref}`
+- POST /api/v1/auth/bankid/collect/ `{order_ref}` → JWT pair + verified,
+  pseudonymized identity (ApplicantProfile); audit logged as
+  identity.verified. Returns 503 unless BANKID_MOCK=1.
+
 ### Applicant
 
 - GET /api/v1/me/
@@ -43,9 +50,11 @@
 - Auth: `Authorization: Api-Key <key>` — keys are issued with the
   `create_partner` management command and stored hashed
 - GET /api/v1/partner/application-events/?person=&from=&to= — application
-  events for one person (user id) and time period; least privilege response
-  (no applicant identifiers, no status); every call is audit logged as a
-  partner disclosure
+  events for one person (personal identity number, YYYYMMDDNNNN) and time
+  period; lookup happens via keyed hash so the number is never stored;
+  least privilege response (no applicant identifiers, no status); every
+  call is audit logged as a partner disclosure. Unknown persons return an
+  empty list — the endpoint never reveals who has an account
 
 ### Future
 

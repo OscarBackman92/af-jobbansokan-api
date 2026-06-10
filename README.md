@@ -94,13 +94,15 @@ Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
 | `/health/` | GET | public | Health check (no `/api/v1` prefix) |
 | `/dj-rest-auth/registration/` | POST | public | Create account, returns JWT |
 | `/dj-rest-auth/login/` | POST | public | Returns access + refresh token |
+| `/api/v1/auth/bankid/initiate/` | POST | public | Mock BankID: start order (`BANKID_MOCK=1`) |
+| `/api/v1/auth/bankid/collect/` | POST | public | Mock BankID: complete order, returns JWT |
 | `/api/v1/me/` | GET | authenticated | Current user info |
 | `/api/v1/applications/` | GET, POST | applicant | Own events; filter `?from=&to=&status=` |
 | `/api/v1/applications/{id}/` | GET, DELETE | applicant | **No PUT/PATCH — events are immutable (405)** |
 | `/api/v1/postings/` | GET | public | Paginated list |
 | `/api/v1/postings/` | POST, PUT, PATCH, DELETE | employer admin | Scoped to own organization |
 | `/api/v1/employer/applications/` | GET | employer | Own organization only; disclosure audit logged |
-| `/api/v1/partner/application-events/` | GET | partner (API key) | `?person=<user id>&from=&to=`; disclosure audit logged |
+| `/api/v1/partner/application-events/` | GET | partner (API key) | `?person=<personnummer>&from=&to=`; disclosure audit logged |
 
 ## Getting started
 
@@ -169,9 +171,14 @@ python backend/manage.py create_partner "A-kassan X"
 ```
 
 ```bash
-curl "http://127.0.0.1:8000/api/v1/partner/application-events/?person=2&from=2026-05-01&to=2026-06-30" \
+curl "http://127.0.0.1:8000/api/v1/partner/application-events/?person=19900101-2384&from=2026-05-01&to=2026-06-30" \
   -H "Authorization: Api-Key <key>"
 ```
+
+Partners query by **personal identity number** — the identifier an
+A-kassa actually has. The number is pseudonymized with a keyed hash
+before lookup and never stored or logged in clear
+(see [docs/08-identity-bankid.md](docs/08-identity-bankid.md)).
 
 ```json
 [
@@ -250,7 +257,7 @@ and [docs/06-gdpr-privacy.md](docs/06-gdpr-privacy.md) for the full picture.
 ## Roadmap
 
 - [ ] CSV/XLSX export for applicants
-- [ ] BankID/eID authentication
+- [x] BankID flow (mocked — design in [docs/08](docs/08-identity-bankid.md); real RP integration future)
 - [ ] OAuth2/mTLS for partner integration
 - [ ] Rate limiting / throttling
 - [ ] Production hardening (whitenoise static serving, security headers)
