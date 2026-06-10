@@ -71,6 +71,20 @@ class JobApplicationSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class PartnerApplicationEventSerializer(serializers.ModelSerializer):
+    """Minimal disclosure for partner verification (least privilege):
+    no applicant identifiers beyond what the partner already queried by,
+    no application status.
+    """
+
+    posting_title = serializers.CharField(source="posting.title", read_only=True)
+    company_name = serializers.CharField(source="posting.company_name", read_only=True)
+
+    class Meta:
+        model = JobApplication
+        fields = ["id", "applied_at", "posting_title", "company_name", "created_at"]
+
+
 class EmployerApplicantSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

@@ -10,11 +10,13 @@
 - JobApplication — applicant's application event for a posting
   (applied_at, status); immutable via the API after creation
 - AuditLog — append-only trail (actor, action, target, metadata, timestamp);
-  actions: application.created, application.deleted, applications.disclosed
+  actions: application.created, application.deleted, applications.disclosed,
+  applications.disclosed_partner
+- PartnerClient — authorized partner system (e.g. A-kassa); API key stored
+  as SHA-256 hash, issued once via the create_partner management command
 
 ## Entities (future)
 
-- PartnerClient (A-kassa integration)
 - Consent/Authorization
 
 ## PII classification (draft)

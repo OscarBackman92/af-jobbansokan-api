@@ -2,18 +2,24 @@ from django.utils.dateparse import parse_date
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import generics, mixins, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .audit import log_event
 from .models import AuditLog, JobApplication, JobPosting
+from .partner_auth import IsPartner, PartnerAPIKeyAuthentication
 from .permissions import IsEmployer, IsEmployerAdminOrReadOnly
 from .serializers import (
     EmployerJobApplicationSerializer,
     JobApplicationSerializer,
     JobPostingSerializer,
+    PartnerApplicationEventSerializer,
 )
 
 
@@ -172,3 +178,60 @@ class EmployerApplicationsView(generics.ListAPIView):
             application_count=len(disclosed),
         )
         return response
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            "person",
+            OpenApiTypes.INT,
+            required=True,
+            description="The applicant's user id.",
+        ),
+        OpenApiParameter(
+            "from", OpenApiTypes.DATE, description="Earliest applied_at date."
+        ),
+        OpenApiParameter(
+            "to", OpenApiTypes.DATE, description="Latest applied_at date."
+        ),
+    ],
+    responses=PartnerApplicationEventSerializer(many=True),
+)
+@api_view(["GET"])
+@authentication_classes([PartnerAPIKeyAuthentication])
+@permission_classes([IsPartner])
+def partner_application_events(request):
+    """Disclose application events for one person and time period.
+
+    Partner systems authenticate with `Authorization: Api-Key <key>`.
+    Every call is audit logged as a partner disclosure.
+    """
+    person = request.query_params.get("person")
+    if not person or not person.isdigit():
+        raise ValidationError({"person": "Required: the applicant's user id."})
+    date_from = _date_param(request.query_params, "from")
+    date_to = _date_param(request.query_params, "to")
+
+    qs = (
+        JobApplication.objects.select_related("posting")
+        .filter(owner_id=int(person))
+        .order_by("applied_at")
+    )
+    if date_from:
+        qs = qs.filter(applied_at__gte=date_from)
+    if date_to:
+        qs = qs.filter(applied_at__lte=date_to)
+
+    events = list(qs)
+    log_event(
+        None,
+        AuditLog.ACTION_PARTNER_DISCLOSED,
+        partner_client_id=request.auth.id,
+        partner_name=request.auth.name,
+        person_user_id=int(person),
+        date_from=str(date_from) if date_from else None,
+        date_to=str(date_to) if date_to else None,
+        application_count=len(events),
+    )
+    serializer = PartnerApplicationEventSerializer(events, many=True)
+    return Response(serializer.data)

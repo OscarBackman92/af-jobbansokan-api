@@ -38,7 +38,16 @@
 - GET /api/v1/employer/applications/ — applications to the employer's own
   organization; every call is audit logged as a disclosure
 
+### Partner (A-kassa)
+
+- Auth: `Authorization: Api-Key <key>` — keys are issued with the
+  `create_partner` management command and stored hashed
+- GET /api/v1/partner/application-events/?person=&from=&to= — application
+  events for one person (user id) and time period; least privilege response
+  (no applicant identifiers, no status); every call is audit logged as a
+  partner disclosure
+
 ### Future
 
-- Partner endpoints for A-kassa (per person and time period, least privilege)
+- OAuth2/mTLS for partner integration
 - CSV/XLSX export for applicants

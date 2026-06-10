@@ -13,14 +13,14 @@
 - Database (Postgres)
 - Auth provider (dj-rest-auth/allauth; BankID planned)
 - Audit log (append-only, in `core.AuditLog`)
-- Partner integration layer (future OAuth2/mTLS)
+- Partner integration layer (API key auth; OAuth2/mTLS future)
 
 ## Data Flows (High level)
 
 1. Applicant logs in -> obtains access token
 2. Applicant submits job application event -> event stored + audit log entry
 3. Employer lists applications to own organization -> disclosure logged
-4. A-kassa retrieves events (authorized) -> disclosure logged (future)
+4. A-kassa retrieves events per person and period (API key) -> disclosure logged
 
 ## Non-functional requirements
 
