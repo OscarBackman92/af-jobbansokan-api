@@ -21,10 +21,12 @@ from rest_framework.views import APIView
 
 from .audit import log_event
 from .identity import normalize_personal_number, pseudonymize_personal_number
+from .matching import match_skills
 from .models import (
     ApplicantProfile,
     AuditLog,
     EmployerProfile,
+    Favorite,
     JobApplication,
     JobPosting,
     Resume,
@@ -41,6 +43,7 @@ from .serializers import (
     DisclosureSerializer,
     EmployerApplicationStatusSerializer,
     EmployerJobApplicationSerializer,
+    FavoriteSerializer,
     JobApplicationSerializer,
     JobPostingDetailSerializer,
     JobPostingSerializer,
@@ -287,6 +290,32 @@ class JobPostingViewSet(viewsets.ModelViewSet):
             return JobPostingSerializer
         return JobPostingDetailSerializer
 
+    def _user_skills(self, request):
+        if not request.user.is_authenticated:
+            return None
+        resume = getattr(request.user, "resume", None)
+        skills = resume.skills if resume else []
+        return skills or None
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        data = self.get_serializer(page, many=True).data
+        skills = self._user_skills(request)
+        if skills:
+            postings = {posting.id: posting for posting in page}
+            for item in data:
+                item["match"] = match_skills(skills, postings[item["id"]])
+        return self.get_paginated_response(data)
+
+    def retrieve(self, request, *args, **kwargs):
+        posting = self.get_object()
+        data = self.get_serializer(posting).data
+        skills = self._user_skills(request)
+        if skills:
+            data["match"] = match_skills(skills, posting)
+        return Response(data)
+
     def get_queryset(self):
         # Public read of all postings (for MVP).
         qs = JobPosting.objects.all().order_by("-created_at")
@@ -315,6 +344,30 @@ class JobPostingViewSet(viewsets.ModelViewSet):
         # Writer must be employer admin -> safe to assume profile exists.
         org = self.request.user.employer_profile.organization
         serializer.save(organization=org)
+
+
+class FavoriteViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Postings saved by the authenticated user."""
+
+    serializer_class = FavoriteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # schema generation
+            return Favorite.objects.none()
+        return (
+            Favorite.objects.filter(user=self.request.user)
+            .select_related("posting")
+            .order_by("-created_at")
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class EmployerApplicationsView(generics.ListAPIView):

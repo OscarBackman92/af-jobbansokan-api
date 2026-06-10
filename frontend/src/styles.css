@@ -170,6 +170,20 @@ textarea:focus {
   margin-top: 0;
 }
 
+.star {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--amber);
+  cursor: pointer;
+  padding: 0 0.2rem;
+}
+
+.star:hover {
+  background: none;
+  transform: scale(1.2);
+}
+
 .searchbar {
   display: grid;
   grid-template-columns: 3fr 1fr auto;

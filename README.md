@@ -103,7 +103,8 @@ Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
 | `/api/v1/me/resume/parse/` | POST | authenticated | Parse uploaded CV (PDF/DOCX/TXT) to a draft — file never stored |
 | `/api/v1/applications/` | GET, POST | applicant | Own events; filter `?from=&to=&status=` |
 | `/api/v1/applications/{id}/` | GET, DELETE | applicant | **No PUT/PATCH — events are immutable (405)** |
-| `/api/v1/postings/` | GET | public | Paginated list |
+| `/api/v1/postings/` | GET | public | Paginated; `?search=&location=&source=`; match score for users with CV |
+| `/api/v1/favorites/` | GET, POST, DELETE | authenticated | Saved postings |
 | `/api/v1/postings/` | POST, PUT, PATCH, DELETE | employer admin | Scoped to own organization |
 | `/api/v1/employer/applications/` | GET | employer | Own organization only; disclosure audit logged |
 | `/api/v1/partner/application-events/` | GET | partner (API key) | `?person=<personnummer>&from=&to=`; disclosure audit logged |

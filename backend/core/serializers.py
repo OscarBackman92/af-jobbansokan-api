@@ -5,7 +5,14 @@ from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from .models import AuditLog, JobApplication, JobPosting, Organization, Resume
+from .models import (
+    AuditLog,
+    Favorite,
+    JobApplication,
+    JobPosting,
+    Organization,
+    Resume,
+)
 
 User = get_user_model()
 
@@ -161,6 +168,25 @@ class ResumeSerializer(serializers.ModelSerializer):
 
 class ResumeUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    posting_title = serializers.CharField(source="posting.title", read_only=True)
+    company_name = serializers.CharField(source="posting.company_name", read_only=True)
+
+    class Meta:
+        model = Favorite
+        fields = ["id", "posting", "posting_title", "company_name", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+    def validate_posting(self, value):
+        request = self.context.get("request")
+        if (
+            request
+            and Favorite.objects.filter(user=request.user, posting=value).exists()
+        ):
+            raise serializers.ValidationError("Already saved.")
+        return value
 
 
 class DisclosureSerializer(serializers.ModelSerializer):
