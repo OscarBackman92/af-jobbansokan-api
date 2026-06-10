@@ -136,6 +136,22 @@ Then open:
 - Admin: <http://127.0.0.1:8000/admin/>
 - Health check: <http://127.0.0.1:8000/health/>
 
+### Demo frontend
+
+A React/Vite demo UI lives in `frontend/` with one tab per role:
+applicant (mock BankID login → browse real postings → register
+applications), employer (postings + disclosure-logged applications view)
+and A-kassa partner (API key + personnummer lookup).
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:5173 — Django must run on :8000
+```
+
+API calls are proxied by the Vite dev server, so no CORS configuration
+is needed.
+
 ### Using PostgreSQL instead of SQLite
 
 ```bash
