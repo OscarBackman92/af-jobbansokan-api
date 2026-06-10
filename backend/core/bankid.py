@@ -15,6 +15,7 @@ from rest_framework.decorators import (
     api_view,
     authentication_classes,
     permission_classes,
+    throttle_classes,
 )
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -23,6 +24,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .audit import log_event
 from .identity import normalize_personal_number, pseudonymize_personal_number
 from .models import ApplicantProfile, AuditLog
+from .throttling import BankIDRateThrottle
 
 User = get_user_model()
 
@@ -70,6 +72,7 @@ def _mock_disabled_response():
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([BankIDRateThrottle])
 def bankid_initiate(request):
     """Start a mock BankID order; returns an order_ref for collect."""
     unavailable = _mock_disabled_response()
@@ -101,6 +104,7 @@ def bankid_initiate(request):
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([BankIDRateThrottle])
 def bankid_collect(request):
     """Complete a mock BankID order: link the identity and issue JWT."""
     unavailable = _mock_disabled_response()

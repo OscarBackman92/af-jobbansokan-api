@@ -8,6 +8,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: afapi_test
+          POSTGRES_USER: afapi
+          POSTGRES_PASSWORD: afapi
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U afapi"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,10 +43,19 @@ jobs:
       - name: Black (check)
         run: black --check .
 
-      - name: Pytest
+      - name: Pytest (against Postgres)
         env:
           PYTHONPATH: backend
           DJANGO_SETTINGS_MODULE: config.settings
+          # Import-time flag: keeps prod-only hardening (SSL redirect,
+          # manifest static storage) out of the test client's way.
+          DJANGO_DEBUG: "1"
+          DB_ENGINE: django.db.backends.postgresql
+          DB_NAME: afapi_test
+          DB_USER: afapi
+          DB_PASSWORD: afapi
+          DB_HOST: 127.0.0.1
+          DB_PORT: "5432"
         run: pytest
 
   frontend:

@@ -6,6 +6,7 @@ from rest_framework.decorators import (
     api_view,
     authentication_classes,
     permission_classes,
+    throttle_classes,
 )
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -24,6 +25,7 @@ from .serializers import (
     PartnerApplicationEventSerializer,
     ProfileSerializer,
 )
+from .throttling import PartnerRateThrottle
 
 
 @extend_schema(
@@ -214,6 +216,7 @@ class EmployerApplicationsView(generics.ListAPIView):
 @api_view(["GET"])
 @authentication_classes([PartnerAPIKeyAuthentication])
 @permission_classes([IsPartner])
+@throttle_classes([PartnerRateThrottle])
 def partner_application_events(request):
     """Disclose application events for one person and time period.
 
