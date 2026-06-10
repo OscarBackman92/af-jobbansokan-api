@@ -22,14 +22,15 @@ function formatErrors(body) {
 
 export async function request(path, { method = "GET", token, apiKey, body } = {}) {
   const headers = {};
-  if (body) headers["Content-Type"] = "application/json";
+  const isForm = body instanceof FormData;
+  if (body && !isForm) headers["Content-Type"] = "application/json";
   if (token) headers["Authorization"] = `Bearer ${token}`;
   if (apiKey) headers["Authorization"] = `Api-Key ${apiKey}`;
 
   const response = await fetch(path, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: isForm ? body : body ? JSON.stringify(body) : undefined,
   });
 
   if (response.status === 204) return null;

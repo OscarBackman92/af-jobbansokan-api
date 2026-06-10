@@ -139,6 +139,54 @@ select {
   background: #fff;
 }
 
+textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.3rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 400;
+  font-family: inherit;
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: 2px solid var(--blue);
+  border-color: var(--blue);
+}
+
+.rowline {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr auto;
+  gap: 0.5rem;
+  align-items: start;
+  margin-bottom: 0.4rem;
+}
+
+.rowline input {
+  margin-top: 0;
+}
+
+.upload-button {
+  display: inline-block;
+  margin: 0;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--blue);
+  background: #fff;
+  border: 1px solid var(--blue);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.upload-button:hover {
+  background: #eef;
+}
+
 button {
   background: var(--blue);
   color: #fff;

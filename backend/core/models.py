@@ -141,6 +141,29 @@ class ApplicantProfile(models.Model):
         return f"{self.user.get_username()} ({self.method})"
 
 
+class Resume(models.Model):
+    """Structured CV for an applicant.
+
+    Uploaded CV files are never stored — parsing happens in memory and
+    only the structured fields the user chooses to save are kept.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="resume",
+    )
+    headline = models.CharField(max_length=255, blank=True)
+    summary = models.TextField(blank=True)
+    skills = models.JSONField(default=list, blank=True)
+    experience = models.JSONField(default=list, blank=True)
+    education = models.JSONField(default=list, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"CV: {self.user.get_username()}"
+
+
 class PartnerClient(models.Model):
     """An authorized partner system (e.g. an A-kassa).
 
