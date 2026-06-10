@@ -8,12 +8,32 @@ export default function ApplicantPanel() {
 
   if (!token) {
     return (
-      <BankIDLogin
-        onLogin={async (access) => {
-          setToken(access);
-          setMe(await request("/api/v1/me/", { token: access }));
-        }}
-      />
+      <div className="hero">
+        <div className="hero-copy">
+          <span className="eyebrow">Förtroende som grundfunktion</span>
+          <h2>
+            Sök jobb. Bevisa det.
+            <br />
+            <span className="grad">Äg din egen data.</span>
+          </h2>
+          <p className="lede">
+            Hela svenska annonsmarknaden, en BankID-verifierad profil och en
+            ansökningshistorik som ingen kan manipulera — inte ens vi.
+          </p>
+          <ul className="checklist">
+            <li>BankID-verifierad identitet, pseudonymiserad lagring</li>
+            <li>Oföränderliga ansökningshändelser med full auditlogg</li>
+            <li>Se exakt vem som tagit del av dina uppgifter, och när</li>
+            <li>CV som matchas mot varje annons — helt förklarbart</li>
+          </ul>
+        </div>
+        <BankIDLogin
+          onLogin={async (access) => {
+            setToken(access);
+            setMe(await request("/api/v1/me/", { token: access }));
+          }}
+        />
+      </div>
     );
   }
   return (
