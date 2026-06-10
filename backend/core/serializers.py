@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import JobApplication, JobPosting, Organization
@@ -48,6 +49,26 @@ class JobApplicationSerializer(serializers.ModelSerializer):
         model = JobApplication
         fields = ["id", "posting", "applied_at", "status", "created_at"]
         read_only_fields = ["id", "status", "created_at"]
+
+    def validate_applied_at(self, value):
+        if value > timezone.localdate():
+            raise serializers.ValidationError("applied_at cannot be in the future.")
+        return value
+
+    def validate(self, attrs):
+        # Backstopped by the (owner, posting) unique constraint; owner is
+        # not a serializer field, so DRF cannot generate this check itself.
+        request = self.context.get("request")
+        if (
+            request
+            and JobApplication.objects.filter(
+                owner=request.user, posting=attrs["posting"]
+            ).exists()
+        ):
+            raise serializers.ValidationError(
+                {"posting": "You have already applied to this posting."}
+            )
+        return attrs
 
 
 class EmployerApplicantSerializer(serializers.ModelSerializer):

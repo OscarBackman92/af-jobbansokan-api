@@ -1,9 +1,17 @@
+from datetime import date, timedelta
+
 import pytest
-from core.models import AuditLog, JobApplication
+from core.models import AuditLog, JobApplication, JobPosting
 
 pytestmark = pytest.mark.django_db
 
 URL = "/api/v1/applications/"
+
+
+def _make_posting(organization, title):
+    return JobPosting.objects.create(
+        organization=organization, title=title, company_name=organization.name
+    )
 
 
 def test_create_requires_auth(api_client, posting):
@@ -23,6 +31,24 @@ def test_create_logs_audit_entry(api_client, applicant, posting):
     assert entry.metadata == {"posting_id": posting.id}
 
 
+def test_cannot_apply_twice_to_same_posting(api_client, applicant, posting):
+    JobApplication.objects.create(
+        owner=applicant, posting=posting, applied_at="2026-06-01"
+    )
+    api_client.force_authenticate(applicant)
+    response = api_client.post(URL, {"posting": posting.id, "applied_at": "2026-06-02"})
+    assert response.status_code == 400
+    assert "posting" in response.json()
+
+
+def test_applied_at_cannot_be_in_the_future(api_client, applicant, posting):
+    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    api_client.force_authenticate(applicant)
+    response = api_client.post(URL, {"posting": posting.id, "applied_at": tomorrow})
+    assert response.status_code == 400
+    assert "applied_at" in response.json()
+
+
 def test_list_returns_only_own_applications(
     api_client, applicant, posting, django_user_model
 ):
@@ -35,24 +61,45 @@ def test_list_returns_only_own_applications(
     api_client.force_authenticate(applicant)
     response = api_client.get(URL)
     assert response.status_code == 200
-    assert [item["id"] for item in response.json()] == [mine.id]
+    body = response.json()
+    assert body["count"] == 1
+    assert [item["id"] for item in body["results"]] == [mine.id]
 
 
-def test_list_filters_by_date_range(api_client, applicant, posting):
-    JobApplication.objects.create(
-        owner=applicant, posting=posting, applied_at="2026-05-01"
-    )
-    mid = JobApplication.objects.create(
-        owner=applicant, posting=posting, applied_at="2026-06-01"
-    )
-    JobApplication.objects.create(
-        owner=applicant, posting=posting, applied_at="2026-07-01"
-    )
+def test_list_is_paginated(api_client, applicant, organization):
+    for i in range(25):
+        JobApplication.objects.create(
+            owner=applicant,
+            posting=_make_posting(organization, f"Job {i}"),
+            applied_at="2026-06-01",
+        )
+
+    api_client.force_authenticate(applicant)
+    body = api_client.get(URL).json()
+    assert body["count"] == 25
+    assert len(body["results"]) == 20
+    assert body["next"] is not None
+
+    page2 = api_client.get(URL, {"page": 2}).json()
+    assert len(page2["results"]) == 5
+
+
+def test_list_filters_by_date_range(api_client, applicant, organization):
+    dates = ["2026-05-01", "2026-06-01", "2026-07-01"]
+    applications = [
+        JobApplication.objects.create(
+            owner=applicant,
+            posting=_make_posting(organization, f"Job {applied}"),
+            applied_at=applied,
+        )
+        for applied in dates
+    ]
 
     api_client.force_authenticate(applicant)
     response = api_client.get(URL, {"from": "2026-05-15", "to": "2026-06-15"})
     assert response.status_code == 200
-    assert [item["id"] for item in response.json()] == [mid.id]
+    results = response.json()["results"]
+    assert [item["id"] for item in results] == [applications[1].id]
 
 
 def test_list_rejects_invalid_date(api_client, applicant):

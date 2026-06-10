@@ -5,7 +5,7 @@
 - Base path: /api/v1/
 - JSON by default
 - OpenAPI schema: GET /api/schema/ (Swagger UI at /api/docs/)
-- Pagination for list endpoints (future)
+- List endpoints are paginated (page number style, 20 per page, `?page=N`)
 - Idempotency keys for write endpoints (future)
 
 ## Endpoints
@@ -23,7 +23,8 @@
 ### Applicant
 
 - GET /api/v1/me/
-- POST /api/v1/applications/ — register an application event (audit logged)
+- POST /api/v1/applications/ — register an application event (audit logged);
+  one application per posting, applied_at cannot be in the future
 - GET /api/v1/applications/?from=&to=&status= — list own events,
   filterable on applied_at date range and status
 - GET /api/v1/applications/{id}/

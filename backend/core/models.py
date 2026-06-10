@@ -26,6 +26,14 @@ class JobApplication(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "posting"],
+                name="uniq_jobapplication_owner_posting",
+            )
+        ]
+
     def __str__(self) -> str:
         return f"{self.owner} -> {self.posting}"
 
