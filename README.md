@@ -237,7 +237,12 @@ host):
   is wired from the database. Deploy via Render → New → Blueprint
 - **Production hardening** activates when `DJANGO_DEBUG=0`: HSTS,
   SSL redirect (behind proxy header), secure cookies, manifest static
-  storage, referrer policy
+  storage, referrer policy. Render's public hostname is trusted
+  automatically via `RENDER_EXTERNAL_HOSTNAME`
+- **Env-driven bootstrap on boot** (free tier has no shell): creates the
+  superuser (`DJANGO_SUPERUSER_USERNAME`/`_PASSWORD`), a partner client
+  (`BOOTSTRAP_PARTNER_NAME`/`_KEY`) and imports postings
+  (`BOOTSTRAP_IMPORT_QUERY`) — all idempotent, all optional
 - **Rate limiting**: mock BankID endpoints are throttled per IP
   (`THROTTLE_BANKID`, default 10/min) and the partner API per client
   (`THROTTLE_PARTNER`, default 120/min)
