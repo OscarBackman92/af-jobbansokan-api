@@ -259,6 +259,57 @@ th {
   gap: 0.5rem;
 }
 
+.linklike {
+  background: none;
+  border: none;
+  color: var(--blue);
+  padding: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.linklike:hover {
+  background: none;
+  color: var(--blue-dark);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 40, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 10;
+}
+
+.modal {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 1.5rem 1.75rem;
+  max-width: 720px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.description {
+  white-space: pre-wrap;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  background: #fafbfc;
+}
+
 .footer {
   margin-top: 2.5rem;
   padding-top: 1rem;

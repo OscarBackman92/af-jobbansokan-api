@@ -8,7 +8,22 @@ URL = "/api/v1/postings/"
 def test_anyone_can_list_postings(api_client, posting):
     response = api_client.get(URL)
     assert response.status_code == 200
-    assert [item["id"] for item in response.json()["results"]] == [posting.id]
+    results = response.json()["results"]
+    assert [item["id"] for item in results] == [posting.id]
+    # List payloads stay lean — full text only in the detail view.
+    assert "description" not in results[0]
+
+
+def test_detail_includes_description_and_link(api_client, posting):
+    posting.description = "Lång annonstext här."
+    posting.webpage_url = "https://example.com/annons/1"
+    posting.save()
+
+    response = api_client.get(f"{URL}{posting.id}/")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["description"] == "Lång annonstext här."
+    assert body["webpage_url"] == "https://example.com/annons/1"
 
 
 def test_non_employer_cannot_create(api_client, applicant):

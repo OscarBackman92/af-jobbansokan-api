@@ -166,6 +166,8 @@ class JobPosting(models.Model):
     title = models.CharField(max_length=255)
     company_name = models.CharField(max_length=255)
     location = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    webpage_url = models.URLField(max_length=500, blank=True)
     published_at = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

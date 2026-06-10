@@ -19,6 +19,7 @@ from .permissions import IsEmployer, IsEmployerAdminOrReadOnly
 from .serializers import (
     EmployerJobApplicationSerializer,
     JobApplicationSerializer,
+    JobPostingDetailSerializer,
     JobPostingSerializer,
     PartnerApplicationEventSerializer,
 )
@@ -136,6 +137,12 @@ class JobApplicationViewSet(
 class JobPostingViewSet(viewsets.ModelViewSet):
     serializer_class = JobPostingSerializer
     permission_classes = [IsEmployerAdminOrReadOnly]
+
+    def get_serializer_class(self):
+        # Lean list payloads; full posting (description, link) elsewhere.
+        if self.action == "list":
+            return JobPostingSerializer
+        return JobPostingDetailSerializer
 
     def get_queryset(self):
         # Public read of all postings (for MVP).
