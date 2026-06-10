@@ -14,6 +14,7 @@ db.sqlite3
 # Frontend
 node_modules/
 frontend/dist/
+frontend/.vite/
 
 # IDE
 .vscode/
