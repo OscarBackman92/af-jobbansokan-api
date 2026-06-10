@@ -22,6 +22,7 @@ from .serializers import (
     JobPostingDetailSerializer,
     JobPostingSerializer,
     PartnerApplicationEventSerializer,
+    ProfileSerializer,
 )
 
 
@@ -35,24 +36,29 @@ def health(_request):
     return Response({"status": "ok"})
 
 
-@extend_schema(
-    responses={
-        200: {
-            "type": "object",
-            "properties": {
-                "id": {"type": "integer"},
-                "username": {"type": "string"},
-                "email": {"type": "string"},
-            },
-        }
-    }
-)
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def me(request):
-    """Return basic info about the currently authenticated user."""
-    user = request.user
-    return Response({"id": user.id, "username": user.username, "email": user.email})
+class ProfileView(generics.RetrieveUpdateDestroyAPIView):
+    """The authenticated user's own profile.
+
+    GET returns contact details plus identity/employer status. PATCH
+    updates contact details. DELETE erases the account and everything it
+    owns (GDPR right to erasure) — audit entries survive with the actor
+    anonymized, which is exactly their documented retention behavior.
+    """
+
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    def perform_destroy(self, instance):
+        log_event(
+            instance,
+            AuditLog.ACTION_ACCOUNT_DELETED,
+            user_id=instance.id,
+            username=instance.get_username(),
+        )
+        instance.delete()
 
 
 def _date_param(params, name):

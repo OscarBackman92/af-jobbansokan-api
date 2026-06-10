@@ -259,6 +259,12 @@ th {
   gap: 0.5rem;
 }
 
+.row-gap {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
 .linklike {
   background: none;
   border: none;

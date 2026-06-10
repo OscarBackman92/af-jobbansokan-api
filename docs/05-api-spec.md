@@ -29,7 +29,11 @@
 
 ### Applicant
 
-- GET /api/v1/me/
+- GET /api/v1/me/ — profile incl. identity (BankID) and employer status
+- PATCH /api/v1/me/ — update contact details (email, first/last name)
+- DELETE /api/v1/me/ — GDPR erasure: removes the account and its
+  applications; audit logged as account.deleted, entries survive with
+  the actor anonymized
 - POST /api/v1/applications/ — register an application event (audit logged);
   one application per posting, applied_at cannot be in the future
 - GET /api/v1/applications/?from=&to=&status= — list own events,

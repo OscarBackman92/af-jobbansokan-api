@@ -18,18 +18,126 @@ export default function ApplicantPanel() {
   }
   return (
     <div className="stack">
-      <div className="card row-between">
-        <div>
-          Inloggad via BankID (mock) som <strong>{me?.username}</strong>
-          <span className="muted"> — kontot är knutet till en pseudonymiserad identitet</span>
-        </div>
-        <button className="secondary" onClick={() => { setToken(null); setMe(null); }}>
-          Logga ut
-        </button>
-      </div>
+      <ProfileCard
+        token={token}
+        me={me}
+        onMeChange={setMe}
+        onLogout={() => {
+          setToken(null);
+          setMe(null);
+        }}
+      />
       <MyApplications token={token} />
       <Postings token={token} />
     </div>
+  );
+}
+
+function ProfileCard({ token, me, onMeChange, onLogout }) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ email: "", first_name: "", last_name: "" });
+  const [message, setMessage] = useState(null);
+
+  if (!me) return <div className="card">Laddar profil…</div>;
+
+  function startEdit() {
+    setForm({
+      email: me.email,
+      first_name: me.first_name,
+      last_name: me.last_name,
+    });
+    setMessage(null);
+    setEditing(true);
+  }
+
+  async function save(event) {
+    event.preventDefault();
+    try {
+      const updated = await request("/api/v1/me/", {
+        method: "PATCH",
+        token,
+        body: form,
+      });
+      onMeChange(updated);
+      setEditing(false);
+      setMessage("Profilen är uppdaterad.");
+    } catch (err) {
+      setMessage(err.message);
+    }
+  }
+
+  async function deleteAccount() {
+    const sure = window.confirm(
+      "Radera kontot permanent? Alla dina ansökningar tas bort. " +
+        "Auditloggen behålls i anonymiserad form (GDPR)."
+    );
+    if (!sure) return;
+    await request("/api/v1/me/", { method: "DELETE", token });
+    onLogout();
+  }
+
+  const field = (name) => ({
+    value: form[name],
+    onChange: (e) => setForm({ ...form, [name]: e.target.value }),
+  });
+
+  return (
+    <section className="card">
+      <div className="row-between">
+        <div>
+          <h2>Min profil</h2>
+          <p className="muted">
+            <strong>{me.username}</strong>
+            {(me.first_name || me.last_name) &&
+              ` — ${me.first_name} ${me.last_name}`.trimEnd()}
+            {me.email && ` · ${me.email}`}
+          </p>
+          {me.identity?.verified ? (
+            <span className="badge applied">
+              BankID-verifierad ({me.identity.method})
+            </span>
+          ) : (
+            <span className="badge neutral">Ej identitetsverifierad</span>
+          )}
+        </div>
+        <div className="row-gap">
+          <button
+            className="secondary small"
+            onClick={editing ? () => setEditing(false) : startEdit}
+          >
+            {editing ? "Avbryt" : "Redigera"}
+          </button>
+          <button className="secondary small" onClick={onLogout}>
+            Logga ut
+          </button>
+        </div>
+      </div>
+      {message && <p className="notice">{message}</p>}
+      {editing && (
+        <form onSubmit={save}>
+          <div className="grid3">
+            <label>
+              Förnamn
+              <input {...field("first_name")} />
+            </label>
+            <label>
+              Efternamn
+              <input {...field("last_name")} />
+            </label>
+            <label>
+              E-post
+              <input type="email" {...field("email")} />
+            </label>
+          </div>
+          <div className="row-between">
+            <button>Spara</button>
+            <button type="button" className="danger small" onClick={deleteAccount}>
+              Radera konto permanent
+            </button>
+          </div>
+        </form>
+      )}
+    </section>
   );
 }
 

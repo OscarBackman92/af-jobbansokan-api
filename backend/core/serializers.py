@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from .models import JobApplication, JobPosting, Organization
@@ -78,6 +79,44 @@ class JobApplicationSerializer(serializers.ModelSerializer):
                 {"posting": "You have already applied to this posting."}
             )
         return attrs
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    """The authenticated user's own profile, incl. identity status."""
+
+    identity = serializers.SerializerMethodField()
+    employer = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "identity",
+            "employer",
+        ]
+        read_only_fields = ["id", "username"]
+
+    @extend_schema_field(serializers.DictField())
+    def get_identity(self, obj):
+        profile = getattr(obj, "applicant_profile", None)
+        if profile is None:
+            return {"verified": False}
+        return {
+            "verified": True,
+            "method": profile.method,
+            "verified_at": profile.verified_at.isoformat(),
+        }
+
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_employer(self, obj):
+        profile = getattr(obj, "employer_profile", None)
+        if profile is None:
+            return None
+        return {"organization": profile.organization.name, "role": profile.role}
 
 
 class PartnerApplicationEventSerializer(serializers.ModelSerializer):
