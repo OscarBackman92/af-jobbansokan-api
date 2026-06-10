@@ -1,5 +1,6 @@
 import csv
 
+from django.db.models import Q
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
 from drf_spectacular.types import OpenApiTypes
@@ -259,6 +260,23 @@ class JobApplicationViewSet(
         return response
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "search",
+                OpenApiTypes.STR,
+                description="Free text over title, company, location and description.",
+            ),
+            OpenApiParameter(
+                "location", OpenApiTypes.STR, description="Filter by location."
+            ),
+            OpenApiParameter(
+                "source", OpenApiTypes.STR, description="Filter by source."
+            ),
+        ]
+    )
+)
 class JobPostingViewSet(viewsets.ModelViewSet):
     serializer_class = JobPostingSerializer
     permission_classes = [IsEmployerAdminOrReadOnly]
@@ -271,8 +289,27 @@ class JobPostingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Public read of all postings (for MVP).
-        # Later we can filter by org, published flag, etc.
-        return JobPosting.objects.all().order_by("-created_at")
+        qs = JobPosting.objects.all().order_by("-created_at")
+        params = self.request.query_params
+
+        # icontains works on SQLite and Postgres alike; upgrade path to
+        # Postgres FTS when volume demands it (docs/09, phase 1).
+        search = params.get("search", "").strip()
+        for term in search.split()[:6]:
+            qs = qs.filter(
+                Q(title__icontains=term)
+                | Q(company_name__icontains=term)
+                | Q(location__icontains=term)
+                | Q(description__icontains=term)
+            )
+
+        location = params.get("location", "").strip()
+        if location:
+            qs = qs.filter(location__icontains=location)
+        source = params.get("source", "").strip()
+        if source:
+            qs = qs.filter(source=source)
+        return qs
 
     def perform_create(self, serializer):
         # Writer must be employer admin -> safe to assume profile exists.

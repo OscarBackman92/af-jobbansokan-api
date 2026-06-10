@@ -580,10 +580,21 @@ function Postings({ token }) {
   const [url, setUrl] = useState("/api/v1/postings/");
   const [message, setMessage] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [location, setLocation] = useState("");
 
   useEffect(() => {
     request(url).then(setPage).catch((err) => setMessage(err.message));
   }, [url]);
+
+  function applyFilters(event) {
+    event.preventDefault();
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (location.trim()) params.set("location", location.trim());
+    const qs = params.toString();
+    setUrl(`/api/v1/postings/${qs ? `?${qs}` : ""}`);
+  }
 
   async function apply(postingId) {
     setMessage(null);
@@ -609,6 +620,19 @@ function Postings({ token }) {
         Importerade från Arbetsförmedlingens öppna JobTech-API plus
         plattformens egna annonser.
       </p>
+      <form className="searchbar" onSubmit={applyFilters}>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Sök titel, företag eller beskrivning…"
+        />
+        <input
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Ort"
+        />
+        <button className="small">Sök</button>
+      </form>
       {message && <p className="notice">{message}</p>}
       <table>
         <thead>

@@ -38,6 +38,57 @@ def test_employer_member_cannot_create(api_client, employer_member):
     assert response.status_code == 403
 
 
+def test_search_matches_across_fields(api_client, organization):
+    from core.models import JobPosting
+
+    python_job = JobPosting.objects.create(
+        organization=organization,
+        title="Backendutvecklare",
+        company_name="Acme AB",
+        description="Vi arbetar med Python och Django.",
+        location="Stockholm",
+    )
+    JobPosting.objects.create(
+        organization=organization,
+        title="Frontendutvecklare",
+        company_name="Beta AB",
+        description="React och TypeScript.",
+        location="Göteborg",
+    )
+
+    response = api_client.get(URL, {"search": "python"})
+    assert [p["id"] for p in response.json()["results"]] == [python_job.id]
+
+    # Multiple terms are ANDed together.
+    response = api_client.get(URL, {"search": "python göteborg"})
+    assert response.json()["count"] == 0
+
+
+def test_location_and_source_filters(api_client, organization):
+    from core.models import JobPosting
+
+    stockholm = JobPosting.objects.create(
+        organization=organization,
+        title="A",
+        company_name="X",
+        location="Stockholm",
+        source="jobtech",
+        external_id="j1",
+    )
+    JobPosting.objects.create(
+        organization=organization,
+        title="B",
+        company_name="Y",
+        location="Göteborg",
+    )
+
+    response = api_client.get(URL, {"location": "stockholm"})
+    assert [p["id"] for p in response.json()["results"]] == [stockholm.id]
+
+    response = api_client.get(URL, {"source": "jobtech"})
+    assert [p["id"] for p in response.json()["results"]] == [stockholm.id]
+
+
 def test_employer_admin_creates_for_own_org(api_client, employer_admin, organization):
     api_client.force_authenticate(employer_admin)
     response = api_client.post(
