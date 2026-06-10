@@ -3,6 +3,8 @@
 ## Entities (implemented)
 
 - User (Django User)
+- ApplicantProfile — verified, pseudonymized identity; stores only an
+  HMAC-SHA256 hash of the personal identity number (docs/08)
 - Organization — employer organization (name, org_number)
 - EmployerProfile — links a user to an organization with a role (admin/member)
 - JobPosting — job ad owned by an organization; unique on (source, external_id)
@@ -22,7 +24,7 @@
 ## PII classification (draft)
 
 - Direct identifiers: username/email on User; personal identity number
-  (should be pseudonymized or stored minimally when introduced)
+  (never stored — pseudonymized via keyed hash in ApplicantProfile)
 - Indirect identifiers: job ad id, employer org id, timestamps
   (may become identifying when combined)
 

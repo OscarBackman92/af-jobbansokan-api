@@ -10,7 +10,7 @@ Provide a verifiable, auditable, privacy-preserving way to register job applicat
 
 ## MVP Scope (In)
 
-- Applicant authentication (initially standard auth; BankID integration planned) — done (JWT)
+- Applicant authentication (initially standard auth; BankID integration planned) — done (JWT + mocked BankID flow, docs/08)
 - Register job application events (immutable/auditable) — done
 - Applicant can list/filter own events — done (date range + status filters)
 - Audit logging for creation and disclosure — done (append-only AuditLog)

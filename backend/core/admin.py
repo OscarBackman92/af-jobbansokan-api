@@ -2,6 +2,7 @@ from django.contrib import admin
 from unfold.admin import ModelAdmin
 
 from .models import (
+    ApplicantProfile,
     AuditLog,
     EmployerProfile,
     JobApplication,
@@ -45,6 +46,21 @@ class JobPostingAdmin(ModelAdmin):
     )
     list_filter = ("source", "published_at", "created_at")
     search_fields = ("title", "company_name", "external_id", "organization__name")
+
+
+@admin.register(ApplicantProfile)
+class ApplicantProfileAdmin(ModelAdmin):
+    """Read-only: identities are created via the BankID flow only."""
+
+    list_display = ("id", "user", "method", "verified_at")
+    list_filter = ("method",)
+    search_fields = ("user__username",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(PartnerClient)

@@ -12,7 +12,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .audit import log_event
-from .models import AuditLog, JobApplication, JobPosting
+from .identity import normalize_personal_number, pseudonymize_personal_number
+from .models import ApplicantProfile, AuditLog, JobApplication, JobPosting
 from .partner_auth import IsPartner, PartnerAPIKeyAuthentication
 from .permissions import IsEmployer, IsEmployerAdminOrReadOnly
 from .serializers import (
@@ -184,9 +185,9 @@ class EmployerApplicationsView(generics.ListAPIView):
     parameters=[
         OpenApiParameter(
             "person",
-            OpenApiTypes.INT,
+            OpenApiTypes.STR,
             required=True,
-            description="The applicant's user id.",
+            description="Personal identity number (YYYYMMDDNNNN).",
         ),
         OpenApiParameter(
             "from", OpenApiTypes.DATE, description="Earliest applied_at date."
@@ -206,29 +207,39 @@ def partner_application_events(request):
     Partner systems authenticate with `Authorization: Api-Key <key>`.
     Every call is audit logged as a partner disclosure.
     """
-    person = request.query_params.get("person")
-    if not person or not person.isdigit():
-        raise ValidationError({"person": "Required: the applicant's user id."})
+    person = normalize_personal_number(request.query_params.get("person", ""))
+    if person is None:
+        raise ValidationError(
+            {"person": "Required: a 12-digit personal identity number."}
+        )
     date_from = _date_param(request.query_params, "from")
     date_to = _date_param(request.query_params, "to")
 
-    qs = (
-        JobApplication.objects.select_related("posting")
-        .filter(owner_id=int(person))
-        .order_by("applied_at")
-    )
-    if date_from:
-        qs = qs.filter(applied_at__gte=date_from)
-    if date_to:
-        qs = qs.filter(applied_at__lte=date_to)
+    # Unknown persons yield an empty list, indistinguishable from a person
+    # without events — the endpoint never reveals who has an account.
+    person_hash = pseudonymize_personal_number(person)
+    profile = ApplicantProfile.objects.filter(personal_number_hash=person_hash).first()
 
-    events = list(qs)
+    if profile is None:
+        events = []
+    else:
+        qs = (
+            JobApplication.objects.select_related("posting")
+            .filter(owner=profile.user)
+            .order_by("applied_at")
+        )
+        if date_from:
+            qs = qs.filter(applied_at__gte=date_from)
+        if date_to:
+            qs = qs.filter(applied_at__lte=date_to)
+        events = list(qs)
+
     log_event(
         None,
         AuditLog.ACTION_PARTNER_DISCLOSED,
         partner_client_id=request.auth.id,
         partner_name=request.auth.name,
-        person_user_id=int(person),
+        person_hash=person_hash,
         date_from=str(date_from) if date_from else None,
         date_to=str(date_to) if date_to else None,
         application_count=len(events),

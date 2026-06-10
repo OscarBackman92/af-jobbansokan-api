@@ -149,6 +149,14 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
 }
 
+# Identity / BankID (mock — real integration specified in docs/08)
+
+BANKID_MOCK = os.getenv("BANKID_MOCK", "0") == "1"
+# Keyed hash for pseudonymized personal numbers. Must be stable across
+# deploys (rotation orphans identities) and a managed secret in
+# production. Defaults to SECRET_KEY for development.
+PERSON_HASH_KEY = os.getenv("PERSON_HASH_KEY", SECRET_KEY)
+
 # Admin theme (django-unfold)
 
 UNFOLD = {
