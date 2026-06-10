@@ -123,6 +123,13 @@ python backend/manage.py createsuperuser
 python backend/manage.py runserver
 ```
 
+Optionally fill the database with real postings from Arbetsförmedlingen's
+open [JobTech API](https://jobsearch.api.jobtechdev.se):
+
+```bash
+python backend/manage.py import_postings --query "python" --limit 50
+```
+
 Then open:
 
 - Swagger UI: <http://127.0.0.1:8000/api/docs/>
