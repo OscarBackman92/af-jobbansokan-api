@@ -6,7 +6,7 @@ from .views import (
     EmployerApplicationsView,
     JobApplicationViewSet,
     JobPostingViewSet,
-    me,
+    ProfileView,
     partner_application_events,
 )
 
@@ -15,7 +15,7 @@ router.register(r"applications", JobApplicationViewSet, basename="applications")
 router.register(r"postings", JobPostingViewSet, basename="postings")
 
 urlpatterns = [
-    path("me/", me, name="me"),
+    path("me/", ProfileView.as_view(), name="me"),
     path("", include(router.urls)),
     path(
         "employer/applications/",
