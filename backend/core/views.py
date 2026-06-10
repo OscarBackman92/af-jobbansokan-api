@@ -1,8 +1,12 @@
+import csv
+
+from django.http import HttpResponse
 from django.utils.dateparse import parse_date
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import generics, mixins, viewsets
 from rest_framework.decorators import (
+    action,
     api_view,
     authentication_classes,
     permission_classes,
@@ -24,6 +28,7 @@ from .models import (
 from .partner_auth import IsPartner, PartnerAPIKeyAuthentication
 from .permissions import IsEmployer, IsEmployerAdminOrReadOnly
 from .serializers import (
+    DisclosureSerializer,
     EmployerApplicationStatusSerializer,
     EmployerJobApplicationSerializer,
     JobApplicationSerializer,
@@ -69,6 +74,29 @@ class ProfileView(generics.RetrieveUpdateDestroyAPIView):
             username=instance.get_username(),
         )
         instance.delete()
+
+
+class MyDisclosuresView(generics.ListAPIView):
+    """Transparency: partner disclosures of the user's own data.
+
+    Matches the audit trail on the user's pseudonymized identity, so it
+    requires a verified (BankID) identity. Users without one have never
+    been disclosed to partners and get an empty list.
+    """
+
+    serializer_class = DisclosureSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # schema generation
+            return AuditLog.objects.none()
+        profile = getattr(self.request.user, "applicant_profile", None)
+        if profile is None:
+            return AuditLog.objects.none()
+        return AuditLog.objects.filter(
+            action=AuditLog.ACTION_PARTNER_DISCLOSED,
+            metadata__person_hash=profile.personal_number_hash,
+        ).order_by("-created_at")
 
 
 def _date_param(params, name):
@@ -148,6 +176,31 @@ class JobApplicationViewSet(
             posting_id=instance.posting_id,
         )
         instance.delete()
+
+    @extend_schema(responses={(200, "text/csv"): OpenApiTypes.STR})
+    @action(detail=False, methods=["get"], url_path="export")
+    def export(self, request):
+        """Download own application events as CSV (filters apply)."""
+        qs = self.get_queryset().select_related("posting")
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="ansokningar.csv"'
+        response.write("\ufeff")  # BOM so Excel detects UTF-8
+        writer = csv.writer(response)
+        writer.writerow(
+            ["id", "applied_at", "status", "posting", "company", "created_at"]
+        )
+        for application in qs:
+            writer.writerow(
+                [
+                    application.id,
+                    application.applied_at,
+                    application.status,
+                    application.posting.title,
+                    application.posting.company_name,
+                    application.created_at.isoformat(),
+                ]
+            )
+        return response
 
 
 class JobPostingViewSet(viewsets.ModelViewSet):
