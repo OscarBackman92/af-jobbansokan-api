@@ -326,3 +326,5 @@ and [docs/06-gdpr-privacy.md](docs/06-gdpr-privacy.md) for the full picture.
 | [05-api-spec.md](docs/05-api-spec.md) | Endpoint reference |
 | [06-gdpr-privacy.md](docs/06-gdpr-privacy.md) | GDPR considerations |
 | [07-devops-ci-cd.md](docs/07-devops-ci-cd.md) | CI/CD setup |
+| [08-identity-bankid.md](docs/08-identity-bankid.md) | Identity design: BankID flow, pseudonymization |
+| [09-master-plan.md](docs/09-master-plan.md) | The road to a trust-first recruitment platform |
