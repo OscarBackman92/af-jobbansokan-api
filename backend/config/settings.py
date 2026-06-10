@@ -35,6 +35,8 @@ ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split("
 # Application definition
 
 INSTALLED_APPS = [
+    # Admin theme (must precede django.contrib.admin)
+    "unfold",
     # Django core
     "django.contrib.admin",
     "django.contrib.auth",
@@ -145,6 +147,14 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "AF Job Application API",
     "DESCRIPTION": "API for registering and sharing verifiable job application events.",
     "VERSION": "0.1.0",
+}
+
+# Admin theme (django-unfold)
+
+UNFOLD = {
+    "SITE_TITLE": "AF Jobbansökan",
+    "SITE_HEADER": "AF Jobbansökan",
+    "SITE_SUBHEADER": "Verifierbara jobbansökningshändelser",
 }
 
 # Auth (dj-rest-auth + SimpleJWT)
