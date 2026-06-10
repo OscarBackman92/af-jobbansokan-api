@@ -220,6 +220,26 @@ identifiers beyond the queried person, no application status. Every call
 writes an `applications.disclosed_partner` audit entry. Partners can be
 deactivated in the admin; keys cannot be read back or recreated.
 
+## Deployment
+
+The repo is deploy-ready for [Render](https://render.com) (or any Docker
+host):
+
+- **One service serves everything**: the `Dockerfile` builds the frontend
+  (Node stage), collects static files, and gunicorn + WhiteNoise serve
+  the SPA at `/`, hashed assets, the API and the admin
+- **`render.yaml` blueprint**: web service + managed Postgres; secrets
+  (`DJANGO_SECRET_KEY`, `PERSON_HASH_KEY`) are generated, `DATABASE_URL`
+  is wired from the database. Deploy via Render → New → Blueprint
+- **Production hardening** activates when `DJANGO_DEBUG=0`: HSTS,
+  SSL redirect (behind proxy header), secure cookies, manifest static
+  storage, referrer policy
+- **Rate limiting**: mock BankID endpoints are throttled per IP
+  (`THROTTLE_BANKID`, default 10/min) and the partner API per client
+  (`THROTTLE_PARTNER`, default 120/min)
+- CI runs the backend tests against **Postgres 16** (same engine as
+  production) plus the frontend build
+
 ## Testing and linting
 
 ```bash

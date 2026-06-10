@@ -1,9 +1,17 @@
 import pytest
 from core.models import EmployerProfile, JobPosting, Organization
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
 User = get_user_model()
+
+
+@pytest.fixture(autouse=True)
+def _clear_cache():
+    # Throttle counters live in the cache; keep tests independent.
+    cache.clear()
+    yield
 
 
 @pytest.fixture

@@ -10,6 +10,7 @@ __pycache__/
 # Django
 db.sqlite3
 .env
+backend/staticfiles/
 
 # Frontend
 node_modules/
