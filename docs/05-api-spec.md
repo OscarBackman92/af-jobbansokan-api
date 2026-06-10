@@ -43,6 +43,11 @@
 - GET /api/v1/applications/export/ — own events as CSV (filters apply)
 - GET /api/v1/me/disclosures/ — transparency: partner disclosures of the
   user's own data (matched via the pseudonymized identity)
+- GET/PUT/DELETE /api/v1/me/resume/ — structured CV (headline, summary,
+  skills, experience, education)
+- POST /api/v1/me/resume/parse/ — upload a CV (PDF/DOCX/TXT, max 2 MB);
+  returns a structured draft for review. The file is parsed in memory
+  and never stored
 - Application events are immutable: PUT/PATCH are not allowed (405)
 
 ### Employer

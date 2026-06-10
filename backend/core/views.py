@@ -13,8 +13,10 @@ from rest_framework.decorators import (
     throttle_classes,
 )
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .audit import log_event
 from .identity import normalize_personal_number, pseudonymize_personal_number
@@ -24,9 +26,16 @@ from .models import (
     EmployerProfile,
     JobApplication,
     JobPosting,
+    Resume,
 )
 from .partner_auth import IsPartner, PartnerAPIKeyAuthentication
 from .permissions import IsEmployer, IsEmployerAdminOrReadOnly
+from .resume import (
+    MAX_UPLOAD_SIZE,
+    SUPPORTED_EXTENSIONS,
+    extract_text,
+    parse_resume_text,
+)
 from .serializers import (
     DisclosureSerializer,
     EmployerApplicationStatusSerializer,
@@ -37,6 +46,8 @@ from .serializers import (
     OrganizationSerializer,
     PartnerApplicationEventSerializer,
     ProfileSerializer,
+    ResumeSerializer,
+    ResumeUploadSerializer,
 )
 from .throttling import PartnerRateThrottle
 
@@ -74,6 +85,51 @@ class ProfileView(generics.RetrieveUpdateDestroyAPIView):
             username=instance.get_username(),
         )
         instance.delete()
+
+
+class ResumeView(generics.RetrieveUpdateDestroyAPIView):
+    """The authenticated user's structured CV (created empty on first GET)."""
+
+    serializer_class = ResumeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        resume, _ = Resume.objects.get_or_create(user=self.request.user)
+        return resume
+
+
+class ResumeParseView(APIView):
+    """Parse an uploaded CV (PDF/DOCX/TXT) into a structured draft.
+
+    The file is processed in memory and never stored; nothing is saved
+    until the user reviews the prefilled form and submits it.
+    """
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    @extend_schema(
+        request=ResumeUploadSerializer,
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def post(self, request):
+        serializer = ResumeUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        upload = serializer.validated_data["file"]
+
+        if upload.size > MAX_UPLOAD_SIZE:
+            raise ValidationError({"file": "Max file size is 2 MB."})
+        if not upload.name.lower().endswith(SUPPORTED_EXTENSIONS):
+            raise ValidationError({"file": "Supported formats: PDF, DOCX and TXT."})
+
+        try:
+            text = extract_text(upload.name, upload.read())
+        except ValueError as exc:
+            raise ValidationError({"file": str(exc)}) from exc
+        except Exception as exc:  # corrupt/unreadable file
+            raise ValidationError({"file": "The file could not be read."}) from exc
+
+        return Response(parse_resume_text(text))
 
 
 class MyDisclosuresView(generics.ListAPIView):

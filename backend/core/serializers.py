@@ -5,7 +5,7 @@ from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from .models import AuditLog, JobApplication, JobPosting, Organization
+from .models import AuditLog, JobApplication, JobPosting, Organization, Resume
 
 User = get_user_model()
 
@@ -117,6 +117,50 @@ class ProfileSerializer(serializers.ModelSerializer):
         if profile is None:
             return None
         return {"organization": profile.organization.name, "role": profile.role}
+
+
+class ResumeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resume
+        fields = [
+            "headline",
+            "summary",
+            "skills",
+            "experience",
+            "education",
+            "updated_at",
+        ]
+        read_only_fields = ["updated_at"]
+
+    def validate_skills(self, value):
+        if not isinstance(value, list) or not all(
+            isinstance(item, str) for item in value
+        ):
+            raise serializers.ValidationError("Expected a list of strings.")
+        return [item.strip() for item in value if item.strip()]
+
+    def _validate_rows(self, value, allowed_keys):
+        if not isinstance(value, list) or not all(
+            isinstance(item, dict) for item in value
+        ):
+            raise serializers.ValidationError("Expected a list of objects.")
+        for item in value:
+            unknown = set(item) - allowed_keys
+            if unknown:
+                raise serializers.ValidationError(
+                    f"Unknown fields: {', '.join(sorted(unknown))}"
+                )
+        return value
+
+    def validate_experience(self, value):
+        return self._validate_rows(value, {"title", "company", "years", "description"})
+
+    def validate_education(self, value):
+        return self._validate_rows(value, {"school", "degree", "years"})
+
+
+class ResumeUploadSerializer(serializers.Serializer):
+    file = serializers.FileField()
 
 
 class DisclosureSerializer(serializers.ModelSerializer):

@@ -10,6 +10,8 @@ from .views import (
     MyDisclosuresView,
     OrganizationCreateView,
     ProfileView,
+    ResumeParseView,
+    ResumeView,
     partner_application_events,
 )
 
@@ -20,6 +22,8 @@ router.register(r"postings", JobPostingViewSet, basename="postings")
 urlpatterns = [
     path("me/", ProfileView.as_view(), name="me"),
     path("me/disclosures/", MyDisclosuresView.as_view(), name="my-disclosures"),
+    path("me/resume/", ResumeView.as_view(), name="my-resume"),
+    path("me/resume/parse/", ResumeParseView.as_view(), name="my-resume-parse"),
     path("", include(router.urls)),
     path(
         "employer/applications/",
