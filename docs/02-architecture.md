@@ -14,6 +14,8 @@
 - Auth provider (dj-rest-auth/allauth; BankID planned)
 - Audit log (append-only, in `core.AuditLog`)
 - Partner integration layer (API key auth; OAuth2/mTLS future)
+- Posting import from Arbetsförmedlingen's JobTech Search API
+  (`import_postings` management command, upserts on source+external_id)
 
 ## Data Flows (High level)
 
