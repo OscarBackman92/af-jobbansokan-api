@@ -1,4 +1,5 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 
 from .models import (
     AuditLog,
@@ -11,27 +12,27 @@ from .models import (
 
 
 @admin.register(JobApplication)
-class JobApplicationAdmin(admin.ModelAdmin):
+class JobApplicationAdmin(ModelAdmin):
     list_display = ("id", "owner", "status", "applied_at", "created_at")
     list_filter = ("status", "applied_at", "created_at")
     search_fields = ("posting__title", "owner__username", "owner__email")
 
 
 @admin.register(Organization)
-class OrganizationAdmin(admin.ModelAdmin):
+class OrganizationAdmin(ModelAdmin):
     list_display = ("id", "name", "org_number", "created_at")
     search_fields = ("name", "org_number")
 
 
 @admin.register(EmployerProfile)
-class EmployerProfileAdmin(admin.ModelAdmin):
+class EmployerProfileAdmin(ModelAdmin):
     list_display = ("id", "user", "organization", "role", "created_at")
     list_filter = ("role",)
     search_fields = ("user__username", "user__email", "organization__name")
 
 
 @admin.register(JobPosting)
-class JobPostingAdmin(admin.ModelAdmin):
+class JobPostingAdmin(ModelAdmin):
     list_display = (
         "id",
         "organization",
@@ -47,7 +48,7 @@ class JobPostingAdmin(admin.ModelAdmin):
 
 
 @admin.register(PartnerClient)
-class PartnerClientAdmin(admin.ModelAdmin):
+class PartnerClientAdmin(ModelAdmin):
     """Partners are created via the create_partner management command so
     the API key can be generated and shown once; admin can only
     deactivate them.
@@ -63,7 +64,7 @@ class PartnerClientAdmin(admin.ModelAdmin):
 
 
 @admin.register(AuditLog)
-class AuditLogAdmin(admin.ModelAdmin):
+class AuditLogAdmin(ModelAdmin):
     """Read-only: the audit trail must not be editable, even by admins."""
 
     list_display = ("id", "created_at", "action", "actor", "target_type", "target_id")
