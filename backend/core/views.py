@@ -14,14 +14,22 @@ from rest_framework.response import Response
 
 from .audit import log_event
 from .identity import normalize_personal_number, pseudonymize_personal_number
-from .models import ApplicantProfile, AuditLog, JobApplication, JobPosting
+from .models import (
+    ApplicantProfile,
+    AuditLog,
+    EmployerProfile,
+    JobApplication,
+    JobPosting,
+)
 from .partner_auth import IsPartner, PartnerAPIKeyAuthentication
 from .permissions import IsEmployer, IsEmployerAdminOrReadOnly
 from .serializers import (
+    EmployerApplicationStatusSerializer,
     EmployerJobApplicationSerializer,
     JobApplicationSerializer,
     JobPostingDetailSerializer,
     JobPostingSerializer,
+    OrganizationSerializer,
     PartnerApplicationEventSerializer,
     ProfileSerializer,
 )
@@ -194,6 +202,52 @@ class EmployerApplicationsView(generics.ListAPIView):
             application_count=len(disclosed),
         )
         return response
+
+
+class EmployerApplicationStatusView(generics.UpdateAPIView):
+    """Employer-side status update (applied/interview/offer/rejected).
+
+    Any employer in the posting's organization may update; every change
+    is audit logged with the old and new value. An employer-set status
+    also acts as third-party corroboration of the application event.
+    """
+
+    serializer_class = EmployerApplicationStatusSerializer
+    permission_classes = [IsAuthenticated, IsEmployer]
+    http_method_names = ["patch", "options"]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # schema generation
+            return JobApplication.objects.none()
+        org = self.request.user.employer_profile.organization
+        return JobApplication.objects.filter(posting__organization=org)
+
+    def perform_update(self, serializer):
+        previous = serializer.instance.status
+        application = serializer.save()
+        if previous != application.status:
+            log_event(
+                self.request.user,
+                AuditLog.ACTION_STATUS_CHANGED,
+                target=application,
+                from_status=previous,
+                to_status=application.status,
+            )
+
+
+class OrganizationCreateView(generics.CreateAPIView):
+    """Employer onboarding: create an organization and become its admin."""
+
+    serializer_class = OrganizationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        if hasattr(self.request.user, "employer_profile"):
+            raise ValidationError({"detail": "You already belong to an organization."})
+        organization = serializer.save()
+        EmployerProfile.objects.create(
+            user=self.request.user, organization=organization, role="admin"
+        )
 
 
 @extend_schema(

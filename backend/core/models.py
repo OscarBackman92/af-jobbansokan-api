@@ -89,6 +89,7 @@ class AuditLog(models.Model):
     ACTION_PARTNER_DISCLOSED = "applications.disclosed_partner"
     ACTION_IDENTITY_VERIFIED = "identity.verified"
     ACTION_ACCOUNT_DELETED = "account.deleted"
+    ACTION_STATUS_CHANGED = "application.status_changed"
 
     ACTION_CHOICES = [
         (ACTION_APPLICATION_CREATED, "Application created"),
@@ -97,6 +98,7 @@ class AuditLog(models.Model):
         (ACTION_PARTNER_DISCLOSED, "Applications disclosed to partner"),
         (ACTION_IDENTITY_VERIFIED, "Identity verified"),
         (ACTION_ACCOUNT_DELETED, "Account deleted"),
+        (ACTION_STATUS_CHANGED, "Application status changed"),
     ]
 
     actor = models.ForeignKey(

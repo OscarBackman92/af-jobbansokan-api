@@ -2,20 +2,55 @@ import { useCallback, useEffect, useState } from "react";
 
 import { request } from "../api.js";
 
+const STATUSES = ["applied", "interview", "offer", "rejected"];
+
 export default function EmployerPanel() {
   const [token, setToken] = useState(null);
+  const [me, setMe] = useState(null);
 
-  if (!token) return <EmployerLogin onLogin={setToken} />;
+  const refreshMe = useCallback(
+    async (accessToken) => {
+      setMe(await request("/api/v1/me/", { token: accessToken ?? token }));
+    },
+    [token]
+  );
+
+  if (!token) {
+    return (
+      <EmployerLogin
+        onLogin={async (access) => {
+          setToken(access);
+          await refreshMe(access);
+        }}
+      />
+    );
+  }
+  if (!me) return <div className="card">Laddar…</div>;
+
   return (
     <div className="stack">
       <div className="card row-between">
-        <div>Inloggad som arbetsgivare</div>
-        <button className="secondary" onClick={() => setToken(null)}>
+        <div>
+          Inloggad som <strong>{me.username}</strong>
+          {me.employer && (
+            <span className="muted">
+              {" "}
+              — {me.employer.organization} ({me.employer.role})
+            </span>
+          )}
+        </div>
+        <button className="secondary" onClick={() => { setToken(null); setMe(null); }}>
           Logga ut
         </button>
       </div>
-      <CreatePosting token={token} />
-      <OrgApplications token={token} />
+      {me.employer ? (
+        <>
+          <CreatePosting token={token} />
+          <OrgApplications token={token} />
+        </>
+      ) : (
+        <CreateOrganization token={token} onCreated={() => refreshMe()} />
+      )}
     </div>
   );
 }
@@ -43,7 +78,8 @@ function EmployerLogin({ onLogin }) {
     <form className="card narrow" onSubmit={login}>
       <h2>Logga in som arbetsgivare</h2>
       <p className="muted">
-        Demo: <code>acme_admin</code> / <code>Testpass123!</code>
+        Demo: <code>acme_admin</code> / <code>Testpass123!</code>. Saknar du
+        organisation kan du skapa en efter inloggning.
       </p>
       <label>
         Användarnamn
@@ -60,6 +96,47 @@ function EmployerLogin({ onLogin }) {
       </label>
       {error && <p className="error">{error}</p>}
       <button>Logga in</button>
+    </form>
+  );
+}
+
+function CreateOrganization({ token, onCreated }) {
+  const [name, setName] = useState("");
+  const [orgNumber, setOrgNumber] = useState("");
+  const [error, setError] = useState(null);
+
+  async function create(event) {
+    event.preventDefault();
+    setError(null);
+    try {
+      await request("/api/v1/employer/organizations/", {
+        method: "POST",
+        token,
+        body: { name, org_number: orgNumber },
+      });
+      onCreated();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <form className="card narrow" onSubmit={create}>
+      <h2>Skapa organisation</h2>
+      <p className="muted">
+        Du har ingen arbetsgivarroll ännu. Registrera din organisation så
+        blir du dess administratör.
+      </p>
+      <label>
+        Organisationsnamn
+        <input value={name} onChange={(e) => setName(e.target.value)} required />
+      </label>
+      <label>
+        Organisationsnummer (frivilligt)
+        <input value={orgNumber} onChange={(e) => setOrgNumber(e.target.value)} />
+      </label>
+      {error && <p className="error">{error}</p>}
+      <button>Registrera</button>
     </form>
   );
 }
@@ -129,11 +206,27 @@ function OrgApplications({ token }) {
     reload();
   }, [reload]);
 
+  async function setStatus(applicationId, status) {
+    setError(null);
+    try {
+      await request(`/api/v1/employer/applications/${applicationId}/`, {
+        method: "PATCH",
+        token,
+        body: { status },
+      });
+      reload();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
     <section className="card">
       <h2>Ansökningar till min organisation</h2>
       <p className="muted">
-        Varje hämtning loggas i auditloggen som en utlämning.
+        Varje hämtning loggas som en utlämning. Statusändringar loggas
+        också — en arbetsgivarsatt status fungerar som tredjeparts-
+        bekräftelse av ansökan.
       </p>
       {error && <p className="error">{error}</p>}
       {page && page.results.length === 0 && (
@@ -155,7 +248,18 @@ function OrgApplications({ token }) {
                 <td>{a.owner.username}</td>
                 <td>{a.posting.title}</td>
                 <td>{a.applied_at}</td>
-                <td><span className={`badge ${a.status}`}>{a.status}</span></td>
+                <td>
+                  <select
+                    value={a.status}
+                    onChange={(e) => setStatus(a.id, e.target.value)}
+                  >
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </td>
               </tr>
             ))}
           </tbody>
