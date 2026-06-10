@@ -154,6 +154,15 @@ class EmployerPostingSerializer(serializers.ModelSerializer):
         ]
 
 
+class EmployerApplicationStatusSerializer(serializers.ModelSerializer):
+    """Employer-side status update — the only mutable field."""
+
+    class Meta:
+        model = JobApplication
+        fields = ["id", "status"]
+        read_only_fields = ["id"]
+
+
 class EmployerJobApplicationSerializer(serializers.ModelSerializer):
     owner = EmployerApplicantSerializer(read_only=True)
     posting = EmployerPostingSerializer(read_only=True)

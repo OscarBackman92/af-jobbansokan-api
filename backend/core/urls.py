@@ -3,9 +3,11 @@ from rest_framework.routers import DefaultRouter
 
 from .bankid import bankid_collect, bankid_initiate
 from .views import (
+    EmployerApplicationStatusView,
     EmployerApplicationsView,
     JobApplicationViewSet,
     JobPostingViewSet,
+    OrganizationCreateView,
     ProfileView,
     partner_application_events,
 )
@@ -21,6 +23,16 @@ urlpatterns = [
         "employer/applications/",
         EmployerApplicationsView.as_view(),
         name="employer-applications",
+    ),
+    path(
+        "employer/applications/<int:pk>/",
+        EmployerApplicationStatusView.as_view(),
+        name="employer-application-status",
+    ),
+    path(
+        "employer/organizations/",
+        OrganizationCreateView.as_view(),
+        name="employer-organizations",
     ),
     path(
         "partner/application-events/",

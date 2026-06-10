@@ -131,6 +131,14 @@ input:focus {
   border-color: var(--blue);
 }
 
+select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
 button {
   background: var(--blue);
   color: #fff;
