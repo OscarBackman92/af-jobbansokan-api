@@ -170,6 +170,13 @@ CSRF_TRUSTED_ORIGINS = [
     if origin
 ]
 
+# Render injects the public hostname; trust it automatically so the
+# service works even if the subdomain gets a suffix.
+RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if RENDER_HOST:
+    ALLOWED_HOSTS.append(RENDER_HOST)
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOST}")
+
 # Default primary key field type
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
