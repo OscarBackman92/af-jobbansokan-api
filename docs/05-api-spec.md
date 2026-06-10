@@ -13,7 +13,10 @@
 ### Public
 
 - GET /health/
-- GET /api/v1/postings/ and GET /api/v1/postings/{id}/ — public read
+- GET /api/v1/postings/ and GET /api/v1/postings/{id}/ — public read;
+  `?search=` (free text over title/company/location/description, terms
+  ANDed), `?location=`, `?source=`. Authenticated users with CV skills
+  get a `match` object per posting (matched skills, count, total)
 
 ### Auth (dj-rest-auth + JWT)
 
@@ -48,6 +51,7 @@
 - POST /api/v1/me/resume/parse/ — upload a CV (PDF/DOCX/TXT, max 2 MB);
   returns a structured draft for review. The file is parsed in memory
   and never stored
+- GET/POST/DELETE /api/v1/favorites/ — saved postings
 - Application events are immutable: PUT/PATCH are not allowed (405)
 
 ### Employer

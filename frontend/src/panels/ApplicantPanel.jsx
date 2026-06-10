@@ -582,10 +582,39 @@ function Postings({ token }) {
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
+  const [favorites, setFavorites] = useState({});
 
   useEffect(() => {
-    request(url).then(setPage).catch((err) => setMessage(err.message));
-  }, [url]);
+    request(url, { token }).then(setPage).catch((err) => setMessage(err.message));
+  }, [url, token]);
+
+  const loadFavorites = useCallback(() => {
+    request("/api/v1/favorites/", { token }).then((data) => {
+      const map = {};
+      for (const f of data.results) map[f.posting] = f.id;
+      setFavorites(map);
+    });
+  }, [token]);
+
+  useEffect(() => {
+    loadFavorites();
+  }, [loadFavorites]);
+
+  async function toggleFavorite(postingId) {
+    if (favorites[postingId]) {
+      await request(`/api/v1/favorites/${favorites[postingId]}/`, {
+        method: "DELETE",
+        token,
+      });
+    } else {
+      await request("/api/v1/favorites/", {
+        method: "POST",
+        token,
+        body: { posting: postingId },
+      });
+    }
+    loadFavorites();
+  }
 
   function applyFilters(event) {
     event.preventDefault();
@@ -637,10 +666,11 @@ function Postings({ token }) {
       <table>
         <thead>
           <tr>
+            <th />
             <th>Titel</th>
             <th>Företag</th>
             <th>Ort</th>
-            <th>Källa</th>
+            <th>Matchning</th>
             <th />
           </tr>
         </thead>
@@ -648,13 +678,33 @@ function Postings({ token }) {
           {page.results.map((p) => (
             <tr key={p.id}>
               <td>
+                <button
+                  className="star"
+                  title={favorites[p.id] ? "Ta bort favorit" : "Spara som favorit"}
+                  onClick={() => toggleFavorite(p.id)}
+                >
+                  {favorites[p.id] ? "★" : "☆"}
+                </button>
+              </td>
+              <td>
                 <button className="linklike" onClick={() => setSelectedId(p.id)}>
                   {p.title}
                 </button>
               </td>
               <td>{p.company_name}</td>
               <td>{p.location || "—"}</td>
-              <td><span className="badge neutral">{p.source}</span></td>
+              <td>
+                {p.match ? (
+                  <span
+                    className={`badge ${p.match.count > 0 ? "applied" : "neutral"}`}
+                    title={p.match.matched.join(", ")}
+                  >
+                    {p.match.count}/{p.match.total} kompetenser
+                  </span>
+                ) : (
+                  <span className="muted">—</span>
+                )}
+              </td>
               <td>
                 <button className="small" onClick={() => apply(p.id)}>
                   Sök jobbet
@@ -683,6 +733,7 @@ function Postings({ token }) {
       {selectedId && (
         <PostingDetail
           id={selectedId}
+          token={token}
           onApply={() => apply(selectedId)}
           onClose={() => setSelectedId(null)}
         />
@@ -691,15 +742,15 @@ function Postings({ token }) {
   );
 }
 
-function PostingDetail({ id, onApply, onClose }) {
+function PostingDetail({ id, token, onApply, onClose }) {
   const [posting, setPosting] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    request(`/api/v1/postings/${id}/`)
+    request(`/api/v1/postings/${id}/`, { token })
       .then(setPosting)
       .catch((err) => setError(err.message));
-  }, [id]);
+  }, [id, token]);
 
   return (
     <div className="overlay" onClick={onClose}>
@@ -719,6 +770,21 @@ function PostingDetail({ id, onApply, onClose }) {
               {posting.location && ` — ${posting.location}`}
               {posting.published_at && ` · publicerad ${posting.published_at}`}
             </p>
+            {posting.match && (
+              <p>
+                <span
+                  className={`badge ${posting.match.count > 0 ? "applied" : "neutral"}`}
+                >
+                  Matchar {posting.match.count}/{posting.match.total} av dina
+                  kompetenser
+                </span>{" "}
+                {posting.match.matched.map((skill) => (
+                  <span className="badge neutral" key={skill}>
+                    {skill}
+                  </span>
+                ))}
+              </p>
+            )}
             <div className="description">
               {posting.description || "Ingen beskrivning tillgänglig för den här annonsen."}
             </div>

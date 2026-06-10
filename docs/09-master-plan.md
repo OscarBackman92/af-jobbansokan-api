@@ -47,14 +47,16 @@ follow the candidates.
 
 The product people return to daily.
 
-- Full-text search over postings (Postgres FTS) with filters: location,
-  source, date, employer
-- Skill matching: CV skills vs. posting text — "your profile matches
-  7/10 requirements", sortable match score (rule-based first, no AI
-  needed to be useful)
-- Saved searches and favorites
-- Email notifications: new matching postings, status changes
-- Larger, scheduled JobTech imports (all categories, daily refresh)
+- [x] Free text search over postings with location/source filters
+  (icontains; Postgres FTS is the upgrade path at volume)
+- [x] Skill matching: CV skills vs. posting text — match per posting for
+  logged-in users (rule-based, fully explainable)
+- [x] Favorites (saved postings)
+- [ ] Saved searches
+- [ ] Email notifications: new matching postings, status changes
+  (needs a transactional email provider + background jobs — next
+  infrastructure decision)
+- [ ] Larger, scheduled JobTech imports (all categories, daily refresh)
 
 ### Phase 2 — Communication & accountability
 

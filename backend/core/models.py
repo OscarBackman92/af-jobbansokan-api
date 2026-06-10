@@ -76,6 +76,33 @@ class EmployerProfile(models.Model):
         return f"{self.user.get_username()} @ {self.organization.name}"
 
 
+class Favorite(models.Model):
+    """A posting saved by a user."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favorites",
+    )
+    posting = models.ForeignKey(
+        "JobPosting",
+        on_delete=models.CASCADE,
+        related_name="favorited_by",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "posting"],
+                name="uniq_favorite_user_posting",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user} ★ {self.posting_id}"
+
+
 class AuditLog(models.Model):
     """Append-only audit trail for creation and disclosure of application data.
 
