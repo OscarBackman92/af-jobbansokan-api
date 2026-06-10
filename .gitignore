@@ -16,6 +16,7 @@ backend/staticfiles/
 node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/shots/
 
 # IDE
 .vscode/
