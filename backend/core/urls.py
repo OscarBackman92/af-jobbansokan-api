@@ -6,6 +6,7 @@ from .views import (
     JobApplicationViewSet,
     JobPostingViewSet,
     me,
+    partner_application_events,
 )
 
 router = DefaultRouter()
@@ -19,5 +20,10 @@ urlpatterns = [
         "employer/applications/",
         EmployerApplicationsView.as_view(),
         name="employer-applications",
+    ),
+    path(
+        "partner/application-events/",
+        partner_application_events,
+        name="partner-application-events",
     ),
 ]

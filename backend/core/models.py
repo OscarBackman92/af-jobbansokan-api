@@ -86,11 +86,13 @@ class AuditLog(models.Model):
     ACTION_APPLICATION_CREATED = "application.created"
     ACTION_APPLICATION_DELETED = "application.deleted"
     ACTION_APPLICATIONS_DISCLOSED = "applications.disclosed"
+    ACTION_PARTNER_DISCLOSED = "applications.disclosed_partner"
 
     ACTION_CHOICES = [
         (ACTION_APPLICATION_CREATED, "Application created"),
         (ACTION_APPLICATION_DELETED, "Application deleted"),
         (ACTION_APPLICATIONS_DISCLOSED, "Applications disclosed"),
+        (ACTION_PARTNER_DISCLOSED, "Applications disclosed to partner"),
     ]
 
     actor = models.ForeignKey(
@@ -110,6 +112,22 @@ class AuditLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.action} by {self.actor} at {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class PartnerClient(models.Model):
+    """An authorized partner system (e.g. an A-kassa).
+
+    Authenticates with an API key; only the SHA-256 hash of the key is
+    stored, so the key is shown once at creation and cannot be recovered.
+    """
+
+    name = models.CharField(max_length=255, unique=True)
+    key_hash = models.CharField(max_length=64, unique=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return str(self.name)
 
 
 class JobPosting(models.Model):

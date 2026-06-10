@@ -15,7 +15,7 @@ Provide a verifiable, auditable, privacy-preserving way to register job applicat
 - Applicant can list/filter own events — done (date range + status filters)
 - Audit logging for creation and disclosure — done (append-only AuditLog)
 - Employer job postings and applications overview (role-based) — done
-- Partner API for A-kassa to retrieve events per person and time period (least privilege)
+- Partner API for A-kassa to retrieve events per person and time period (least privilege) — done (API key auth)
 - Export for applicant (CSV/XLSX) - later milestone
 
 ## Out of Scope (For now)

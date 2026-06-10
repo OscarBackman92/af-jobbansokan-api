@@ -6,6 +6,7 @@ from .models import (
     JobApplication,
     JobPosting,
     Organization,
+    PartnerClient,
 )
 
 
@@ -43,6 +44,22 @@ class JobPostingAdmin(admin.ModelAdmin):
     )
     list_filter = ("source", "published_at", "created_at")
     search_fields = ("title", "company_name", "external_id", "organization__name")
+
+
+@admin.register(PartnerClient)
+class PartnerClientAdmin(admin.ModelAdmin):
+    """Partners are created via the create_partner management command so
+    the API key can be generated and shown once; admin can only
+    deactivate them.
+    """
+
+    list_display = ("id", "name", "is_active", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("name",)
+    readonly_fields = ("name", "key_hash", "created_at")
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(AuditLog)
