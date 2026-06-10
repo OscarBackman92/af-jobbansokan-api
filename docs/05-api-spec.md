@@ -40,6 +40,9 @@
   filterable on applied_at date range and status
 - GET /api/v1/applications/{id}/
 - DELETE /api/v1/applications/{id}/ — audit logged
+- GET /api/v1/applications/export/ — own events as CSV (filters apply)
+- GET /api/v1/me/disclosures/ — transparency: partner disclosures of the
+  user's own data (matched via the pseudonymized identity)
 - Application events are immutable: PUT/PATCH are not allowed (405)
 
 ### Employer

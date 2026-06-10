@@ -28,8 +28,61 @@ export default function ApplicantPanel() {
         }}
       />
       <MyApplications token={token} />
+      <DisclosuresCard token={token} />
       <Postings token={token} />
     </div>
+  );
+}
+
+function DisclosuresCard({ token }) {
+  const [page, setPage] = useState(null);
+
+  const reload = useCallback(() => {
+    request("/api/v1/me/disclosures/", { token }).then(setPage).catch(() => {});
+  }, [token]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  return (
+    <section className="card">
+      <h2>Utlämningar av mina uppgifter</h2>
+      <p className="muted">
+        Insyn: varje gång en A-kassa hämtar dina ansökningshändelser loggas
+        det — här ser du av vem och för vilken period.
+      </p>
+      {page && page.count === 0 && (
+        <p className="muted">Inga utlämningar har skett.</p>
+      )}
+      {page && page.count > 0 && (
+        <table>
+          <thead>
+            <tr>
+              <th>När</th>
+              <th>Mottagare</th>
+              <th>Period</th>
+              <th>Antal händelser</th>
+            </tr>
+          </thead>
+          <tbody>
+            {page.results.map((d) => (
+              <tr key={d.id}>
+                <td>{new Date(d.created_at).toLocaleString("sv-SE")}</td>
+                <td>{d.partner_name}</td>
+                <td>
+                  {d.date_from || "…"} – {d.date_to || "…"}
+                </td>
+                <td>{d.application_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <button className="secondary small" onClick={reload}>
+        Uppdatera
+      </button>
+    </section>
   );
 }
 
@@ -215,6 +268,19 @@ function MyApplications({ token }) {
     reload();
   }
 
+  async function exportCsv() {
+    const response = await fetch("/api/v1/applications/export/", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ansokningar.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <section className="card">
       <h2>Mina ansökningshändelser</h2>
@@ -226,6 +292,7 @@ function MyApplications({ token }) {
       {applications.length === 0 ? (
         <p className="muted">Inga ansökningar ännu.</p>
       ) : (
+        <>
         <table>
           <thead>
             <tr>
@@ -252,6 +319,10 @@ function MyApplications({ token }) {
             ))}
           </tbody>
         </table>
+        <button className="secondary small" onClick={exportCsv}>
+          Exportera CSV
+        </button>
+        </>
       )}
     </section>
   );

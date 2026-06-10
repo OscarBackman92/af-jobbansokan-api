@@ -97,6 +97,8 @@ Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
 | `/api/v1/auth/bankid/initiate/` | POST | public | Mock BankID: start order (`BANKID_MOCK=1`) |
 | `/api/v1/auth/bankid/collect/` | POST | public | Mock BankID: complete order, returns JWT |
 | `/api/v1/me/` | GET, PATCH, DELETE | authenticated | Profile incl. identity status; DELETE = GDPR erasure |
+| `/api/v1/me/disclosures/` | GET | applicant | Transparency: who retrieved my data, when, what period |
+| `/api/v1/applications/export/` | GET | applicant | Own events as CSV download |
 | `/api/v1/applications/` | GET, POST | applicant | Own events; filter `?from=&to=&status=` |
 | `/api/v1/applications/{id}/` | GET, DELETE | applicant | **No PUT/PATCH — events are immutable (405)** |
 | `/api/v1/postings/` | GET | public | Paginated list |

@@ -7,6 +7,7 @@ from .views import (
     EmployerApplicationsView,
     JobApplicationViewSet,
     JobPostingViewSet,
+    MyDisclosuresView,
     OrganizationCreateView,
     ProfileView,
     partner_application_events,
@@ -18,6 +19,7 @@ router.register(r"postings", JobPostingViewSet, basename="postings")
 
 urlpatterns = [
     path("me/", ProfileView.as_view(), name="me"),
+    path("me/disclosures/", MyDisclosuresView.as_view(), name="my-disclosures"),
     path("", include(router.urls)),
     path(
         "employer/applications/",

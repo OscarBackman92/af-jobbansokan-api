@@ -5,7 +5,7 @@ from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from .models import JobApplication, JobPosting, Organization
+from .models import AuditLog, JobApplication, JobPosting, Organization
 
 User = get_user_model()
 
@@ -117,6 +117,42 @@ class ProfileSerializer(serializers.ModelSerializer):
         if profile is None:
             return None
         return {"organization": profile.organization.name, "role": profile.role}
+
+
+class DisclosureSerializer(serializers.ModelSerializer):
+    """A partner disclosure of the user's own data, for transparency."""
+
+    partner_name = serializers.SerializerMethodField()
+    date_from = serializers.SerializerMethodField()
+    date_to = serializers.SerializerMethodField()
+    application_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AuditLog
+        fields = [
+            "id",
+            "created_at",
+            "partner_name",
+            "date_from",
+            "date_to",
+            "application_count",
+        ]
+
+    @extend_schema_field(serializers.CharField())
+    def get_partner_name(self, obj):
+        return obj.metadata.get("partner_name", "")
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_date_from(self, obj):
+        return obj.metadata.get("date_from")
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_date_to(self, obj):
+        return obj.metadata.get("date_to")
+
+    @extend_schema_field(serializers.IntegerField())
+    def get_application_count(self, obj):
+        return obj.metadata.get("application_count", 0)
 
 
 class PartnerApplicationEventSerializer(serializers.ModelSerializer):
