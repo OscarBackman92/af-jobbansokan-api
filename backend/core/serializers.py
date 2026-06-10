@@ -7,6 +7,7 @@ from .models import JobApplication, JobPosting, Organization
 
 User = get_user_model()
 
+
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
@@ -16,6 +17,9 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
 class JobPostingSerializer(serializers.ModelSerializer):
     organization = OrganizationSerializer(read_only=True)
+    # Explicit default so the UniqueConstraint on (source, external_id)
+    # does not make this field required for manual postings.
+    external_id = serializers.CharField(required=False, allow_blank=True, default="")
 
     class Meta:
         model = JobPosting
@@ -44,7 +48,6 @@ class JobApplicationSerializer(serializers.ModelSerializer):
         model = JobApplication
         fields = ["id", "posting", "applied_at", "status", "created_at"]
         read_only_fields = ["id", "status", "created_at"]
-
 
 
 class EmployerApplicantSerializer(serializers.ModelSerializer):

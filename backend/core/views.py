@@ -1,12 +1,20 @@
-from drf_spectacular.utils import extend_schema
-from rest_framework import viewsets
+from django.utils.dateparse import parse_date
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
+from rest_framework import mixins, viewsets
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import JobApplication, JobPosting
-from .permissions import IsEmployerAdminOrReadOnly, IsEmployer
-from .serializers import JobApplicationSerializer, JobPostingSerializer, EmployerJobApplicationSerializer
+from .audit import log_event
+from .models import AuditLog, JobApplication, JobPosting
+from .permissions import IsEmployer, IsEmployerAdminOrReadOnly
+from .serializers import (
+    EmployerJobApplicationSerializer,
+    JobApplicationSerializer,
+    JobPostingSerializer,
+)
 
 
 @extend_schema(
@@ -39,15 +47,84 @@ def me(request):
     return Response({"id": user.id, "username": user.username, "email": user.email})
 
 
-class JobApplicationViewSet(viewsets.ModelViewSet):
+def _date_param(params, name):
+    raw = params.get(name)
+    if not raw:
+        return None
+    value = parse_date(raw)
+    if value is None:
+        raise ValidationError({name: "Invalid date, expected YYYY-MM-DD."})
+    return value
+
+
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "from", OpenApiTypes.DATE, description="Earliest applied_at date."
+            ),
+            OpenApiParameter(
+                "to", OpenApiTypes.DATE, description="Latest applied_at date."
+            ),
+            OpenApiParameter(
+                "status", OpenApiTypes.STR, description="Filter by status."
+            ),
+        ]
+    )
+)
+class JobApplicationViewSet(
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Applicant-facing job application events.
+
+    Events are evidence of job seeking and therefore immutable: they can be
+    created, listed and deleted, but never edited. Creation and deletion are
+    audit logged.
+    """
+
     serializer_class = JobApplicationSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return JobApplication.objects.filter(owner=self.request.user).order_by("-created_at")
+        if getattr(self, "swagger_fake_view", False):  # schema generation
+            return JobApplication.objects.none()
+        qs = JobApplication.objects.filter(owner=self.request.user).order_by(
+            "-created_at"
+        )
+        params = self.request.query_params
+        date_from = _date_param(params, "from")
+        date_to = _date_param(params, "to")
+        if date_from:
+            qs = qs.filter(applied_at__gte=date_from)
+        if date_to:
+            qs = qs.filter(applied_at__lte=date_to)
+        status = params.get("status")
+        if status:
+            qs = qs.filter(status=status)
+        return qs
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        application = serializer.save(owner=self.request.user)
+        log_event(
+            self.request.user,
+            AuditLog.ACTION_APPLICATION_CREATED,
+            target=application,
+            posting_id=application.posting_id,
+        )
+
+    def perform_destroy(self, instance):
+        log_event(
+            self.request.user,
+            AuditLog.ACTION_APPLICATION_DELETED,
+            target=instance,
+            posting_id=instance.posting_id,
+        )
+        instance.delete()
+
 
 class JobPostingViewSet(viewsets.ModelViewSet):
     serializer_class = JobPostingSerializer
@@ -64,15 +141,29 @@ class JobPostingViewSet(viewsets.ModelViewSet):
         serializer.save(organization=org)
 
 
+@extend_schema(responses={200: EmployerJobApplicationSerializer(many=True)})
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEmployer])
 def employer_applications(request):
+    """List applications to the employer's own organization.
+
+    Every call is audit logged as a disclosure of applicant data.
+    """
     org = request.user.employer_profile.organization
     qs = (
-        JobApplication.objects.select_related("posting", "posting__organization", "owner")
+        JobApplication.objects.select_related(
+            "posting", "posting__organization", "owner"
+        )
         .filter(posting__organization=org)
         .order_by("-created_at")
     )
 
-    serializer = EmployerJobApplicationSerializer(qs, many=True)
+    applications = list(qs)
+    log_event(
+        request.user,
+        AuditLog.ACTION_APPLICATIONS_DISCLOSED,
+        organization_id=org.id,
+        application_count=len(applications),
+    )
+    serializer = EmployerJobApplicationSerializer(applications, many=True)
     return Response(serializer.data)
