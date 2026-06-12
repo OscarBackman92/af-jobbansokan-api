@@ -1,97 +1,33 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin
+from unfold.admin import ModelAdmin, TabularInline
 
-from .models import (
-    ApplicantProfile,
-    AuditLog,
-    EmployerProfile,
-    JobApplication,
-    JobPosting,
-    Organization,
-    PartnerClient,
-)
+from .models import ApplicationEvent, JobApplication, JobPosting
+
+
+class ApplicationEventInline(TabularInline):
+    model = ApplicationEvent
+    extra = 0
 
 
 @admin.register(JobApplication)
 class JobApplicationAdmin(ModelAdmin):
-    list_display = ("id", "owner", "status", "applied_at", "created_at")
+    list_display = ("id", "owner", "company", "title", "status", "applied_at")
     list_filter = ("status", "applied_at", "created_at")
-    search_fields = ("posting__title", "owner__username", "owner__email")
-
-
-@admin.register(Organization)
-class OrganizationAdmin(ModelAdmin):
-    list_display = ("id", "name", "org_number", "created_at")
-    search_fields = ("name", "org_number")
-
-
-@admin.register(EmployerProfile)
-class EmployerProfileAdmin(ModelAdmin):
-    list_display = ("id", "user", "organization", "role", "created_at")
-    list_filter = ("role",)
-    search_fields = ("user__username", "user__email", "organization__name")
+    search_fields = ("company", "title", "owner__username", "owner__email")
+    inlines = [ApplicationEventInline]
 
 
 @admin.register(JobPosting)
 class JobPostingAdmin(ModelAdmin):
     list_display = (
         "id",
-        "organization",
         "title",
         "company_name",
+        "location",
         "source",
         "external_id",
         "published_at",
         "created_at",
     )
     list_filter = ("source", "published_at", "created_at")
-    search_fields = ("title", "company_name", "external_id", "organization__name")
-
-
-@admin.register(ApplicantProfile)
-class ApplicantProfileAdmin(ModelAdmin):
-    """Read-only: identities are created via the BankID flow only."""
-
-    list_display = ("id", "user", "method", "verified_at")
-    list_filter = ("method",)
-    search_fields = ("user__username",)
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-
-@admin.register(PartnerClient)
-class PartnerClientAdmin(ModelAdmin):
-    """Partners are created via the create_partner management command so
-    the API key can be generated and shown once; admin can only
-    deactivate them.
-    """
-
-    list_display = ("id", "name", "is_active", "created_at")
-    list_filter = ("is_active",)
-    search_fields = ("name",)
-    readonly_fields = ("name", "key_hash", "created_at")
-
-    def has_add_permission(self, request):
-        return False
-
-
-@admin.register(AuditLog)
-class AuditLogAdmin(ModelAdmin):
-    """Read-only: the audit trail must not be editable, even by admins."""
-
-    list_display = ("id", "created_at", "action", "actor", "target_type", "target_id")
-    list_filter = ("action", "created_at")
-    search_fields = ("actor__username", "target_type", "target_id")
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
+    search_fields = ("title", "company_name", "external_id")

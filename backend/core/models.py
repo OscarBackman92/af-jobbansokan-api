@@ -2,78 +2,136 @@ from django.conf import settings
 from django.db import models
 
 
+class JobPosting(models.Model):
+    """A job ad, imported from JobTech's open API or added by an admin."""
+
+    source = models.CharField(max_length=50, default="manual")
+    external_id = models.CharField(max_length=120, blank=True)
+    title = models.CharField(max_length=255)
+    company_name = models.CharField(max_length=255)
+    location = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    webpage_url = models.URLField(max_length=500, blank=True)
+    published_at = models.DateField(null=True, blank=True)
+    application_deadline = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["source", "external_id"],
+                name="uniq_jobposting_source_external_id",
+                condition=~models.Q(external_id=""),
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.title} ({self.company_name})"
+
+
 class JobApplication(models.Model):
+    """One row in the user's application tracker (the Excel row).
+
+    Company and title are stored as free text so any application can be
+    tracked, wherever the ad was found. When created from an imported
+    posting they are copied in as a snapshot, so the row stays intact
+    even if the posting disappears.
+    """
+
+    STATUS_WISHLIST = "wishlist"
+    STATUS_APPLIED = "applied"
+    STATUS_SCREENING = "screening"
+    STATUS_INTERVIEW = "interview"
+    STATUS_FORWARDED = "forwarded"
+    STATUS_OFFER = "offer"
+    STATUS_ACCEPTED = "accepted"
+    STATUS_REJECTED = "rejected"
+    STATUS_NO_RESPONSE = "no_response"
+    STATUS_WITHDRAWN = "withdrawn"
+
+    STATUS_CHOICES = [
+        (STATUS_WISHLIST, "Sparad"),
+        (STATUS_APPLIED, "Ansökt"),
+        (STATUS_SCREENING, "Telefonintervju"),
+        (STATUS_INTERVIEW, "Intervju"),
+        (STATUS_FORWARDED, "Skickad vidare"),
+        (STATUS_OFFER, "Erbjudande"),
+        (STATUS_ACCEPTED, "Accepterat"),
+        (STATUS_REJECTED, "Avslag"),
+        (STATUS_NO_RESPONSE, "Inget svar"),
+        (STATUS_WITHDRAWN, "Återkallad"),
+    ]
+
+    # Statuses shown as kanban columns; terminal ones collapse into an archive.
+    ACTIVE_STATUSES = [
+        STATUS_WISHLIST,
+        STATUS_APPLIED,
+        STATUS_SCREENING,
+        STATUS_INTERVIEW,
+        STATUS_FORWARDED,
+        STATUS_OFFER,
+    ]
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="job_applications",
     )
     posting = models.ForeignKey(
-        "JobPosting",
-        on_delete=models.CASCADE,
+        JobPosting,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="applications",
     )
-    applied_at = models.DateField()
+    company = models.CharField(max_length=255)
+    title = models.CharField(max_length=255)
+    location = models.CharField(max_length=255, blank=True)
+    ad_url = models.URLField(max_length=500, blank=True)
     status = models.CharField(
-        max_length=50,
-        choices=[
-            ("applied", "Applied"),
-            ("interview", "Interview"),
-            ("offer", "Offer"),
-            ("rejected", "Rejected"),
-        ],
-        default="applied",
+        max_length=50, choices=STATUS_CHOICES, default=STATUS_APPLIED
     )
+    applied_at = models.DateField(null=True, blank=True)
+    contact_name = models.CharField(max_length=255, blank=True)
+    contact_info = models.CharField(max_length=255, blank=True)
+    notes = models.TextField(blank=True)
+    next_action_at = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=["owner", "posting"],
                 name="uniq_jobapplication_owner_posting",
+                condition=models.Q(posting__isnull=False),
             )
         ]
 
     def __str__(self) -> str:
-        return f"{self.owner} -> {self.posting}"
+        return f"{self.title} @ {self.company} ({self.status})"
 
 
-class Organization(models.Model):
-    """An organization that can publish job postings."""
+class ApplicationEvent(models.Model):
+    """Timeline entry on an application: a note, a call, a status change."""
 
-    name = models.CharField(max_length=255)
-    org_number = models.CharField(max_length=32, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self) -> str:
-        return str(self.name)
-
-
-class EmployerProfile(models.Model):
-    """Profile connecting a user to an organization as an employer."""
-
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
+    application = models.ForeignKey(
+        JobApplication,
         on_delete=models.CASCADE,
-        related_name="employer_profile",
+        related_name="events",
     )
-    organization = models.ForeignKey(
-        Organization,
-        on_delete=models.CASCADE,
-        related_name="employers",
-    )
-    role = models.CharField(
-        max_length=32,
-        choices=[
-            ("admin", "Admin"),
-            ("member", "Member"),
-        ],
-        default="member",
+    occurred_at = models.DateField()
+    note = models.CharField(max_length=500)
+    status = models.CharField(
+        max_length=50, choices=JobApplication.STATUS_CHOICES, blank=True
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["-occurred_at", "-id"]
+
     def __str__(self) -> str:
-        return f"{self.user.get_username()} @ {self.organization.name}"
+        return f"{self.occurred_at}: {self.note[:40]}"
 
 
 class Favorite(models.Model):
@@ -85,7 +143,7 @@ class Favorite(models.Model):
         related_name="favorites",
     )
     posting = models.ForeignKey(
-        "JobPosting",
+        JobPosting,
         on_delete=models.CASCADE,
         related_name="favorited_by",
     )
@@ -101,71 +159,6 @@ class Favorite(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} ★ {self.posting_id}"
-
-
-class AuditLog(models.Model):
-    """Append-only audit trail for creation and disclosure of application data.
-
-    Rows must never be updated or deleted; corrections are recorded as new
-    entries. The actor is kept nullable so entries survive account deletion.
-    """
-
-    ACTION_APPLICATION_CREATED = "application.created"
-    ACTION_APPLICATION_DELETED = "application.deleted"
-    ACTION_APPLICATIONS_DISCLOSED = "applications.disclosed"
-    ACTION_PARTNER_DISCLOSED = "applications.disclosed_partner"
-    ACTION_IDENTITY_VERIFIED = "identity.verified"
-    ACTION_ACCOUNT_DELETED = "account.deleted"
-    ACTION_STATUS_CHANGED = "application.status_changed"
-
-    ACTION_CHOICES = [
-        (ACTION_APPLICATION_CREATED, "Application created"),
-        (ACTION_APPLICATION_DELETED, "Application deleted"),
-        (ACTION_APPLICATIONS_DISCLOSED, "Applications disclosed"),
-        (ACTION_PARTNER_DISCLOSED, "Applications disclosed to partner"),
-        (ACTION_IDENTITY_VERIFIED, "Identity verified"),
-        (ACTION_ACCOUNT_DELETED, "Account deleted"),
-        (ACTION_STATUS_CHANGED, "Application status changed"),
-    ]
-
-    actor = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="audit_entries",
-    )
-    action = models.CharField(max_length=64, choices=ACTION_CHOICES)
-    target_type = models.CharField(max_length=64, blank=True)
-    target_id = models.CharField(max_length=64, blank=True)
-    metadata = models.JSONField(default=dict, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self) -> str:
-        return f"{self.action} by {self.actor} at {self.created_at:%Y-%m-%d %H:%M}"
-
-
-class ApplicantProfile(models.Model):
-    """A verified, pseudonymized identity for an applicant.
-
-    Holds only a keyed hash of the personal identity number — the raw
-    number is never persisted. Partner lookups by personnummer resolve
-    through the same hash. See docs/08-identity-bankid.md.
-    """
-
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="applicant_profile",
-    )
-    personal_number_hash = models.CharField(max_length=64, unique=True)
-    method = models.CharField(max_length=32, default="bankid-mock")
-    verified_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self) -> str:
-        return f"{self.user.get_username()} ({self.method})"
 
 
 class Resume(models.Model):
@@ -189,50 +182,3 @@ class Resume(models.Model):
 
     def __str__(self) -> str:
         return f"CV: {self.user.get_username()}"
-
-
-class PartnerClient(models.Model):
-    """An authorized partner system (e.g. an A-kassa).
-
-    Authenticates with an API key; only the SHA-256 hash of the key is
-    stored, so the key is shown once at creation and cannot be recovered.
-    """
-
-    name = models.CharField(max_length=255, unique=True)
-    key_hash = models.CharField(max_length=64, unique=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self) -> str:
-        return str(self.name)
-
-
-class JobPosting(models.Model):
-    """A job advertisement published by an organization."""
-
-    organization = models.ForeignKey(
-        Organization,
-        on_delete=models.CASCADE,
-        related_name="job_postings",
-    )
-    source = models.CharField(max_length=50, default="manual")
-    external_id = models.CharField(max_length=120, blank=True)
-    title = models.CharField(max_length=255)
-    company_name = models.CharField(max_length=255)
-    location = models.CharField(max_length=255, blank=True)
-    description = models.TextField(blank=True)
-    webpage_url = models.URLField(max_length=500, blank=True)
-    published_at = models.DateField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["source", "external_id"],
-                name="uniq_jobposting_source_external_id",
-                condition=~models.Q(external_id=""),
-            )
-        ]
-
-    def __str__(self) -> str:
-        return f"{self.title} ({self.company_name})"

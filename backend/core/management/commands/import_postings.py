@@ -8,10 +8,9 @@ the command refreshes existing rows instead of duplicating them.
 import requests
 from django.core.management.base import BaseCommand, CommandError
 
-from core.models import JobPosting, Organization
+from core.models import JobPosting
 
 JOBTECH_SEARCH_URL = "https://jobsearch.api.jobtechdev.se/search"
-IMPORT_ORG_NAME = "Arbetsförmedlingen (import)"
 MAX_LIMIT = 100
 
 
@@ -20,6 +19,7 @@ def to_posting_fields(hit: dict) -> dict:
     employer = (hit.get("employer") or {}).get("name") or ""
     workplace = hit.get("workplace_address") or {}
     publication_date = (hit.get("publication_date") or "")[:10]
+    deadline = (hit.get("application_deadline") or "")[:10]
     description = (hit.get("description") or {}).get("text") or ""
     return {
         "title": hit.get("headline") or "",
@@ -28,6 +28,7 @@ def to_posting_fields(hit: dict) -> dict:
         "description": description,
         "webpage_url": (hit.get("webpage_url") or "")[:500],
         "published_at": publication_date or None,
+        "application_deadline": deadline or None,
     }
 
 
@@ -58,7 +59,6 @@ class Command(BaseCommand):
             raise CommandError(f"JobTech request failed: {exc}") from exc
 
         hits = response.json().get("hits", [])
-        organization, _ = Organization.objects.get_or_create(name=IMPORT_ORG_NAME)
 
         created = updated = skipped = 0
         for hit in hits:
@@ -70,7 +70,7 @@ class Command(BaseCommand):
             _, was_created = JobPosting.objects.update_or_create(
                 source="jobtech",
                 external_id=external_id,
-                defaults={"organization": organization, **fields},
+                defaults=fields,
             )
             if was_created:
                 created += 1

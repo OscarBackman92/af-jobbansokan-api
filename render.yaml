@@ -2,37 +2,29 @@
 # Deploy: push to GitHub -> render.com -> New + Blueprint -> select repo.
 services:
   - type: web
-    name: af-jobbansokan
+    name: ansokt
     runtime: docker
     plan: free
     healthCheckPath: /health/
     envVars:
       - key: DJANGO_SECRET_KEY
         generateValue: true
-      - key: PERSON_HASH_KEY
-        generateValue: true
       - key: DJANGO_DEBUG
         value: "0"
       # The public hostname is trusted automatically via
       # RENDER_EXTERNAL_HOSTNAME (set by Render) in settings.py.
-      - key: BANKID_MOCK
-        value: "1" # demo deployment; set to 0 when real BankID lands
       # Bootstrap on first boot (idempotent; free tier has no shell):
       - key: DJANGO_SUPERUSER_USERNAME
         value: admin
       - key: DJANGO_SUPERUSER_PASSWORD
         generateValue: true
-      - key: BOOTSTRAP_PARTNER_NAME
-        value: A-kassan Demo
-      - key: BOOTSTRAP_PARTNER_KEY
-        generateValue: true
       - key: BOOTSTRAP_IMPORT_QUERY
         value: utvecklare
       - key: DATABASE_URL
         fromDatabase:
-          name: af-jobbansokan-db
+          name: ansokt-db
           property: connectionString
 
 databases:
-  - name: af-jobbansokan-db
+  - name: ansokt-db
     plan: free

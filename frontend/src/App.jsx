@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 
-import ApplicantPanel from "./panels/ApplicantPanel.jsx";
-import EmployerPanel from "./panels/EmployerPanel.jsx";
-import PartnerPanel from "./panels/PartnerPanel.jsx";
+import { request } from "./api.js";
+import AuthHero from "./components/AuthHero.jsx";
+import BoardPanel from "./components/BoardPanel.jsx";
+import PostingsPanel from "./components/PostingsPanel.jsx";
+import ProfilePanel from "./components/ProfilePanel.jsx";
 
 const TABS = [
-  { id: "applicant", label: "Arbetssökande" },
-  { id: "employer", label: "Arbetsgivare" },
-  { id: "partner", label: "A-kassa (partner)" },
+  { id: "board", label: "Tavlan" },
+  { id: "postings", label: "Annonser" },
+  { id: "profile", label: "Profil & CV" },
 ];
 
 const THEMES = [
@@ -17,7 +19,9 @@ const THEMES = [
 ];
 
 export default function App() {
-  const [tab, setTab] = useState("applicant");
+  const [tab, setTab] = useState("board");
+  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [me, setMe] = useState(null);
   const [theme, setTheme] = useState(
     () => localStorage.getItem("theme") || "indigo"
   );
@@ -27,40 +31,64 @@ export default function App() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (!token) return;
+    request("/api/v1/me/", { token })
+      .then(setMe)
+      .catch(() => logout()); // expired/invalid token
+  }, [token]);
+
+  function login(access) {
+    localStorage.setItem("token", access);
+    setToken(access);
+  }
+
+  function logout() {
+    localStorage.removeItem("token");
+    setToken(null);
+    setMe(null);
+    setTab("board");
+  }
+
   return (
     <div className="app">
       <header className="header">
         <div className="brand">
           <div className="logo" aria-hidden="true">
-            AF
+            A
           </div>
           <div>
-            <h1>Jobbansökan</h1>
-            <p className="tagline">Verifierbar · Transparent · Din</p>
+            <h1>Ansökt</h1>
+            <p className="tagline">Koll på varje ansökan</p>
           </div>
         </div>
-        <nav className="tabs">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              className={tab === t.id ? "tab active" : "tab"}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
+        {token && (
+          <nav className="tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                className={tab === t.id ? "tab active" : "tab"}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        )}
       </header>
 
       <main className="main">
-        {tab === "applicant" && <ApplicantPanel />}
-        {tab === "employer" && <EmployerPanel />}
-        {tab === "partner" && <PartnerPanel />}
+        {!token && <AuthHero onLogin={login} />}
+        {token && tab === "board" && <BoardPanel token={token} />}
+        {token && tab === "postings" && <PostingsPanel token={token} />}
+        {token && tab === "profile" && (
+          <ProfilePanel token={token} me={me} onMeChange={setMe} onLogout={logout} />
+        )}
       </main>
 
       <footer className="footer">
-        Varje skapande, radering och utlämning loggas i en append-only
-        auditlogg. Personnummer lagras aldrig i klartext.
+        Din ansökningsdata är din: exportera den som CSV när du vill, eller
+        radera kontot och allt med det.
         <div className="theme-picker">
           {THEMES.map((t) => (
             <button

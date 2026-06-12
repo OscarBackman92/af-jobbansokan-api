@@ -2,7 +2,7 @@ from io import StringIO
 
 import pytest
 from core.management.commands import import_postings
-from core.models import JobPosting, Organization
+from core.models import JobPosting
 from django.core.management import call_command
 
 pytestmark = pytest.mark.django_db
@@ -14,6 +14,7 @@ SAMPLE_HITS = [
         "employer": {"name": "Acme AB"},
         "workplace_address": {"municipality": "Stockholm"},
         "publication_date": "2026-06-01T08:00:00",
+        "application_deadline": "2026-07-01T23:59:59",
         "description": {"text": "Vi söker en backendutvecklare."},
         "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/29000001",
     },
@@ -64,6 +65,7 @@ def test_to_posting_fields_maps_hit():
         "description": "Vi söker en backendutvecklare.",
         "webpage_url": ("https://arbetsformedlingen.se/platsbanken/annonser/29000001"),
         "published_at": "2026-06-01",
+        "application_deadline": "2026-07-01",
     }
 
 
@@ -76,18 +78,18 @@ def test_to_posting_fields_handles_missing_data():
         "description": "",
         "webpage_url": "",
         "published_at": None,
+        "application_deadline": None,
     }
 
 
-def test_import_creates_postings_under_import_org(mock_jobtech):
+def test_import_creates_postings(mock_jobtech):
     out = StringIO()
     call_command("import_postings", "--query", "python", stdout=out)
 
     assert "Imported 2 new, updated 0, skipped 1." in out.getvalue()
-    org = Organization.objects.get(name=import_postings.IMPORT_ORG_NAME)
     posting = JobPosting.objects.get(source="jobtech", external_id="29000001")
-    assert posting.organization == org
     assert posting.title == "Backend Developer"
+    assert str(posting.application_deadline) == "2026-07-01"
     assert mock_jobtech[0]["params"]["q"] == "python"
 
 

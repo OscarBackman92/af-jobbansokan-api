@@ -33,16 +33,16 @@ def test_resume_requires_auth(api_client):
     assert api_client.get(URL).status_code == 401
 
 
-def test_get_creates_empty_resume(api_client, applicant):
-    api_client.force_authenticate(applicant)
+def test_get_creates_empty_resume(api_client, user):
+    api_client.force_authenticate(user)
     body = api_client.get(URL).json()
     assert body["headline"] == ""
     assert body["skills"] == []
-    assert Resume.objects.filter(user=applicant).exists()
+    assert Resume.objects.filter(user=user).exists()
 
 
-def test_put_saves_structured_resume(api_client, applicant):
-    api_client.force_authenticate(applicant)
+def test_put_saves_structured_resume(api_client, user):
+    api_client.force_authenticate(user)
     payload = {
         "headline": "Backendutvecklare",
         "summary": "Fem års erfarenhet av Python.",
@@ -68,14 +68,14 @@ def test_put_saves_structured_resume(api_client, applicant):
     assert body["experience"][0]["company"] == "Acme AB"
 
 
-def test_invalid_skills_rejected(api_client, applicant):
-    api_client.force_authenticate(applicant)
+def test_invalid_skills_rejected(api_client, user):
+    api_client.force_authenticate(user)
     response = api_client.put(URL, {"skills": [{"namn": "Python"}]}, format="json")
     assert response.status_code == 400
 
 
-def test_unknown_experience_fields_rejected(api_client, applicant):
-    api_client.force_authenticate(applicant)
+def test_unknown_experience_fields_rejected(api_client, user):
+    api_client.force_authenticate(user)
     response = api_client.put(URL, {"experience": [{"lön": "mycket"}]}, format="json")
     assert response.status_code == 400
 
@@ -96,29 +96,29 @@ def test_parse_resume_text_sections():
     assert "anna@example.com" not in draft["summary"]
 
 
-def test_parse_txt_upload(api_client, applicant):
-    api_client.force_authenticate(applicant)
+def test_parse_txt_upload(api_client, user):
+    api_client.force_authenticate(user)
     upload = SimpleUploadedFile("cv.txt", CV_TEXT.encode(), "text/plain")
     response = api_client.post(PARSE_URL, {"file": upload}, format="multipart")
     assert response.status_code == 200
     assert response.json()["skills"] == ["Python", "Django", "PostgreSQL", "Docker"]
 
 
-def test_parse_docx_upload(api_client, applicant):
+def test_parse_docx_upload(api_client, user):
     document = docx.Document()
     for line in CV_TEXT.splitlines():
         document.add_paragraph(line)
     buffer = io.BytesIO()
     document.save(buffer)
 
-    api_client.force_authenticate(applicant)
+    api_client.force_authenticate(user)
     upload = SimpleUploadedFile("cv.docx", buffer.getvalue())
     response = api_client.post(PARSE_URL, {"file": upload}, format="multipart")
     assert response.status_code == 200
     assert response.json()["headline"] == "Anna Svensson"
 
 
-def test_parse_pdf_upload(api_client, applicant, monkeypatch):
+def test_parse_pdf_upload(api_client, user, monkeypatch):
     # Generating a text PDF needs heavier tooling; the pdf branch of
     # extract_text is exercised with the extraction itself stubbed.
     monkeypatch.setattr(
@@ -130,31 +130,31 @@ def test_parse_pdf_upload(api_client, applicant, monkeypatch):
             {"pages": [type("FakePage", (), {"extract_text": lambda self: CV_TEXT})()]},
         )(),
     )
-    api_client.force_authenticate(applicant)
+    api_client.force_authenticate(user)
     upload = SimpleUploadedFile("cv.pdf", b"%PDF-1.4 fake")
     response = api_client.post(PARSE_URL, {"file": upload}, format="multipart")
     assert response.status_code == 200
     assert response.json()["email"] == "anna@example.com"
 
 
-def test_parse_rejects_unsupported_type(api_client, applicant):
-    api_client.force_authenticate(applicant)
+def test_parse_rejects_unsupported_type(api_client, user):
+    api_client.force_authenticate(user)
     upload = SimpleUploadedFile("cv.exe", b"MZ")
     response = api_client.post(PARSE_URL, {"file": upload}, format="multipart")
     assert response.status_code == 400
 
 
-def test_parse_rejects_oversized_file(api_client, applicant, monkeypatch):
+def test_parse_rejects_oversized_file(api_client, user, monkeypatch):
     monkeypatch.setattr(resume_module, "MAX_UPLOAD_SIZE", 10)
     monkeypatch.setattr("core.views.MAX_UPLOAD_SIZE", 10)
-    api_client.force_authenticate(applicant)
+    api_client.force_authenticate(user)
     upload = SimpleUploadedFile("cv.txt", b"x" * 11)
     response = api_client.post(PARSE_URL, {"file": upload}, format="multipart")
     assert response.status_code == 400
 
 
-def test_corrupt_pdf_gives_400(api_client, applicant):
-    api_client.force_authenticate(applicant)
+def test_corrupt_pdf_gives_400(api_client, user):
+    api_client.force_authenticate(user)
     upload = SimpleUploadedFile("cv.pdf", b"not a pdf at all")
     response = api_client.post(PARSE_URL, {"file": upload}, format="multipart")
     assert response.status_code == 400

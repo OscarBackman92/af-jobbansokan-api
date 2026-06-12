@@ -669,6 +669,115 @@ tbody tr:last-child td {
   gap: 0.5rem;
 }
 
+/* ---------- Kanban board ---------- */
+
+.board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(200px, 1fr);
+  gap: 0.7rem;
+  margin-top: 1.1rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+}
+
+.kcol {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 120px;
+}
+
+.kcol-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.kcard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.75rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.kcard .muted {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.kcard select {
+  width: 100%;
+  margin-top: 0.2rem;
+}
+
+.badge.wishlist,
+.badge.withdrawn,
+.badge.no_response {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.badge.screening,
+.badge.forwarded {
+  background: var(--amber-bg);
+  color: var(--amber);
+}
+
+.badge.offer,
+.badge.accepted {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+/* ---------- Timeline ---------- */
+
+.timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0 0;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.timeline li {
+  padding-left: 1.1rem;
+  position: relative;
+}
+
+.timeline li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.timeline-form {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.timeline-form input {
+  margin-top: 0;
+}
+
 /* ---------- Modal ---------- */
 
 .overlay {

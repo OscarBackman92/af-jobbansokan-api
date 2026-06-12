@@ -1,113 +1,76 @@
-# af-jobbansokan-api
+# Ansökt
 
 ![CI](https://github.com/OscarBackman92/af-jobbansokan-api/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
 ![Django](https://img.shields.io/badge/django-5.2-092e20)
 ![DRF](https://img.shields.io/badge/DRF-3.16-a30000)
 
-A Django REST API for **verifiable job application events**. Job seekers
-register their applications, employers manage postings and review applicants —
-and authorized unemployment benefit funds (A-kassa) can retrieve reliable,
-audit-logged evidence of job seeking activity.
+**Koll på varje ansökan.** Job seekers build their own Excel sheets to
+track applications — statuses, recruiter calls, interviews, next steps.
+Ansökt is that sheet, done right: a kanban board over your applications,
+a timeline per application, search over Platsbanken's job ads, and CSV
+export because the data is yours.
 
-## Table of contents
-
-- [Background](#background)
-- [Features](#features)
-- [Architecture](#architecture)
-- [API overview](#api-overview)
-- [Getting started](#getting-started)
-- [Partner integration](#partner-integration)
-- [Testing and linting](#testing-and-linting)
-- [Project structure](#project-structure)
-- [Security and privacy](#security-and-privacy)
-- [Roadmap](#roadmap)
-- [Documentation](#documentation)
-
-## Background
-
-Unemployment benefit funds in Sweden (A-kassa) largely rely on
-self-attestation to verify that members are actively seeking work. Manual
-verification is costly and enables fraud. This project explores a
-verifiable, auditable and privacy-preserving alternative: job application
-events are registered once, become immutable, and can be disclosed to
-authorized parties — with every disclosure logged.
+> Pivoted 2026-06-12 from the earlier "verifiable job application events
+> for A-kassa" concept — see [docs/10-pivot-ansokt.md](docs/10-pivot-ansokt.md)
+> for the rationale and what changed.
 
 ## Features
 
-### For applicants
-
-- JWT authentication (registration + login via dj-rest-auth)
-- Register job application events — **immutable once created** (no editing,
-  ever; deletion is allowed but audit logged)
-- One application per posting; `applied_at` cannot be in the future
-- List own events with date range and status filters
-
-### For employers
-
-- Organizations with role-based employer profiles (admin/member)
-- Job postings: public read, write restricted to employer admins,
-  always scoped to the admin's own organization
-- Applications overview for the employer's own organization —
-  every view is audit logged as a disclosure
-
-### For A-kassa partners
-
-- API key authentication (keys stored as SHA-256 hashes, issued once)
-- Retrieve application events per person and time period
-- Least-privilege responses: no applicant identifiers, no status
-- Every call audit logged with partner, person, period and record count
-
-### Platform
-
-- Append-only audit log — read-only even for superusers
-- OpenAPI 3 schema with Swagger UI
-- Paginated list endpoints (20 per page)
-- Modern admin UI ([django-unfold](https://unfoldadmin.com/))
+- **The board** — kanban over active applications:
+  Sparad → Ansökt → Telefonintervju → Intervju → Skickad vidare →
+  Erbjudande, with closed ones (Accepterat/Avslag/Inget svar/Återkallad)
+  in an archive
+- **Timeline per application** — notes, calls and interviews; status
+  changes are logged automatically
+- **Free-text rows** — track applications from anywhere (LinkedIn,
+  e-mail, tips), not just imported ads
+- **Job ad search** — ads imported from Arbetsförmedlingen's open
+  [JobTech JobSearch API](https://jobsearch.api.jobtechdev.se) (free, no
+  API key), added to the board with one click
+- **CV matching** — structured CV (upload PDF/DOCX/TXT, parsed in
+  memory, never stored) matched against ad texts
+- **Favorites, filters, stats and CSV export**
+- JWT auth (registration + login via dj-rest-auth), OpenAPI 3 schema
+  with Swagger UI, modern admin ([django-unfold](https://unfoldadmin.com/))
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    A[Applicant] -- JWT --> API
-    E[Employer] -- JWT --> API
-    P[A-kassa partner] -- API key --> API
-    API[Django/DRF API] --> DB[(PostgreSQL/SQLite)]
-    API -- every create/delete/disclosure --> AL[(Append-only AuditLog)]
+    U[User] -- JWT --> API[Django/DRF API]
+    API --> DB[(PostgreSQL/SQLite)]
+    JT[JobTech JobSearch API] -- import_postings --> DB
 ```
 
 | Layer | Technology |
 | --- | --- |
 | API | Django 5.2 + Django REST Framework 3.16 |
-| Auth (users) | dj-rest-auth + allauth + SimpleJWT (15 min access, 7 d refresh, rotation + blacklist) |
-| Auth (partners) | Custom API key authentication (SHA-256 hashed keys) |
+| Auth | dj-rest-auth + allauth + SimpleJWT (15 min access, 7 d refresh, rotation + blacklist) |
 | Database | SQLite (dev default) / PostgreSQL 16 (docker compose) |
 | API docs | drf-spectacular (OpenAPI 3 + Swagger UI) |
+| Frontend | React 19 + Vite (in `frontend/`) |
 | Quality | pytest, ruff, black — enforced in GitHub Actions CI |
 
 ## API overview
 
 Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
 
-| Endpoint | Method | Who | Notes |
-| --- | --- | --- | --- |
-| `/health/` | GET | public | Health check (no `/api/v1` prefix) |
-| `/dj-rest-auth/registration/` | POST | public | Create account, returns JWT |
-| `/dj-rest-auth/login/` | POST | public | Returns access + refresh token |
-| `/api/v1/auth/bankid/initiate/` | POST | public | Mock BankID: start order (`BANKID_MOCK=1`) |
-| `/api/v1/auth/bankid/collect/` | POST | public | Mock BankID: complete order, returns JWT |
-| `/api/v1/me/` | GET, PATCH, DELETE | authenticated | Profile incl. identity status; DELETE = GDPR erasure |
-| `/api/v1/me/disclosures/` | GET | applicant | Transparency: who retrieved my data, when, what period |
-| `/api/v1/applications/export/` | GET | applicant | Own events as CSV download |
-| `/api/v1/me/resume/` | GET, PUT, DELETE | authenticated | Structured CV |
-| `/api/v1/me/resume/parse/` | POST | authenticated | Parse uploaded CV (PDF/DOCX/TXT) to a draft — file never stored |
-| `/api/v1/applications/` | GET, POST | applicant | Own events; filter `?from=&to=&status=` |
-| `/api/v1/applications/{id}/` | GET, DELETE | applicant | **No PUT/PATCH — events are immutable (405)** |
-| `/api/v1/postings/` | GET | public | Paginated; `?search=&location=&source=`; match score for users with CV |
-| `/api/v1/favorites/` | GET, POST, DELETE | authenticated | Saved postings |
-| `/api/v1/postings/` | POST, PUT, PATCH, DELETE | employer admin | Scoped to own organization |
-| `/api/v1/employer/applications/` | GET | employer | Own organization only; disclosure audit logged |
-| `/api/v1/partner/application-events/` | GET | partner (API key) | `?person=<personnummer>&from=&to=`; disclosure audit logged |
+| Endpoint | Method | Notes |
+| --- | --- | --- |
+| `/health/` | GET | Health check (no `/api/v1` prefix) |
+| `/dj-rest-auth/registration/` | POST | Create account, returns JWT |
+| `/dj-rest-auth/login/` | POST | Returns access + refresh token |
+| `/api/v1/me/` | GET, PATCH, DELETE | Own profile; DELETE = GDPR erasure |
+| `/api/v1/me/resume/` | GET, PUT, DELETE | Structured CV |
+| `/api/v1/me/resume/parse/` | POST | Parse uploaded CV to a draft — file never stored |
+| `/api/v1/applications/` | GET, POST | Tracker rows; `?status=&search=&from=&to=` |
+| `/api/v1/applications/{id}/` | GET, PATCH, DELETE | Edit status, notes, contacts — fully mutable |
+| `/api/v1/applications/{id}/events/` | POST | Append a timeline event |
+| `/api/v1/applications/stats/` | GET | Counts per status |
+| `/api/v1/applications/export/` | GET | CSV download (filters apply) |
+| `/api/v1/postings/` | GET | Imported ads; `?search=&location=`; match score with CV |
+| `/api/v1/favorites/` | GET, POST, DELETE | Saved postings |
 
 ## Getting started
 
@@ -128,8 +91,8 @@ python backend/manage.py createsuperuser
 python backend/manage.py runserver
 ```
 
-Optionally fill the database with real postings from Arbetsförmedlingen's
-open [JobTech API](https://jobsearch.api.jobtechdev.se):
+Fill the database with real postings from Arbetsförmedlingen's open
+[JobTech API](https://jobsearch.api.jobtechdev.se):
 
 ```bash
 python backend/manage.py import_postings --query "python" --limit 50
@@ -141,12 +104,10 @@ Then open:
 - Admin: <http://127.0.0.1:8000/admin/>
 - Health check: <http://127.0.0.1:8000/health/>
 
-### Demo frontend
+### Frontend
 
-A React/Vite demo UI lives in `frontend/` with one tab per role:
-applicant (mock BankID login → browse real postings → register
-applications), employer (postings + disclosure-logged applications view)
-and A-kassa partner (API key + personnummer lookup).
+The React/Vite app lives in `frontend/`: login/registration, the board,
+ad search and profile/CV.
 
 ```bash
 cd frontend
@@ -169,61 +130,25 @@ host port **5433**) and run `migrate` again.
 ### A quick end-to-end tour
 
 ```bash
-# 1. Register an applicant (returns JWT immediately)
+# 1. Register (returns JWT immediately)
 curl -X POST http://127.0.0.1:8000/dj-rest-auth/registration/ \
   -H "Content-Type: application/json" \
   -d '{"username": "anna", "password1": "Testpass123!", "password2": "Testpass123!"}'
 
-# 2. Register an application event (posting created via admin or employer API)
+# 2. Add a free-text tracker row
 curl -X POST http://127.0.0.1:8000/api/v1/applications/ \
   -H "Authorization: Bearer <access token>" -H "Content-Type: application/json" \
-  -d '{"posting": 1, "applied_at": "2026-06-09"}'
+  -d '{"company": "Acme AB", "title": "Backendutvecklare", "applied_at": "2026-06-09"}'
 
-# 3. List own events for a period
-curl "http://127.0.0.1:8000/api/v1/applications/?from=2026-06-01&to=2026-06-30" \
+# 3. Move it forward and log a call
+curl -X PATCH http://127.0.0.1:8000/api/v1/applications/1/ \
+  -H "Authorization: Bearer <access token>" -H "Content-Type: application/json" \
+  -d '{"status": "screening"}'
+
+# 4. See where you stand
+curl http://127.0.0.1:8000/api/v1/applications/stats/ \
   -H "Authorization: Bearer <access token>"
 ```
-
-Employer accounts are provisioned via the admin (create an `Organization`
-and an `EmployerProfile` linking a user to it).
-
-## Partner integration
-
-Partners (A-kassa systems) are issued an API key via a management command —
-the key is shown **once** and only its SHA-256 hash is stored:
-
-```bash
-python backend/manage.py create_partner "A-kassan X"
-# Partner 'A-kassan X' created.
-# API key (shown only once): <key>
-```
-
-```bash
-curl "http://127.0.0.1:8000/api/v1/partner/application-events/?person=19900101-2384&from=2026-05-01&to=2026-06-30" \
-  -H "Authorization: Api-Key <key>"
-```
-
-Partners query by **personal identity number** — the identifier an
-A-kassa actually has. The number is pseudonymized with a keyed hash
-before lookup and never stored or logged in clear
-(see [docs/08-identity-bankid.md](docs/08-identity-bankid.md)).
-
-```json
-[
-  {
-    "id": 1,
-    "applied_at": "2026-06-09",
-    "posting_title": "Backend Developer",
-    "company_name": "Acme AB",
-    "created_at": "2026-06-09T21:08:04Z"
-  }
-]
-```
-
-The response is deliberately minimal (least privilege): no applicant
-identifiers beyond the queried person, no application status. Every call
-writes an `applications.disclosed_partner` audit entry. Partners can be
-deactivated in the admin; keys cannot be read back or recreated.
 
 ## Deployment
 
@@ -234,26 +159,20 @@ host):
   (Node stage), collects static files, and gunicorn + WhiteNoise serve
   the SPA at `/`, hashed assets, the API and the admin
 - **`render.yaml` blueprint**: web service + managed Postgres; secrets
-  (`DJANGO_SECRET_KEY`, `PERSON_HASH_KEY`) are generated, `DATABASE_URL`
-  is wired from the database. Deploy via Render → New → Blueprint
+  are generated, `DATABASE_URL` is wired from the database
 - **Production hardening** activates when `DJANGO_DEBUG=0`: HSTS,
   SSL redirect (behind proxy header), secure cookies, manifest static
-  storage, referrer policy. Render's public hostname is trusted
-  automatically via `RENDER_EXTERNAL_HOSTNAME`
+  storage, referrer policy
 - **Env-driven bootstrap on boot** (free tier has no shell): creates the
-  superuser (`DJANGO_SUPERUSER_USERNAME`/`_PASSWORD`), a partner client
-  (`BOOTSTRAP_PARTNER_NAME`/`_KEY`) and imports postings
-  (`BOOTSTRAP_IMPORT_QUERY`) — all idempotent, all optional
-- **Rate limiting**: mock BankID endpoints are throttled per IP
-  (`THROTTLE_BANKID`, default 10/min) and the partner API per client
-  (`THROTTLE_PARTNER`, default 120/min)
+  superuser (`DJANGO_SUPERUSER_USERNAME`/`_PASSWORD`) and imports
+  postings (`BOOTSTRAP_IMPORT_QUERY`) — idempotent and optional
 - CI runs the backend tests against **Postgres 16** (same engine as
   production) plus the frontend build
 
 ## Testing and linting
 
 ```bash
-pytest            # 29 tests
+pytest            # backend test suite
 ruff check .
 black --check .
 ```
@@ -272,60 +191,49 @@ python backend/manage.py spectacular --validate --fail-on-warn
 backend/
   config/              # Django settings, root URLconf, WSGI/ASGI
   core/                # The single domain app
-    management/        #   create_partner command
+    management/        #   import_postings + bootstrap commands
     migrations/
-    tests/             #   pytest suite (API, permissions, audit, admin)
-    admin.py           #   Admin (read-only audit log, unfold theme)
-    audit.py           #   log_event() helper
-    models.py          #   JobApplication, JobPosting, Organization,
-                       #   EmployerProfile, PartnerClient, AuditLog
-    partner_auth.py    #   API key authentication + permission
-    permissions.py     #   Employer role permissions
+    tests/             #   pytest suite
+    models.py          #   JobApplication, ApplicationEvent, JobPosting,
+                       #   Favorite, Resume
     serializers.py
     views.py
-docs/                  # Vision, architecture, threat model, GDPR, API spec
+frontend/
+  src/components/      # AuthHero, BoardPanel, ApplicationModal,
+                       # PostingsPanel, ProfilePanel
+docs/                  # Vision, architecture, GDPR, pivot rationale
 infra/                 # docker-compose for local PostgreSQL
 .github/               # CI workflow, issue/PR templates
 ```
 
-## Security and privacy
+## Privacy
 
-- **Immutability** — application events cannot be modified after creation;
-  the API simply has no update route
-- **Append-only audit log** — creation, deletion and every disclosure
-  (employer and partner) is recorded; entries are read-only even in the
-  admin and survive account deletion (actor set to NULL, metadata holds
-  ids/counts only — no PII)
-- **Least privilege** — applicants see only their own data, employers only
-  their organization's applications, partners only a minimal payload for
-  the person and period they query
-- **Key handling** — partner API keys are stored as SHA-256 hashes and
-  shown exactly once at creation
-- **JWT hygiene** — short-lived access tokens, refresh rotation with
-  blacklist
+- Users see only their own data; deletion of the account cascades to
+  everything it owns (GDPR right to erasure)
+- CSV export doubles as data portability
+- Uploaded CV files are parsed in memory and never stored
+- Notes may contain third-party contact details (recruiters) — covered
+  in the privacy policy, removed with the account
+- No analytics, no third-party cookies; the JWT lives in localStorage
 
-See [docs/03-security-threat-model.md](docs/03-security-threat-model.md)
-and [docs/06-gdpr-privacy.md](docs/06-gdpr-privacy.md) for the full picture.
+See [docs/06-gdpr-privacy.md](docs/06-gdpr-privacy.md) and
+[docs/10-pivot-ansokt.md](docs/10-pivot-ansokt.md).
 
 ## Roadmap
 
-- [ ] CSV/XLSX export for applicants
-- [x] BankID flow (mocked — design in [docs/08](docs/08-identity-bankid.md); real RP integration future)
-- [ ] OAuth2/mTLS for partner integration
-- [ ] Rate limiting / throttling
-- [ ] Production hardening (whitenoise static serving, security headers)
-- [ ] Employer onboarding flow (today provisioned via admin)
+- [ ] Reminders for `next_action_at` (e-mail or notification)
+- [ ] XLSX export alongside CSV
+- [ ] JobStream API for continuous ad updates
+- [ ] Privacy policy page before public launch
+- [ ] EU hosting region (Render Frankfurt)
 
 ## Documentation
 
 | Document | Contents |
 | --- | --- |
-| [01-vision-scope.md](docs/01-vision-scope.md) | Problem, vision, MVP scope, roles |
+| [10-pivot-ansokt.md](docs/10-pivot-ansokt.md) | **The pivot: rationale, product, legal, what changed** |
+| [01-vision-scope.md](docs/01-vision-scope.md) | Original vision (pre-pivot) |
 | [02-architecture.md](docs/02-architecture.md) | Components and data flows |
-| [03-security-threat-model.md](docs/03-security-threat-model.md) | Threat model |
-| [04-data-model.md](docs/04-data-model.md) | Entities and PII classification |
-| [05-api-spec.md](docs/05-api-spec.md) | Endpoint reference |
+| [04-data-model.md](docs/04-data-model.md) | Entities and PII classification (pre-pivot) |
 | [06-gdpr-privacy.md](docs/06-gdpr-privacy.md) | GDPR considerations |
 | [07-devops-ci-cd.md](docs/07-devops-ci-cd.md) | CI/CD setup |
-| [08-identity-bankid.md](docs/08-identity-bankid.md) | Identity design: BankID flow, pseudonymization |
-| [09-master-plan.md](docs/09-master-plan.md) | The road to a trust-first recruitment platform |

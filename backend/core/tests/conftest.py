@@ -1,5 +1,5 @@
 import pytest
-from core.models import EmployerProfile, JobPosting, Organization
+from core.models import JobPosting
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from rest_framework.test import APIClient
@@ -20,33 +20,17 @@ def api_client():
 
 
 @pytest.fixture
-def applicant(db):
-    return User.objects.create_user(username="applicant", password="x")
+def user(db):
+    return User.objects.create_user(username="anna", password="x")
 
 
 @pytest.fixture
-def organization(db):
-    return Organization.objects.create(name="Acme AB", org_number="556677-8899")
-
-
-@pytest.fixture
-def employer_admin(db, organization):
-    user = User.objects.create_user(username="employer_admin", password="x")
-    EmployerProfile.objects.create(user=user, organization=organization, role="admin")
-    return user
-
-
-@pytest.fixture
-def employer_member(db, organization):
-    user = User.objects.create_user(username="employer_member", password="x")
-    EmployerProfile.objects.create(user=user, organization=organization, role="member")
-    return user
-
-
-@pytest.fixture
-def posting(db, organization):
+def posting(db):
     return JobPosting.objects.create(
-        organization=organization,
+        source="jobtech",
+        external_id="j1",
         title="Backend Developer",
         company_name="Acme AB",
+        location="Stockholm",
+        webpage_url="https://example.com/annons/1",
     )

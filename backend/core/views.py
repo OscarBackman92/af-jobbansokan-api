@@ -1,38 +1,21 @@
 import csv
 
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from rest_framework import generics, mixins, viewsets
-from rest_framework.decorators import (
-    action,
-    api_view,
-    authentication_classes,
-    permission_classes,
-    throttle_classes,
-)
+from rest_framework import generics, viewsets
+from rest_framework import status as drf_status
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .audit import log_event
-from .identity import normalize_personal_number, pseudonymize_personal_number
 from .matching import match_skills
-from .models import (
-    ApplicantProfile,
-    AuditLog,
-    EmployerProfile,
-    Favorite,
-    JobApplication,
-    JobPosting,
-    Resume,
-)
-from .partner_auth import IsPartner, PartnerAPIKeyAuthentication
-from .permissions import IsEmployer, IsEmployerAdminOrReadOnly
+from .models import Favorite, JobApplication, JobPosting, Resume
 from .resume import (
     MAX_UPLOAD_SIZE,
     SUPPORTED_EXTENSIONS,
@@ -40,20 +23,16 @@ from .resume import (
     parse_resume_text,
 )
 from .serializers import (
-    DisclosureSerializer,
-    EmployerApplicationStatusSerializer,
-    EmployerJobApplicationSerializer,
+    ApplicationEventSerializer,
     FavoriteSerializer,
     JobApplicationSerializer,
     JobPostingDetailSerializer,
     JobPostingSerializer,
-    OrganizationSerializer,
-    PartnerApplicationEventSerializer,
     ProfileSerializer,
     ResumeSerializer,
     ResumeUploadSerializer,
+    StatusCountSerializer,
 )
-from .throttling import PartnerRateThrottle
 
 
 @extend_schema(
@@ -69,10 +48,8 @@ def health(_request):
 class ProfileView(generics.RetrieveUpdateDestroyAPIView):
     """The authenticated user's own profile.
 
-    GET returns contact details plus identity/employer status. PATCH
-    updates contact details. DELETE erases the account and everything it
-    owns (GDPR right to erasure) — audit entries survive with the actor
-    anonymized, which is exactly their documented retention behavior.
+    GET returns contact details. PATCH updates them. DELETE erases the
+    account and everything it owns (GDPR right to erasure).
     """
 
     serializer_class = ProfileSerializer
@@ -80,15 +57,6 @@ class ProfileView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         return self.request.user
-
-    def perform_destroy(self, instance):
-        log_event(
-            instance,
-            AuditLog.ACTION_ACCOUNT_DELETED,
-            user_id=instance.id,
-            username=instance.get_username(),
-        )
-        instance.delete()
 
 
 class ResumeView(generics.RetrieveUpdateDestroyAPIView):
@@ -136,29 +104,6 @@ class ResumeParseView(APIView):
         return Response(parse_resume_text(text))
 
 
-class MyDisclosuresView(generics.ListAPIView):
-    """Transparency: partner disclosures of the user's own data.
-
-    Matches the audit trail on the user's pseudonymized identity, so it
-    requires a verified (BankID) identity. Users without one have never
-    been disclosed to partners and get an empty list.
-    """
-
-    serializer_class = DisclosureSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        if getattr(self, "swagger_fake_view", False):  # schema generation
-            return AuditLog.objects.none()
-        profile = getattr(self.request.user, "applicant_profile", None)
-        if profile is None:
-            return AuditLog.objects.none()
-        return AuditLog.objects.filter(
-            action=AuditLog.ACTION_PARTNER_DISCLOSED,
-            metadata__person_hash=profile.personal_number_hash,
-        ).order_by("-created_at")
-
-
 def _date_param(params, name):
     raw = params.get(name)
     if not raw:
@@ -181,21 +126,19 @@ def _date_param(params, name):
             OpenApiParameter(
                 "status", OpenApiTypes.STR, description="Filter by status."
             ),
+            OpenApiParameter(
+                "search",
+                OpenApiTypes.STR,
+                description="Free text over company, title and notes.",
+            ),
         ]
     )
 )
-class JobApplicationViewSet(
-    mixins.CreateModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.ListModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet,
-):
-    """Applicant-facing job application events.
+class JobApplicationViewSet(viewsets.ModelViewSet):
+    """The user's application tracker rows. Full CRUD on own rows only.
 
-    Events are evidence of job seeking and therefore immutable: they can be
-    created, listed and deleted, but never edited. Creation and deletion are
-    audit logged.
+    A status change automatically appends a timeline event, so the
+    history stays complete without extra bookkeeping.
     """
 
     serializer_class = JobApplicationSerializer
@@ -204,8 +147,10 @@ class JobApplicationViewSet(
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):  # schema generation
             return JobApplication.objects.none()
-        qs = JobApplication.objects.filter(owner=self.request.user).order_by(
-            "-created_at"
+        qs = (
+            JobApplication.objects.filter(owner=self.request.user)
+            .prefetch_related("events")
+            .order_by("-updated_at")
         )
         params = self.request.query_params
         date_from = _date_param(params, "from")
@@ -214,50 +159,101 @@ class JobApplicationViewSet(
             qs = qs.filter(applied_at__gte=date_from)
         if date_to:
             qs = qs.filter(applied_at__lte=date_to)
-        status = params.get("status")
-        if status:
-            qs = qs.filter(status=status)
+        status_value = params.get("status")
+        if status_value:
+            qs = qs.filter(status=status_value)
+        search = params.get("search", "").strip()
+        for term in search.split()[:6]:
+            qs = qs.filter(
+                Q(company__icontains=term)
+                | Q(title__icontains=term)
+                | Q(notes__icontains=term)
+            )
         return qs
 
     def perform_create(self, serializer):
-        application = serializer.save(owner=self.request.user)
-        log_event(
-            self.request.user,
-            AuditLog.ACTION_APPLICATION_CREATED,
-            target=application,
-            posting_id=application.posting_id,
-        )
+        serializer.save(owner=self.request.user)
 
-    def perform_destroy(self, instance):
-        log_event(
-            self.request.user,
-            AuditLog.ACTION_APPLICATION_DELETED,
-            target=instance,
-            posting_id=instance.posting_id,
+    def perform_update(self, serializer):
+        previous = serializer.instance.status
+        application = serializer.save()
+        if previous != application.status:
+            application.events.create(
+                occurred_at=self.request.data.get("status_changed_at")
+                or application.updated_at.date(),
+                note=(
+                    f"Status: {dict(JobApplication.STATUS_CHOICES)[previous]}"
+                    f" → {application.get_status_display()}"
+                ),
+                status=application.status,
+            )
+
+    @extend_schema(
+        request=ApplicationEventSerializer,
+        responses={201: ApplicationEventSerializer},
+    )
+    @action(detail=True, methods=["post"], url_path="events")
+    def add_event(self, request, pk=None):
+        """Append a note/event to the application's timeline."""
+        application = self.get_object()
+        serializer = ApplicationEventSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(application=application)
+        return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
+
+    @extend_schema(responses=StatusCountSerializer(many=True))
+    @action(detail=False, methods=["get"])
+    def stats(self, request):
+        """Application counts per status, for the dashboard."""
+        counts = dict(
+            JobApplication.objects.filter(owner=request.user)
+            .values_list("status")
+            .annotate(count=Count("id"))
         )
-        instance.delete()
+        data = [
+            {"status": value, "label": label, "count": counts.get(value, 0)}
+            for value, label in JobApplication.STATUS_CHOICES
+        ]
+        return Response(data)
 
     @extend_schema(responses={(200, "text/csv"): OpenApiTypes.STR})
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request):
-        """Download own application events as CSV (filters apply)."""
-        qs = self.get_queryset().select_related("posting")
+        """Download the tracker as CSV (filters apply)."""
+        qs = self.get_queryset()
         response = HttpResponse(content_type="text/csv; charset=utf-8")
         response["Content-Disposition"] = 'attachment; filename="ansokningar.csv"'
-        response.write("\ufeff")  # BOM so Excel detects UTF-8
+        response.write("﻿")  # BOM so Excel detects UTF-8
         writer = csv.writer(response)
         writer.writerow(
-            ["id", "applied_at", "status", "posting", "company", "created_at"]
+            [
+                "id",
+                "company",
+                "title",
+                "location",
+                "status",
+                "applied_at",
+                "contact_name",
+                "contact_info",
+                "next_action_at",
+                "ad_url",
+                "notes",
+            ]
         )
-        for application in qs:
+        for app in qs:
             writer.writerow(
                 [
-                    application.id,
-                    application.applied_at,
-                    application.status,
-                    application.posting.title,
-                    application.posting.company_name,
-                    application.created_at.isoformat(),
+                    app.id,
+                    app.company,
+                    app.title,
+                    app.location,
+                    app.get_status_display(),
+                    app.applied_at or "",
+                    app.contact_name,
+                    app.contact_info,
+                    app.next_action_at or "",
+                    app.ad_url,
+                    app.notes,
                 ]
             )
         return response
@@ -274,25 +270,21 @@ class JobApplicationViewSet(
             OpenApiParameter(
                 "location", OpenApiTypes.STR, description="Filter by location."
             ),
-            OpenApiParameter(
-                "source", OpenApiTypes.STR, description="Filter by source."
-            ),
         ]
     )
 )
-class JobPostingViewSet(viewsets.ModelViewSet):
-    serializer_class = JobPostingSerializer
-    permission_classes = [IsEmployerAdminOrReadOnly]
+class JobPostingViewSet(viewsets.ReadOnlyModelViewSet):
+    """Imported job ads (JobTech). Read-only; rows are created by import."""
+
+    permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
-        # Lean list payloads; full posting (description, link) elsewhere.
+        # Lean list payloads; full posting (description, link) in detail.
         if self.action == "list":
             return JobPostingSerializer
         return JobPostingDetailSerializer
 
     def _user_skills(self, request):
-        if not request.user.is_authenticated:
-            return None
         resume = getattr(request.user, "resume", None)
         skills = resume.skills if resume else []
         return skills or None
@@ -317,12 +309,13 @@ class JobPostingViewSet(viewsets.ModelViewSet):
         return Response(data)
 
     def get_queryset(self):
-        # Public read of all postings (for MVP).
+        if getattr(self, "swagger_fake_view", False):  # schema generation
+            return JobPosting.objects.none()
         qs = JobPosting.objects.all().order_by("-created_at")
         params = self.request.query_params
 
         # icontains works on SQLite and Postgres alike; upgrade path to
-        # Postgres FTS when volume demands it (docs/09, phase 1).
+        # Postgres FTS when volume demands it.
         search = params.get("search", "").strip()
         for term in search.split()[:6]:
             qs = qs.filter(
@@ -335,27 +328,15 @@ class JobPostingViewSet(viewsets.ModelViewSet):
         location = params.get("location", "").strip()
         if location:
             qs = qs.filter(location__icontains=location)
-        source = params.get("source", "").strip()
-        if source:
-            qs = qs.filter(source=source)
         return qs
 
-    def perform_create(self, serializer):
-        # Writer must be employer admin -> safe to assume profile exists.
-        org = self.request.user.employer_profile.organization
-        serializer.save(organization=org)
 
-
-class FavoriteViewSet(
-    mixins.CreateModelMixin,
-    mixins.ListModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet,
-):
+class FavoriteViewSet(viewsets.ModelViewSet):
     """Postings saved by the authenticated user."""
 
     serializer_class = FavoriteSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "delete", "options"]
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):  # schema generation
@@ -368,150 +349,3 @@ class FavoriteViewSet(
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
-
-class EmployerApplicationsView(generics.ListAPIView):
-    """List applications to the employer's own organization.
-
-    Every call is audit logged as a disclosure of applicant data.
-    """
-
-    serializer_class = EmployerJobApplicationSerializer
-    permission_classes = [IsAuthenticated, IsEmployer]
-
-    def get_queryset(self):
-        if getattr(self, "swagger_fake_view", False):  # schema generation
-            return JobApplication.objects.none()
-        org = self.request.user.employer_profile.organization
-        return (
-            JobApplication.objects.select_related(
-                "posting", "posting__organization", "owner"
-            )
-            .filter(posting__organization=org)
-            .order_by("-created_at")
-        )
-
-    def list(self, request, *args, **kwargs):
-        response = super().list(request, *args, **kwargs)
-        disclosed = response.data["results"]
-        log_event(
-            request.user,
-            AuditLog.ACTION_APPLICATIONS_DISCLOSED,
-            organization_id=request.user.employer_profile.organization_id,
-            application_count=len(disclosed),
-        )
-        return response
-
-
-class EmployerApplicationStatusView(generics.UpdateAPIView):
-    """Employer-side status update (applied/interview/offer/rejected).
-
-    Any employer in the posting's organization may update; every change
-    is audit logged with the old and new value. An employer-set status
-    also acts as third-party corroboration of the application event.
-    """
-
-    serializer_class = EmployerApplicationStatusSerializer
-    permission_classes = [IsAuthenticated, IsEmployer]
-    http_method_names = ["patch", "options"]
-
-    def get_queryset(self):
-        if getattr(self, "swagger_fake_view", False):  # schema generation
-            return JobApplication.objects.none()
-        org = self.request.user.employer_profile.organization
-        return JobApplication.objects.filter(posting__organization=org)
-
-    def perform_update(self, serializer):
-        previous = serializer.instance.status
-        application = serializer.save()
-        if previous != application.status:
-            log_event(
-                self.request.user,
-                AuditLog.ACTION_STATUS_CHANGED,
-                target=application,
-                from_status=previous,
-                to_status=application.status,
-            )
-
-
-class OrganizationCreateView(generics.CreateAPIView):
-    """Employer onboarding: create an organization and become its admin."""
-
-    serializer_class = OrganizationSerializer
-    permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        if hasattr(self.request.user, "employer_profile"):
-            raise ValidationError({"detail": "You already belong to an organization."})
-        organization = serializer.save()
-        EmployerProfile.objects.create(
-            user=self.request.user, organization=organization, role="admin"
-        )
-
-
-@extend_schema(
-    parameters=[
-        OpenApiParameter(
-            "person",
-            OpenApiTypes.STR,
-            required=True,
-            description="Personal identity number (YYYYMMDDNNNN).",
-        ),
-        OpenApiParameter(
-            "from", OpenApiTypes.DATE, description="Earliest applied_at date."
-        ),
-        OpenApiParameter(
-            "to", OpenApiTypes.DATE, description="Latest applied_at date."
-        ),
-    ],
-    responses=PartnerApplicationEventSerializer(many=True),
-)
-@api_view(["GET"])
-@authentication_classes([PartnerAPIKeyAuthentication])
-@permission_classes([IsPartner])
-@throttle_classes([PartnerRateThrottle])
-def partner_application_events(request):
-    """Disclose application events for one person and time period.
-
-    Partner systems authenticate with `Authorization: Api-Key <key>`.
-    Every call is audit logged as a partner disclosure.
-    """
-    person = normalize_personal_number(request.query_params.get("person", ""))
-    if person is None:
-        raise ValidationError(
-            {"person": "Required: a 12-digit personal identity number."}
-        )
-    date_from = _date_param(request.query_params, "from")
-    date_to = _date_param(request.query_params, "to")
-
-    # Unknown persons yield an empty list, indistinguishable from a person
-    # without events — the endpoint never reveals who has an account.
-    person_hash = pseudonymize_personal_number(person)
-    profile = ApplicantProfile.objects.filter(personal_number_hash=person_hash).first()
-
-    if profile is None:
-        events = []
-    else:
-        qs = (
-            JobApplication.objects.select_related("posting")
-            .filter(owner=profile.user)
-            .order_by("applied_at")
-        )
-        if date_from:
-            qs = qs.filter(applied_at__gte=date_from)
-        if date_to:
-            qs = qs.filter(applied_at__lte=date_to)
-        events = list(qs)
-
-    log_event(
-        None,
-        AuditLog.ACTION_PARTNER_DISCLOSED,
-        partner_client_id=request.auth.id,
-        partner_name=request.auth.name,
-        person_hash=person_hash,
-        date_from=str(date_from) if date_from else None,
-        date_to=str(date_to) if date_to else None,
-        application_count=len(events),
-    )
-    serializer = PartnerApplicationEventSerializer(events, many=True)
-    return Response(serializer.data)

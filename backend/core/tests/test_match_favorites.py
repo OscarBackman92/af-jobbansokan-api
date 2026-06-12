@@ -9,9 +9,8 @@ FAVORITES_URL = "/api/v1/favorites/"
 
 
 @pytest.fixture
-def python_posting(organization):
+def python_posting(db):
     return JobPosting.objects.create(
-        organization=organization,
         title="Backendutvecklare",
         company_name="Acme AB",
         description="Vi arbetar med Python, Django och PostgreSQL.",
@@ -27,11 +26,9 @@ def test_match_skills_is_case_insensitive(python_posting):
     }
 
 
-def test_list_includes_match_for_user_with_resume(
-    api_client, applicant, python_posting
-):
-    Resume.objects.create(user=applicant, skills=["Python", "React"])
-    api_client.force_authenticate(applicant)
+def test_list_includes_match_for_user_with_resume(api_client, user, python_posting):
+    Resume.objects.create(user=user, skills=["Python", "React"])
+    api_client.force_authenticate(user)
 
     results = api_client.get(POSTINGS_URL).json()["results"]
     match = results[0]["match"]
@@ -40,28 +37,23 @@ def test_list_includes_match_for_user_with_resume(
     assert match["total"] == 2
 
 
-def test_detail_includes_match(api_client, applicant, python_posting):
-    Resume.objects.create(user=applicant, skills=["Django"])
-    api_client.force_authenticate(applicant)
+def test_detail_includes_match(api_client, user, python_posting):
+    Resume.objects.create(user=user, skills=["Django"])
+    api_client.force_authenticate(user)
 
     body = api_client.get(f"{POSTINGS_URL}{python_posting.id}/").json()
     assert body["match"]["count"] == 1
 
 
-def test_anonymous_gets_no_match_key(api_client, python_posting):
+def test_user_without_skills_gets_no_match_key(api_client, user, python_posting):
+    Resume.objects.create(user=user, skills=[])
+    api_client.force_authenticate(user)
     results = api_client.get(POSTINGS_URL).json()["results"]
     assert "match" not in results[0]
 
 
-def test_user_without_skills_gets_no_match_key(api_client, applicant, python_posting):
-    Resume.objects.create(user=applicant, skills=[])
-    api_client.force_authenticate(applicant)
-    results = api_client.get(POSTINGS_URL).json()["results"]
-    assert "match" not in results[0]
-
-
-def test_favorites_crud_and_own_only(api_client, applicant, posting, django_user_model):
-    api_client.force_authenticate(applicant)
+def test_favorites_crud_and_own_only(api_client, user, posting, django_user_model):
+    api_client.force_authenticate(user)
     created = api_client.post(FAVORITES_URL, {"posting": posting.id})
     assert created.status_code == 201
 
