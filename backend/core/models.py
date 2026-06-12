@@ -92,6 +92,7 @@ class JobApplication(models.Model):
         max_length=50, choices=STATUS_CHOICES, default=STATUS_APPLIED
     )
     applied_at = models.DateField(null=True, blank=True)
+    deadline = models.DateField(null=True, blank=True)
     contact_name = models.CharField(max_length=255, blank=True)
     contact_info = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)

@@ -76,11 +76,20 @@ DATE_RANGE_RE = re.compile(
     rf"{_DATE}\s*[–—-]\s*(?:{_DATE}|{_ONGOING})\b", re.IGNORECASE
 )
 YEAR_ONLY_RE = re.compile(r"^(?:19|20)\d{2}$")
+LEADING_YEAR_RE = re.compile(r"^((?:19|20)\d{2})\s+(.+)$")
 TRAILING_YEARS_RE = re.compile(
     r"^(.*?)[,]?\s*((?:19|20)\d{2}(?:\s*[–—-]\s*(?:19|20)\d{2})?)$"
 )
 BULLET_RE = re.compile(r"^[•·▪*]\s*|^[–\-]\s+")
+INLINE_BULLET_RE = re.compile(r"\s+[•·▪]\s+")
 PAGE_NUMBER_RE = re.compile(r"^\d{1,3}$")
+WHITESPACE_RE = re.compile(r"\s+")
+COLUMN_GAP_RE = re.compile(r"\s{4,}")
+
+
+def _clean(text: str) -> str:
+    """Collapse whitespace runs — pypdf often doubles every space."""
+    return WHITESPACE_RE.sub(" ", text).strip()
 
 
 def extract_text(filename: str, data: bytes) -> str:
@@ -88,7 +97,15 @@ def extract_text(filename: str, data: bytes) -> str:
     name = filename.lower()
     if name.endswith(".pdf"):
         reader = pypdf.PdfReader(io.BytesIO(data))
-        return "\n".join(page.extract_text() or "" for page in reader.pages)
+        pages = []
+        for page in reader.pages:
+            # Layout mode preserves line breaks and column gaps, which the
+            # parser depends on; plain mode glues whole sections together.
+            try:
+                pages.append(page.extract_text(extraction_mode="layout") or "")
+            except Exception:
+                pages.append(page.extract_text() or "")
+        return "\n".join(pages)
     if name.endswith(".docx"):
         document = docx.Document(io.BytesIO(data))
         return "\n".join(paragraph.text for paragraph in document.paragraphs)
@@ -129,104 +146,140 @@ def _looks_like_name(line: str) -> bool:
 def _split_title_company(text: str) -> tuple[str, str]:
     """Split "Backendutvecklare, Acme AB" / "TITLE  COMPANY" style lines.
 
-    PDF extraction tends to keep a wider gap between separately styled
-    runs (title vs employer), which survives as multiple spaces.
+    A wider gap between separately styled runs (title vs employer) can
+    survive extraction as multiple spaces — but only trust it when it is
+    the exception: some PDFs double *every* space, and splitting on the
+    first such gap would cut the title in half mid-word.
     """
-    parts = re.split(r"\s{2,}", text, maxsplit=1)
-    if len(parts) == 2:
-        return parts[0].strip(), parts[1].strip()
+    double_gaps = len(re.findall(r"\S {2,}", text))
+    single_gaps = len(re.findall(r"\S \S", text))
+    if double_gaps == 1 or (double_gaps == 2 and single_gaps > double_gaps):
+        parts = re.split(r"\s{2,}", text, maxsplit=1)
+        return _clean(parts[0]), _clean(parts[1])
     if ", " in text:
         title, company = text.rsplit(", ", 1)
-        return title.strip(), company.strip()
-    return text.strip(), ""
+        return _clean(title), _clean(company)
+    return _clean(text), ""
 
 
 def _parse_experience(lines: list[str]) -> list[dict]:
+    """One row per position.
+
+    PDF extraction may deliver a whole position as a single line:
+    "<date range> <TITLE> <COMPANY> • bullet • bullet …" — so inline
+    bullets are split off as description before the head is parsed.
+    """
     rows: list[dict] = []
 
     def new_row() -> dict:
         rows.append({"title": "", "company": "", "years": "", "description": ""})
         return rows[-1]
 
+    def add_description(parts: list[str]) -> None:
+        parts = [part for part in parts if part]
+        if not rows or not parts:
+            return
+        current = rows[-1]["description"]
+        joined = "\n".join(parts)
+        rows[-1]["description"] = f"{current}\n{joined}" if current else joined
+
     for line in lines:
+        segments = INLINE_BULLET_RE.split(line)
         if BULLET_RE.match(line):
-            if rows:
-                text = BULLET_RE.sub("", line).strip()
-                current = rows[-1]["description"]
-                rows[-1]["description"] = f"{current}\n{text}" if current else text
+            add_description([_clean(BULLET_RE.sub("", seg)) for seg in segments])
             continue
-        match = DATE_RANGE_RE.search(line)
+        head = segments[0].strip()
+        descriptions = [_clean(seg) for seg in segments[1:]]
+
+        match = DATE_RANGE_RE.search(head)
         if match:
             row = new_row()
-            row["years"] = match.group(0)
-            remainder = (line[: match.start()] + " " + line[match.end() :]).strip(
+            row["years"] = _clean(match.group(0))
+            remainder = (head[: match.start()] + " " + head[match.end() :]).strip(
                 " ,–—-"
             )
             if remainder:
                 row["title"], row["company"] = _split_title_company(remainder)
-            continue
-        if rows and not rows[-1]["title"]:
-            rows[-1]["title"], rows[-1]["company"] = _split_title_company(line)
-        elif (
-            rows
-            and rows[-1]["title"]
-            and not rows[-1]["company"]
-            and not rows[-1]["description"]
-        ):
-            rows[-1]["company"] = line
-        else:
+        elif head and head[0].islower() and rows and rows[-1]["description"]:
+            # Wrapped continuation of the previous bullet line.
+            rows[-1]["description"] += " " + _clean(head)
+        elif rows and not rows[-1]["title"]:
+            rows[-1]["title"], rows[-1]["company"] = _split_title_company(head)
+        elif head:
             row = new_row()
-            row["title"], row["company"] = _split_title_company(line)
+            row["title"], row["company"] = _split_title_company(head)
+        add_description(descriptions)
     return rows
 
 
+def _education_entry(text: str, pending_years: str) -> dict:
+    """Build one education row from "Kursnamn | Skola, 2022"-style text."""
+    if "|" in text:
+        degree, _, rhs = text.partition("|")
+        match = TRAILING_YEARS_RE.match(rhs.strip())
+        school, years = (
+            (match.group(1).strip(), match.group(2)) if match else (rhs.strip(), "")
+        )
+        return {
+            "school": _clean(school),
+            "degree": _clean(degree),
+            "years": _clean(years) or pending_years,
+        }
+    years = ""
+    match = TRAILING_YEARS_RE.match(text)
+    if match and match.group(1).strip():
+        text, years = match.group(1).strip(), match.group(2)
+    degree, school = "", text
+    gap_parts = re.split(r"\s{2,}", text, maxsplit=1)
+    if len(gap_parts) == 2 and len(re.findall(r"\S {2,}", text)) <= 2:
+        degree, school = gap_parts
+    elif ", " in text:
+        degree, school = text.rsplit(", ", 1)
+    return {
+        "school": _clean(school),
+        "degree": _clean(degree),
+        "years": _clean(years) or pending_years,
+    }
+
+
 def _parse_education(lines: list[str]) -> list[dict]:
+    """One row per school/course.
+
+    Inline bullets can be either real entries ("• Kurs | Skola, 2022")
+    or descriptions under an entry — only the former become rows.
+    """
     rows: list[dict] = []
     pending_years = ""
 
     for line in lines:
-        text = BULLET_RE.sub("", line).strip()
-        if "övriga utbildning" in text.lower():
-            continue
-        if YEAR_ONLY_RE.match(text):
-            pending_years = text
-            continue
-        if "|" in text:
-            # "Kursnamn | Skola, 2022"
-            degree, _, rhs = text.partition("|")
-            match = TRAILING_YEARS_RE.match(rhs.strip())
-            school, years = (
-                (match.group(1).strip(), match.group(2)) if match else (rhs.strip(), "")
-            )
-            rows.append(
-                {
-                    "school": school,
-                    "degree": degree.strip(),
-                    "years": years or pending_years,
-                }
-            )
-            pending_years = ""
-            continue
-        if BULLET_RE.match(line):
-            continue  # description bullet under an entry
-        match = TRAILING_YEARS_RE.match(text)
-        years = ""
-        if match and match.group(1).strip():
-            text, years = match.group(1).strip(), match.group(2)
-        degree, school = "", text
-        gap_parts = re.split(r"\s{2,}", text, maxsplit=1)
-        if len(gap_parts) == 2:
-            degree, school = gap_parts
-        elif ", " in text:
-            degree, school = text.rsplit(", ", 1)
-        rows.append(
-            {
-                "school": school.strip(),
-                "degree": degree.strip(),
-                "years": years or pending_years,
-            }
-        )
-        pending_years = ""
+        segments = INLINE_BULLET_RE.split(line)
+        starts_with_bullet = bool(BULLET_RE.match(line))
+        head = None if starts_with_bullet else segments[0].strip()
+        bullet_parts = segments if starts_with_bullet else segments[1:]
+
+        if head:
+            head = BULLET_RE.sub("", head).strip()
+            if "övriga utbildning" in _clean(head).lower():
+                head = ""
+            # Wrapped bullet continuations and stray prose are not
+            # entries; school names don't start lowercase or end in ".".
+            elif head[0].islower() or head.endswith((".", "!", "?")):
+                head = ""
+        if head:
+            if YEAR_ONLY_RE.match(head):
+                pending_years = head
+            else:
+                year_match = LEADING_YEAR_RE.match(head)
+                if year_match:
+                    pending_years, head = year_match.group(1), year_match.group(2)
+                rows.append(_education_entry(head, pending_years))
+                pending_years = ""
+
+        for part in bullet_parts:
+            part = _clean(BULLET_RE.sub("", part))
+            if "|" in part:  # a real entry; plain bullets are descriptions
+                rows.append(_education_entry(part, pending_years))
+                pending_years = ""
     return rows
 
 
@@ -248,24 +301,48 @@ def parse_resume_text(text: str) -> dict:
         "ignore": [],
     }
     current = "summary"
+    # Layout extraction renders side-by-side sections ("KOMPETENSER
+    # EGENSKAPER") as one heading line followed by item pairs; track the
+    # per-column section so each item lands in the right bucket.
+    column_sections: list[str] | None = None
     for raw_line in text.splitlines():
         line = raw_line.strip()
         if not line or PAGE_NUMBER_RE.match(line):
             continue
+
+        segments = [seg.strip() for seg in COLUMN_GAP_RE.split(line) if seg.strip()]
+        segment_headings = [_match_heading(seg) for seg in segments]
+        if len(segments) >= 2 and all(sec for sec, _ in segment_headings):
+            column_sections = [sec for sec, _ in segment_headings]
+            current = column_sections[0]
+            for sec, rest in segment_headings:
+                if rest:
+                    buckets[sec].append(rest)
+            continue
+        if column_sections and len(segments) >= 2:
+            # Columns can have unequal length; pair what lines up.
+            for sec, seg in zip(column_sections, segments, strict=False):
+                buckets[sec].append(seg)
+            continue
+        if column_sections and BULLET_RE.match(line):
+            buckets[column_sections[0]].append(segments[0])
+            continue
+
         section, rest = _match_heading(line)
         if section:
             current = section
+            column_sections = None
             if rest:
                 buckets[current].append(rest)
             continue
         buckets[current].append(line)
 
     summary_lines = [
-        line
+        _clean(line)
         for line in buckets["summary"]
         if not EMAIL_RE.search(line)
         and not PHONE_RE.search(line)
-        and line.lower() != "linkedin"
+        and line.lower().strip() != "linkedin"
     ]
     # The first line is usually the person's name, not a headline.
     if summary_lines and _looks_like_name(summary_lines[0]):
@@ -282,13 +359,15 @@ def parse_resume_text(text: str) -> dict:
     skills: list[str] = []
     for line in buckets["skills"]:
         for part in re.split(r"[,;•·|]", line):
-            part = part.strip(" •·-–\t")
+            part = _clean(part.strip(" •·-–\t"))
             if part and not part.isdigit() and len(part) <= 60:
                 skills.append(part)
 
     return {
         "headline": headline,
-        "summary": "\n".join(summary_lines),
+        # Summary is prose; PDF extraction may deliver one word per line,
+        # so join with spaces rather than preserving line breaks.
+        "summary": _clean(" ".join(summary_lines)),
         "skills": skills,
         "experience": _parse_experience(buckets["experience"]),
         "education": _parse_education(buckets["education"]),

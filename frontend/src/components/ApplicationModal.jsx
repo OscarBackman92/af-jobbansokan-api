@@ -10,6 +10,7 @@ const EMPTY = {
   ad_url: "",
   status: "applied",
   applied_at: new Date().toISOString().slice(0, 10),
+  deadline: "",
   contact_name: "",
   contact_info: "",
   next_action_at: "",
@@ -54,6 +55,7 @@ export default function ApplicationModal({
     // Empty strings are not valid dates.
     if (!body.applied_at) body.applied_at = null;
     if (!body.next_action_at) body.next_action_at = null;
+    if (!body.deadline) body.deadline = null;
     return body;
   }
 
@@ -145,11 +147,15 @@ export default function ApplicationModal({
               <input {...field("applied_at", "date")} />
             </label>
             <label>
-              Nästa steg (datum)
-              <input {...field("next_action_at", "date")} />
+              Sista ansökningsdag
+              <input {...field("deadline", "date")} />
             </label>
           </div>
           <div className="grid3">
+            <label>
+              Nästa steg (datum)
+              <input {...field("next_action_at", "date")} />
+            </label>
             <label>
               Kontaktperson
               <input {...field("contact_name")} placeholder="Rekryterare, chef…" />
@@ -158,11 +164,11 @@ export default function ApplicationModal({
               Kontaktuppgift
               <input {...field("contact_info")} placeholder="mail eller telefon" />
             </label>
-            <label>
-              Länk till annonsen
-              <input {...field("ad_url", "url")} placeholder="https://…" />
-            </label>
           </div>
+          <label>
+            Länk till annonsen
+            <input {...field("ad_url", "url")} placeholder="https://…" />
+          </label>
           <label>
             Anteckningar
             <textarea {...field("notes")} />

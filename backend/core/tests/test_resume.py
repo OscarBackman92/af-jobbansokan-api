@@ -100,45 +100,75 @@ def test_parse_resume_text_sections():
     assert "anna@example.com" not in draft["summary"]
 
 
-REAL_PDF_TEXT = """OSCAR BÄCKMAN
-0720101647
-Jan.oscar.backman@gmail.com · LinkedIn
-Jag är en snabblärd och strukturerad person som trivs i rollen.
+# Verbatim pypdf layout-mode output (abbreviated): indented blocks, a
+# date line above each "TITLE  COMPANY" line, wrapped bullet
+# continuations, page numbers, and a two-column section at the end.
+REAL_PDF_TEXT = """                    OSCAR BÄCKMAN
+
+                                                        0720101647
+                                       Jan.oscar.backman@gmail.com · LinkedIn
+
+
+Jag  är  en snabblärd och       strukturerad person        som   trivs i rollen som spindeln i        nätet.  Jag  gillar  att
+samarbeta, lösa problem och förbättra rutiner.
 
 ARBETSLIVSERFARENHET
-FEBRUARI 2026 – PÅGÅENDE
-BUSINESS OPERATIONS COORDINATOR  ADNS HOUSE OF SERVICE AB
-• Central roll med ansvar för ekonomi.
-• Operativt ansvar för kund- och leverantörsfakturor.
-NOVEMBER 2018 – OKTOBER 2025
-ORDERADMINISTRATÖR  AVOKI GROUP AB
-• Hanterade försäljningsorder.
-1
+
+     FEBRUARI 2026 – PÅGÅENDE
+     BUSINESS OPERATIONS COORDINATOR  ADNS HOUSE OF SERVICE AB
+          •  Central roll med ansvar för ekonomi, administration och uppföljning för House of Service IT
+             och FM, med fokus på effektiva och skalbara processer.
+          •  Operativt ansvar för kund- och leverantörsfakturor.
+
+     NOVEMBER 2018 – OKTOBER 2025
+     ORDERADMINISTRATÖR  AVOKI GROUP AB
+          •  Hanterade försäljningsorder inom IT och AV.
+
+     SEPTEMBER 2017 – NOVEMBER 2018
+     EKONOMIASSISTENT  AVOKI
+          •  Hanterade fakturering och kreditering i Visma Business.
+
+     JUNI 2017 – AUGUSTI 2017
+
+                                                              1
+    EKONOMIASSISTENT (PRAKTIK)  IMG SWEDEN AB
+         •  Assisterade i löpande ekonomiuppgifter, fakturering och rapportering.
+
 UTBILDNING
-2024
-FULLSTACK DEVELOPMENT  CODE INSTITUTE
-• Diplom i Full Stack Software Development.
-Övriga utbildningar
-• MS Teams och SharePoint för administratörer | Informator, 2022
-• Tekniskt gymnasium | Värmdö Tekniska Gymnasium, 2010 - 2013
-KOMPETENSER • SuperOffice CRM • Visma Business ERP • Office
-EGENSKAPER
-• Lösningsorienterad
+
+    2024
+    FULLSTACK DEVELOPMENT  CODE INSTITUTE
+         •  Diplom i Full Stack Software Development med fokus på avancerad frontend.
+         •  Praktisk erfarenhet av moderna utvecklingsverktyg och ramverk som React, Node.js och
+            Django.
+         •  Betyg: Pass
+
+    Övriga utbildningar
+         •  MS Teams och SharePoint för administratörer | Informator, 2022
+         •  Tekniskt gymnasium | Värmdö Tekniska Gymnasium, 2010 - 2013
+
+KOMPETENSER                                                   EGENSKAPER
+•   SuperOffice CRM                                            •  Lösningsorienterad
+•   Visma Business ERP                                         •  Serviceinriktad
+•   Office                                                     •  Nyfiken/Snabblärd
+•   Nettailer/Netset
+•   B-körkort
+
 REFERENSER
-Lämnas på förfrågan
-2
+    Lämnas på förfrågan
+
+                                                           2
 """
 
 
 def test_parse_realistic_pdf_extraction():
-    """Text as pypdf actually produces it: date ranges on their own lines,
-    page numbers, two-column sections glued together, trailing sections
-    (EGENSKAPER, REFERENSER) that must not pollute the form."""
+    """Verbatim pypdf layout-mode output must map cleanly to the form."""
     draft = parse_resume_text(REAL_PDF_TEXT)
 
-    # The name is not a headline; the prose line is summary, not headline.
+    # The name is not a headline; the prose goes to summary as one block.
     assert draft["headline"] == ""
-    assert "snabblärd" in draft["summary"]
+    assert "snabblärd och strukturerad person" in draft["summary"]
+    assert "\n" not in draft["summary"]
 
     assert [
         (row["title"], row["company"], row["years"]) for row in draft["experience"]
@@ -149,9 +179,13 @@ def test_parse_realistic_pdf_extraction():
             "FEBRUARI 2026 – PÅGÅENDE",
         ),
         ("ORDERADMINISTRATÖR", "AVOKI GROUP AB", "NOVEMBER 2018 – OKTOBER 2025"),
+        ("EKONOMIASSISTENT", "AVOKI", "SEPTEMBER 2017 – NOVEMBER 2018"),
+        ("EKONOMIASSISTENT (PRAKTIK)", "IMG SWEDEN AB", "JUNI 2017 – AUGUSTI 2017"),
     ]
+    # Wrapped bullet lines are joined back into the description.
     assert (
-        "Central roll med ansvar för ekonomi." in draft["experience"][0]["description"]
+        "för House of Service IT och FM, med fokus"
+        in draft["experience"][0]["description"]
     )
 
     assert draft["education"] == [
@@ -172,12 +206,19 @@ def test_parse_realistic_pdf_extraction():
         },
     ]
 
-    # The glued two-column heading still lands in skills…
-    assert draft["skills"] == ["SuperOffice CRM", "Visma Business ERP", "Office"]
+    # Left column lands in skills, right column (traits) is ignored…
+    assert draft["skills"] == [
+        "SuperOffice CRM",
+        "Visma Business ERP",
+        "Office",
+        "Nettailer/Netset",
+        "B-körkort",
+    ]
     # …and traits/references/page numbers stay out of everything.
     flat = str(draft)
     assert "Lösningsorienterad" not in flat
     assert "Lämnas på förfrågan" not in flat
+    assert "Övriga" not in flat
 
 
 def test_parse_txt_upload(api_client, user):

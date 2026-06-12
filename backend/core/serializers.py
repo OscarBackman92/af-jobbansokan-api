@@ -78,6 +78,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             "status",
             "status_label",
             "applied_at",
+            "deadline",
             "contact_name",
             "contact_info",
             "notes",
@@ -107,6 +108,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
                 title=attrs.get("title") or posting.title,
                 location=attrs.get("location") or posting.location,
                 ad_url=attrs.get("ad_url") or posting.webpage_url,
+                deadline=attrs.get("deadline") or posting.application_deadline,
             )
 
         company = attrs.get("company", getattr(self.instance, "company", ""))
