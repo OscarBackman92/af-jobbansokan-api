@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dj_rest_auth.registration.serializers import RegisterSerializer
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
@@ -138,6 +139,24 @@ class StatusCountSerializer(serializers.Serializer):
     status = serializers.CharField()
     label = serializers.CharField()
     count = serializers.IntegerField()
+
+
+class EmailRegisterSerializer(RegisterSerializer):
+    """Registration by e-mail only — no username field in the API.
+
+    dj-rest-auth's own duplicate check only rejects *verified* addresses,
+    and we never send verification mail, so enforce uniqueness here.
+    """
+
+    username = None
+
+    def validate_email(self, email):
+        email = super().validate_email(email)
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError(
+                "Det finns redan ett konto med den här e-postadressen."
+            )
+        return email
 
 
 class ProfileSerializer(serializers.ModelSerializer):

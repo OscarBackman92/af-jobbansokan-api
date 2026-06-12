@@ -69,10 +69,9 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
         <div>
           <h2>Min profil</h2>
           <p className="muted">
-            <strong>{me.username}</strong>
+            <strong>{me.email}</strong>
             {(me.first_name || me.last_name) &&
               ` — ${me.first_name} ${me.last_name}`.trimEnd()}
-            {me.email && ` · ${me.email}`}
           </p>
         </div>
         <div className="row-gap">

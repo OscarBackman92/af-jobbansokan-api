@@ -30,7 +30,7 @@ export default function AuthHero({ onLogin }) {
 
 function AuthCard({ onLogin }) {
   const [mode, setMode] = useState("login");
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -44,11 +44,11 @@ function AuthCard({ onLogin }) {
         mode === "login"
           ? await request("/dj-rest-auth/login/", {
               method: "POST",
-              body: { username, password },
+              body: { email, password },
             })
           : await request("/dj-rest-auth/registration/", {
               method: "POST",
-              body: { username, password1: password, password2: password },
+              body: { email, password1: password, password2: password },
             });
       onLogin(data.access);
     } catch (err) {
@@ -64,14 +64,16 @@ function AuthCard({ onLogin }) {
       <p className="muted">
         {mode === "login"
           ? "Välkommen tillbaka."
-          : "Bara användarnamn och lösenord — igång på tio sekunder."}
+          : "Bara e-post och lösenord — igång på tio sekunder."}
       </p>
       <label>
-        Användarnamn
+        E-postadress
         <input
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoComplete="username"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+          placeholder="namn@exempel.se"
           required
         />
       </label>

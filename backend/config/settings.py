@@ -213,6 +213,7 @@ REST_AUTH = {
     "USE_JWT": True,
     "JWT_AUTH_COOKIE": None,
     "JWT_AUTH_REFRESH_COOKIE": None,
+    "REGISTER_SERIALIZER": "core.serializers.EmailRegisterSerializer",
 }  # keep JWT out of cookies for API usage
 
 SIMPLE_JWT = {
@@ -222,10 +223,15 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
-# allauth
+# allauth — accounts are e-mail based; usernames are generated internally.
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",  # admin login by username
+    "allauth.account.auth_backends.AuthenticationBackend",  # API login by email
+]
 
 SITE_ID = 1
-ACCOUNT_AUTHENTICATION_METHOD = "username"
-ACCOUNT_EMAIL_REQUIRED = False
-ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = "email"
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_VERIFICATION = "none"
