@@ -9,6 +9,7 @@ from rest_framework import generics, viewsets
 from rest_framework import status as drf_status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -261,6 +262,14 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
         return response
 
 
+class PostingPagination(PageNumberPagination):
+    """Larger pages for browsing ads, with an optional ?page_size override."""
+
+    page_size = 50
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
 @extend_schema_view(
     list=extend_schema(
         parameters=[
@@ -279,6 +288,7 @@ class JobPostingViewSet(viewsets.ReadOnlyModelViewSet):
     """Imported job ads (JobTech). Read-only; rows are created by import."""
 
     permission_classes = [IsAuthenticated]
+    pagination_class = PostingPagination
 
     def get_serializer_class(self):
         # Lean list payloads; full posting (description, link) in detail.

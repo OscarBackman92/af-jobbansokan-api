@@ -43,6 +43,6 @@ class Command(BaseCommand):
         if JobPosting.objects.filter(source="jobtech").exists():
             return
         try:
-            call_command("import_postings", "--query", query, "--limit", "20")
+            call_command("import_postings", "--query", query, "--limit", "50")
         except Exception as exc:  # network hiccup must not block boot
             self.stderr.write(f"Posting import skipped: {exc}")

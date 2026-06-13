@@ -40,7 +40,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--limit",
             type=int,
-            default=20,
+            default=50,
             help=f"Max postings to import (<= {MAX_LIMIT}).",
         )
 

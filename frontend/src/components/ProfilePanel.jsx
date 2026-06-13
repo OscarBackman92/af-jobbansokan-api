@@ -123,6 +123,80 @@ const EMPTY_RESUME = {
   education: [],
 };
 
+function CvReadView({ resume, skillsText }) {
+  const skills = skillsText
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const hasContent =
+    resume.headline ||
+    resume.summary ||
+    skills.length ||
+    resume.experience.length ||
+    resume.education.length;
+
+  if (!hasContent) {
+    return (
+      <p className="muted">
+        Inget CV ännu — ladda upp en fil eller klicka på Redigera för att
+        fylla i.
+      </p>
+    );
+  }
+
+  return (
+    <div className="cv-read">
+      {resume.headline && <p className="cv-headline">{resume.headline}</p>}
+      {resume.summary && <p className="muted">{resume.summary}</p>}
+
+      {skills.length > 0 && (
+        <div className="cv-skills">
+          {skills.map((skill) => (
+            <span className="badge" key={skill}>
+              {skill}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {resume.experience.length > 0 && (
+        <>
+          <h3>Erfarenhet</h3>
+          <ul className="cv-list">
+            {resume.experience.map((row, i) => (
+              <li key={i}>
+                <div className="cv-row-head">
+                  <strong>{row.title}</strong>
+                  {row.company && <span> · {row.company}</span>}
+                  {row.years && <span className="muted"> · {row.years}</span>}
+                </div>
+                {row.description && (
+                  <p className="muted cv-desc">{row.description}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {resume.education.length > 0 && (
+        <>
+          <h3>Utbildning</h3>
+          <ul className="cv-list">
+            {resume.education.map((row, i) => (
+              <li key={i}>
+                <strong>{row.degree || row.school}</strong>
+                {row.degree && row.school && <span> · {row.school}</span>}
+                {row.years && <span className="muted"> · {row.years}</span>}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
 function ResumeCard({ token }) {
   const [resume, setResume] = useState(EMPTY_RESUME);
   const [skillsText, setSkillsText] = useState("");
@@ -225,11 +299,7 @@ function ResumeCard({ token }) {
         <div>
           <h2>Mitt CV</h2>
           <p className="muted">
-            Används för att matcha dina kompetenser mot annonserna.{" "}
-            {resume.headline
-              ? resume.headline
-              : "Inget CV ännu — fyll i formuläret eller ladda upp en fil."}
-            {resume.skills.length > 0 && ` · ${resume.skills.length} kompetenser`}
+            Används för att matcha dina kompetenser mot annonserna.
           </p>
         </div>
         <div className="row-gap">
@@ -248,6 +318,7 @@ function ResumeCard({ token }) {
         </div>
       </div>
       {message && <p className="notice">{message}</p>}
+      {!open && <CvReadView resume={resume} skillsText={skillsText} />}
       {open && (
         <form onSubmit={save}>
           <label>
