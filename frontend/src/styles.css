@@ -112,7 +112,7 @@ body {
 }
 
 .app {
-  max-width: 1060px;
+  max-width: 1320px;
   margin: 0 auto;
   padding: 0 1.5rem 4rem;
 }
@@ -674,7 +674,7 @@ tbody tr:last-child td {
 .board {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(200px, 1fr);
+  grid-auto-columns: minmax(186px, 1fr);
   gap: 0.7rem;
   margin-top: 1.1rem;
   overflow-x: auto;
@@ -685,11 +685,11 @@ tbody tr:last-child td {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.6rem;
+  padding: 0.7rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  min-height: 120px;
+  gap: 0.55rem;
+  min-height: 380px;
 }
 
 .kcol-head {

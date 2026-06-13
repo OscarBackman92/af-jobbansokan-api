@@ -213,8 +213,11 @@ REST_AUTH = {
     "USE_JWT": True,
     "JWT_AUTH_COOKIE": None,
     "JWT_AUTH_REFRESH_COOKIE": None,
+    # SPA reads tokens from the response body, not cookies; HTTPONLY=True
+    # (the default) would blank out the refresh token in the body.
+    "JWT_AUTH_HTTPONLY": False,
     "REGISTER_SERIALIZER": "core.serializers.EmailRegisterSerializer",
-}  # keep JWT out of cookies for API usage
+}
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),

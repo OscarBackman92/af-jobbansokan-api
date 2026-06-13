@@ -44,13 +44,15 @@ function AuthCard({ onLogin }) {
         mode === "login"
           ? await request("/dj-rest-auth/login/", {
               method: "POST",
+              auth: false,
               body: { email, password },
             })
           : await request("/dj-rest-auth/registration/", {
               method: "POST",
+              auth: false,
               body: { email, password1: password, password2: password },
             });
-      onLogin(data.access);
+      onLogin({ access: data.access, refresh: data.refresh });
     } catch (err) {
       setError(err.message);
     } finally {

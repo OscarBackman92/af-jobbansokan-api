@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { request } from "../api.js";
+import { downloadBlob, request } from "../api.js";
 import {
   ACTIVE_STATUSES,
   CLOSED_STATUSES,
@@ -65,10 +65,7 @@ export default function BoardPanel({ token }) {
   }
 
   async function exportCsv() {
-    const response = await fetch("/api/v1/applications/export/", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const blob = await response.blob();
+    const blob = await downloadBlob("/api/v1/applications/export/");
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;

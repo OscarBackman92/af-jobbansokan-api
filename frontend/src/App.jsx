@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { request } from "./api.js";
+import { clearTokens, getAccess, setTokens } from "./auth.js";
 import AuthHero from "./components/AuthHero.jsx";
 import BoardPanel from "./components/BoardPanel.jsx";
 import PostingsPanel from "./components/PostingsPanel.jsx";
@@ -20,7 +21,7 @@ const THEMES = [
 
 export default function App() {
   const [tab, setTab] = useState("board");
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [token, setToken] = useState(() => getAccess());
   const [me, setMe] = useState(null);
   const [theme, setTheme] = useState(
     () => localStorage.getItem("theme") || "indigo"
@@ -33,18 +34,25 @@ export default function App() {
 
   useEffect(() => {
     if (!token) return;
-    request("/api/v1/me/", { token })
+    request("/api/v1/me/")
       .then(setMe)
-      .catch(() => logout()); // expired/invalid token
+      .catch(() => logout()); // refresh already tried; truly signed out
   }, [token]);
 
-  function login(access) {
-    localStorage.setItem("token", access);
-    setToken(access);
+  // The api layer fires this when a refresh fails (session truly expired).
+  useEffect(() => {
+    const handler = () => logout();
+    window.addEventListener("auth-expired", handler);
+    return () => window.removeEventListener("auth-expired", handler);
+  }, []);
+
+  function login(tokens) {
+    setTokens(tokens);
+    setToken(tokens.access);
   }
 
   function logout() {
-    localStorage.removeItem("token");
+    clearTokens();
     setToken(null);
     setMe(null);
     setTab("board");
