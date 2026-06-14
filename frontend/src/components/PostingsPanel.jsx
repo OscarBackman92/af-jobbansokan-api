@@ -160,16 +160,20 @@ export default function PostingsPanel() {
       {message && <p className="notice">{message}</p>}
       {error && <p className="error">{error}</p>}
 
-      {!error && (
+      {loading && (
+        <div className="loading-row">
+          <span className="spinner" /> Söker i Platsbanken…
+        </div>
+      )}
+
+      {!error && !loading && (
         <p className="muted job-count">
-          {loading
-            ? "Söker…"
-            : total === 0
-              ? "Inga annonser matchade din sökning."
-              : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
-                  "sv-SE"
-                )} annonser`}
-          {activeFilters && !loading && (
+          {total === 0
+            ? "Inga annonser matchade din sökning."
+            : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
+                "sv-SE"
+              )} annonser`}
+          {activeFilters && (
             <button className="linklike job-clear" onClick={clearFilters}>
               Rensa filter
             </button>

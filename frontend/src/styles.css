@@ -1064,6 +1064,32 @@ tbody tr:last-child td {
   white-space: nowrap;
 }
 
+/* ---------- Loading ---------- */
+
+.loading-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--muted);
+  padding: 0.4rem 0;
+}
+
+.spinner {
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 2px solid var(--border);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ---------- Empty states ---------- */
 
 .empty-state {
@@ -1400,6 +1426,30 @@ code {
 
   .job-track {
     width: 100%;
+  }
+
+  /* Wide tables (Avslutade) scroll horizontally instead of overflowing */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .header h1 {
+    font-size: 1.1rem;
+  }
+
+  .tagline {
+    font-size: 0.7rem;
+  }
+}
+
+/* Coarse-pointer (touch) devices: HTML5 drag-and-drop doesn't fire, so
+   make the per-card status select the obvious way to move a card. */
+@media (hover: none) {
+  .kcard-move {
+    border-color: var(--accent);
+    color: var(--ink);
   }
 
   .row-between {

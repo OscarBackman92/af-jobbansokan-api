@@ -75,7 +75,17 @@ export default function BoardPanel({ token }) {
   }
 
   if (!applications) {
-    return <section className="card">{error || "Laddar tavlan…"}</section>;
+    return (
+      <section className="card">
+        {error ? (
+          <p className="error">{error}</p>
+        ) : (
+          <div className="loading-row">
+            <span className="spinner" /> Laddar tavlan…
+          </div>
+        )}
+      </section>
+    );
   }
 
   const closed = applications.filter((a) => CLOSED_STATUSES.includes(a.status));

@@ -21,7 +21,15 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
   const [form, setForm] = useState({ email: "", first_name: "", last_name: "" });
   const [message, setMessage] = useState(null);
 
-  if (!me) return <div className="card">Laddar profil…</div>;
+  if (!me) {
+    return (
+      <div className="card">
+        <div className="loading-row">
+          <span className="spinner" /> Laddar profil…
+        </div>
+      </div>
+    );
+  }
 
   function startEdit() {
     setForm({
@@ -199,12 +207,17 @@ function ResumeCard({ token }) {
   const [skillsText, setSkillsText] = useState("");
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    request("/api/v1/me/resume/", { token }).then((data) => {
-      setResume(data);
-      setSkillsText(data.skills.join(", "));
-    });
+    setLoading(true);
+    request("/api/v1/me/resume/", { token })
+      .then((data) => {
+        setResume(data);
+        setSkillsText(data.skills.join(", "));
+      })
+      .catch((err) => setMessage(err.message))
+      .finally(() => setLoading(false));
   }, [token]);
 
   function setField(name, value) {
@@ -315,8 +328,13 @@ function ResumeCard({ token }) {
         </div>
       </div>
       {message && <p className="notice">{message}</p>}
-      {!open && <CvReadView resume={resume} skillsText={skillsText} />}
-      {open && (
+      {loading && (
+        <div className="loading-row">
+          <span className="spinner" /> Laddar CV…
+        </div>
+      )}
+      {!loading && !open && <CvReadView resume={resume} skillsText={skillsText} />}
+      {!loading && open && (
         <form onSubmit={save}>
           <label>
             Rubrik
