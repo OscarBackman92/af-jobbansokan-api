@@ -100,7 +100,7 @@ export default function App() {
       <main className="main">
         {!token && <AuthHero onLogin={login} />}
         {token && tab === "board" && <BoardPanel token={token} />}
-        {token && tab === "postings" && <PostingsPanel token={token} />}
+        {token && tab === "postings" && <PostingsPanel />}
         {token && tab === "profile" && (
           <ProfilePanel token={token} me={me} onMeChange={setMe} onLogout={logout} />
         )}

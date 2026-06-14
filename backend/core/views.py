@@ -1,4 +1,5 @@
 import csv
+from types import SimpleNamespace
 
 from django.db.models import Count, Q
 from django.http import HttpResponse
@@ -15,6 +16,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .jobtech import OCCUPATION_FIELDS, REGIONS, JobTechError
+from .jobtech import search as jobtech_search
 from .matching import match_skills
 from .models import Favorite, JobApplication, JobPosting, Resume
 from .resume import (
@@ -361,3 +364,73 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+def _truthy(value):
+    return str(value).lower() in ("1", "true", "yes", "on")
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter("q", OpenApiTypes.STR, description="Free text query."),
+        OpenApiParameter("region", OpenApiTypes.STR, description="Region concept id."),
+        OpenApiParameter(
+            "field", OpenApiTypes.STR, description="Occupation-field concept id."
+        ),
+        OpenApiParameter("remote", OpenApiTypes.BOOL, description="Remote only."),
+        OpenApiParameter("offset", OpenApiTypes.INT),
+        OpenApiParameter("limit", OpenApiTypes.INT),
+    ],
+    responses={200: OpenApiTypes.OBJECT},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def job_search(request):
+    """Live search of Platsbanken via JobTech, with optional CV matching."""
+    params = request.query_params
+    try:
+        offset = int(params.get("offset", 0))
+        limit = int(params.get("limit", 25))
+    except ValueError as exc:
+        raise ValidationError({"detail": "offset/limit must be integers."}) from exc
+
+    try:
+        data = jobtech_search(
+            q=params.get("q", ""),
+            region=params.get("region", ""),
+            field=params.get("field", ""),
+            remote=_truthy(params.get("remote", "")),
+            offset=offset,
+            limit=limit,
+        )
+    except JobTechError:
+        return Response(
+            {"detail": "Kunde inte nå Platsbanken just nu. Försök igen strax."},
+            status=drf_status.HTTP_502_BAD_GATEWAY,
+        )
+
+    resume = getattr(request.user, "resume", None)
+    skills = (resume.skills if resume else None) or None
+    if skills:
+        for job in data["results"]:
+            job["match"] = match_skills(
+                skills,
+                SimpleNamespace(title=job["title"], description=job["description"]),
+            )
+
+    data["offset"] = offset
+    data["limit"] = limit
+    return Response(data)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def job_filters(_request):
+    """Region and occupation-field options for the ad-search dropdowns."""
+    return Response(
+        {
+            "regions": [{"id": cid, "label": label} for cid, label in REGIONS],
+            "fields": [{"id": cid, "label": label} for cid, label in OCCUPATION_FIELDS],
+        }
+    )

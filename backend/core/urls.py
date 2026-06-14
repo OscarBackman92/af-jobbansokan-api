@@ -8,6 +8,8 @@ from .views import (
     ProfileView,
     ResumeParseView,
     ResumeView,
+    job_filters,
+    job_search,
 )
 
 router = DefaultRouter()
@@ -19,5 +21,7 @@ urlpatterns = [
     path("me/", ProfileView.as_view(), name="me"),
     path("me/resume/", ResumeView.as_view(), name="my-resume"),
     path("me/resume/parse/", ResumeParseView.as_view(), name="my-resume-parse"),
+    path("jobs/", job_search, name="job-search"),
+    path("jobs/filters/", job_filters, name="job-filters"),
     path("", include(router.urls)),
 ]

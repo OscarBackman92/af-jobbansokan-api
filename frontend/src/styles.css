@@ -953,6 +953,96 @@ tbody tr:last-child td {
   font-size: 0.86rem;
 }
 
+/* ---------- Job search (live ads) ---------- */
+
+.job-search {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.9rem 0;
+}
+
+.job-search input,
+.job-search select {
+  margin-top: 0;
+  width: 100%;
+}
+
+.job-remote {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--label);
+  white-space: nowrap;
+}
+
+.job-remote input {
+  width: auto;
+  margin: 0;
+}
+
+.job-count {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.4rem 0 0.8rem;
+}
+
+.job-clear {
+  font-size: 0.85rem;
+}
+
+.job-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.job-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.job-card:hover {
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.job-card-main {
+  min-width: 0;
+}
+
+.job-card-main .muted {
+  margin: 0.1rem 0 0;
+}
+
+.job-title {
+  font-size: 0.98rem;
+  font-weight: 650;
+}
+
+.job-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.45rem;
+}
+
+.job-track {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 /* ---------- Empty states ---------- */
 
 .empty-state {
@@ -1276,8 +1366,19 @@ code {
   .grid3,
   .searchbar,
   .rowline,
-  .timeline-form {
+  .timeline-form,
+  .job-search {
     grid-template-columns: 1fr;
+  }
+
+  .job-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .job-track {
+    width: 100%;
   }
 
   .row-between {
