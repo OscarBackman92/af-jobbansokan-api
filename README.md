@@ -17,10 +17,13 @@ export because the data is yours.
 
 ## Features
 
-- **The board** — kanban over active applications:
+- **The board** — drag-and-drop kanban over active applications:
   Sparad → Ansökt → Telefonintervju → Intervju → Skickad vidare →
   Erbjudande, with closed ones (Accepterat/Avslag/Inget svar/Återkallad)
-  in an archive
+  in an archive. Cards show a deadline badge as the last application day
+  approaches
+- **Follow-ups** — a section that surfaces rows whose next-step date has
+  passed or whose deadline is within a week
 - **Timeline per application** — notes, calls and interviews; status
   changes are logged automatically
 - **Free-text rows** — track applications from anywhere (LinkedIn,
@@ -28,11 +31,16 @@ export because the data is yours.
 - **Job ad search** — ads imported from Arbetsförmedlingen's open
   [JobTech JobSearch API](https://jobsearch.api.jobtechdev.se) (free, no
   API key), added to the board with one click
-- **CV matching** — structured CV (upload PDF/DOCX/TXT, parsed in
-  memory, never stored) matched against ad texts
-- **Favorites, filters, stats and CSV export**
-- JWT auth (registration + login via dj-rest-auth), OpenAPI 3 schema
-  with Swagger UI, modern admin ([django-unfold](https://unfoldadmin.com/))
+- **CV** — upload a PDF/DOCX/TXT and it's parsed (in memory, never
+  stored, using pypdf layout mode) into an always-visible, editable CV
+  whose skills are matched against ad texts
+- **Statistics** — applications per month and how many reached a
+  call/interview or further
+- **Favorites, filters and CSV export** (data portability)
+- **E-mail based accounts** (registration + login via dj-rest-auth),
+  with transparent JWT refresh so a session never drops mid-task;
+  OpenAPI 3 schema with Swagger UI, modern admin
+  ([django-unfold](https://unfoldadmin.com/))
 
 ## Architecture
 
@@ -46,7 +54,7 @@ flowchart LR
 | Layer | Technology |
 | --- | --- |
 | API | Django 5.2 + Django REST Framework 3.16 |
-| Auth | dj-rest-auth + allauth + SimpleJWT (15 min access, 7 d refresh, rotation + blacklist) |
+| Auth | dj-rest-auth + allauth (e-mail login) + SimpleJWT (15 min access, 7 d refresh, rotation + blacklist); SPA refreshes the access token on 401 |
 | Database | SQLite (dev default) / PostgreSQL 16 (docker compose) |
 | API docs | drf-spectacular (OpenAPI 3 + Swagger UI) |
 | Frontend | React 19 + Vite (in `frontend/`) |
@@ -59,17 +67,18 @@ Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
 | Endpoint | Method | Notes |
 | --- | --- | --- |
 | `/health/` | GET | Health check (no `/api/v1` prefix) |
-| `/dj-rest-auth/registration/` | POST | Create account, returns JWT |
-| `/dj-rest-auth/login/` | POST | Returns access + refresh token |
+| `/dj-rest-auth/registration/` | POST | Create account by e-mail, returns JWT |
+| `/dj-rest-auth/login/` | POST | Log in by e-mail; returns access + refresh token |
+| `/dj-rest-auth/token/refresh/` | POST | Exchange the refresh token for a new access (+ rotated refresh) token |
 | `/api/v1/me/` | GET, PATCH, DELETE | Own profile; DELETE = GDPR erasure |
 | `/api/v1/me/resume/` | GET, PUT, DELETE | Structured CV |
 | `/api/v1/me/resume/parse/` | POST | Parse uploaded CV to a draft — file never stored |
 | `/api/v1/applications/` | GET, POST | Tracker rows; `?status=&search=&from=&to=` |
-| `/api/v1/applications/{id}/` | GET, PATCH, DELETE | Edit status, notes, contacts — fully mutable |
+| `/api/v1/applications/{id}/` | GET, PATCH, DELETE | Edit status, deadline, notes, contacts — fully mutable |
 | `/api/v1/applications/{id}/events/` | POST | Append a timeline event |
 | `/api/v1/applications/stats/` | GET | Counts per status |
 | `/api/v1/applications/export/` | GET | CSV download (filters apply) |
-| `/api/v1/postings/` | GET | Imported ads; `?search=&location=`; match score with CV |
+| `/api/v1/postings/` | GET | Imported ads; `?search=&location=&page_size=`; 50/page; match score with CV |
 | `/api/v1/favorites/` | GET, POST, DELETE | Saved postings |
 
 ## Getting started
@@ -130,17 +139,17 @@ host port **5433**) and run `migrate` again.
 ### A quick end-to-end tour
 
 ```bash
-# 1. Register (returns JWT immediately)
+# 1. Register by e-mail (returns access + refresh JWT immediately)
 curl -X POST http://127.0.0.1:8000/dj-rest-auth/registration/ \
   -H "Content-Type: application/json" \
-  -d '{"username": "anna", "password1": "Testpass123!", "password2": "Testpass123!"}'
+  -d '{"email": "anna@example.com", "password1": "Testpass123!", "password2": "Testpass123!"}'
 
-# 2. Add a free-text tracker row
+# 2. Add a free-text tracker row with a deadline
 curl -X POST http://127.0.0.1:8000/api/v1/applications/ \
   -H "Authorization: Bearer <access token>" -H "Content-Type: application/json" \
-  -d '{"company": "Acme AB", "title": "Backendutvecklare", "applied_at": "2026-06-09"}'
+  -d '{"company": "Acme AB", "title": "Backendutvecklare", "applied_at": "2026-06-09", "deadline": "2026-06-30"}'
 
-# 3. Move it forward and log a call
+# 3. Move it forward (auto-logs a timeline event)
 curl -X PATCH http://127.0.0.1:8000/api/v1/applications/1/ \
   -H "Authorization: Bearer <access token>" -H "Content-Type: application/json" \
   -d '{"status": "screening"}'
@@ -148,6 +157,11 @@ curl -X PATCH http://127.0.0.1:8000/api/v1/applications/1/ \
 # 4. See where you stand
 curl http://127.0.0.1:8000/api/v1/applications/stats/ \
   -H "Authorization: Bearer <access token>"
+
+# 5. When the access token expires, mint a new one with the refresh token
+curl -X POST http://127.0.0.1:8000/dj-rest-auth/token/refresh/ \
+  -H "Content-Type: application/json" \
+  -d '{"refresh": "<refresh token>"}'
 ```
 
 ## Deployment
@@ -165,9 +179,14 @@ host):
   storage, referrer policy
 - **Env-driven bootstrap on boot** (free tier has no shell): creates the
   superuser (`DJANGO_SUPERUSER_USERNAME`/`_PASSWORD`) and imports
-  postings (`BOOTSTRAP_IMPORT_QUERY`) — idempotent and optional
+  postings (`BOOTSTRAP_IMPORT_QUERY`, 50 ads) — idempotent and optional
 - CI runs the backend tests against **Postgres 16** (same engine as
   production) plus the frontend build
+
+Quick start: push to GitHub → render.com → **New → Blueprint** → select
+the repo → **Apply**. Prefer to host the frontend on Vercel's CDN with
+preview deploys? See [docs/11-deploy-vercel.md](docs/11-deploy-vercel.md)
+for the split (frontend on Vercel, backend on Render).
 
 ## Testing and linting
 
@@ -193,15 +212,21 @@ backend/
   core/                # The single domain app
     management/        #   import_postings + bootstrap commands
     migrations/
-    tests/             #   pytest suite
+    tests/             #   pytest suite (applications, auth, resume, ...)
     models.py          #   JobApplication, ApplicationEvent, JobPosting,
                        #   Favorite, Resume
-    serializers.py
+    resume.py          #   CV extraction (pypdf layout mode) + parsing
+    serializers.py     #   incl. EmailRegisterSerializer (e-mail signup)
     views.py
 frontend/
-  src/components/      # AuthHero, BoardPanel, ApplicationModal,
-                       # PostingsPanel, ProfilePanel
-docs/                  # Vision, architecture, GDPR, pivot rationale
+  src/
+    api.js             #   fetch wrapper with refresh-on-401
+    auth.js            #   token storage + JWT refresh
+    statuses.js        #   status pipeline shared with the backend
+    components/        #   AuthHero, BoardPanel, ApplicationModal,
+                       #   PostingsPanel, ProfilePanel
+  vercel.json          #   optional: proxy /api to the backend on Vercel
+docs/                  # Vision, architecture, GDPR, pivot, deploy guides
 infra/                 # docker-compose for local PostgreSQL
 .github/               # CI workflow, issue/PR templates
 ```
@@ -214,13 +239,16 @@ infra/                 # docker-compose for local PostgreSQL
 - Uploaded CV files are parsed in memory and never stored
 - Notes may contain third-party contact details (recruiters) — covered
   in the privacy policy, removed with the account
-- No analytics, no third-party cookies; the JWT lives in localStorage
+- No analytics, no third-party cookies; the JWT (access + refresh) lives
+  in localStorage
 
 See [docs/06-gdpr-privacy.md](docs/06-gdpr-privacy.md) and
 [docs/10-pivot-ansokt.md](docs/10-pivot-ansokt.md).
 
 ## Roadmap
 
+- [ ] Password reset (needs an outbound e-mail provider, e.g. Resend/Brevo)
+- [ ] Live JobTech search instead of a pre-imported snapshot
 - [ ] Reminders for `next_action_at` (e-mail or notification)
 - [ ] XLSX export alongside CSV
 - [ ] JobStream API for continuous ad updates
@@ -232,6 +260,7 @@ See [docs/06-gdpr-privacy.md](docs/06-gdpr-privacy.md) and
 | Document | Contents |
 | --- | --- |
 | [10-pivot-ansokt.md](docs/10-pivot-ansokt.md) | **The pivot: rationale, product, legal, what changed** |
+| [11-deploy-vercel.md](docs/11-deploy-vercel.md) | Deploy guide: frontend on Vercel, backend on Render |
 | [01-vision-scope.md](docs/01-vision-scope.md) | Original vision (pre-pivot) |
 | [02-architecture.md](docs/02-architecture.md) | Components and data flows |
 | [04-data-model.md](docs/04-data-model.md) | Entities and PII classification (pre-pivot) |
