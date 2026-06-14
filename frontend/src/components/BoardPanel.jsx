@@ -145,38 +145,54 @@ export default function BoardPanel({ token }) {
         </div>
         {error && <p className="error">{error}</p>}
 
-        <div className="board">
-          {ACTIVE_STATUSES.map((status) => {
-            const cards = applications.filter((a) => a.status === status);
-            return (
-              <div
-                className={dragOver === status ? "kcol dragover" : "kcol"}
-                key={status}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(status);
-                }}
-                onDragLeave={() => setDragOver(null)}
-                onDrop={(e) => dropOn(e, status)}
-              >
-                <div className="kcol-head">
-                  <span className={`badge ${status}`}>
-                    {STATUS_LABELS[status]}
-                  </span>
-                  <span className="muted">{cards.length}</span>
+        {applications.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-emoji" aria-hidden="true">🗂️</div>
+            <h3>Din tavla är tom</h3>
+            <p className="muted">
+              Lägg till en ansökan manuellt, eller hitta en annons under
+              fliken Annonser och lägg den på tavlan.
+            </p>
+            <button onClick={() => setAdding(true)}>+ Lägg till din första ansökan</button>
+          </div>
+        ) : (
+          <div className="board">
+            {ACTIVE_STATUSES.map((status) => {
+              const cards = applications.filter((a) => a.status === status);
+              return (
+                <div
+                  className={`kcol kcol--${status}${
+                    dragOver === status ? " dragover" : ""
+                  }`}
+                  key={status}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(status);
+                  }}
+                  onDragLeave={() => setDragOver(null)}
+                  onDrop={(e) => dropOn(e, status)}
+                >
+                  <div className="kcol-head">
+                    <span className="kcol-title">{STATUS_LABELS[status]}</span>
+                    <span className="kcol-count">{cards.length}</span>
+                  </div>
+                  {cards.length === 0 ? (
+                    <div className="kcol-empty">Dra hit</div>
+                  ) : (
+                    cards.map((a) => (
+                      <ApplicationCard
+                        key={a.id}
+                        application={a}
+                        onOpen={() => setSelected(a)}
+                        onMove={(next) => moveTo(a.id, next)}
+                      />
+                    ))
+                  )}
                 </div>
-                {cards.map((a) => (
-                  <ApplicationCard
-                    key={a.id}
-                    application={a}
-                    onOpen={() => setSelected(a)}
-                    onMove={(next) => moveTo(a.id, next)}
-                  />
-                ))}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <MonthlyStats applications={applications} />
@@ -250,28 +266,36 @@ function DeadlineBadge({ application }) {
 function ApplicationCard({ application, onOpen, onMove }) {
   return (
     <div
-      className="kcard"
+      className={`kcard kcard--${application.status}`}
       draggable
       onDragStart={(e) =>
         e.dataTransfer.setData("text/plain", String(application.id))
       }
     >
-      <button className="linklike" onClick={onOpen}>
-        {application.title}
+      <button className="kcard-body" onClick={onOpen}>
+        <span className="kcard-company">{application.company}</span>
+        <span className="kcard-title">{application.title}</span>
       </button>
-      <p className="muted">
-        {application.company}
-        {application.applied_at && ` · sökt ${application.applied_at}`}
-      </p>
-      <DeadlineBadge application={application} />
-      {application.next_action_at && (
-        <span className="badge neutral">
-          Nästa steg {application.next_action_at}
-        </span>
+      {(application.applied_at ||
+        application.deadline ||
+        application.next_action_at) && (
+        <div className="kcard-badges">
+          {application.applied_at && (
+            <span className="kcard-date">Sökt {application.applied_at}</span>
+          )}
+          <DeadlineBadge application={application} />
+          {application.next_action_at && (
+            <span className="badge neutral">
+              Nästa steg {application.next_action_at}
+            </span>
+          )}
+        </div>
       )}
       <select
+        className="kcard-move"
         value={application.status}
         onChange={(e) => onMove(e.target.value)}
+        onClick={(e) => e.stopPropagation()}
         title="Flytta till status"
       >
         {STATUSES.map((s) => (
@@ -324,12 +348,18 @@ function MonthlyStats({ applications }) {
         samtal, intervju eller längre.
       </p>
       <div className="chart">
-        {months.map((m) => (
-          <div className="chart-col" key={m.key} title={`${m.count} st`}>
+        {months.map((m, i) => (
+          <div
+            className={
+              i === months.length - 1 ? "chart-col chart-col--current" : "chart-col"
+            }
+            key={m.key}
+            title={`${m.count} st`}
+          >
             <span className="chart-count">{m.count || ""}</span>
             <div
               className="chart-bar"
-              style={{ height: `${(m.count / max) * 90 + 4}px` }}
+              style={{ height: `${(m.count / max) * 96 + 6}px` }}
             />
             <span className="chart-label">{m.label}</span>
           </div>
