@@ -71,17 +71,29 @@ export default function App() {
           </div>
         </div>
         {token && (
-          <nav className="tabs">
-            {TABS.map((t) => (
+          <div className="nav-right">
+            <nav className="tabs">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  className={tab === t.id ? "tab active" : "tab"}
+                  onClick={() => setTab(t.id)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </nav>
+            <div className="account">
+              {me?.email && <span className="account-email">{me.email}</span>}
               <button
-                key={t.id}
-                className={tab === t.id ? "tab active" : "tab"}
-                onClick={() => setTab(t.id)}
+                className="secondary small"
+                onClick={logout}
+                title="Logga ut"
               >
-                {t.label}
+                Logga ut
               </button>
-            ))}
-          </nav>
+            </div>
+          </div>
         )}
       </header>
 

@@ -186,6 +186,30 @@ body {
   font-weight: 600;
 }
 
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.account-email {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 500;
+  max-width: 18ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tabs {
   display: flex;
   gap: 0.25rem;
@@ -1205,4 +1229,68 @@ code {
   background: var(--grad);
   color: #fff;
   border-color: transparent;
+}
+
+/* ---------- Responsive (tablet / mobile) ---------- */
+
+@media (max-width: 760px) {
+  .app {
+    padding: 0 1rem 3rem;
+  }
+
+  .header {
+    gap: 0.6rem;
+  }
+
+  .nav-right {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .tabs {
+    flex: 1;
+    justify-content: space-between;
+    overflow-x: auto;
+  }
+
+  .tab {
+    padding: 0.45rem 0.8rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .account-email {
+    display: none; /* keep the bar compact; e-mail shows on Profil & CV */
+  }
+
+  .card {
+    padding: 1.15rem 1.1rem;
+  }
+
+  .hero h2 {
+    font-size: 2rem;
+  }
+
+  /* Stack multi-column form/search layouts */
+  .grid3,
+  .searchbar,
+  .rowline,
+  .timeline-form {
+    grid-template-columns: 1fr;
+  }
+
+  .row-between {
+    gap: 0.6rem;
+  }
+
+  /* The board scrolls horizontally; size columns to the viewport */
+  .board {
+    grid-auto-columns: 78%;
+  }
+
+  .modal {
+    padding: 1.25rem 1.1rem;
+    max-height: 92vh;
+  }
 }

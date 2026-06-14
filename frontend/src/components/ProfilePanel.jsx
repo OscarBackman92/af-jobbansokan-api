@@ -81,9 +81,6 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
           >
             {editing ? "Avbryt" : "Redigera"}
           </button>
-          <button className="secondary small" onClick={onLogout}>
-            Logga ut
-          </button>
         </div>
       </div>
       {message && <p className="notice">{message}</p>}
