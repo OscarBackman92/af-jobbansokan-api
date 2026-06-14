@@ -366,6 +366,27 @@ body {
   justify-self: end;
 }
 
+.hero.centered {
+  justify-items: center;
+  grid-template-columns: 1fr;
+}
+
+.hero.centered .card.narrow {
+  justify-self: center;
+}
+
+.auth-links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+}
+
+.auth-links .linklike {
+  margin: 0;
+}
+
 .card h2 {
   margin: 0 0 0.3rem;
   font-size: 1.15rem;

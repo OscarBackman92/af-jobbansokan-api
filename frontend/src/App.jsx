@@ -6,6 +6,14 @@ import AuthHero from "./components/AuthHero.jsx";
 import BoardPanel from "./components/BoardPanel.jsx";
 import PostingsPanel from "./components/PostingsPanel.jsx";
 import ProfilePanel from "./components/ProfilePanel.jsx";
+import ResetPassword from "./components/ResetPassword.jsx";
+
+function readResetCreds() {
+  const params = new URLSearchParams(window.location.search);
+  const uid = params.get("reset_uid");
+  const token = params.get("reset_token");
+  return uid && token ? { uid, token } : null;
+}
 
 const TABS = [
   { id: "board", label: "Tavlan" },
@@ -23,6 +31,7 @@ export default function App() {
   const [tab, setTab] = useState("board");
   const [token, setToken] = useState(() => getAccess());
   const [me, setMe] = useState(null);
+  const [resetCreds, setResetCreds] = useState(() => readResetCreds());
   const [theme, setTheme] = useState(
     () => localStorage.getItem("theme") || "indigo"
   );
@@ -98,10 +107,20 @@ export default function App() {
       </header>
 
       <main className="main">
-        {!token && <AuthHero onLogin={login} />}
-        {token && tab === "board" && <BoardPanel token={token} />}
-        {token && tab === "postings" && <PostingsPanel />}
-        {token && tab === "profile" && (
+        {resetCreds && (
+          <ResetPassword
+            uid={resetCreds.uid}
+            token={resetCreds.token}
+            onDone={() => {
+              window.history.replaceState({}, "", window.location.pathname);
+              setResetCreds(null);
+            }}
+          />
+        )}
+        {!resetCreds && !token && <AuthHero onLogin={login} />}
+        {!resetCreds && token && tab === "board" && <BoardPanel token={token} />}
+        {!resetCreds && token && tab === "postings" && <PostingsPanel />}
+        {!resetCreds && token && tab === "profile" && (
           <ProfilePanel token={token} me={me} onMeChange={setMe} onLogout={logout} />
         )}
       </main>

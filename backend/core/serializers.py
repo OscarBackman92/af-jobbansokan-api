@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dj_rest_auth.registration.serializers import RegisterSerializer
+from dj_rest_auth.serializers import PasswordResetSerializer
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
@@ -159,6 +161,32 @@ class EmailRegisterSerializer(RegisterSerializer):
                 "Det finns redan ett konto med den här e-postadressen."
             )
         return email
+
+
+def _spa_reset_url(request, user, temp_key):
+    """Build the reset link that lands on the SPA.
+
+    Uses allauth's uid encoding + token so the confirm endpoint (which
+    decodes with allauth) matches. Points at FRONTEND_URL when set,
+    otherwise the request's own origin (single-service / local dev).
+    """
+    from allauth.account.utils import user_pk_to_url_str
+
+    base = settings.FRONTEND_URL or f"{request.scheme}://{request.get_host()}"
+    uid = user_pk_to_url_str(user)
+    return f"{base.rstrip('/')}/?reset_uid={uid}&reset_token={temp_key}"
+
+
+class FrontendPasswordResetSerializer(PasswordResetSerializer):
+    """Send the reset link to the SPA rather than Django's default view.
+
+    allauth's reset form takes a custom ``url_generator``; ours points the
+    e-mailed link at the SPA carrying uid + token as query params, which
+    the app reads to show the set-new-password form.
+    """
+
+    def get_email_options(self):
+        return {"url_generator": _spa_reset_url}
 
 
 class ProfileSerializer(serializers.ModelSerializer):

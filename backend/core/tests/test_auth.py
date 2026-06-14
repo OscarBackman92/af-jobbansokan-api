@@ -78,3 +78,53 @@ def test_duplicate_email_rejected(api_client):
     api_client.post(REGISTER_URL, payload)
     response = api_client.post(REGISTER_URL, payload)
     assert response.status_code == 400
+
+
+def test_password_reset_flow(api_client, mailoutbox):
+    """Request a reset, follow the e-mailed uid/token, set a new password
+    and log in with it — the whole loop the SPA drives."""
+    import re
+
+    api_client.post(
+        REGISTER_URL,
+        {
+            "email": "anna@example.com",
+            "password1": "Testpass123!",
+            "password2": "Testpass123!",
+        },
+    )
+
+    requested = api_client.post(
+        "/dj-rest-auth/password/reset/", {"email": "anna@example.com"}
+    )
+    assert requested.status_code == 200
+    assert len(mailoutbox) == 1
+    body = mailoutbox[0].body
+    uid = re.search(r"reset_uid=([^&\s]+)", body).group(1)
+    token = re.search(r"reset_token=([^&\s]+)", body).group(1)
+
+    confirmed = api_client.post(
+        "/dj-rest-auth/password/reset/confirm/",
+        {
+            "uid": uid,
+            "token": token,
+            "new_password1": "BrandNew123!",
+            "new_password2": "BrandNew123!",
+        },
+    )
+    assert confirmed.status_code == 200
+
+    login = api_client.post(
+        LOGIN_URL, {"email": "anna@example.com", "password": "BrandNew123!"}
+    )
+    assert login.status_code == 200
+    assert "access" in login.json()
+
+
+def test_password_reset_unknown_email_is_silent(api_client, mailoutbox):
+    """Unknown e-mails return 200 (no account enumeration) and send nothing."""
+    response = api_client.post(
+        "/dj-rest-auth/password/reset/", {"email": "nobody@example.com"}
+    )
+    assert response.status_code == 200
+    assert len(mailoutbox) == 0

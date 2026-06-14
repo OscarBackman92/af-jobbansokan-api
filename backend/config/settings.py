@@ -77,7 +77,9 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Project templates take precedence over app templates (lets us
+        # override allauth's password-reset e-mail with Swedish copy).
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -217,7 +219,27 @@ REST_AUTH = {
     # (the default) would blank out the refresh token in the body.
     "JWT_AUTH_HTTPONLY": False,
     "REGISTER_SERIALIZER": "core.serializers.EmailRegisterSerializer",
+    "PASSWORD_RESET_SERIALIZER": "core.serializers.FrontendPasswordResetSerializer",
 }
+
+# E-mail (password reset). Console backend in development prints the mail
+# (incl. the reset link) to the server log; production uses SMTP when
+# EMAIL_HOST is set — any provider works (Brevo, Resend, Postmark, ...).
+if os.getenv("EMAIL_HOST"):
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = os.getenv("EMAIL_HOST")
+    EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "1") == "1"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Ansökt <no-reply@ansokt.app>")
+
+# Where the password-reset link should point (the SPA). Falls back to the
+# request origin when unset (works for local dev and single-service Render).
+FRONTEND_URL = os.getenv("FRONTEND_URL", "")
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
