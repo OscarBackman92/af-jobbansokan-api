@@ -28,15 +28,20 @@ export because the data is yours.
   changes are logged automatically
 - **Free-text rows** — track applications from anywhere (LinkedIn,
   e-mail, tips), not just imported ads
-- **Job ad search** — ads imported from Arbetsförmedlingen's open
+- **Job ad search** — searches all of Platsbanken **live** via
+  Arbetsförmedlingen's open
   [JobTech JobSearch API](https://jobsearch.api.jobtechdev.se) (free, no
-  API key), added to the board with one click
+  API key), with filters for region, occupation field and remote; save
+  an ad to the board with one click
 - **CV** — upload a PDF/DOCX/TXT and it's parsed (in memory, never
   stored, using pypdf layout mode) into an always-visible, editable CV
-  whose skills are matched against ad texts
+  whose skills are matched against ad texts (boundary-aware, so "Go"
+  doesn't match "Django")
 - **Statistics** — applications per month and how many reached a
   call/interview or further
-- **Favorites, filters and CSV export** (data portability)
+- **CSV export** (data portability)
+- **Password reset by e-mail** and transparent JWT refresh, so a session
+  never drops mid-task
 - **E-mail based accounts** (registration + login via dj-rest-auth),
   with transparent JWT refresh so a session never drops mid-task;
   OpenAPI 3 schema with Swagger UI, modern admin
@@ -48,7 +53,7 @@ export because the data is yours.
 flowchart LR
     U[User] -- JWT --> API[Django/DRF API]
     API --> DB[(PostgreSQL/SQLite)]
-    JT[JobTech JobSearch API] -- import_postings --> DB
+    API -- live search --> JT[JobTech JobSearch API]
 ```
 
 | Layer | Technology |
@@ -78,8 +83,9 @@ Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
 | `/api/v1/applications/{id}/events/` | POST | Append a timeline event |
 | `/api/v1/applications/stats/` | GET | Counts per status |
 | `/api/v1/applications/export/` | GET | CSV download (filters apply) |
-| `/api/v1/postings/` | GET | Imported ads; `?search=&location=&page_size=`; 50/page; match score with CV |
-| `/api/v1/favorites/` | GET, POST, DELETE | Saved postings |
+| `/api/v1/jobs/` | GET | **Live Platsbanken search**; `?q=&region=&field=&remote=&offset=&limit=`; CV match per hit |
+| `/api/v1/jobs/filters/` | GET | Region + occupation-field options for the search dropdowns |
+| `/api/v1/postings/` | GET | Legacy DB-backed ads (optional `import_postings`); `?search=&location=&page_size=` |
 
 ## Getting started
 
@@ -100,8 +106,9 @@ python backend/manage.py createsuperuser
 python backend/manage.py runserver
 ```
 
-Fill the database with real postings from Arbetsförmedlingen's open
-[JobTech API](https://jobsearch.api.jobtechdev.se):
+The **Annonser** tab searches Platsbanken live — no import needed. The
+`import_postings` command remains only to seed the legacy DB-backed
+`/api/v1/postings/` endpoint, and is optional:
 
 ```bash
 python backend/manage.py import_postings --query "python" --limit 50
@@ -188,6 +195,31 @@ the repo → **Apply**. Prefer to host the frontend on Vercel's CDN with
 preview deploys? See [docs/11-deploy-vercel.md](docs/11-deploy-vercel.md)
 for the split (frontend on Vercel, backend on Render).
 
+### E-mail & password reset
+
+Password reset sends an e-mail with a link back to the app. **In
+development** no configuration is needed — Django's console backend
+prints the e-mail (including the reset link) to the server log. **In
+production the reset e-mail is only actually sent when SMTP is
+configured**; without `EMAIL_HOST` set, reset silently no-ops from the
+user's point of view.
+
+Set these env vars in production (any SMTP provider — Brevo, Resend,
+Postmark, …; the free tiers are enough):
+
+| Variable | Purpose |
+| --- | --- |
+| `EMAIL_HOST` | SMTP host — **its presence switches on real e-mail** |
+| `EMAIL_PORT` | SMTP port (default `587`) |
+| `EMAIL_HOST_USER` | SMTP username |
+| `EMAIL_HOST_PASSWORD` | SMTP password / API key |
+| `EMAIL_USE_TLS` | `1` (default) or `0` |
+| `DEFAULT_FROM_EMAIL` | From address, e.g. `Ansökt <no-reply@dindomän.se>` |
+| `FRONTEND_URL` | Base URL the reset link points at (e.g. `https://ansokt.onrender.com`). Defaults to the request origin, which is correct for the single-service Render deploy; set it explicitly when the frontend is hosted separately (e.g. Vercel). |
+
+The `render.yaml` blueprint lists these with `sync: false`, so Render
+prompts for the values at deploy time instead of baking them in.
+
 ## Testing and linting
 
 ```bash
@@ -212,11 +244,12 @@ backend/
   core/                # The single domain app
     management/        #   import_postings + bootstrap commands
     migrations/
-    tests/             #   pytest suite (applications, auth, resume, ...)
-    models.py          #   JobApplication, ApplicationEvent, JobPosting,
-                       #   Favorite, Resume
+    tests/             #   pytest suite (applications, auth, jobs, resume, ...)
+    models.py          #   JobApplication, ApplicationEvent, JobPosting, Resume
+    jobtech.py         #   live Platsbanken search + region/field taxonomy
+    matching.py        #   boundary-aware CV skill matching
     resume.py          #   CV extraction (pypdf layout mode) + parsing
-    serializers.py     #   incl. EmailRegisterSerializer (e-mail signup)
+    serializers.py     #   incl. Email register + password-reset serializers
     views.py
 frontend/
   src/
@@ -224,7 +257,7 @@ frontend/
     auth.js            #   token storage + JWT refresh
     statuses.js        #   status pipeline shared with the backend
     components/        #   AuthHero, BoardPanel, ApplicationModal,
-                       #   PostingsPanel, ProfilePanel
+                       #   PostingsPanel, ProfilePanel, ResetPassword
   vercel.json          #   optional: proxy /api to the backend on Vercel
 docs/                  # Vision, architecture, GDPR, pivot, deploy guides
 infra/                 # docker-compose for local PostgreSQL
@@ -247,8 +280,8 @@ See [docs/06-gdpr-privacy.md](docs/06-gdpr-privacy.md) and
 
 ## Roadmap
 
-- [ ] Password reset (needs an outbound e-mail provider, e.g. Resend/Brevo)
-- [ ] Live JobTech search instead of a pre-imported snapshot
+- [x] Live JobTech search with region/occupation/remote filters
+- [x] Password reset by e-mail (SMTP via env in production)
 - [ ] Reminders for `next_action_at` (e-mail or notification)
 - [ ] XLSX export alongside CSV
 - [ ] JobStream API for continuous ad updates

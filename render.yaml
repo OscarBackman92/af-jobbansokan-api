@@ -24,6 +24,23 @@ services:
         fromDatabase:
           name: ansokt-db
           property: connectionString
+      # E-mail (password reset). sync: false => Render prompts at deploy.
+      # Until EMAIL_HOST is set, password reset silently sends nothing.
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: EMAIL_USE_TLS
+        value: "1"
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      # Base URL for the reset link; defaults to the request origin if unset.
+      - key: FRONTEND_URL
+        sync: false
 
 databases:
   - name: ansokt-db
