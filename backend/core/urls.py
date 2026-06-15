@@ -2,7 +2,6 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
-    FavoriteViewSet,
     JobApplicationViewSet,
     JobPostingViewSet,
     ProfileView,
@@ -15,7 +14,6 @@ from .views import (
 router = DefaultRouter()
 router.register(r"applications", JobApplicationViewSet, basename="applications")
 router.register(r"postings", JobPostingViewSet, basename="postings")
-router.register(r"favorites", FavoriteViewSet, basename="favorites")
 
 urlpatterns = [
     path("me/", ProfileView.as_view(), name="me"),

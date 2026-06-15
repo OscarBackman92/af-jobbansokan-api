@@ -1,11 +1,10 @@
 import pytest
 from core.matching import match_skills
-from core.models import Favorite, JobPosting, Resume
+from core.models import JobPosting, Resume
 
 pytestmark = pytest.mark.django_db
 
 POSTINGS_URL = "/api/v1/postings/"
-FAVORITES_URL = "/api/v1/favorites/"
 
 
 @pytest.fixture
@@ -50,29 +49,3 @@ def test_user_without_skills_gets_no_match_key(api_client, user, python_posting)
     api_client.force_authenticate(user)
     results = api_client.get(POSTINGS_URL).json()["results"]
     assert "match" not in results[0]
-
-
-def test_favorites_crud_and_own_only(api_client, user, posting, django_user_model):
-    api_client.force_authenticate(user)
-    created = api_client.post(FAVORITES_URL, {"posting": posting.id})
-    assert created.status_code == 201
-
-    duplicate = api_client.post(FAVORITES_URL, {"posting": posting.id})
-    assert duplicate.status_code == 400
-
-    other = django_user_model.objects.create_user(username="other", password="x")
-    Favorite.objects.create(user=other, posting=posting)
-
-    body = api_client.get(FAVORITES_URL).json()
-    assert body["count"] == 1
-    assert body["results"][0]["posting_title"] == posting.title
-
-    favorite_id = body["results"][0]["id"]
-    assert api_client.delete(f"{FAVORITES_URL}{favorite_id}/").status_code == 204
-    assert api_client.get(FAVORITES_URL).json()["count"] == 0
-    # The other user's favorite is untouched.
-    assert Favorite.objects.filter(user=other).count() == 1
-
-
-def test_favorites_require_auth(api_client):
-    assert api_client.get(FAVORITES_URL).status_code == 401

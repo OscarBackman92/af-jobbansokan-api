@@ -9,7 +9,6 @@ from rest_framework import serializers
 
 from .models import (
     ApplicationEvent,
-    Favorite,
     JobApplication,
     JobPosting,
     Resume,
@@ -240,22 +239,3 @@ class ResumeSerializer(serializers.ModelSerializer):
 
 class ResumeUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
-
-
-class FavoriteSerializer(serializers.ModelSerializer):
-    posting_title = serializers.CharField(source="posting.title", read_only=True)
-    company_name = serializers.CharField(source="posting.company_name", read_only=True)
-
-    class Meta:
-        model = Favorite
-        fields = ["id", "posting", "posting_title", "company_name", "created_at"]
-        read_only_fields = ["id", "created_at"]
-
-    def validate_posting(self, value):
-        request = self.context.get("request")
-        if (
-            request
-            and Favorite.objects.filter(user=request.user, posting=value).exists()
-        ):
-            raise serializers.ValidationError("Already saved.")
-        return value

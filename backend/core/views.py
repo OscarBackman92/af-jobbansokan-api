@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 from .jobtech import OCCUPATION_FIELDS, REGIONS, JobTechError
 from .jobtech import search as jobtech_search
 from .matching import match_skills
-from .models import Favorite, JobApplication, JobPosting, Resume
+from .models import JobApplication, JobPosting, Resume
 from .resume import (
     MAX_UPLOAD_SIZE,
     SUPPORTED_EXTENSIONS,
@@ -28,7 +28,6 @@ from .resume import (
 )
 from .serializers import (
     ApplicationEventSerializer,
-    FavoriteSerializer,
     JobApplicationSerializer,
     JobPostingDetailSerializer,
     JobPostingSerializer,
@@ -344,26 +343,6 @@ class JobPostingViewSet(viewsets.ReadOnlyModelViewSet):
         if location:
             qs = qs.filter(location__icontains=location)
         return qs
-
-
-class FavoriteViewSet(viewsets.ModelViewSet):
-    """Postings saved by the authenticated user."""
-
-    serializer_class = FavoriteSerializer
-    permission_classes = [IsAuthenticated]
-    http_method_names = ["get", "post", "delete", "options"]
-
-    def get_queryset(self):
-        if getattr(self, "swagger_fake_view", False):  # schema generation
-            return Favorite.objects.none()
-        return (
-            Favorite.objects.filter(user=self.request.user)
-            .select_related("posting")
-            .order_by("-created_at")
-        )
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
 
 
 def _truthy(value):
