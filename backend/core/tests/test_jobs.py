@@ -1,6 +1,9 @@
+from types import SimpleNamespace
+
 import pytest
 import requests
 from core import jobtech
+from core.matching import match_skills
 from core.models import Resume
 
 pytestmark = pytest.mark.django_db
@@ -102,3 +105,59 @@ def test_search_handles_upstream_failure(api_client, user, monkeypatch):
     api_client.force_authenticate(user)
     response = api_client.get(SEARCH_URL, {"q": "python"})
     assert response.status_code == 502
+
+
+# --- CV skill matching (regression guards for boundary-aware matching) ---
+
+
+def _job(title="", description=""):
+    return SimpleNamespace(title=title, description=description)
+
+
+def test_match_does_not_substring_match_short_skill():
+    """'Go' must not match inside 'Django'; only real Python matches."""
+    result = match_skills(
+        ["Go", "Python"], _job("Utvecklare", "Vi jobbar med Django och Python")
+    )
+    assert result["matched"] == ["Python"]
+    assert result["count"] == 1
+
+
+def test_match_multiword_phrase():
+    result = match_skills(
+        ["Power BI"], _job("Analytiker", "Erfarenhet av Power BI krävs")
+    )
+    assert result["matched"] == ["Power BI"]
+
+
+def test_match_symbol_heavy_skill_csharp():
+    result = match_skills(["C#"], _job("Utvecklare", "Vi kodar i C# och .NET"))
+    assert result["matched"] == ["C#"]
+
+
+def test_match_symbol_heavy_skills_cpp_and_dotnet():
+    result = match_skills(
+        ["C++", ".NET", "Node.js"],
+        _job("Dev", "Stacken är C++, .NET och Node.js i produktion"),
+    )
+    assert set(result["matched"]) == {"C++", ".NET", "Node.js"}
+
+
+def test_match_ignores_substrings_in_unrelated_words():
+    # "AI" inside "Thailand", "R" inside "React" — neither should match.
+    result = match_skills(
+        ["AI", "R"], _job("Resekonsult", "Resor till Thailand med React-sajt")
+    )
+    assert result["matched"] == []
+
+
+def test_match_is_case_insensitive_and_phrase_whitespace_flexible():
+    result = match_skills(
+        ["react native"], _job("Mobil", "Bygg appar i  React   Native dagligen")
+    )
+    assert result["matched"] == ["react native"]
+
+
+def test_match_standalone_short_skill_is_found():
+    result = match_skills(["Go", "R"], _job("Data", "Vi använder Go och R för analys."))
+    assert set(result["matched"]) == {"Go", "R"}
