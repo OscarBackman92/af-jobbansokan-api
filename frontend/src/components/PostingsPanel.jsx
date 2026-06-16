@@ -146,13 +146,13 @@ export default function PostingsPanel() {
             </option>
           ))}
         </select>
-        <label className="job-remote">
+        <label className="job-remote" title="Visa bara jobb som kan utföras på distans">
           <input
             type="checkbox"
             checked={remote}
             onChange={(e) => setRemote(e.target.checked)}
           />
-          Distans
+          Endast distans
         </label>
         <button className="small">Sök</button>
       </form>
@@ -269,22 +269,44 @@ function JobCard({ job, tracked, onOpen, onTrack }) {
 function JobDetail({ job, tracked, onTrack, onClose }) {
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="row-between">
-          <h2>{job.title}</h2>
-          <button className="secondary small" onClick={onClose}>
-            Stäng ✕
+      <div className="modal job-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <div className="modal-head-text">
+            <h2>{job.title}</h2>
+            <p className="muted">
+              {job.company_name}
+              {job.location && ` — ${job.location}`}
+              {job.application_deadline &&
+                ` · sista ansökningsdag ${job.application_deadline}`}
+            </p>
+          </div>
+          <button className="secondary small modal-close" onClick={onClose}>
+            ✕
           </button>
         </div>
-        <p className="muted">
-          {job.company_name}
-          {job.location && ` — ${job.location}`}
-          {job.published_at && ` · publicerad ${job.published_at}`}
-          {job.application_deadline &&
-            ` · sista ansökningsdag ${job.application_deadline}`}
+
+        <div className="modal-actions">
+          {job.webpage_url && (
+            <a
+              className="btn-primary"
+              href={job.webpage_url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Ansök på platsannonsen ↗
+            </a>
+          )}
+          <button className="secondary" onClick={onTrack} disabled={tracked}>
+            {tracked ? "På tavlan ✓" : "+ Spara på tavlan"}
+          </button>
+        </div>
+        <p className="muted modal-hint">
+          Ansökan görs hos arbetsgivaren — spara den här så följer du den på din
+          tavla.
         </p>
+
         {job.match && (
-          <p>
+          <p className="modal-match">
             <span
               className={`badge ${job.match.count > 0 ? "applied" : "neutral"}`}
             >
@@ -297,18 +319,9 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
             ))}
           </p>
         )}
+
         <div className="description">
           {job.description || "Ingen beskrivning tillgänglig för den här annonsen."}
-        </div>
-        <div className="row-between">
-          <button onClick={onTrack} disabled={tracked}>
-            {tracked ? "Redan på tavlan ✓" : "+ Spara på tavlan"}
-          </button>
-          {job.webpage_url && (
-            <a href={job.webpage_url} target="_blank" rel="noreferrer">
-              Originalannons ↗
-            </a>
-          )}
         </div>
       </div>
     </div>

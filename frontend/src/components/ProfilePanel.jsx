@@ -71,16 +71,20 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
     onChange: (e) => setForm({ ...form, [name]: e.target.value }),
   });
 
+  const fullName = [me.first_name, me.last_name].filter(Boolean).join(" ");
+  const initial = (me.first_name || me.email || "?").trim().charAt(0).toUpperCase();
+
   return (
     <section className="card">
-      <div className="row-between">
-        <div>
-          <h2>Min profil</h2>
-          <p className="muted">
-            <strong>{me.email}</strong>
-            {(me.first_name || me.last_name) &&
-              ` — ${me.first_name} ${me.last_name}`.trimEnd()}
-          </p>
+      <div className="row-between profile-head">
+        <div className="profile-id">
+          <div className="avatar" aria-hidden="true">
+            {initial}
+          </div>
+          <div>
+            <h2>{fullName || "Min profil"}</h2>
+            <p className="muted">{me.email}</p>
+          </div>
         </div>
         <div className="row-gap">
           <button

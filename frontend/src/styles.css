@@ -138,11 +138,9 @@ body {
   top: 0;
   z-index: 20;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.9rem 0;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
   margin-bottom: 1.75rem;
   background: var(--bg-translucent);
   -webkit-backdrop-filter: blur(14px);
@@ -150,10 +148,18 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .brand {
   display: flex;
   align-items: center;
   gap: 0.8rem;
+  min-width: 0;
 }
 
 .logo {
@@ -186,17 +192,10 @@ body {
   font-weight: 600;
 }
 
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
 .account {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 0.6rem;
 }
 
@@ -212,6 +211,9 @@ body {
 
 .tabs {
   display: flex;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
   gap: 0.25rem;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -738,6 +740,9 @@ tbody tr:last-child td {
   margin-top: 1.25rem;
   overflow-x: auto;
   padding-bottom: 0.5rem;
+  /* Snap columns into view so narrow screens don't show a half column */
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 0.2rem;
 }
 
 .kcol {
@@ -751,6 +756,7 @@ tbody tr:last-child td {
   flex-direction: column;
   gap: 0.55rem;
   min-height: 400px;
+  scroll-snap-align: start;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
@@ -930,6 +936,41 @@ tbody tr:last-child td {
 .kcard-move:hover {
   border-color: var(--accent);
   color: var(--ink);
+}
+
+/* ---------- Profile ---------- */
+
+.profile-head {
+  align-items: flex-start;
+}
+
+.profile-id {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.profile-id h2 {
+  margin: 0;
+}
+
+.profile-id .muted {
+  margin: 0.1rem 0 0;
+}
+
+.avatar {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--grad);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 14px var(--button-glow);
 }
 
 /* ---------- CV read view ---------- */
@@ -1261,9 +1302,9 @@ tbody tr:last-child td {
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(18, 16, 38, 0.5);
-  -webkit-backdrop-filter: blur(5px);
-  backdrop-filter: blur(5px);
+  background: rgba(18, 16, 38, 0.55);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1315,6 +1356,77 @@ tbody tr:last-child td {
   font-size: 0.92rem;
   line-height: 1.6;
   background: var(--surface-2);
+}
+
+/* ---------- Job detail modal ---------- */
+
+.job-modal {
+  gap: 0.85rem;
+}
+
+.modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.modal-head-text {
+  min-width: 0;
+}
+
+.modal-head h2 {
+  margin: 0 0 0.2rem;
+}
+
+.modal-close {
+  flex-shrink: 0;
+}
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--grad);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.62rem 1.3rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 3px 12px var(--button-glow);
+  transition: transform 0.12s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px var(--button-glow);
+}
+
+.modal-hint {
+  margin: -0.4rem 0 0;
+  font-size: 0.82rem;
+}
+
+.modal-match {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.job-modal .description {
+  flex: 1;
+  min-height: 6rem;
 }
 
 /* ---------- Footer ---------- */
@@ -1379,21 +1491,17 @@ code {
     gap: 0.6rem;
   }
 
-  .nav-right {
-    width: 100%;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-
+  /* Tabs become a full-width segmented control with equal-width tabs */
   .tabs {
-    flex: 1;
-    justify-content: space-between;
-    overflow-x: auto;
+    width: 100%;
+    align-self: stretch;
   }
 
   .tab {
-    padding: 0.45rem 0.8rem;
-    font-size: 0.85rem;
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem 0.4rem;
+    font-size: 0.82rem;
     white-space: nowrap;
   }
 
@@ -1442,27 +1550,25 @@ code {
   .tagline {
     font-size: 0.7rem;
   }
-}
 
-/* Coarse-pointer (touch) devices: HTML5 drag-and-drop doesn't fire, so
-   make the per-card status select the obvious way to move a card. */
-@media (hover: none) {
-  .kcard-move {
-    border-color: var(--accent);
-    color: var(--ink);
-  }
-
-  .row-between {
-    gap: 0.6rem;
-  }
-
-  /* The board scrolls horizontally; size columns to the viewport */
+  /* One column at a time with a small peek; scroll-snap keeps it tidy */
   .board {
-    grid-auto-columns: 78%;
+    grid-auto-columns: 86%;
   }
 
   .modal {
     padding: 1.25rem 1.1rem;
     max-height: 92vh;
+  }
+}
+
+/* Coarse-pointer (touch) devices: HTML5 drag-and-drop doesn't fire, so
+   make the per-card status select the obvious way to move a card.
+   Width-based layout lives in the max-width query, not here, so wide
+   touch screens still get the full multi-column board. */
+@media (hover: none) {
+  .kcard-move {
+    border-color: var(--accent);
+    color: var(--ink);
   }
 }

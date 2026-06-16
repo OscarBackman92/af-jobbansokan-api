@@ -70,28 +70,17 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <div className="brand">
-          <div className="logo" aria-hidden="true">
-            A
+        <div className="header-bar">
+          <div className="brand">
+            <div className="logo" aria-hidden="true">
+              A
+            </div>
+            <div>
+              <h1>Ansökt</h1>
+              <p className="tagline">Koll på varje ansökan</p>
+            </div>
           </div>
-          <div>
-            <h1>Ansökt</h1>
-            <p className="tagline">Koll på varje ansökan</p>
-          </div>
-        </div>
-        {token && (
-          <div className="nav-right">
-            <nav className="tabs">
-              {TABS.map((t) => (
-                <button
-                  key={t.id}
-                  className={tab === t.id ? "tab active" : "tab"}
-                  onClick={() => setTab(t.id)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </nav>
+          {token && (
             <div className="account">
               {me?.email && <span className="account-email">{me.email}</span>}
               <button
@@ -102,7 +91,20 @@ export default function App() {
                 Logga ut
               </button>
             </div>
-          </div>
+          )}
+        </div>
+        {token && (
+          <nav className="tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                className={tab === t.id ? "tab active" : "tab"}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
         )}
       </header>
 
