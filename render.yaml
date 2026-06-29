@@ -35,6 +35,10 @@ services:
         sync: false
       - key: EMAIL_USE_TLS
         value: "1"
+      - key: EMAIL_USE_SSL
+        value: "0"
+      - key: EMAIL_TIMEOUT
+        value: "10"
       - key: DEFAULT_FROM_EMAIL
         sync: false
       # Base URL for the reset link; defaults to the request origin if unset.
@@ -96,6 +100,16 @@ services:
           type: web
           name: ansokt
           envVarKey: EMAIL_USE_TLS
+      - key: EMAIL_USE_SSL
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_USE_SSL
+      - key: EMAIL_TIMEOUT
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_TIMEOUT
       - key: DEFAULT_FROM_EMAIL
         fromService:
           type: web

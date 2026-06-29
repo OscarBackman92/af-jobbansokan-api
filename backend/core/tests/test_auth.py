@@ -19,6 +19,25 @@ def test_register_sends_verification_email(api_client, mailoutbox):
     assert "verify_key=" in mailoutbox[0].body
 
 
+def test_register_rolls_back_when_verification_mail_fails(api_client, monkeypatch):
+    from django.contrib.auth import get_user_model
+
+    def fail_send(*_args, **_kwargs):
+        raise TimeoutError("SMTP connection timed out")
+
+    monkeypatch.setattr(
+        "allauth.account.utils.send_email_confirmation",
+        fail_send,
+    )
+
+    response = register_user(api_client)
+    assert response.status_code == 400
+    body = response.json()
+    errors = body if isinstance(body, list) else body.get("non_field_errors", [str(body)])
+    assert any("verifieringsmejlet" in str(msg).lower() for msg in errors)
+    assert not get_user_model().objects.filter(email="anna@example.com").exists()
+
+
 def test_login_blocked_until_email_verified(api_client, mailoutbox):
     register_user(api_client)
     login = api_client.post(

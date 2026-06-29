@@ -235,6 +235,8 @@ REST_AUTH = {
 # E-mail (password reset). Console backend in development prints the mail
 # (incl. the reset link) to the server log; production uses SMTP when
 # EMAIL_HOST is set — any provider works (Brevo, Resend, Postmark, ...).
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+
 if os.getenv("EMAIL_HOST"):
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = os.getenv("EMAIL_HOST")
@@ -242,6 +244,7 @@ if os.getenv("EMAIL_HOST"):
     EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
     EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
     EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "1") == "1"
+    EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "0") == "1"
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 

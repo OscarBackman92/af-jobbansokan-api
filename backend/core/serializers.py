@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
 
+from .email_delivery import register_user_with_verification
 from .models import (
     ApplicationEvent,
     JobApplication,
@@ -176,11 +177,7 @@ class EmailRegisterSerializer(RegisterSerializer):
         return email
 
     def save(self, request):
-        user = super().save(request)
-        from allauth.account.utils import send_email_confirmation
-
-        send_email_confirmation(request, user, signup=True)
-        return user
+        return register_user_with_verification(request, super().save)
 
 
 def _spa_reset_url(request, user, temp_key):
