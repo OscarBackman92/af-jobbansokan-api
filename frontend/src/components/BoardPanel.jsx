@@ -74,6 +74,14 @@ function matchesQuickFilter(application, filter) {
   return true;
 }
 
+function matchesListFilter(application, quickFilter, statusFilter) {
+  if (statusFilter) {
+    if (statusFilter === "closed") return isClosed(application);
+    return application.status === statusFilter;
+  }
+  return matchesQuickFilter(application, quickFilter);
+}
+
 export default function BoardPanel({ token, onNavigate }) {
   const [applications, setApplications] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -81,6 +89,7 @@ export default function BoardPanel({ token, onNavigate }) {
   const [error, setError] = useState(null);
   const [query, setQuery] = useState("");
   const [quickFilter, setQuickFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(null);
 
   const reload = useCallback(async () => {
     try {
@@ -150,10 +159,11 @@ export default function BoardPanel({ token, onNavigate }) {
 
   const allClosed = applications.filter(isClosed);
   const filteredApplications = applications.filter(
-    (a) => matchesSearch(a, query) && matchesQuickFilter(a, quickFilter)
+    (a) =>
+      matchesSearch(a, query) && matchesListFilter(a, quickFilter, statusFilter)
   );
   const closed = filteredApplications.filter(isClosed);
-  const hasActiveFilters = query.trim() || quickFilter !== "all";
+  const hasActiveFilters = query.trim() || quickFilter !== "all" || statusFilter;
   const followUps = applications
     .filter(isFollowUp)
     .sort(
@@ -165,6 +175,17 @@ export default function BoardPanel({ token, onNavigate }) {
   function resetFilters() {
     setQuery("");
     setQuickFilter("all");
+    setStatusFilter(null);
+  }
+
+  function selectQuickFilter(filterId) {
+    setQuickFilter(filterId);
+    setStatusFilter(null);
+  }
+
+  function toggleStatusFilter(statusId) {
+    setQuickFilter("all");
+    setStatusFilter((current) => (current === statusId ? null : statusId));
   }
 
   const countsByStatus = Object.fromEntries(
@@ -175,14 +196,19 @@ export default function BoardPanel({ token, onNavigate }) {
   );
   const activeFiltered = filteredApplications.filter((a) => !isClosed(a));
   const activeGroups =
-    quickFilter === "closed"
+    statusFilter === "closed" || quickFilter === "closed"
       ? []
       : ACTIVE_STATUSES.map((status) => ({
           id: status,
           label: STATUS_LABELS[status],
           applications: activeFiltered.filter((a) => a.status === status),
-        })).filter((group) => group.applications.length > 0 || !hasActiveFilters);
-  const showClosedGroup = closed.length > 0 || quickFilter === "closed";
+        })).filter((group) => {
+          if (statusFilter) return group.id === statusFilter;
+          return group.applications.length > 0 || !hasActiveFilters;
+        });
+  const showClosedGroup =
+    statusFilter === "closed" ||
+    (!statusFilter && (closed.length > 0 || quickFilter === "closed"));
   const activeCount = applications.length - allClosed.length;
   const deadlineSoonCount = applications.filter(hasDeadlineSoon).length;
   const interviewTrackCount = applications.filter((a) =>
@@ -317,8 +343,8 @@ export default function BoardPanel({ token, onNavigate }) {
                   <button
                     type="button"
                     key={filter.id}
-                    className={quickFilter === filter.id ? "active" : ""}
-                    onClick={() => setQuickFilter(filter.id)}
+                    className={quickFilter === filter.id && !statusFilter ? "active" : ""}
+                    onClick={() => selectQuickFilter(filter.id)}
                   >
                     {filter.label}
                   </button>
@@ -351,6 +377,8 @@ export default function BoardPanel({ token, onNavigate }) {
                   countsByStatus={countsByStatus}
                   activeCount={activeCount}
                   closedCount={allClosed.length}
+                  statusFilter={statusFilter}
+                  onToggleStatus={toggleStatusFilter}
                 />
 
                 {activeGroups.map((group) => (
@@ -407,20 +435,43 @@ function MetricTile({ label, value, detail, tone = "default" }) {
   );
 }
 
-function PipelineSummary({ countsByStatus, activeCount, closedCount }) {
+function PipelineSummary({
+  countsByStatus,
+  activeCount,
+  closedCount,
+  statusFilter,
+  onToggleStatus,
+}) {
   return (
     <div className="pipeline-summary" aria-label="Statusöversikt">
       {ACTIVE_STATUSES.map((status) => (
-        <div className={`pipeline-step pipeline-step--${status}`} key={status}>
+        <button
+          type="button"
+          key={status}
+          className={`pipeline-step pipeline-step--${status}${
+            statusFilter === status ? " active" : ""
+          }`}
+          onClick={() => onToggleStatus(status)}
+          aria-pressed={statusFilter === status}
+          title={`Filtrera: ${STATUS_LABELS[status]}`}
+        >
           <span className="pipeline-step-label">{STATUS_LABELS[status]}</span>
           <span className="pipeline-step-count">{countsByStatus[status] || 0}</span>
-        </div>
+        </button>
       ))}
-      <div className="pipeline-step pipeline-step--closed">
+      <button
+        type="button"
+        className={`pipeline-step pipeline-step--closed${
+          statusFilter === "closed" ? " active" : ""
+        }`}
+        onClick={() => onToggleStatus("closed")}
+        aria-pressed={statusFilter === "closed"}
+        title="Filtrera: Avslutade"
+      >
         <span className="pipeline-step-label">Avslutade</span>
         <span className="pipeline-step-count">{closedCount}</span>
-      </div>
-      <div className="pipeline-total">
+      </button>
+      <div className="pipeline-total" aria-hidden="true">
         <strong>{activeCount}</strong>
         <span>pågående</span>
       </div>

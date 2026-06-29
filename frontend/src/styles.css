@@ -1300,6 +1300,32 @@ tbody tr:last-child td {
   gap: 0.5rem;
 }
 
+button.pipeline-step {
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+button.pipeline-step:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+button.pipeline-step.active {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+}
+
+button.pipeline-step:focus-visible {
+  outline: 2px solid var(--accent-cyan, #5eead4);
+  outline-offset: 2px;
+}
+
 .pipeline-step {
   --accent: var(--st-applied);
   border-top: 3px solid var(--accent);
