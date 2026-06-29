@@ -182,15 +182,15 @@ def test_stats_counts_per_status(api_client, user):
 
 def test_export_csv(api_client, user):
     JobApplication.objects.create(
-        owner=user, company="Acme", title="Dev", status="applied"
+        owner=user, company="=cmd", title="Dev", status="applied"
     )
     api_client.force_authenticate(user)
     response = api_client.get(f"{URL}export/")
     assert response.status_code == 200
     assert response["Content-Type"].startswith("text/csv")
     content = response.content.decode("utf-8-sig")
-    assert "Acme" in content
-    assert "Ansökt" in content
+    assert "'=cmd" in content
+    assert "Dev" in content
 
 
 def test_delete_own_row(api_client, user):

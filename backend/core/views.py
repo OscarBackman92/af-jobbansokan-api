@@ -8,7 +8,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import generics, viewsets
 from rest_framework import status as drf_status
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes, throttle_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser
@@ -16,6 +16,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .csv_safety import sanitize_csv_cell
 from .jobtech import (
     OCCUPATION_FIELDS,
     REGIONS,
@@ -24,6 +25,7 @@ from .jobtech import (
     occupation_groups,
 )
 from .jobtech import search as jobtech_search
+from .throttles import JobTechThrottle, UploadThrottle
 from .matching import match_skills
 from .models import JobApplication, JobPosting, Resume
 from .resume import (
@@ -88,6 +90,7 @@ class ResumeParseView(APIView):
 
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
+    throttle_classes = [UploadThrottle]
 
     @extend_schema(
         request=ResumeUploadSerializer,
@@ -254,17 +257,17 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
             writer.writerow(
                 [
                     app.id,
-                    app.company,
-                    app.title,
-                    app.location,
-                    app.get_status_display(),
+                    sanitize_csv_cell(app.company),
+                    sanitize_csv_cell(app.title),
+                    sanitize_csv_cell(app.location),
+                    sanitize_csv_cell(app.get_status_display()),
                     app.applied_at or "",
                     app.deadline or "",
-                    app.contact_name,
-                    app.contact_info,
+                    sanitize_csv_cell(app.contact_name),
+                    sanitize_csv_cell(app.contact_info),
                     app.next_action_at or "",
-                    app.ad_url,
-                    app.notes,
+                    sanitize_csv_cell(app.ad_url),
+                    sanitize_csv_cell(app.notes),
                 ]
             )
         return response
@@ -376,6 +379,7 @@ def _truthy(value):
 )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@throttle_classes([JobTechThrottle])
 def job_search(request):
     """Live search of Platsbanken via JobTech, with optional CV matching."""
     params = request.query_params
@@ -439,6 +443,7 @@ def job_filters(_request):
 )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@throttle_classes([JobTechThrottle])
 def job_groups(request):
     """Occupation-group options for one selected occupation field."""
     try:
@@ -459,6 +464,7 @@ def job_groups(request):
 )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@throttle_classes([JobTechThrottle])
 def job_municipalities(request):
     """Municipality options for one selected region."""
     try:

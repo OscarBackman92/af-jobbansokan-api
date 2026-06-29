@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { request } from "../api.js";
 import { STATUSES } from "../statuses.js";
@@ -37,6 +37,27 @@ export default function ApplicationModal({
   );
   const [events, setEvents] = useState(application?.events ?? []);
   const [error, setError] = useState(null);
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const previous = document.activeElement;
+    const focusable = dialogRef.current?.querySelector(
+      "input, select, textarea, button"
+    );
+    focusable?.focus();
+
+    function onKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previous?.focus?.();
+    };
+  }, [onClose]);
 
   const field = (name, type = "text") => ({
     type,
@@ -103,11 +124,25 @@ export default function ApplicationModal({
   }
 
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="overlay" onClick={onClose} role="presentation">
+      <div
+        className="modal"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="application-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="row-between">
-          <h2>{application ? form.title || "Ansökan" : "Ny ansökan"}</h2>
-          <button className="secondary small" onClick={onClose}>
+          <h2 id="application-modal-title">
+            {application ? form.title || "Ansökan" : "Ny ansökan"}
+          </h2>
+          <button
+            type="button"
+            className="secondary small"
+            onClick={onClose}
+            aria-label="Stäng"
+          >
             Stäng ✕
           </button>
         </div>

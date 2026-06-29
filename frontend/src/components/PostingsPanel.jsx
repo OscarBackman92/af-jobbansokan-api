@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { request } from "../api.js";
 
@@ -204,7 +204,12 @@ export default function PostingsPanel() {
   }
 
   const total = data?.total ?? 0;
-  const results = data?.results ?? [];
+  const results = (data?.results ?? []).slice().sort((a, b) => {
+    const aTracked = a.webpage_url && tracked.has(a.webpage_url);
+    const bTracked = b.webpage_url && tracked.has(b.webpage_url);
+    if (aTracked === bTracked) return 0;
+    return aTracked ? 1 : -1;
+  });
   const showingFrom = total === 0 ? 0 : offset + 1;
   const showingTo = Math.min(offset + PAGE_SIZE, total);
   const locationOptions = municipalities;
@@ -410,7 +415,7 @@ export default function PostingsPanel() {
 
 function JobCard({ job, tracked, onOpen, onTrack }) {
   return (
-    <div className="job-card">
+    <div className={tracked ? "job-card job-card--tracked" : "job-card"}>
       <div className="job-card-main">
         <button className="linklike job-title" onClick={onOpen}>
           {job.title}
@@ -448,12 +453,38 @@ function JobCard({ job, tracked, onOpen, onTrack }) {
 }
 
 function JobDetail({ job, tracked, onTrack, onClose }) {
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const previous = document.activeElement;
+    dialogRef.current?.querySelector("button, a")?.focus();
+
+    function onKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previous?.focus?.();
+    };
+  }, [onClose]);
+
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal job-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="overlay" onClick={onClose} role="presentation">
+      <div
+        className="modal job-modal"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="job-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-head">
           <div className="modal-head-text">
-            <h2>{job.title}</h2>
+            <h2 id="job-modal-title">{job.title}</h2>
             <p className="muted">
               {job.company_name}
               {job.location && ` — ${job.location}`}
@@ -461,7 +492,12 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
                 ` · sista ansökningsdag ${job.application_deadline}`}
             </p>
           </div>
-          <button className="secondary small modal-close" onClick={onClose}>
+          <button
+            type="button"
+            className="secondary small modal-close"
+            onClick={onClose}
+            aria-label="Stäng"
+          >
             ✕
           </button>
         </div>

@@ -46,12 +46,12 @@ async function clickByText(selector, text) {
 await page.goto(BASE, { waitUntil: "networkidle0" });
 await shot("01-login");
 
-for (const theme of ["forest", "dark"]) {
+for (const theme of ["command", "daylight", "signal"]) {
   await setTheme(theme);
   await wait(200);
   await shot(`01-login-${theme}`);
 }
-await setTheme("indigo");
+await setTheme("command");
 await wait(200);
 
 await clickByText("button", "Skapa ett konto");
@@ -59,11 +59,11 @@ const email = `visual-${Date.now()}@example.com`;
 await page.type('input[type="email"]', email);
 await page.type('input[type="password"]', "Visualtest123!");
 await clickByText("button", "Skapa konto");
-await page.waitForSelector(".empty-state, .board", { timeout: 10000 });
+await page.waitForSelector(".empty-state, .command-hero", { timeout: 10000 });
 await wait(500);
 await shot("02-board-empty");
 
-await clickByText("button", "Fyll i CV");
+await clickByText("button", "Profil");
 await page.waitForSelector(".profile-id", { timeout: 10000 });
 await wait(400);
 await shot("03-profile-cv");
@@ -74,7 +74,7 @@ await wait(800);
 await shot("04-postings");
 
 await clickByText("button", "Tavlan");
-await page.waitForSelector(".empty-state, .board", { timeout: 10000 });
+await page.waitForSelector(".empty-state, .command-hero", { timeout: 10000 });
 await clickByText("button", "Lägg till din första ansökan");
 await page.waitForSelector(".modal", { timeout: 10000 });
 await wait(300);

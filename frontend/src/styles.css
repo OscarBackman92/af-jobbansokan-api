@@ -1647,6 +1647,16 @@ tbody tr:last-child td {
   transform: translateY(-1px);
 }
 
+.job-card--tracked {
+  opacity: 0.72;
+  border-style: dashed;
+  background: var(--surface-2);
+}
+
+.job-card--tracked:hover {
+  transform: none;
+}
+
 .job-card-main {
   min-width: 0;
 }
