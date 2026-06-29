@@ -295,9 +295,15 @@ export default function BoardPanel({ token, onNavigate }) {
                     );
                     return (
                       <div
-                        className={`kcol kcol--${status}${
-                          dragOver === status ? " dragover" : ""
-                        }`}
+                        className={[
+                          "kcol",
+                          `kcol--${status}`,
+                          cards.length ? "kcol--has-cards" : "kcol--empty-col",
+                          cards.length > 6 ? "kcol--dense" : "",
+                          dragOver === status ? "dragover" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
                         key={status}
                         onDragOver={(e) => {
                           e.preventDefault();
