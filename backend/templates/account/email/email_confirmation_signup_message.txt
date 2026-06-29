@@ -1,0 +1,11 @@
+Hej!
+
+Tack för att du skapade ett konto på Ansökt. Klicka på länken nedan för att
+bekräfta din e-postadress — sedan kan du logga in:
+
+{{ activate_url }}
+
+Om du inte skapade kontot kan du strunta i det här mejlet.
+
+Hälsningar,
+Ansökt

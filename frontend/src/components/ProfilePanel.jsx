@@ -22,9 +22,9 @@ export default function ProfilePanel({ token, me, onMeChange, onLogout }) {
         {me && (
           <div className="metric-inline" aria-label="Profilsammanfattning">
             <div className="metric-tile metric-tile--cyan">
-              <span className="metric-label">Status</span>
-              <strong>ID</strong>
-              <span className="metric-detail">verifierad</span>
+              <span className="metric-label">Operatör-ID</span>
+              <strong>{me.operator_id || "—"}</strong>
+              <span className="metric-detail">unik identitet</span>
             </div>
           </div>
         )}

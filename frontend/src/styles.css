@@ -537,6 +537,18 @@ body::after {
   white-space: nowrap;
 }
 
+.account-id {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent-cyan, #5eead4);
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent-cyan, #5eead4) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-cyan, #5eead4) 28%, transparent);
+}
+
 .tabs {
   display: flex;
   align-self: stretch;

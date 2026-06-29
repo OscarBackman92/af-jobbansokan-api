@@ -8,12 +8,18 @@ import PostingsPanel from "./components/PostingsPanel.jsx";
 import PrivacyPanel from "./components/PrivacyPanel.jsx";
 import ProfilePanel from "./components/ProfilePanel.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
+import VerifyEmail from "./components/VerifyEmail.jsx";
 
 function readResetCreds() {
   const params = new URLSearchParams(window.location.search);
   const uid = params.get("reset_uid");
   const token = params.get("reset_token");
   return uid && token ? { uid, token } : null;
+}
+
+function readVerifyKey() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("verify_key");
 }
 
 const TABS = [
@@ -38,6 +44,7 @@ export default function App() {
   const [token, setToken] = useState(() => getAccess());
   const [me, setMe] = useState(null);
   const [resetCreds, setResetCreds] = useState(() => readResetCreds());
+  const [verifyKey, setVerifyKey] = useState(() => readVerifyKey());
   const [theme, setTheme] = useState(() => readTheme());
   const [showPrivacy, setShowPrivacy] = useState(false);
 
@@ -93,6 +100,11 @@ export default function App() {
                 Online
               </span>
               <div className="account">
+                {me?.operator_id && (
+                  <span className="account-id" title="Operatör-ID">
+                    {me.operator_id}
+                  </span>
+                )}
                 {me?.email && <span className="account-email">{me.email}</span>}
                 <button
                   className="secondary small"
@@ -122,7 +134,16 @@ export default function App() {
       </header>
 
       <main className="main" key={showPrivacy ? "privacy" : tab}>
-        {resetCreds && (
+        {verifyKey && (
+          <VerifyEmail
+            verifyKey={verifyKey}
+            onDone={() => {
+              window.history.replaceState({}, "", window.location.pathname);
+              setVerifyKey(null);
+            }}
+          />
+        )}
+        {resetCreds && !verifyKey && (
           <ResetPassword
             uid={resetCreds.uid}
             token={resetCreds.token}
@@ -132,12 +153,16 @@ export default function App() {
             }}
           />
         )}
-        {!resetCreds && !token && !showPrivacy && <AuthHero onLogin={login} />}
-        {!resetCreds && token && tab === "board" && !showPrivacy && (
+        {!resetCreds && !verifyKey && !token && !showPrivacy && (
+          <AuthHero onLogin={login} />
+        )}
+        {!resetCreds && !verifyKey && token && tab === "board" && !showPrivacy && (
           <BoardPanel token={token} onNavigate={setTab} />
         )}
-        {!resetCreds && token && tab === "postings" && !showPrivacy && <PostingsPanel />}
-        {!resetCreds && token && tab === "profile" && !showPrivacy && (
+        {!resetCreds && !verifyKey && token && tab === "postings" && !showPrivacy && (
+          <PostingsPanel />
+        )}
+        {!resetCreds && !verifyKey && token && tab === "profile" && !showPrivacy && (
           <ProfilePanel token={token} me={me} onMeChange={setMe} onLogout={logout} />
         )}
         {showPrivacy && <PrivacyPanel onClose={() => setShowPrivacy(false)} />}

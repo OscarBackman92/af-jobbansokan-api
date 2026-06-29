@@ -161,8 +161,8 @@ class StatusCountSerializer(serializers.Serializer):
 class EmailRegisterSerializer(RegisterSerializer):
     """Registration by e-mail only — no username field in the API.
 
-    dj-rest-auth's own duplicate check only rejects *verified* addresses,
-    and we never send verification mail, so enforce uniqueness here.
+    Enforce e-mail uniqueness here so an abandoned unverified signup
+    cannot be silently replaced by a new registration attempt.
     """
 
     username = None
@@ -174,6 +174,13 @@ class EmailRegisterSerializer(RegisterSerializer):
                 "Det finns redan ett konto med den här e-postadressen."
             )
         return email
+
+    def save(self, request):
+        user = super().save(request)
+        from allauth.account.utils import send_email_confirmation
+
+        send_email_confirmation(request, user, signup=True)
+        return user
 
 
 def _spa_reset_url(request, user, temp_key):
@@ -205,10 +212,14 @@ class FrontendPasswordResetSerializer(PasswordResetSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     """The authenticated user's own profile."""
 
+    operator_id = serializers.CharField(
+        source="operator_profile.operator_id", read_only=True
+    )
+
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name"]
-        read_only_fields = ["id", "username"]
+        fields = ["id", "username", "email", "first_name", "last_name", "operator_id"]
+        read_only_fields = ["id", "username", "operator_id"]
 
 
 class ResumeSerializer(serializers.ModelSerializer):

@@ -17,6 +17,7 @@ def test_get_returns_own_profile(api_client, user):
     api_client.force_authenticate(user)
     body = api_client.get(URL).json()
     assert body["username"] == "anna"
+    assert body["operator_id"].startswith("ANS-")
 
 
 def test_patch_updates_contact_details(api_client, user):

@@ -21,7 +21,7 @@ def test_create_and_list_saved_search(api_client, user):
     assert response.status_code == 201
     assert response.json()["label"] == "Distans Python"
 
-    listed = api_client.get(URL).json()
+    listed = api_client.get(URL).json()["results"]
     assert listed[0]["q"] == "python"
     assert listed[0]["remote"] is True
 
@@ -37,7 +37,7 @@ def test_cannot_see_other_users_saved_searches(api_client, user):
     SavedJobSearch.objects.create(owner=stranger, label="Other", q="secret")
 
     api_client.force_authenticate(user)
-    labels = [row["label"] for row in api_client.get(URL).json()]
+    labels = [row["label"] for row in api_client.get(URL).json()["results"]]
     assert "Other" not in labels
 
 

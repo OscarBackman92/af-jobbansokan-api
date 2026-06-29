@@ -47,6 +47,7 @@ function AuthCard({ onLogin }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [sent, setSent] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
 
   function switchMode(next) {
     setMode(next);
@@ -80,6 +81,11 @@ function AuthCard({ onLogin }) {
               auth: false,
               body: { email, password1: password, password2: password },
             });
+      if (mode === "register") {
+        setPendingEmail(email);
+        setSent(true);
+        return;
+      }
       onLogin({ access: data.access, refresh: data.refresh });
     } catch (err) {
       setError(err.message);
@@ -101,6 +107,20 @@ function AuthCard({ onLogin }) {
     );
   }
 
+  if (mode === "register" && sent) {
+    return (
+      <div className="card narrow">
+        <h2>Bekräfta din e-post</h2>
+        <p className="muted">
+          Vi har skickat en verifieringslänk till{" "}
+          <strong>{pendingEmail || email}</strong>. Klicka på länken i mejlet
+          innan du loggar in.
+        </p>
+        <button onClick={() => switchMode("login")}>Till inloggningen</button>
+      </div>
+    );
+  }
+
   const heading =
     mode === "login" ? "Logga in" : mode === "register" ? "Skapa konto" : "Glömt lösenord";
 
@@ -110,7 +130,7 @@ function AuthCard({ onLogin }) {
       <h2>{heading}</h2>
       <p className="muted">
         {mode === "login" && "Välkommen tillbaka."}
-        {mode === "register" && "Bara e-post och lösenord — igång på tio sekunder."}
+        {mode === "register" && "E-post och lösenord — vi skickar en verifieringslänk."}
         {mode === "forgot" &&
           "Ange din e-post så skickar vi en länk för att välja nytt lösenord."}
       </p>

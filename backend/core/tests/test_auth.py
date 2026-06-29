@@ -1,5 +1,7 @@
 import pytest
 
+from core.tests.conftest import register_user, verify_latest_email
+
 pytestmark = pytest.mark.django_db
 
 REGISTER_URL = "/dj-rest-auth/registration/"
@@ -7,49 +9,45 @@ LOGIN_URL = "/dj-rest-auth/login/"
 REFRESH_URL = "/dj-rest-auth/token/refresh/"
 
 
-def test_register_with_email_returns_jwt(api_client):
-    response = api_client.post(
-        REGISTER_URL,
-        {
-            "email": "anna@example.com",
-            "password1": "Testpass123!",
-            "password2": "Testpass123!",
-        },
-    )
+def test_register_sends_verification_email(api_client, mailoutbox):
+    response = register_user(api_client)
     assert response.status_code == 201
-    assert "access" in response.json()
+    body = response.json()
+    assert "access" not in body
+    assert "detail" in body
+    assert len(mailoutbox) == 1
+    assert "verify_key=" in mailoutbox[0].body
 
 
-def test_login_with_email(api_client):
-    api_client.post(
-        REGISTER_URL,
-        {
-            "email": "anna@example.com",
-            "password1": "Testpass123!",
-            "password2": "Testpass123!",
-        },
+def test_login_blocked_until_email_verified(api_client, mailoutbox):
+    register_user(api_client)
+    login = api_client.post(
+        LOGIN_URL,
+        {"email": "anna@example.com", "password": "Testpass123!"},
     )
-    response = api_client.post(
-        LOGIN_URL, {"email": "anna@example.com", "password": "Testpass123!"}
+    assert login.status_code == 400
+
+    verified = verify_latest_email(api_client, mailoutbox)
+    assert verified.status_code == 200
+
+    login = api_client.post(
+        LOGIN_URL,
+        {"email": "anna@example.com", "password": "Testpass123!"},
     )
-    assert response.status_code == 200
-    assert "access" in response.json()
+    assert login.status_code == 200
+    assert "access" in login.json()
 
 
-def test_login_returns_usable_refresh_token(api_client):
+def test_login_returns_usable_refresh_token(api_client, mailoutbox):
     """The SPA refreshes the 15-min access token in the background, so the
     refresh token must be in the body (not blanked by HTTPONLY) and the
     refresh endpoint must return a fresh, working access token."""
-    api_client.post(
-        REGISTER_URL,
-        {
-            "email": "anna@example.com",
-            "password1": "Testpass123!",
-            "password2": "Testpass123!",
-        },
-    )
+    register_user(api_client)
+    verify_latest_email(api_client, mailoutbox)
+
     login = api_client.post(
-        LOGIN_URL, {"email": "anna@example.com", "password": "Testpass123!"}
+        LOGIN_URL,
+        {"email": "anna@example.com", "password": "Testpass123!"},
     ).json()
     assert login["refresh"], "refresh token must not be blank"
 
@@ -61,6 +59,20 @@ def test_login_returns_usable_refresh_token(api_client):
     assert api_client.get("/api/v1/me/").status_code == 200
 
 
+def test_unverified_user_cannot_use_api(api_client, mailoutbox):
+    """JWT may be blocked at login; if a token existed, API would still 403."""
+    from django.contrib.auth import get_user_model
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    register_user(api_client)
+    User = get_user_model()
+    user = User.objects.get(email="anna@example.com")
+    token = str(RefreshToken.for_user(user).access_token)
+
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+    assert api_client.get("/api/v1/me/").status_code == 403
+
+
 def test_register_requires_email(api_client):
     response = api_client.post(
         REGISTER_URL,
@@ -69,14 +81,9 @@ def test_register_requires_email(api_client):
     assert response.status_code == 400
 
 
-def test_duplicate_email_rejected(api_client):
-    payload = {
-        "email": "anna@example.com",
-        "password1": "Testpass123!",
-        "password2": "Testpass123!",
-    }
-    api_client.post(REGISTER_URL, payload)
-    response = api_client.post(REGISTER_URL, payload)
+def test_duplicate_email_rejected(api_client, mailoutbox):
+    register_user(api_client)
+    response = register_user(api_client)
     assert response.status_code == 400
 
 
@@ -85,14 +92,9 @@ def test_password_reset_flow(api_client, mailoutbox):
     and log in with it — the whole loop the SPA drives."""
     import re
 
-    api_client.post(
-        REGISTER_URL,
-        {
-            "email": "anna@example.com",
-            "password1": "Testpass123!",
-            "password2": "Testpass123!",
-        },
-    )
+    register_user(api_client)
+    verify_latest_email(api_client, mailoutbox)
+    mailoutbox.clear()
 
     requested = api_client.post(
         "/dj-rest-auth/password/reset/", {"email": "anna@example.com"}

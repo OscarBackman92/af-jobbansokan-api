@@ -159,6 +159,24 @@ class SavedJobSearch(models.Model):
         return self.label or self.q or "Sparad sökning"
 
 
+class OperatorProfile(models.Model):
+    """Public operator identity shown in the command-center UI."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="operator_profile",
+    )
+    operator_id = models.CharField(max_length=16, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.operator_id
+
+
 class Resume(models.Model):
     """Structured CV for an applicant.
 

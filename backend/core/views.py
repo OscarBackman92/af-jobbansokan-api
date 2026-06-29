@@ -16,7 +16,9 @@ from rest_framework.decorators import action, api_view, permission_classes, thro
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
+
+from .permissions import IsAuthenticatedUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -90,17 +92,22 @@ class ProfileView(generics.RetrieveUpdateDestroyAPIView):
     """
 
     serializer_class = ProfileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedUser]
 
     def get_object(self):
-        return self.request.user
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        return User.objects.select_related("operator_profile").get(
+            pk=self.request.user.pk
+        )
 
 
 class ResumeView(generics.RetrieveUpdateDestroyAPIView):
     """The authenticated user's structured CV (created empty on first GET)."""
 
     serializer_class = ResumeSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedUser]
 
     def get_object(self):
         resume, _ = Resume.objects.get_or_create(user=self.request.user)
@@ -111,7 +118,7 @@ class SavedJobSearchListCreateView(generics.ListCreateAPIView):
     """List or save Platsbanken search presets for the current user."""
 
     serializer_class = SavedJobSearchSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedUser]
 
     def get_queryset(self):
         return SavedJobSearch.objects.filter(owner=self.request.user)
@@ -122,7 +129,7 @@ class SavedJobSearchListCreateView(generics.ListCreateAPIView):
 
 class SavedJobSearchDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = SavedJobSearchSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedUser]
 
     def get_queryset(self):
         return SavedJobSearch.objects.filter(owner=self.request.user)
@@ -135,7 +142,7 @@ class ResumeParseView(APIView):
     until the user reviews the prefilled form and submits it.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedUser]
     parser_classes = [MultiPartParser]
     throttle_classes = [UploadThrottle]
 
@@ -201,7 +208,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = JobApplicationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedUser]
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):  # schema generation
@@ -345,7 +352,7 @@ class PostingPagination(PageNumberPagination):
 class JobPostingViewSet(viewsets.ReadOnlyModelViewSet):
     """Imported job ads (JobTech). Read-only; rows are created by import."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedUser]
     pagination_class = PostingPagination
 
     def get_serializer_class(self):
@@ -425,7 +432,7 @@ def _truthy(value):
     responses={200: OpenApiTypes.OBJECT},
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedUser])
 @throttle_classes([JobTechThrottle])
 def job_search(request):
     """Live search of Platsbanken via JobTech, with optional CV matching."""
@@ -469,7 +476,7 @@ def job_search(request):
 
 @extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedUser])
 def job_filters(_request):
     """Region and occupation-field options for the ad-search dropdowns."""
     return Response(
@@ -489,7 +496,7 @@ def job_filters(_request):
     responses={200: OpenApiTypes.OBJECT},
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedUser])
 @throttle_classes([JobTechThrottle])
 def job_groups(request):
     """Occupation-group options for one selected occupation field."""
@@ -510,7 +517,7 @@ def job_groups(request):
     responses={200: OpenApiTypes.OBJECT},
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedUser])
 @throttle_classes([JobTechThrottle])
 def job_municipalities(request):
     """Municipality options for one selected region."""
