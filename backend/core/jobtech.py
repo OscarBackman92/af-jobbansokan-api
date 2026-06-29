@@ -219,14 +219,17 @@ def search(
     ]
     if q.strip():
         params.append(("q", q.strip()))
-    if region in _REGION_IDS:
-        params.append(("region", region))
-    if region in _REGION_IDS and _is_municipality(region, municipality):
+    has_municipality = region in _REGION_IDS and _is_municipality(region, municipality)
+    if has_municipality:
         params.append(("municipality", municipality))
-    if field in _FIELD_IDS:
-        params.append(("occupation-field", field))
-    if field in _FIELD_IDS and _is_occupation_group(field, group):
+    elif region in _REGION_IDS:
+        params.append(("region", region))
+
+    has_occupation_group = field in _FIELD_IDS and _is_occupation_group(field, group)
+    if has_occupation_group:
         params.append(("occupation-group", group))
+    elif field in _FIELD_IDS:
+        params.append(("occupation-field", field))
     if remote:
         params.append(("remote", "true"))
 

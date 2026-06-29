@@ -213,7 +213,7 @@ def test_search_forwards_known_occupation_group(
         {"field": "apaJ_2ja_LuF", "group": "DJh5_yyF_hEM"},
     )
     sent = mock_jobtech[0]
-    assert sent["occupation-field"] == "apaJ_2ja_LuF"
+    assert "occupation-field" not in sent
     assert sent["occupation-group"] == "DJh5_yyF_hEM"
 
 
@@ -237,7 +237,7 @@ def test_search_forwards_known_municipality(
         {"region": "CifL_Rzy_Mku", "municipality": "AvNB_uwa_6n6"},
     )
     sent = mock_jobtech[0]
-    assert sent["region"] == "CifL_Rzy_Mku"
+    assert "region" not in sent
     assert sent["municipality"] == "AvNB_uwa_6n6"
 
 
