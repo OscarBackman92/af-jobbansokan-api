@@ -8,6 +8,10 @@ export default function PostingsPanel() {
   const [filters, setFilters] = useState({ regions: [], fields: [] });
   const [q, setQ] = useState("");
   const [region, setRegion] = useState("");
+  const [municipality, setMunicipality] = useState("");
+  const [municipalities, setMunicipalities] = useState([]);
+  const [municipalitiesLoading, setMunicipalitiesLoading] = useState(false);
+  const [municipalitiesError, setMunicipalitiesError] = useState(null);
   const [field, setField] = useState("");
   const [group, setGroup] = useState("");
   const [groups, setGroups] = useState([]);
@@ -19,6 +23,7 @@ export default function PostingsPanel() {
   const [query, setQuery] = useState({
     q: "",
     region: "",
+    municipality: "",
     field: "",
     group: "",
     remote: false,
@@ -59,6 +64,31 @@ export default function PostingsPanel() {
   }, []);
 
   useEffect(() => {
+    setMunicipalities([]);
+    setMunicipalitiesError(null);
+    if (!region) {
+      setMunicipalitiesLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setMunicipalitiesLoading(true);
+    request(`/api/v1/jobs/municipalities/?region=${encodeURIComponent(region)}`)
+      .then((result) => {
+        if (!cancelled) setMunicipalities(result.municipalities ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setMunicipalitiesError("Kunde inte hämta orter just nu.");
+      })
+      .finally(() => {
+        if (!cancelled) setMunicipalitiesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [region]);
+
+  useEffect(() => {
     setGroups([]);
     setGroupsError(null);
     if (!field) {
@@ -93,6 +123,7 @@ export default function PostingsPanel() {
       });
       if (query.q.trim()) params.set("q", query.q.trim());
       if (query.region) params.set("region", query.region);
+      if (query.municipality) params.set("municipality", query.municipality);
       if (query.field) params.set("field", query.field);
       if (query.group) params.set("group", query.group);
       if (query.remote) params.set("remote", "true");
@@ -117,17 +148,30 @@ export default function PostingsPanel() {
   function submit(event) {
     event.preventDefault();
     setOffset(0);
-    setQuery({ q, region, field, group, remote });
+    setQuery({ q, region, municipality, field, group, remote });
   }
 
   function clearFilters() {
     setQ("");
     setRegion("");
+    setMunicipality("");
     setField("");
     setGroup("");
     setRemote(false);
     setOffset(0);
-    setQuery({ q: "", region: "", field: "", group: "", remote: false });
+    setQuery({
+      q: "",
+      region: "",
+      municipality: "",
+      field: "",
+      group: "",
+      remote: false,
+    });
+  }
+
+  function changeRegion(nextRegion) {
+    setRegion(nextRegion);
+    setMunicipality("");
   }
 
   function changeField(nextField) {
@@ -163,6 +207,19 @@ export default function PostingsPanel() {
   const results = data?.results ?? [];
   const showingFrom = total === 0 ? 0 : offset + 1;
   const showingTo = Math.min(offset + PAGE_SIZE, total);
+  const locationOptions = municipalities;
+  const municipalityDisabled =
+    !region ||
+    municipalitiesLoading ||
+    !!municipalitiesError ||
+    locationOptions.length === 0;
+  const municipalityPlaceholder = !region
+    ? "Välj län först"
+    : municipalitiesLoading
+      ? "Laddar orter..."
+      : municipalitiesError
+        ? "Kunde inte hämta orter"
+        : "Alla orter";
   const fieldGroups = groups;
   const groupDisabled =
     !field || groupsLoading || !!groupsError || fieldGroups.length === 0;
@@ -174,14 +231,19 @@ export default function PostingsPanel() {
         ? "Kunde inte hämta yrken"
         : "Alla yrken";
   const activeFilters =
-    query.q || query.region || query.field || query.group || query.remote;
+    query.q ||
+    query.region ||
+    query.municipality ||
+    query.field ||
+    query.group ||
+    query.remote;
 
   return (
     <section className="card">
       <h2>Sök jobb i hela Platsbanken</h2>
       <p className="muted">
-        Live från Arbetsförmedlingen. Filtrera på ort, yrkesområde, yrke och
-        distans — spara intressanta annonser direkt på din tavla.
+        Live från Arbetsförmedlingen. Filtrera på län, ort, yrkesområde, yrke
+        och distans — spara intressanta annonser direkt på din tavla.
       </p>
 
       <form className="job-search" onSubmit={submit}>
@@ -191,11 +253,24 @@ export default function PostingsPanel() {
           onChange={(e) => setQ(e.target.value)}
           placeholder="Sök yrke, företag, kompetens…"
         />
-        <select value={region} onChange={(e) => setRegion(e.target.value)}>
+        <select value={region} onChange={(e) => changeRegion(e.target.value)}>
           <option value="">Hela Sverige</option>
           {filters.regions.map((r) => (
             <option key={r.id} value={r.id}>
               {r.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={municipality}
+          onChange={(e) => setMunicipality(e.target.value)}
+          disabled={municipalityDisabled}
+          title={region ? "Välj ort inom länet" : "Välj län först"}
+        >
+          <option value="">{municipalityPlaceholder}</option>
+          {locationOptions.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.label}
             </option>
           ))}
         </select>
@@ -236,6 +311,7 @@ export default function PostingsPanel() {
       </form>
 
       {filtersError && <p className="error">{filtersError}</p>}
+      {municipalitiesError && <p className="error">{municipalitiesError}</p>}
       {groupsError && <p className="error">{groupsError}</p>}
       {message && <p className="notice">{message}</p>}
       {error && <p className="error">{error}</p>}

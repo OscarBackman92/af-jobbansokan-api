@@ -1097,8 +1097,8 @@ tbody tr:last-child td {
 .job-search {
   display: grid;
   grid-template-columns:
-    minmax(170px, 2fr) minmax(130px, 1fr) minmax(160px, 1fr)
-    minmax(190px, 1.25fr) auto auto;
+    minmax(170px, 2fr) minmax(120px, 1fr) minmax(130px, 1fr)
+    minmax(145px, 1fr) minmax(170px, 1.2fr) auto auto;
   gap: 0.5rem;
   align-items: center;
   margin: 0.9rem 0;

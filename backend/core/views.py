@@ -20,6 +20,7 @@ from .jobtech import (
     OCCUPATION_FIELDS,
     REGIONS,
     JobTechError,
+    municipalities,
     occupation_groups,
 )
 from .jobtech import search as jobtech_search
@@ -359,6 +360,9 @@ def _truthy(value):
         OpenApiParameter("q", OpenApiTypes.STR, description="Free text query."),
         OpenApiParameter("region", OpenApiTypes.STR, description="Region concept id."),
         OpenApiParameter(
+            "municipality", OpenApiTypes.STR, description="Municipality concept id."
+        ),
+        OpenApiParameter(
             "field", OpenApiTypes.STR, description="Occupation-field concept id."
         ),
         OpenApiParameter(
@@ -385,6 +389,7 @@ def job_search(request):
         data = jobtech_search(
             q=params.get("q", ""),
             region=params.get("region", ""),
+            municipality=params.get("municipality", ""),
             field=params.get("field", ""),
             group=params.get("group", ""),
             remote=_truthy(params.get("remote", "")),
@@ -444,3 +449,23 @@ def job_groups(request):
             status=drf_status.HTTP_502_BAD_GATEWAY,
         )
     return Response({"groups": groups})
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter("region", OpenApiTypes.STR, description="Region concept id."),
+    ],
+    responses={200: OpenApiTypes.OBJECT},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def job_municipalities(request):
+    """Municipality options for one selected region."""
+    try:
+        locations = municipalities(request.query_params.get("region", ""))
+    except JobTechError:
+        return Response(
+            {"detail": "Kunde inte hämta orter från Platsbanken just nu."},
+            status=drf_status.HTTP_502_BAD_GATEWAY,
+        )
+    return Response({"municipalities": locations})

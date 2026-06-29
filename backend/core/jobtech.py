@@ -87,30 +87,46 @@ def _concept_option(concept: dict, *, field_id: str) -> dict[str, str] | None:
     return {"id": concept_id, "label": label, "field_id": field_id}
 
 
-@lru_cache(maxsize=64)
-def occupation_groups(field_id: str) -> list[dict[str, str]]:
-    """Return JobTech ssyk-level-4 occupation groups for one occupation field."""
-    if field_id not in _FIELD_IDS:
-        return []
+def _location_option(concept: dict, *, region_id: str) -> dict[str, str] | None:
+    concept_id = concept.get("taxonomy/id")
+    label = concept.get("taxonomy/preferred-label")
+    if not concept_id or not label:
+        return None
+    return {"id": concept_id, "label": label, "region_id": region_id}
 
+
+def _concepts_from_payload(payload) -> list[dict]:
+    concepts = payload.get("value", []) if isinstance(payload, dict) else payload
+    return concepts if isinstance(concepts, list) else []
+
+
+def _taxonomy_concepts(params: dict[str, str]) -> list[dict]:
     try:
         response = requests.get(
             JOBTECH_TAXONOMY_CONCEPTS_URL,
-            params={
-                "type": "ssyk-level-4",
-                "relation": "narrower",
-                "related-ids": field_id,
-            },
+            params=params,
             timeout=15,
         )
         response.raise_for_status()
         payload = response.json()
     except requests.RequestException as exc:
         raise JobTechError(str(exc)) from exc
+    return _concepts_from_payload(payload)
 
-    concepts = payload.get("value", []) if isinstance(payload, dict) else payload
-    if not isinstance(concepts, list):
-        concepts = []
+
+@lru_cache(maxsize=64)
+def occupation_groups(field_id: str) -> list[dict[str, str]]:
+    """Return JobTech ssyk-level-4 occupation groups for one occupation field."""
+    if field_id not in _FIELD_IDS:
+        return []
+
+    concepts = _taxonomy_concepts(
+        {
+            "type": "ssyk-level-4",
+            "relation": "narrower",
+            "related-ids": field_id,
+        }
+    )
 
     groups: list[dict[str, str]] = []
     seen: set[str] = set()
@@ -124,9 +140,41 @@ def occupation_groups(field_id: str) -> list[dict[str, str]]:
     return groups
 
 
+@lru_cache(maxsize=64)
+def municipalities(region_id: str) -> list[dict[str, str]]:
+    """Return JobTech municipalities for one selected region."""
+    if region_id not in _REGION_IDS:
+        return []
+
+    concepts = _taxonomy_concepts(
+        {
+            "type": "municipality",
+            "relation": "narrower",
+            "related-ids": region_id,
+        }
+    )
+
+    locations: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for concept in concepts:
+        option = _location_option(concept, region_id=region_id)
+        if not option or option["id"] in seen:
+            continue
+        seen.add(option["id"])
+        locations.append(option)
+    locations.sort(key=lambda item: item["label"].lower())
+    return locations
+
+
 def _is_occupation_group(field: str, group: str) -> bool:
     return bool(group) and any(
         option["id"] == group for option in occupation_groups(field)
+    )
+
+
+def _is_municipality(region: str, municipality: str) -> bool:
+    return bool(municipality) and any(
+        option["id"] == municipality for option in municipalities(region)
     )
 
 
@@ -152,6 +200,7 @@ def search(
     *,
     q: str = "",
     region: str = "",
+    municipality: str = "",
     field: str = "",
     group: str = "",
     remote: bool = False,
@@ -172,6 +221,8 @@ def search(
         params.append(("q", q.strip()))
     if region in _REGION_IDS:
         params.append(("region", region))
+    if region in _REGION_IDS and _is_municipality(region, municipality):
+        params.append(("municipality", municipality))
     if field in _FIELD_IDS:
         params.append(("occupation-field", field))
     if field in _FIELD_IDS and _is_occupation_group(field, group):

@@ -9,6 +9,7 @@ from .views import (
     ResumeView,
     job_filters,
     job_groups,
+    job_municipalities,
     job_search,
 )
 
@@ -23,5 +24,6 @@ urlpatterns = [
     path("jobs/", job_search, name="job-search"),
     path("jobs/filters/", job_filters, name="job-filters"),
     path("jobs/groups/", job_groups, name="job-groups"),
+    path("jobs/municipalities/", job_municipalities, name="job-municipalities"),
     path("", include(router.urls)),
 ]

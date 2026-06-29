@@ -11,6 +11,7 @@ pytestmark = pytest.mark.django_db
 SEARCH_URL = "/api/v1/jobs/"
 FILTERS_URL = "/api/v1/jobs/filters/"
 GROUPS_URL = "/api/v1/jobs/groups/"
+MUNICIPALITIES_URL = "/api/v1/jobs/municipalities/"
 
 SAMPLE_PAYLOAD = {
     "total": {"value": 3},
@@ -79,6 +80,20 @@ def test_groups_lists_occupation_groups_for_field(api_client, user, monkeypatch)
     assert body["groups"] == groups
 
 
+def test_municipalities_lists_locations_for_region(api_client, user, monkeypatch):
+    locations = [
+        {
+            "id": "AvNB_uwa_6n6",
+            "label": "Stockholm",
+            "region_id": "CifL_Rzy_Mku",
+        }
+    ]
+    monkeypatch.setattr(views, "municipalities", lambda region: locations)
+    api_client.force_authenticate(user)
+    body = api_client.get(MUNICIPALITIES_URL, {"region": "CifL_Rzy_Mku"}).json()
+    assert body["municipalities"] == locations
+
+
 def test_occupation_groups_accepts_taxonomy_list_payload(monkeypatch):
     payload = [
         {
@@ -113,6 +128,34 @@ def test_occupation_groups_accepts_taxonomy_list_payload(monkeypatch):
         jobtech.occupation_groups.cache_clear()
 
 
+def test_municipalities_accepts_taxonomy_list_payload(monkeypatch):
+    payload = [
+        {"taxonomy/id": "E4CV_a5E_ucX", "taxonomy/preferred-label": "Danderyd"},
+        {"taxonomy/id": "AvNB_uwa_6n6", "taxonomy/preferred-label": "Stockholm"},
+    ]
+
+    def fake_get(url, params=None, timeout=None):
+        return FakeResponse(payload)
+
+    jobtech.municipalities.cache_clear()
+    monkeypatch.setattr(jobtech.requests, "get", fake_get)
+    try:
+        assert jobtech.municipalities("CifL_Rzy_Mku") == [
+            {
+                "id": "E4CV_a5E_ucX",
+                "label": "Danderyd",
+                "region_id": "CifL_Rzy_Mku",
+            },
+            {
+                "id": "AvNB_uwa_6n6",
+                "label": "Stockholm",
+                "region_id": "CifL_Rzy_Mku",
+            },
+        ]
+    finally:
+        jobtech.municipalities.cache_clear()
+
+
 def test_search_maps_hits(api_client, user, mock_jobtech):
     api_client.force_authenticate(user)
     body = api_client.get(SEARCH_URL, {"q": "python"}).json()
@@ -130,11 +173,13 @@ def test_search_forwards_known_filters_only(
     api_client, user, mock_jobtech, monkeypatch
 ):
     monkeypatch.setattr(jobtech, "occupation_groups", lambda field: [])
+    monkeypatch.setattr(jobtech, "municipalities", lambda region: [])
     api_client.force_authenticate(user)
     api_client.get(
         SEARCH_URL,
         {
             "region": "CifL_Rzy_Mku",
+            "municipality": "bogus-id",
             "field": "bogus-id",
             "group": "bogus-id",
             "remote": "true",
@@ -142,6 +187,7 @@ def test_search_forwards_known_filters_only(
     )
     sent = mock_jobtech[0]
     assert sent["region"] == "CifL_Rzy_Mku"
+    assert "municipality" not in sent  # unknown id dropped
     assert "occupation-field" not in sent  # unknown id dropped
     assert "occupation-group" not in sent  # unknown id dropped
     assert sent["remote"] == "true"
@@ -169,6 +215,30 @@ def test_search_forwards_known_occupation_group(
     sent = mock_jobtech[0]
     assert sent["occupation-field"] == "apaJ_2ja_LuF"
     assert sent["occupation-group"] == "DJh5_yyF_hEM"
+
+
+def test_search_forwards_known_municipality(
+    api_client, user, mock_jobtech, monkeypatch
+):
+    monkeypatch.setattr(
+        jobtech,
+        "municipalities",
+        lambda region: [
+            {
+                "id": "AvNB_uwa_6n6",
+                "label": "Stockholm",
+                "region_id": region,
+            }
+        ],
+    )
+    api_client.force_authenticate(user)
+    api_client.get(
+        SEARCH_URL,
+        {"region": "CifL_Rzy_Mku", "municipality": "AvNB_uwa_6n6"},
+    )
+    sent = mock_jobtech[0]
+    assert sent["region"] == "CifL_Rzy_Mku"
+    assert sent["municipality"] == "AvNB_uwa_6n6"
 
 
 def test_search_adds_cv_match(api_client, user, mock_jobtech):
