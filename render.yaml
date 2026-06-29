@@ -41,6 +41,7 @@ services:
       # Base URL for the reset link; defaults to the request origin if unset.
       - key: FRONTEND_URL
         sync: false
+      # Optional: schedule `python manage.py send_reminders` daily via Render Cron.
 
 databases:
   - name: ansokt-db

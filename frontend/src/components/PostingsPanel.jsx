@@ -36,9 +36,26 @@ export default function PostingsPanel() {
   const [message, setMessage] = useState(null);
   const [selected, setSelected] = useState(null);
   const [tracked, setTracked] = useState(() => new Set());
+  const [savedSearches, setSavedSearches] = useState([]);
+
+  function buildSearchLabel(search) {
+    if (search.label?.trim()) return search.label.trim();
+    if (search.q?.trim()) return search.q.trim();
+    return "Sparad sökning";
+  }
+
+  const loadSavedSearches = useCallback(async () => {
+    try {
+      const rows = await request("/api/v1/me/saved-searches/");
+      setSavedSearches(rows);
+    } catch {
+      /* non-fatal when logged out */
+    }
+  }, []);
 
   // Load filter options + which ads are already on the board (by URL).
   useEffect(() => {
+    loadSavedSearches();
     request("/api/v1/jobs/filters/")
       .then((result) => {
         setFilters(result);
@@ -61,7 +78,7 @@ export default function PostingsPanel() {
         /* non-fatal */
       }
     })();
-  }, []);
+  }, [loadSavedSearches]);
 
   useEffect(() => {
     setMunicipalities([]);
@@ -203,12 +220,65 @@ export default function PostingsPanel() {
     }
   }
 
+  async function saveCurrentSearch() {
+    setMessage(null);
+    const label = q.trim() || "Sparad sökning";
+    try {
+      await request("/api/v1/me/saved-searches/", {
+        method: "POST",
+        body: {
+          label,
+          q,
+          region,
+          municipality,
+          field,
+          group,
+          remote,
+        },
+      });
+      setMessage(`Sökningen "${label}" sparades.`);
+      loadSavedSearches();
+    } catch (err) {
+      setMessage(err.message);
+    }
+  }
+
+  function applySavedSearch(saved) {
+    setQ(saved.q || "");
+    setRegion(saved.region || "");
+    setMunicipality(saved.municipality || "");
+    setField(saved.field || "");
+    setGroup(saved.group || "");
+    setRemote(!!saved.remote);
+    setOffset(0);
+    setQuery({
+      q: saved.q || "",
+      region: saved.region || "",
+      municipality: saved.municipality || "",
+      field: saved.field || "",
+      group: saved.group || "",
+      remote: !!saved.remote,
+    });
+  }
+
+  async function removeSavedSearch(id) {
+    try {
+      await request(`/api/v1/me/saved-searches/${id}/`, { method: "DELETE" });
+      setSavedSearches((rows) => rows.filter((row) => row.id !== id));
+    } catch (err) {
+      setMessage(err.message);
+    }
+  }
+
   const total = data?.total ?? 0;
   const results = (data?.results ?? []).slice().sort((a, b) => {
     const aTracked = a.webpage_url && tracked.has(a.webpage_url);
     const bTracked = b.webpage_url && tracked.has(b.webpage_url);
-    if (aTracked === bTracked) return 0;
-    return aTracked ? 1 : -1;
+    if (aTracked !== bTracked) return aTracked ? 1 : -1;
+    const aMatch = a.match?.count ?? -1;
+    const bMatch = b.match?.count ?? -1;
+    if (bMatch !== aMatch) return bMatch - aMatch;
+    return 0;
   });
   const showingFrom = total === 0 ? 0 : offset + 1;
   const showingTo = Math.min(offset + PAGE_SIZE, total);
@@ -339,6 +409,36 @@ export default function PostingsPanel() {
         <button className="small">Sök</button>
       </form>
 
+      <div className="saved-search-tools">
+        <button
+          type="button"
+          className="secondary small"
+          onClick={saveCurrentSearch}
+          disabled={!(q || region || municipality || field || group || remote)}
+        >
+          Spara sökning
+        </button>
+        {savedSearches.length > 0 && (
+          <div className="saved-search-list" aria-label="Sparade sökningar">
+            {savedSearches.map((saved) => (
+              <span className="saved-search-chip" key={saved.id}>
+                <button type="button" onClick={() => applySavedSearch(saved)}>
+                  {buildSearchLabel(saved)}
+                </button>
+                <button
+                  type="button"
+                  className="saved-search-remove"
+                  onClick={() => removeSavedSearch(saved.id)}
+                  aria-label={`Ta bort ${buildSearchLabel(saved)}`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       {filtersError && <p className="error">{filtersError}</p>}
       {municipalitiesError && <p className="error">{municipalitiesError}</p>}
       {groupsError && <p className="error">{groupsError}</p>}
@@ -434,7 +534,14 @@ function JobCard({ job, tracked, onOpen, onTrack }) {
           {job.match && (
             <span
               className={`badge ${job.match.count > 0 ? "applied" : "neutral"}`}
-              title={job.match.matched.join(", ")}
+              title={[
+                job.match.matched.join(", "),
+                job.match.missing?.length
+                  ? `Saknas: ${job.match.missing.join(", ")}`
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             >
               {job.match.count}/{job.match.total} kompetenser
             </span>
@@ -532,6 +639,11 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
             {job.match.matched.map((skill) => (
               <span className="badge neutral" key={skill}>
                 {skill}
+              </span>
+            ))}
+            {job.match.missing?.map((skill) => (
+              <span className="badge rejected" key={`missing-${skill}`}>
+                Saknas: {skill}
               </span>
             ))}
           </p>

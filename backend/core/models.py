@@ -135,6 +135,30 @@ class ApplicationEvent(models.Model):
         return f"{self.occurred_at}: {self.note[:40]}"
 
 
+class SavedJobSearch(models.Model):
+    """A saved Platsbanken query the user can re-run with one click."""
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="saved_job_searches",
+    )
+    label = models.CharField(max_length=120, blank=True)
+    q = models.CharField(max_length=255, blank=True)
+    region = models.CharField(max_length=80, blank=True)
+    municipality = models.CharField(max_length=80, blank=True)
+    field = models.CharField(max_length=80, blank=True)
+    group = models.CharField(max_length=80, blank=True)
+    remote = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.label or self.q or "Sparad sökning"
+
+
 class Resume(models.Model):
     """Structured CV for an applicant.
 

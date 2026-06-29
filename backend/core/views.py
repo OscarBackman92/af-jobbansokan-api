@@ -1,5 +1,8 @@
 import csv
+import os
 from types import SimpleNamespace
+
+from django.conf import settings
 
 from django.db.models import Count, Q
 from django.http import HttpResponse
@@ -27,7 +30,7 @@ from .jobtech import (
 from .jobtech import search as jobtech_search
 from .throttles import JobTechThrottle, UploadThrottle
 from .matching import match_skills
-from .models import JobApplication, JobPosting, Resume
+from .models import JobApplication, JobPosting, Resume, SavedJobSearch
 from .resume import (
     MAX_UPLOAD_SIZE,
     SUPPORTED_EXTENSIONS,
@@ -42,6 +45,7 @@ from .serializers import (
     ProfileSerializer,
     ResumeSerializer,
     ResumeUploadSerializer,
+    SavedJobSearchSerializer,
     StatusCountSerializer,
 )
 
@@ -53,7 +57,10 @@ from .serializers import (
 @permission_classes([AllowAny])
 def health(_request):
     """Public health check endpoint."""
-    return Response({"status": "ok"})
+    payload = {"status": "ok"}
+    if not settings.DEBUG and not os.getenv("EMAIL_HOST"):
+        payload["warnings"] = ["email_not_configured"]
+    return Response(payload)
 
 
 class ProfileView(generics.RetrieveUpdateDestroyAPIView):
@@ -79,6 +86,27 @@ class ResumeView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         resume, _ = Resume.objects.get_or_create(user=self.request.user)
         return resume
+
+
+class SavedJobSearchListCreateView(generics.ListCreateAPIView):
+    """List or save Platsbanken search presets for the current user."""
+
+    serializer_class = SavedJobSearchSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return SavedJobSearch.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
+class SavedJobSearchDetailView(generics.RetrieveDestroyAPIView):
+    serializer_class = SavedJobSearchSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return SavedJobSearch.objects.filter(owner=self.request.user)
 
 
 class ResumeParseView(APIView):

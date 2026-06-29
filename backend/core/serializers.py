@@ -12,6 +12,7 @@ from .models import (
     JobApplication,
     JobPosting,
     Resume,
+    SavedJobSearch,
 )
 
 User = get_user_model()
@@ -252,3 +253,20 @@ class ResumeSerializer(serializers.ModelSerializer):
 
 class ResumeUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
+
+
+class SavedJobSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SavedJobSearch
+        fields = [
+            "id",
+            "label",
+            "q",
+            "region",
+            "municipality",
+            "field",
+            "group",
+            "remote",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]

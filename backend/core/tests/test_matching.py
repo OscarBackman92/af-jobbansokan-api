@@ -20,6 +20,7 @@ def test_match_skills_is_case_insensitive(python_posting):
     result = match_skills(["python", "React", "PostgreSQL"], python_posting)
     assert result == {
         "matched": ["python", "PostgreSQL"],
+        "missing": ["React"],
         "count": 2,
         "total": 3,
     }

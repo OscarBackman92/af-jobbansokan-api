@@ -50,7 +50,8 @@ Fokus: gör appen trygg att släppa till riktiga användare.
       larmar om `EMAIL_HOST` saknas i prod.
 - [ ] Lägg till Sentry (backend + frontend) för felrapportering.
 - [ ] Uptime-check och custom domän på Render.
-- [ ] Integritetspolicy-sida + kort datahanteringssammanfattning (länkas i footern).
+- [x] Integritetspolicy-sida + kort datahanteringssammanfattning (länkas i footern).
+- [x] Health-endpoint varnar om `EMAIL_HOST` saknas i produktion.
 
 ### B. Kvalitet
 - [x] Inför Vitest + React Testing Library i `frontend/`.
@@ -72,10 +73,8 @@ e-post, felövervakning, grundläggande missbruksskydd och automatiska rökteste
 Fokus: gör appen till ett dagligt verktyg.
 
 ### C. Produktvärde
-- [ ] Påminnelse-e-post för förfallna `next_action_at`-rader. Kräver en
-      schemalagd körning (management command + Render cron, se Fas 4 för
-      bakgrundsjobb).
-- [ ] Sparade JobTech-sökningar (ny modell + endpoints + UI i `PostingsPanel`).
+- [x] Påminnelse-e-post för förfallna `next_action_at`-rader (`send_reminders`-kommando).
+- [x] Sparade JobTech-sökningar (modell + endpoints + UI i `PostingsPanel`).
 - [x] Nedprioritera annonser som redan ligger på tavlan (sorteras sist, nedtonad styling).
 - [ ] XLSX-export vid sidan av CSV.
 
@@ -93,8 +92,8 @@ Fokus: gör appen till ett dagligt verktyg.
 Fokus: gör matchningen till en verklig konkurrensfördel.
 
 ### C. Produktvärde
-- [ ] Sortera annonser efter CV-matchning (matchningsdata finns redan per träff).
-- [ ] Visa saknade kompetenser, inte bara matchade (`backend/core/matching.py`).
+- [x] Sortera annonser efter CV-matchning (matchningsdata finns redan per träff).
+- [x] Visa saknade kompetenser, inte bara matchade (`backend/core/matching.py`).
 - [ ] Föreslå söktermer utifrån användarens CV.
 - [ ] Låt användaren märka kompetenser som "måste ha" / "bra att ha" / "lär mig".
 - [ ] Digest-mejl för sparade sökningar.
@@ -105,7 +104,7 @@ Fokus: gör matchningen till en verklig konkurrensfördel.
 
 ### E. UX-polish
 - [x] Tillgänglighetsförbättringar i modaler: fokus, Escape, `role="dialog"`, `aria-modal`.
-- [ ] Mobil-polish med visuella regressions-screenshots.
+- [x] Mobil-polish: safe areas, touch targets, bottom sheets, horisontell scroll.
 - [ ] Kalenderexport (ICS) för intervjuer och uppföljningar.
 - [ ] Mallar för anteckningar, rekryterarsamtal och intervjuförberedelse.
 - [ ] Veckosammanfattning: skickade ansökningar, uppföljningar, bokade intervjuer.

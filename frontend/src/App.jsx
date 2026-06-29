@@ -5,6 +5,7 @@ import { clearTokens, getAccess, setTokens } from "./auth.js";
 import AuthHero from "./components/AuthHero.jsx";
 import BoardPanel from "./components/BoardPanel.jsx";
 import PostingsPanel from "./components/PostingsPanel.jsx";
+import PrivacyPanel from "./components/PrivacyPanel.jsx";
 import ProfilePanel from "./components/ProfilePanel.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
 
@@ -38,6 +39,7 @@ export default function App() {
   const [me, setMe] = useState(null);
   const [resetCreds, setResetCreds] = useState(() => readResetCreds());
   const [theme, setTheme] = useState(() => readTheme());
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -130,20 +132,24 @@ export default function App() {
             }}
           />
         )}
-        {!resetCreds && !token && <AuthHero onLogin={login} />}
-        {!resetCreds && token && tab === "board" && (
+        {!resetCreds && !token && !showPrivacy && <AuthHero onLogin={login} />}
+        {!resetCreds && token && tab === "board" && !showPrivacy && (
           <BoardPanel token={token} onNavigate={setTab} />
         )}
-        {!resetCreds && token && tab === "postings" && <PostingsPanel />}
-        {!resetCreds && token && tab === "profile" && (
+        {!resetCreds && token && tab === "postings" && !showPrivacy && <PostingsPanel />}
+        {!resetCreds && token && tab === "profile" && !showPrivacy && (
           <ProfilePanel token={token} me={me} onMeChange={setMe} onLogout={logout} />
         )}
+        {showPrivacy && <PrivacyPanel onClose={() => setShowPrivacy(false)} />}
       </main>
 
       <footer className="footer">
         <span className="footer-kicker">System</span>
         Din ansökningsdata är din: exportera som CSV eller radera kontot och allt
-        med det.
+        med det.{" "}
+        <button type="button" className="linklike footer-link" onClick={() => setShowPrivacy(true)}>
+          Integritetspolicy
+        </button>
         <div className="theme-picker" aria-label="Visuellt tema">
           {THEMES.map((t) => (
             <button

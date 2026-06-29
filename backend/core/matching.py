@@ -34,4 +34,11 @@ def match_skills(skills: list[str], posting) -> dict:
         for skill in skills
         if skill.strip() and _skill_pattern(skill).search(text)
     ]
-    return {"matched": matched, "count": len(matched), "total": len(skills)}
+    normalized = [skill for skill in skills if skill.strip()]
+    missing = [skill for skill in normalized if skill not in matched]
+    return {
+        "matched": matched,
+        "missing": missing,
+        "count": len(matched),
+        "total": len(normalized),
+    }
