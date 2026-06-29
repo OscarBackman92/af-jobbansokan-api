@@ -108,9 +108,13 @@ def occupation_groups(field_id: str) -> list[dict[str, str]]:
     except requests.RequestException as exc:
         raise JobTechError(str(exc)) from exc
 
+    concepts = payload.get("value", []) if isinstance(payload, dict) else payload
+    if not isinstance(concepts, list):
+        concepts = []
+
     groups: list[dict[str, str]] = []
     seen: set[str] = set()
-    for concept in payload.get("value", []):
+    for concept in concepts:
         option = _concept_option(concept, field_id=field_id)
         if not option or option["id"] in seen:
             continue

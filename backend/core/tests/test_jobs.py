@@ -79,6 +79,40 @@ def test_groups_lists_occupation_groups_for_field(api_client, user, monkeypatch)
     assert body["groups"] == groups
 
 
+def test_occupation_groups_accepts_taxonomy_list_payload(monkeypatch):
+    payload = [
+        {
+            "taxonomy/id": "WZCM_nfS_eAk",
+            "taxonomy/preferred-label": "Nationalekonomer och makroanalytiker m.fl.",
+        },
+        {
+            "taxonomy/id": "FfMN_Bw1_qYR",
+            "taxonomy/preferred-label": "Banktjänstemän",
+        },
+    ]
+
+    def fake_get(url, params=None, timeout=None):
+        return FakeResponse(payload)
+
+    jobtech.occupation_groups.cache_clear()
+    monkeypatch.setattr(jobtech.requests, "get", fake_get)
+    try:
+        assert jobtech.occupation_groups("X82t_awd_Qyc") == [
+            {
+                "id": "FfMN_Bw1_qYR",
+                "label": "Banktjänstemän",
+                "field_id": "X82t_awd_Qyc",
+            },
+            {
+                "id": "WZCM_nfS_eAk",
+                "label": "Nationalekonomer och makroanalytiker m.fl.",
+                "field_id": "X82t_awd_Qyc",
+            },
+        ]
+    finally:
+        jobtech.occupation_groups.cache_clear()
+
+
 def test_search_maps_hits(api_client, user, mock_jobtech):
     api_client.force_authenticate(user)
     body = api_client.get(SEARCH_URL, {"q": "python"}).json()
