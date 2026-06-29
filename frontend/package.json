@@ -11,6 +11,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@sentry/react": "^10.62.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

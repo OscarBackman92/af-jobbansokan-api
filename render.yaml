@@ -1,4 +1,4 @@
-# Render blueprint: web service (Docker) + managed Postgres.
+# Render blueprint: web service (Docker) + managed Postgres + daily reminders.
 # Deploy: push to GitHub -> render.com -> New + Blueprint -> select repo.
 services:
   - type: web
@@ -24,8 +24,7 @@ services:
         fromDatabase:
           name: ansokt-db
           property: connectionString
-      # E-mail (password reset). sync: false => Render prompts at deploy.
-      # Until EMAIL_HOST is set, password reset silently sends nothing.
+      # E-mail (password reset + reminders). sync: false => set in Dashboard.
       - key: EMAIL_HOST
         sync: false
       - key: EMAIL_PORT
@@ -41,7 +40,74 @@ services:
       # Base URL for the reset link; defaults to the request origin if unset.
       - key: FRONTEND_URL
         sync: false
-      # Optional: schedule `python manage.py send_reminders` daily via Render Cron.
+      # Sentry (optional). Create a project at sentry.io and paste the DSN.
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.1"
+
+  # Daily follow-up reminders at 06:00 UTC (~07:00 CET).
+  - type: cron
+    name: ansokt-reminders
+    runtime: docker
+    schedule: "0 6 * * *"
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python backend/manage.py send_reminders
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: PYTHONPATH
+        value: /app/backend
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ansokt-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: DJANGO_SECRET_KEY
+      - key: EMAIL_HOST
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_HOST
+      - key: EMAIL_PORT
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_PORT
+      - key: EMAIL_HOST_USER
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_HOST_USER
+      - key: EMAIL_HOST_PASSWORD
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_HOST_PASSWORD
+      - key: EMAIL_USE_TLS
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_USE_TLS
+      - key: DEFAULT_FROM_EMAIL
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: DEFAULT_FROM_EMAIL
+      - key: SENTRY_DSN
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: SENTRY_DSN
+      - key: SENTRY_ENVIRONMENT
+        value: production
 
 databases:
   - name: ansokt-db

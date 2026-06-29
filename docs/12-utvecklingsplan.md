@@ -48,10 +48,12 @@ Fokus: gör appen trygg att släppa till riktiga användare.
 - [ ] Konfigurera och verifiera produktions-SMTP så lösenordsåterställning fungerar
       (`backend/config/settings.py`, `render.yaml`). Lägg till ett röktest som
       larmar om `EMAIL_HOST` saknas i prod.
-- [ ] Lägg till Sentry (backend + frontend) för felrapportering.
+- [x] Lägg till Sentry (backend + frontend) för felrapportering.
 - [ ] Uptime-check och custom domän på Render.
 - [x] Integritetspolicy-sida + kort datahanteringssammanfattning (länkas i footern).
 - [x] Health-endpoint varnar om `EMAIL_HOST` saknas i produktion.
+- [x] Deploy-checks (`core.E001`, `core.W001`) vid `manage.py check --deploy`.
+- [x] Render Cron för dagliga påminnelser (`send_reminders`, 06:00 UTC).
 
 ### B. Kvalitet
 - [x] Inför Vitest + React Testing Library i `frontend/`.

@@ -1,4 +1,4 @@
-from core.views import health
+from core.views import health, runtime_config
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import (
@@ -10,6 +10,7 @@ from rest_framework.permissions import AllowAny
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", health),
+    path("runtime-config.js", runtime_config, name="runtime-config"),
     path(
         "api/schema/",
         SpectacularAPIView.as_view(permission_classes=[AllowAny]),

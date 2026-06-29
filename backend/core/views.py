@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 from types import SimpleNamespace
 
@@ -61,6 +62,24 @@ def health(_request):
     if not settings.DEBUG and not os.getenv("EMAIL_HOST"):
         payload["warnings"] = ["email_not_configured"]
     return Response(payload)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def runtime_config(_request):
+    """Small JS snippet for optional frontend runtime config (e.g. Sentry DSN)."""
+    payload = {
+        "sentryDsn": os.getenv("SENTRY_DSN_FRONTEND", "") or os.getenv("SENTRY_DSN", ""),
+        "sentryEnvironment": os.getenv(
+            "SENTRY_ENVIRONMENT", "development" if settings.DEBUG else "production"
+        ),
+    }
+    body = f"window.__ANSOKT_CONFIG__={json.dumps(payload)};"
+    return HttpResponse(
+        body,
+        content_type="application/javascript; charset=utf-8",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 class ProfileView(generics.RetrieveUpdateDestroyAPIView):

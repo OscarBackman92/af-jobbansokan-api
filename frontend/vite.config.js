@@ -13,6 +13,7 @@ export default defineConfig({
       "/api": DJANGO,
       "/dj-rest-auth": DJANGO,
       "/health": DJANGO,
+      "/runtime-config.js": DJANGO,
     },
   },
   test: {
