@@ -9,6 +9,7 @@ from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from core.email_config import email_is_configured
 from core.models import JobApplication
 
 
@@ -38,10 +39,11 @@ class Command(BaseCommand):
             self.stdout.write("No follow-ups due.")
             return
 
-        if not os.getenv("EMAIL_HOST") and not options["dry_run"]:
+        if not email_is_configured() and not options["dry_run"]:
             self.stderr.write(
                 self.style.ERROR(
-                    "EMAIL_HOST is not configured; reminders were not sent."
+                    "E-post är inte konfigurerad (BREVO_API_KEY eller EMAIL_HOST); "
+                    "påminnelser skickades inte."
                 )
             )
             return

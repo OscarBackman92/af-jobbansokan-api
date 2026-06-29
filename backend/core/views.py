@@ -4,7 +4,6 @@ import os
 from types import SimpleNamespace
 
 from django.conf import settings
-
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
@@ -17,6 +16,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny
+
+from core.email_config import email_is_configured
 
 from .permissions import IsAuthenticatedUser
 from rest_framework.response import Response
@@ -61,7 +62,7 @@ from .serializers import (
 def health(_request):
     """Public health check endpoint."""
     payload = {"status": "ok"}
-    if not settings.DEBUG and not os.getenv("EMAIL_HOST"):
+    if not settings.DEBUG and not email_is_configured():
         payload["warnings"] = ["email_not_configured"]
     return Response(payload)
 

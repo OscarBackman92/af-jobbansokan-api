@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
+    "anymail",
     "rest_framework_simplejwt.token_blacklist",
     # Local apps
     "core",
@@ -232,12 +233,18 @@ REST_AUTH = {
     "PASSWORD_RESET_SERIALIZER": "core.serializers.FrontendPasswordResetSerializer",
 }
 
-# E-mail (password reset). Console backend in development prints the mail
-# (incl. the reset link) to the server log; production uses SMTP when
-# EMAIL_HOST is set — any provider works (Brevo, Resend, Postmark, ...).
+# E-mail. Console backend in development prints the mail to the server log.
+# Production on Render: use Brevo's HTTP API (SMTP ports are often blocked).
+# Other hosts may use SMTP when EMAIL_HOST is set.
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 
-if os.getenv("EMAIL_HOST"):
+if BREVO_API_KEY:
+    EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+    ANYMAIL = {
+        "BREVO_API_KEY": BREVO_API_KEY,
+    }
+elif os.getenv("EMAIL_HOST"):
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = os.getenv("EMAIL_HOST")
     EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))

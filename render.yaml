@@ -24,7 +24,10 @@ services:
         fromDatabase:
           name: ansokt-db
           property: connectionString
-      # E-mail (password reset + reminders). sync: false => set in Dashboard.
+      # E-mail. On Render use Brevo HTTP API (SMTP ports are blocked).
+      - key: BREVO_API_KEY
+        sync: false
+      # Legacy SMTP vars (optional fallback on other hosts):
       - key: EMAIL_HOST
         sync: false
       - key: EMAIL_PORT
@@ -80,6 +83,11 @@ services:
           type: web
           name: ansokt
           envVarKey: EMAIL_HOST
+      - key: BREVO_API_KEY
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: BREVO_API_KEY
       - key: EMAIL_PORT
         fromService:
           type: web

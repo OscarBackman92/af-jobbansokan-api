@@ -43,4 +43,5 @@ def test_send_reminders_sends_mail(user, settings, monkeypatch):
 @pytest.mark.django_db
 def test_send_reminders_skips_without_smtp(monkeypatch):
     monkeypatch.delenv("EMAIL_HOST", raising=False)
+    monkeypatch.delenv("BREVO_API_KEY", raising=False)
     call_command("send_reminders")
