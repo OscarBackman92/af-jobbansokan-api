@@ -16,7 +16,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .jobtech import OCCUPATION_FIELDS, REGIONS, JobTechError
+from .jobtech import (
+    OCCUPATION_FIELDS,
+    REGIONS,
+    JobTechError,
+    occupation_groups_by_field,
+)
 from .jobtech import search as jobtech_search
 from .matching import match_skills
 from .models import JobApplication, JobPosting, Resume
@@ -356,6 +361,9 @@ def _truthy(value):
         OpenApiParameter(
             "field", OpenApiTypes.STR, description="Occupation-field concept id."
         ),
+        OpenApiParameter(
+            "group", OpenApiTypes.STR, description="Occupation-group concept id."
+        ),
         OpenApiParameter("remote", OpenApiTypes.BOOL, description="Remote only."),
         OpenApiParameter("offset", OpenApiTypes.INT),
         OpenApiParameter("limit", OpenApiTypes.INT),
@@ -378,6 +386,7 @@ def job_search(request):
             q=params.get("q", ""),
             region=params.get("region", ""),
             field=params.get("field", ""),
+            group=params.get("group", ""),
             remote=_truthy(params.get("remote", "")),
             offset=offset,
             limit=limit,
@@ -407,9 +416,21 @@ def job_search(request):
 @permission_classes([IsAuthenticated])
 def job_filters(_request):
     """Region and occupation-field options for the ad-search dropdowns."""
+    try:
+        groups_by_field = occupation_groups_by_field()
+    except JobTechError:
+        groups_by_field = {}
+
     return Response(
         {
             "regions": [{"id": cid, "label": label} for cid, label in REGIONS],
-            "fields": [{"id": cid, "label": label} for cid, label in OCCUPATION_FIELDS],
+            "fields": [
+                {
+                    "id": cid,
+                    "label": label,
+                    "groups": groups_by_field.get(cid, []),
+                }
+                for cid, label in OCCUPATION_FIELDS
+            ],
         }
     )

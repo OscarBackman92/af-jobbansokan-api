@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 import requests
-from core import jobtech
+from core import jobtech, views
 from core.matching import match_skills
 from core.models import Resume
 
@@ -56,12 +56,33 @@ def test_search_requires_auth(api_client):
     assert api_client.get(SEARCH_URL).status_code == 401
 
 
-def test_filters_lists_regions_and_fields(api_client, user):
+def test_filters_lists_regions_fields_and_groups(api_client, user, monkeypatch):
+    monkeypatch.setattr(
+        views,
+        "occupation_groups_by_field",
+        lambda: {
+            "apaJ_2ja_LuF": [
+                {
+                    "id": "DJh5_yyF_hEM",
+                    "label": "Mjukvaru- och systemutvecklare m.fl.",
+                    "field_id": "apaJ_2ja_LuF",
+                }
+            ]
+        },
+    )
     api_client.force_authenticate(user)
     body = api_client.get(FILTERS_URL).json()
     assert len(body["regions"]) == 21
     assert len(body["fields"]) == 21
-    assert {"id": "apaJ_2ja_LuF", "label": "Data/IT"} in body["fields"]
+    data_it = next(f for f in body["fields"] if f["id"] == "apaJ_2ja_LuF")
+    assert data_it["label"] == "Data/IT"
+    assert data_it["groups"] == [
+        {
+            "id": "DJh5_yyF_hEM",
+            "label": "Mjukvaru- och systemutvecklare m.fl.",
+            "field_id": "apaJ_2ja_LuF",
+        }
+    ]
 
 
 def test_search_maps_hits(api_client, user, mock_jobtech):
@@ -77,16 +98,51 @@ def test_search_maps_hits(api_client, user, mock_jobtech):
     assert mock_jobtech[0]["q"] == "python"
 
 
-def test_search_forwards_known_filters_only(api_client, user, mock_jobtech):
+def test_search_forwards_known_filters_only(
+    api_client, user, mock_jobtech, monkeypatch
+):
+    monkeypatch.setattr(jobtech, "occupation_groups_by_field", lambda: {})
     api_client.force_authenticate(user)
     api_client.get(
         SEARCH_URL,
-        {"region": "CifL_Rzy_Mku", "field": "bogus-id", "remote": "true"},
+        {
+            "region": "CifL_Rzy_Mku",
+            "field": "bogus-id",
+            "group": "bogus-id",
+            "remote": "true",
+        },
     )
     sent = mock_jobtech[0]
     assert sent["region"] == "CifL_Rzy_Mku"
     assert "occupation-field" not in sent  # unknown id dropped
+    assert "occupation-group" not in sent  # unknown id dropped
     assert sent["remote"] == "true"
+
+
+def test_search_forwards_known_occupation_group(
+    api_client, user, mock_jobtech, monkeypatch
+):
+    monkeypatch.setattr(
+        jobtech,
+        "occupation_groups_by_field",
+        lambda: {
+            "apaJ_2ja_LuF": [
+                {
+                    "id": "DJh5_yyF_hEM",
+                    "label": "Mjukvaru- och systemutvecklare m.fl.",
+                    "field_id": "apaJ_2ja_LuF",
+                }
+            ]
+        },
+    )
+    api_client.force_authenticate(user)
+    api_client.get(
+        SEARCH_URL,
+        {"field": "apaJ_2ja_LuF", "group": "DJh5_yyF_hEM"},
+    )
+    sent = mock_jobtech[0]
+    assert sent["occupation-field"] == "apaJ_2ja_LuF"
+    assert sent["occupation-group"] == "DJh5_yyF_hEM"
 
 
 def test_search_adds_cv_match(api_client, user, mock_jobtech):

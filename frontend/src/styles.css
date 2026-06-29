@@ -1096,7 +1096,9 @@ tbody tr:last-child td {
 
 .job-search {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto auto;
+  grid-template-columns:
+    minmax(170px, 2fr) minmax(130px, 1fr) minmax(160px, 1fr)
+    minmax(190px, 1.25fr) auto auto;
   gap: 0.5rem;
   align-items: center;
   margin: 0.9rem 0;
@@ -1106,6 +1108,12 @@ tbody tr:last-child td {
 .job-search select {
   margin-top: 0;
   width: 100%;
+}
+
+.job-search select:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .job-remote {

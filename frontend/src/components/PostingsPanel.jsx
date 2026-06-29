@@ -9,9 +9,16 @@ export default function PostingsPanel() {
   const [q, setQ] = useState("");
   const [region, setRegion] = useState("");
   const [field, setField] = useState("");
+  const [group, setGroup] = useState("");
   const [remote, setRemote] = useState(false);
   // The query that results actually reflect (only changes on submit).
-  const [query, setQuery] = useState({ q: "", region: "", field: "", remote: false });
+  const [query, setQuery] = useState({
+    q: "",
+    region: "",
+    field: "",
+    group: "",
+    remote: false,
+  });
   const [offset, setOffset] = useState(0);
 
   const [data, setData] = useState(null);
@@ -51,6 +58,7 @@ export default function PostingsPanel() {
       if (query.q.trim()) params.set("q", query.q.trim());
       if (query.region) params.set("region", query.region);
       if (query.field) params.set("field", query.field);
+      if (query.group) params.set("group", query.group);
       if (query.remote) params.set("remote", "true");
       const result = await request(`/api/v1/jobs/?${params.toString()}`);
       setData(result);
@@ -73,16 +81,22 @@ export default function PostingsPanel() {
   function submit(event) {
     event.preventDefault();
     setOffset(0);
-    setQuery({ q, region, field, remote });
+    setQuery({ q, region, field, group, remote });
   }
 
   function clearFilters() {
     setQ("");
     setRegion("");
     setField("");
+    setGroup("");
     setRemote(false);
     setOffset(0);
-    setQuery({ q: "", region: "", field: "", remote: false });
+    setQuery({ q: "", region: "", field: "", group: "", remote: false });
+  }
+
+  function changeField(nextField) {
+    setField(nextField);
+    setGroup("");
   }
 
   async function track(job) {
@@ -113,14 +127,18 @@ export default function PostingsPanel() {
   const results = data?.results ?? [];
   const showingFrom = total === 0 ? 0 : offset + 1;
   const showingTo = Math.min(offset + PAGE_SIZE, total);
-  const activeFilters = query.q || query.region || query.field || query.remote;
+  const fieldGroups =
+    filters.fields.find((f) => f.id === field)?.groups ?? [];
+  const activeFilters =
+    query.q || query.region || query.field || query.group || query.remote;
 
   return (
     <section className="card">
       <h2>Sök jobb i hela Platsbanken</h2>
       <p className="muted">
-        Live från Arbetsförmedlingen. Filtrera på ort (region), yrkesområde
-        och distans — spara intressanta annonser direkt på din tavla.
+        Live från Arbetsförmedlingen. Filtrera på ort, yrkesområde,
+        underkategori och distans — spara intressanta annonser direkt på din
+        tavla.
       </p>
 
       <form className="job-search" onSubmit={submit}>
@@ -138,11 +156,30 @@ export default function PostingsPanel() {
             </option>
           ))}
         </select>
-        <select value={field} onChange={(e) => setField(e.target.value)}>
+        <select value={field} onChange={(e) => changeField(e.target.value)}>
           <option value="">Alla yrkesområden</option>
           {filters.fields.map((f) => (
             <option key={f.id} value={f.id}>
               {f.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={group}
+          onChange={(e) => setGroup(e.target.value)}
+          disabled={!field}
+          title={
+            field
+              ? "Välj underkategori inom yrkesområdet"
+              : "Välj yrkesområde först"
+          }
+        >
+          <option value="">
+            {field ? "Alla underkategorier" : "Välj yrkesområde först"}
+          </option>
+          {fieldGroups.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.label}
             </option>
           ))}
         </select>

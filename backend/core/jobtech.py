@@ -5,15 +5,20 @@ queries JobTech on every request so the Annonser tab covers the whole of
 Platsbanken with real filters. No API key is required.
 
 Region and occupation-field concept IDs are fixed parts of JobTech's
-taxonomy; they are listed here so the UI can offer dropdowns without a
-runtime taxonomy lookup.
+taxonomy; occupation groups are fetched from JobTech Taxonomy and cached
+so the UI can show each field's Platsbanken subcategories.
 """
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 import requests
 
 JOBTECH_SEARCH_URL = "https://jobsearch.api.jobtechdev.se/search"
+JOBTECH_TAXONOMY_CONCEPTS_URL = (
+    "https://taxonomy.api.jobtechdev.se/v1/taxonomy/main/concepts"
+)
 MAX_LIMIT = 50
 
 # (concept_id, label) — Sweden's 21 regions, alphabetical by label.
@@ -74,6 +79,52 @@ class JobTechError(Exception):
     """Raised when the upstream JobTech API is unavailable or errors."""
 
 
+def _concept_option(concept: dict, *, field_id: str) -> dict[str, str] | None:
+    concept_id = concept.get("taxonomy/id")
+    label = concept.get("taxonomy/preferred-label")
+    if not concept_id or not label:
+        return None
+    return {"id": concept_id, "label": label, "field_id": field_id}
+
+
+@lru_cache(maxsize=1)
+def occupation_groups_by_field() -> dict[str, list[dict[str, str]]]:
+    """Return JobTech ssyk-level-4 occupation groups nested by occupation field."""
+    groups: dict[str, list[dict[str, str]]] = {cid: [] for cid, _ in OCCUPATION_FIELDS}
+    try:
+        for field_id, _label in OCCUPATION_FIELDS:
+            response = requests.get(
+                JOBTECH_TAXONOMY_CONCEPTS_URL,
+                params={
+                    "type": "ssyk-level-4",
+                    "relation": "narrower",
+                    "related-ids": field_id,
+                },
+                timeout=15,
+            )
+            response.raise_for_status()
+            payload = response.json()
+            seen: set[str] = set()
+            for concept in payload.get("value", []):
+                option = _concept_option(concept, field_id=field_id)
+                if not option or option["id"] in seen:
+                    continue
+                seen.add(option["id"])
+                groups[field_id].append(option)
+            groups[field_id].sort(key=lambda item: item["label"].lower())
+    except requests.RequestException as exc:
+        raise JobTechError(str(exc)) from exc
+    return groups
+
+
+def _occupation_group_ids() -> set[str]:
+    return {
+        group["id"]
+        for field_groups in occupation_groups_by_field().values()
+        for group in field_groups
+    }
+
+
 def hit_to_job(hit: dict) -> dict:
     """Map a JobTech search hit to the shape the frontend consumes."""
     employer = (hit.get("employer") or {}).get("name") or ""
@@ -97,6 +148,7 @@ def search(
     q: str = "",
     region: str = "",
     field: str = "",
+    group: str = "",
     remote: bool = False,
     offset: int = 0,
     limit: int = 25,
@@ -117,6 +169,8 @@ def search(
         params.append(("region", region))
     if field in _FIELD_IDS:
         params.append(("occupation-field", field))
+    if group and group in _occupation_group_ids():
+        params.append(("occupation-group", group))
     if remote:
         params.append(("remote", "true"))
 
