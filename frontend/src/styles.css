@@ -792,16 +792,12 @@ tbody tr:last-child td {
 /* ---------- Kanban board ---------- */
 
 .board {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr));
+  align-items: start;
   gap: 0.9rem;
   margin-top: 1rem;
-  overflow-x: auto;
-  padding: 0.15rem 0.15rem 0.85rem;
-  /* Snap columns into view so narrow screens don't show a half column */
-  scroll-snap-type: x proximity;
-  scroll-padding-left: 0.2rem;
-  scrollbar-color: var(--input-border) transparent;
+  padding: 0.15rem 0 0.2rem;
 }
 
 .kcol {
@@ -813,20 +809,19 @@ tbody tr:last-child td {
   padding: 0.9rem;
   display: flex;
   flex-direction: column;
-  flex: 0 0 300px;
   gap: 0.7rem;
   min-height: 340px;
-  scroll-snap-align: start;
+  max-height: 560px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--input-border) transparent;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.kcol--has-cards {
-  flex-basis: 320px;
-}
-
 .kcol--empty-col {
-  flex-basis: 230px;
   min-height: 260px;
+  max-height: none;
+  overflow-y: visible;
 }
 
 .kcol--dense {
@@ -1682,11 +1677,13 @@ code {
     font-size: 0.7rem;
   }
 
-  /* One column at a time with a small peek; scroll-snap keeps it tidy */
-  .kcol,
-  .kcol--has-cards,
-  .kcol--empty-col {
-    flex-basis: 86%;
+  .board {
+    grid-template-columns: 1fr;
+  }
+
+  .kcol {
+    max-height: none;
+    overflow-y: visible;
   }
 
   .modal {
