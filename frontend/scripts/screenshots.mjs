@@ -1,4 +1,4 @@
-// Visual QA: drives the app through real flows and saves screenshots.
+// Visual QA: drives the current Ansokt app and saves screenshots.
 // Usage: node scripts/screenshots.mjs [outdir]   (default: ./shots)
 // Requires the Vite dev server on :5173 and Django on :8000.
 
@@ -29,10 +29,23 @@ const setTheme = (theme) =>
     document.documentElement.dataset.theme = value;
   }, theme);
 
+async function clickByText(selector, text) {
+  const clicked = await page.evaluate(
+    ({ selector: cssSelector, text: label }) => {
+      const matches = [...document.querySelectorAll(cssSelector)];
+      const match = matches.find((node) => node.textContent.trim().includes(label));
+      if (!match) return false;
+      match.click();
+      return true;
+    },
+    { selector, text }
+  );
+  if (!clicked) throw new Error(`Could not find ${selector} containing "${text}"`);
+}
+
 await page.goto(BASE, { waitUntil: "networkidle0" });
 await shot("01-login");
 
-// Theme variants of the login view
 for (const theme of ["forest", "dark"]) {
   await setTheme(theme);
   await wait(200);
@@ -41,36 +54,31 @@ for (const theme of ["forest", "dark"]) {
 await setTheme("indigo");
 await wait(200);
 
-// BankID login
-await page.type('input[placeholder="ÅÅÅÅMMDD-NNNN"]', "19900101-2384");
-await page.click("form button");
-await page.waitForSelector("table", { timeout: 10000 }).catch(() => {});
+await clickByText("button", "Skapa ett konto");
+const email = `visual-${Date.now()}@example.com`;
+await page.type('input[type="email"]', email);
+await page.type('input[type="password"]', "Visualtest123!");
+await clickByText("button", "Skapa konto");
+await page.waitForSelector(".empty-state, .board", { timeout: 10000 });
+await wait(500);
+await shot("02-board-empty");
+
+await clickByText("button", "Fyll i CV");
+await page.waitForSelector(".profile-id", { timeout: 10000 });
+await wait(400);
+await shot("03-profile-cv");
+
+await clickByText("button", "Annonser");
+await page.waitForSelector(".job-search", { timeout: 10000 });
 await wait(800);
-await shot("02-applicant");
+await shot("04-postings");
 
-// Posting detail modal
-const linklike = await page.$(".linklike");
-if (linklike) {
-  await linklike.click();
-  await page.waitForSelector(".modal", { timeout: 5000 }).catch(() => {});
-  await wait(600);
-  await shot("03-posting-detail");
-  await page.keyboard.press("Escape");
-  const close = await page.$(".modal .secondary");
-  if (close) await close.click();
-  await wait(300);
-}
-
-// Employer tab
-const tabs = await page.$$(".tab");
-await tabs[1].click();
-await wait(400);
-await shot("04-employer-login");
-
-// Partner tab
-await tabs[2].click();
-await wait(400);
-await shot("05-partner");
+await clickByText("button", "Tavlan");
+await page.waitForSelector(".empty-state, .board", { timeout: 10000 });
+await clickByText("button", "Lägg till din första ansökan");
+await page.waitForSelector(".modal", { timeout: 10000 });
+await wait(300);
+await shot("05-new-application");
 
 await browser.close();
 console.log(`Saved screenshots to ${OUT}/`);

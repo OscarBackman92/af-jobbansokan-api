@@ -10,6 +10,14 @@ import {
 import ApplicationModal from "./ApplicationModal.jsx";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const QUICK_FILTERS = [
+  { id: "all", label: "Alla" },
+  { id: "followups", label: "Att följa upp" },
+  { id: "deadline", label: "Deadline snart" },
+  { id: "interviews", label: "Intervjuer" },
+  { id: "offers", label: "Erbjudanden" },
+  { id: "closed", label: "Avslutade" },
+];
 
 function daysUntil(dateString) {
   if (!dateString) return null;
@@ -18,15 +26,66 @@ function daysUntil(dateString) {
   return Math.round((new Date(dateString) - today) / DAY_MS);
 }
 
-export default function BoardPanel({ token }) {
+function isClosed(application) {
+  return CLOSED_STATUSES.includes(application.status);
+}
+
+function isFollowUp(application) {
+  if (isClosed(application)) return false;
+  const nextIn = daysUntil(application.next_action_at);
+  if (nextIn !== null && nextIn <= 0) return true;
+  const deadlineIn = daysUntil(application.deadline);
+  return deadlineIn !== null && deadlineIn <= 7 && application.status === "wishlist";
+}
+
+function hasDeadlineSoon(application) {
+  if (isClosed(application)) return false;
+  const deadlineIn = daysUntil(application.deadline);
+  return deadlineIn !== null && deadlineIn <= 7;
+}
+
+function matchesSearch(application, query) {
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return true;
+  const haystack = [
+    application.company,
+    application.title,
+    application.location,
+    application.notes,
+    application.contact_name,
+    application.contact_info,
+  ]
+    .join(" ")
+    .toLowerCase();
+  return terms.every((term) => haystack.includes(term));
+}
+
+function matchesQuickFilter(application, filter) {
+  if (filter === "all") return true;
+  if (filter === "followups") return isFollowUp(application);
+  if (filter === "deadline") return hasDeadlineSoon(application);
+  if (filter === "interviews") {
+    return ["screening", "interview", "forwarded"].includes(application.status);
+  }
+  if (filter === "offers") {
+    return ["offer", "accepted"].includes(application.status);
+  }
+  if (filter === "closed") return isClosed(application);
+  return true;
+}
+
+export default function BoardPanel({ token, onNavigate }) {
   const [applications, setApplications] = useState(null);
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
   const [dragOver, setDragOver] = useState(null);
   const [error, setError] = useState(null);
+  const [query, setQuery] = useState("");
+  const [quickFilter, setQuickFilter] = useState("all");
 
   const reload = useCallback(async () => {
     try {
+      setError(null);
       // The board needs every row; walk the pagination.
       let url = "/api/v1/applications/";
       const rows = [];
@@ -49,12 +108,17 @@ export default function BoardPanel({ token }) {
   }, [reload]);
 
   async function moveTo(applicationId, status) {
-    await request(`/api/v1/applications/${applicationId}/`, {
-      method: "PATCH",
-      token,
-      body: { status },
-    });
-    reload();
+    try {
+      setError(null);
+      await request(`/api/v1/applications/${applicationId}/`, {
+        method: "PATCH",
+        token,
+        body: { status },
+      });
+      reload();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   function dropOn(event, status) {
@@ -65,13 +129,17 @@ export default function BoardPanel({ token }) {
   }
 
   async function exportCsv() {
-    const blob = await downloadBlob("/api/v1/applications/export/");
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "ansokningar.csv";
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      const blob = await downloadBlob("/api/v1/applications/export/");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "ansokningar.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   if (!applications) {
@@ -88,22 +156,24 @@ export default function BoardPanel({ token }) {
     );
   }
 
-  const closed = applications.filter((a) => CLOSED_STATUSES.includes(a.status));
+  const allClosed = applications.filter(isClosed);
+  const filteredApplications = applications.filter(
+    (a) => matchesSearch(a, query) && matchesQuickFilter(a, quickFilter)
+  );
+  const closed = filteredApplications.filter(isClosed);
+  const hasActiveFilters = query.trim() || quickFilter !== "all";
   const followUps = applications
-    .filter((a) => {
-      if (CLOSED_STATUSES.includes(a.status)) return false;
-      const nextIn = daysUntil(a.next_action_at);
-      if (nextIn !== null && nextIn <= 0) return true;
-      const deadlineIn = daysUntil(a.deadline);
-      return (
-        deadlineIn !== null && deadlineIn <= 7 && a.status === "wishlist"
-      );
-    })
+    .filter(isFollowUp)
     .sort(
       (a, b) =>
         new Date(a.next_action_at || a.deadline) -
         new Date(b.next_action_at || b.deadline)
     );
+
+  function resetFilters() {
+    setQuery("");
+    setQuickFilter("all");
+  }
 
   return (
     <div className="stack">
@@ -140,7 +210,7 @@ export default function BoardPanel({ token }) {
               {applications.length === 0
                 ? "Tomt än så länge — lägg till din första ansökan."
                 : `${applications.length} ansökningar, varav ${
-                    applications.length - closed.length
+                    applications.length - allClosed.length
                   } pågående. Dra korten mellan kolumnerna.`}
             </p>
           </div>
@@ -163,84 +233,147 @@ export default function BoardPanel({ token }) {
               Lägg till en ansökan manuellt, eller hitta en annons under
               fliken Annonser och lägg den på tavlan.
             </p>
-            <button onClick={() => setAdding(true)}>+ Lägg till din första ansökan</button>
+            <div className="empty-actions">
+              <button onClick={() => setAdding(true)}>
+                + Lägg till din första ansökan
+              </button>
+              <button className="secondary" onClick={() => onNavigate?.("postings")}>
+                Sök annonser
+              </button>
+              <button className="secondary" onClick={() => onNavigate?.("profile")}>
+                Fyll i CV
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="board">
-            {ACTIVE_STATUSES.map((status) => {
-              const cards = applications.filter((a) => a.status === status);
-              return (
-                <div
-                  className={`kcol kcol--${status}${
-                    dragOver === status ? " dragover" : ""
-                  }`}
-                  key={status}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(status);
-                  }}
-                  onDragLeave={() => setDragOver(null)}
-                  onDrop={(e) => dropOn(e, status)}
-                >
-                  <div className="kcol-head">
-                    <span className="kcol-title">{STATUS_LABELS[status]}</span>
-                    <span className="kcol-count">{cards.length}</span>
-                  </div>
-                  {cards.length === 0 ? (
-                    <div className="kcol-empty">Dra hit</div>
-                  ) : (
-                    cards.map((a) => (
-                      <ApplicationCard
-                        key={a.id}
-                        application={a}
-                        onOpen={() => setSelected(a)}
-                        onMove={(next) => moveTo(a.id, next)}
-                      />
-                    ))
-                  )}
+          <>
+            <div className="board-tools">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Sök företag, roll, ort, kontakt eller anteckning"
+              />
+              <div className="quick-filters" aria-label="Snabbfilter">
+                {QUICK_FILTERS.map((filter) => (
+                  <button
+                    type="button"
+                    key={filter.id}
+                    className={quickFilter === filter.id ? "active" : ""}
+                    onClick={() => setQuickFilter(filter.id)}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {hasActiveFilters && (
+              <p className="muted filter-summary">
+                Visar {filteredApplications.length} av {applications.length}.
+                <button className="linklike" onClick={resetFilters}>
+                  Rensa filter
+                </button>
+              </p>
+            )}
+
+            {filteredApplications.length === 0 ? (
+              <div className="empty-state compact">
+                <h3>Inga träffar</h3>
+                <p className="muted">
+                  Prova ett annat sökord eller byt snabbfilter.
+                </p>
+                <button className="secondary" onClick={resetFilters}>
+                  Rensa filter
+                </button>
+              </div>
+            ) : (
+              quickFilter !== "closed" && (
+                <div className="board">
+                  {ACTIVE_STATUSES.map((status) => {
+                    const cards = filteredApplications.filter(
+                      (a) => a.status === status
+                    );
+                    return (
+                      <div
+                        className={`kcol kcol--${status}${
+                          dragOver === status ? " dragover" : ""
+                        }`}
+                        key={status}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragOver(status);
+                        }}
+                        onDragLeave={() => setDragOver(null)}
+                        onDrop={(e) => dropOn(e, status)}
+                      >
+                        <div className="kcol-head">
+                          <span className="kcol-title">
+                            {STATUS_LABELS[status]}
+                          </span>
+                          <span className="kcol-count">{cards.length}</span>
+                        </div>
+                        {cards.length === 0 ? (
+                          <div className="kcol-empty">Dra hit</div>
+                        ) : (
+                          cards.map((a) => (
+                            <ApplicationCard
+                              key={a.id}
+                              application={a}
+                              onOpen={() => setSelected(a)}
+                              onMove={(next) => moveTo(a.id, next)}
+                            />
+                          ))
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+              )
+            )}
+          </>
         )}
       </section>
 
       <MonthlyStats applications={applications} />
 
-      {closed.length > 0 && (
+      {(closed.length > 0 || quickFilter === "closed") && (
         <section className="card">
           <h2>Avslutade</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Företag</th>
-                <th>Roll</th>
-                <th>Status</th>
-                <th>Sökt</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {closed.map((a) => (
-                <tr key={a.id}>
-                  <td>{a.company}</td>
-                  <td>{a.title}</td>
-                  <td>
-                    <span className={`badge ${a.status}`}>{a.status_label}</span>
-                  </td>
-                  <td>{a.applied_at || "—"}</td>
-                  <td>
-                    <button
-                      className="secondary small"
-                      onClick={() => setSelected(a)}
-                    >
-                      Öppna
-                    </button>
-                  </td>
+          {closed.length === 0 ? (
+            <p className="muted">Inga avslutade ansökningar matchar filtret.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Företag</th>
+                  <th>Roll</th>
+                  <th>Status</th>
+                  <th>Sökt</th>
+                  <th />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {closed.map((a) => (
+                  <tr key={a.id}>
+                    <td>{a.company}</td>
+                    <td>{a.title}</td>
+                    <td>
+                      <span className={`badge ${a.status}`}>{a.status_label}</span>
+                    </td>
+                    <td>{a.applied_at || "—"}</td>
+                    <td>
+                      <button
+                        className="secondary small"
+                        onClick={() => setSelected(a)}
+                      >
+                        Öppna
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </section>
       )}
 

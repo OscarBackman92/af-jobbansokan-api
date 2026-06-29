@@ -294,6 +294,7 @@ See [docs/06-gdpr-privacy.md](docs/06-gdpr-privacy.md) and
 | --- | --- |
 | [10-pivot-ansokt.md](docs/10-pivot-ansokt.md) | **The pivot: rationale, product, legal, what changed** |
 | [11-deploy-vercel.md](docs/11-deploy-vercel.md) | Deploy guide: frontend on Vercel, backend on Render |
+| [08-identity-bankid.md](docs/08-identity-bankid.md) | Archived note: identity verification is out of scope |
 | [01-vision-scope.md](docs/01-vision-scope.md) | Original vision (pre-pivot) |
 | [02-architecture.md](docs/02-architecture.md) | Components and data flows |
 | [04-data-model.md](docs/04-data-model.md) | Entities and PII classification (pre-pivot) |

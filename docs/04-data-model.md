@@ -1,36 +1,49 @@
 # Data Model
 
-## Entities (implemented)
+## User
 
-- User (Django User)
-- ApplicantProfile — verified, pseudonymized identity; stores only an
-  HMAC-SHA256 hash of the personal identity number (docs/08)
-- Organization — employer organization (name, org_number)
-- EmployerProfile — links a user to an organization with a role (admin/member)
-- JobPosting — job ad owned by an organization; unique on (source, external_id)
-  for imported postings
-- JobApplication — applicant's application event for a posting
-  (applied_at, status); immutable via the API after creation
-- AuditLog — append-only trail (actor, action, target, metadata, timestamp);
-  actions: application.created, application.deleted, applications.disclosed,
-  applications.disclosed_partner
-- PartnerClient — authorized partner system (e.g. A-kassa); API key stored
-  as SHA-256 hash, issued once via the create_partner management command
+The Django user stores email and optional first/last name. The username is
+generated internally and is not part of the public user experience.
 
-## Entities (future)
+## JobApplication
 
-- Consent/Authorization
+One row on the user's tracker board.
 
-## PII classification (draft)
+- `owner`: the user who owns the row.
+- `posting`: optional legacy imported posting reference.
+- `company`, `title`, `location`, `ad_url`: the job snapshot.
+- `status`: current pipeline state.
+- `applied_at`, `deadline`, `next_action_at`: planning dates.
+- `contact_name`, `contact_info`, `notes`: user-entered tracking details.
+- `created_at`, `updated_at`: audit-friendly timestamps.
 
-- Direct identifiers: username/email on User; personal identity number
-  (never stored — pseudonymized via keyed hash in ApplicantProfile)
-- Indirect identifiers: job ad id, employer org id, timestamps
-  (may become identifying when combined)
+## ApplicationEvent
 
-## Notes
+Timeline entry for one application. Manual notes and automatic status changes
+share the same event list.
 
-- Prefer pseudonymous internal identifiers
-- Store minimal payload needed for verification
-- AuditLog.metadata holds ids and counts only — no PII, since entries are
-  retained after the underlying records are deleted (actor is SET_NULL)
+## Resume
+
+Structured CV data saved by the user.
+
+- `headline`
+- `summary`
+- `skills`
+- `experience`
+- `education`
+
+Uploaded files are not stored. Parsing returns a draft, and only reviewed
+structured data is saved.
+
+## JobPosting
+
+Legacy DB-backed job ads remain for optional imports and compatibility. The main
+ad-search experience uses live JobTech search instead.
+
+## Privacy Classification
+
+- Account email, application rows, notes, contact details and CV fields are
+  personal data.
+- Recruiter names or emails entered by the user can be third-party personal
+  data and must be covered in the privacy policy.
+- Uploaded CV file bytes should never be persisted.

@@ -714,6 +714,15 @@ tbody tr:last-child td {
   margin-top: 0;
 }
 
+.resume-row {
+  margin-bottom: 0.7rem;
+}
+
+.resume-description {
+  min-height: 4rem;
+  margin-top: 0.2rem;
+}
+
 .searchbar {
   display: grid;
   grid-template-columns: 3fr 1fr auto;
@@ -723,6 +732,56 @@ tbody tr:last-child td {
 
 .searchbar input {
   margin-top: 0;
+}
+
+.board-tools {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  margin: 1rem 0 0.4rem;
+}
+
+.board-tools input {
+  margin-top: 0;
+}
+
+.quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.quick-filters button {
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  border-radius: 999px;
+  padding: 0.36rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.quick-filters button:hover {
+  color: var(--ink);
+  background: var(--hover);
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+
+.quick-filters button.active {
+  color: #fff;
+  background: var(--grad);
+  border-color: transparent;
+}
+
+.filter-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0.2rem 0 0.7rem;
 }
 
 .pager {
@@ -1162,6 +1221,22 @@ tbody tr:last-child td {
   margin-top: 0.7rem;
 }
 
+.empty-state.compact {
+  padding: 1.6rem 1rem;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 0.6rem;
+}
+
+.empty-actions button {
+  margin-top: 0;
+}
+
 /* ---------- Follow-ups & stats ---------- */
 
 .followups {
@@ -1520,10 +1595,15 @@ code {
   /* Stack multi-column form/search layouts */
   .grid3,
   .searchbar,
+  .board-tools,
   .rowline,
   .timeline-form,
   .job-search {
     grid-template-columns: 1fr;
+  }
+
+  .quick-filters {
+    justify-content: flex-start;
   }
 
   .job-card {

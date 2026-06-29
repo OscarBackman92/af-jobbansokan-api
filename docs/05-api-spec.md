@@ -1,78 +1,73 @@
 # API Spec
 
-## Conventions
+Base path: `/api/v1/`
 
-- Base path: /api/v1/
-- JSON by default
-- OpenAPI schema: GET /api/schema/ (Swagger UI at /api/docs/)
-- List endpoints are paginated (page number style, 20 per page, `?page=N`)
-- Idempotency keys for write endpoints (future)
+Interactive schema:
 
-## Endpoints
+- `/api/schema/`
+- `/api/docs/`
 
-### Public
+## Auth
 
-- GET /health/
-- GET /api/v1/postings/ and GET /api/v1/postings/{id}/ — public read;
-  `?search=` (free text over title/company/location/description, terms
-  ANDed), `?location=`, `?source=`. Authenticated users with CV skills
-  get a `match` object per posting (matched skills, count, total)
+- `POST /dj-rest-auth/registration/`
+- `POST /dj-rest-auth/login/`
+- `POST /dj-rest-auth/token/refresh/`
+- `POST /dj-rest-auth/password/reset/`
+- `POST /dj-rest-auth/password/reset/confirm/`
 
-### Auth (dj-rest-auth + JWT)
+## Profile
 
-- POST /dj-rest-auth/login/, /dj-rest-auth/logout/, /dj-rest-auth/token/refresh/
-- POST /dj-rest-auth/registration/
+- `GET /api/v1/me/`
+- `PATCH /api/v1/me/`
+- `DELETE /api/v1/me/`
 
-### Auth (mock BankID — see docs/08-identity-bankid.md)
+Deleting the profile deletes the account and owned data.
 
-- POST /api/v1/auth/bankid/initiate/ `{personal_number}` → `{order_ref}`
-- POST /api/v1/auth/bankid/collect/ `{order_ref}` → JWT pair + verified,
-  pseudonymized identity (ApplicantProfile); audit logged as
-  identity.verified. Returns 503 unless BANKID_MOCK=1.
+## Resume
 
-### Applicant
+- `GET /api/v1/me/resume/`
+- `PUT /api/v1/me/resume/`
+- `DELETE /api/v1/me/resume/`
+- `POST /api/v1/me/resume/parse/`
 
-- GET /api/v1/me/ — profile incl. identity (BankID) and employer status
-- PATCH /api/v1/me/ — update contact details (email, first/last name)
-- DELETE /api/v1/me/ — GDPR erasure: removes the account and its
-  applications; audit logged as account.deleted, entries survive with
-  the actor anonymized
-- POST /api/v1/applications/ — register an application event (audit logged);
-  one application per posting, applied_at cannot be in the future
-- GET /api/v1/applications/?from=&to=&status= — list own events,
-  filterable on applied_at date range and status
-- GET /api/v1/applications/{id}/
-- DELETE /api/v1/applications/{id}/ — audit logged
-- GET /api/v1/applications/export/ — own events as CSV (filters apply)
-- GET /api/v1/me/disclosures/ — transparency: partner disclosures of the
-  user's own data (matched via the pseudonymized identity)
-- GET/PUT/DELETE /api/v1/me/resume/ — structured CV (headline, summary,
-  skills, experience, education)
-- POST /api/v1/me/resume/parse/ — upload a CV (PDF/DOCX/TXT, max 2 MB);
-  returns a structured draft for review. The file is parsed in memory
-  and never stored
-- GET/POST/DELETE /api/v1/favorites/ — saved postings
-- Application events are immutable: PUT/PATCH are not allowed (405)
+`parse` accepts PDF, DOCX or TXT and returns a structured draft without storing
+the uploaded file.
 
-### Employer
+## Applications
 
-- POST/PUT/PATCH/DELETE /api/v1/postings/ — employer admins only,
-  postings are created for the admin's own organization
-- GET /api/v1/employer/applications/ — applications to the employer's own
-  organization; every call is audit logged as a disclosure
+- `GET /api/v1/applications/`
+- `POST /api/v1/applications/`
+- `GET /api/v1/applications/{id}/`
+- `PATCH /api/v1/applications/{id}/`
+- `DELETE /api/v1/applications/{id}/`
+- `POST /api/v1/applications/{id}/events/`
+- `GET /api/v1/applications/stats/`
+- `GET /api/v1/applications/export/`
 
-### Partner (A-kassa)
+List filters:
 
-- Auth: `Authorization: Api-Key <key>` — keys are issued with the
-  `create_partner` management command and stored hashed
-- GET /api/v1/partner/application-events/?person=&from=&to= — application
-  events for one person (personal identity number, YYYYMMDDNNNN) and time
-  period; lookup happens via keyed hash so the number is never stored;
-  least privilege response (no applicant identifiers, no status); every
-  call is audit logged as a partner disclosure. Unknown persons return an
-  empty list — the endpoint never reveals who has an account
+- `status`
+- `search`
+- `from`
+- `to`
 
-### Future
+## Jobs
 
-- OAuth2/mTLS for partner integration
-- CSV/XLSX export for applicants
+- `GET /api/v1/jobs/`
+- `GET /api/v1/jobs/filters/`
+
+Job search parameters:
+
+- `q`
+- `region`
+- `field`
+- `remote`
+- `offset`
+- `limit`
+
+## Legacy Postings
+
+- `GET /api/v1/postings/`
+- `GET /api/v1/postings/{id}/`
+
+The live `/jobs/` endpoint is the primary ad-search surface.

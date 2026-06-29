@@ -59,6 +59,26 @@ def test_cannot_track_same_posting_twice(api_client, user, posting):
     assert "posting" in response.json()
 
 
+def test_cannot_track_same_live_ad_url_twice(api_client, user):
+    JobApplication.objects.create(
+        owner=user,
+        company="Acme AB",
+        title="Backend Developer",
+        ad_url="https://arbetsformedlingen.se/annons/1001",
+    )
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        URL,
+        {
+            "company": "Acme AB",
+            "title": "Backend Developer",
+            "ad_url": "https://arbetsformedlingen.se/annons/1001",
+        },
+    )
+    assert response.status_code == 400
+    assert "ad_url" in response.json()
+
+
 def test_applied_at_cannot_be_in_the_future(api_client, user):
     tomorrow = (date.today() + timedelta(days=1)).isoformat()
     api_client.force_authenticate(user)

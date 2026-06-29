@@ -366,31 +366,41 @@ function ResumeCard({ token }) {
 
           <h3>Erfarenhet</h3>
           {resume.experience.map((row, i) => (
-            <div className="rowline" key={i}>
-              <input
-                value={row.title}
-                onChange={(e) => setRow("experience", i, "title", e.target.value)}
-                placeholder="Titel"
-              />
-              <input
-                value={row.company}
+            <div className="resume-row" key={i}>
+              <div className="rowline">
+                <input
+                  value={row.title}
+                  onChange={(e) => setRow("experience", i, "title", e.target.value)}
+                  placeholder="Titel"
+                />
+                <input
+                  value={row.company}
+                  onChange={(e) =>
+                    setRow("experience", i, "company", e.target.value)
+                  }
+                  placeholder="Företag"
+                />
+                <input
+                  value={row.years}
+                  onChange={(e) => setRow("experience", i, "years", e.target.value)}
+                  placeholder="År"
+                />
+                <button
+                  type="button"
+                  className="danger small"
+                  onClick={() => removeRow("experience", i)}
+                >
+                  ✕
+                </button>
+              </div>
+              <textarea
+                className="resume-description"
+                value={row.description || ""}
                 onChange={(e) =>
-                  setRow("experience", i, "company", e.target.value)
+                  setRow("experience", i, "description", e.target.value)
                 }
-                placeholder="Företag"
+                placeholder="Kort beskrivning, ansvar eller resultat"
               />
-              <input
-                value={row.years}
-                onChange={(e) => setRow("experience", i, "years", e.target.value)}
-                placeholder="År"
-              />
-              <button
-                type="button"
-                className="danger small"
-                onClick={() => removeRow("experience", i)}
-              >
-                ✕
-              </button>
             </div>
           ))}
           <button

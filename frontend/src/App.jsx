@@ -120,7 +120,9 @@ export default function App() {
           />
         )}
         {!resetCreds && !token && <AuthHero onLogin={login} />}
-        {!resetCreds && token && tab === "board" && <BoardPanel token={token} />}
+        {!resetCreds && token && tab === "board" && (
+          <BoardPanel token={token} onNavigate={setTab} />
+        )}
         {!resetCreds && token && tab === "postings" && <PostingsPanel />}
         {!resetCreds && token && tab === "profile" && (
           <ProfilePanel token={token} me={me} onMeChange={setMe} onLogout={logout} />

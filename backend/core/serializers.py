@@ -133,6 +133,19 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"posting": "You already track an application for this posting."}
             )
+
+        ad_url = attrs.get("ad_url", getattr(self.instance, "ad_url", ""))
+        if (
+            ad_url
+            and request
+            and not self.instance
+            and JobApplication.objects.filter(
+                owner=request.user, ad_url=ad_url
+            ).exists()
+        ):
+            raise serializers.ValidationError(
+                {"ad_url": "Du har redan sparat den här annonsen på tavlan."}
+            )
         return attrs
 
 

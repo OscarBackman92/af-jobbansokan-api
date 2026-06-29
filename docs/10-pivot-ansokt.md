@@ -61,7 +61,7 @@ kontaktperson och nästa steg. **Ansökt är det arket, fast bättre.**
 | Django/DRF, JWT via dj-rest-auth | BankID-mock, identity-hashning |
 | `JobPosting` + JobTech-import | `Organization`, `EmployerProfile` |
 | `JobApplication` (nu redigerbar, rik status) | `PartnerClient`, partner-API |
-| `Favorite`, `Resume` + matchning | `AuditLog` (immutabilitetskravet föll) |
+| `Resume` + matchning | `Favorite`, `AuditLog` (immutabilitetskravet föll) |
 | React/Vite-frontend, designsystemet | Employer-/Partner-panelerna |
 
 Nytt: `ApplicationEvent` (tidslinjen), statusflödet, `stats`- och

@@ -1,134 +1,83 @@
-# Master Plan — The Trust-First Recruitment Platform
+# Master Plan - Ansokt
 
-## The thesis
+## Thesis
 
-Every job board has listings, applications and CV databases. None of them
-has **trust as the core primitive**. That is the gap this platform attacks:
+Ansokt should be the daily workspace for a job seeker: the place where every
+application, deadline, contact, interview, note and next step is visible. The
+product wins by being calmer and more useful than a spreadsheet, while still
+keeping the user's data portable.
 
-- Candidates lie on CVs and employers cannot verify claims
-- Employers ghost candidates and nobody is held accountable
-- Applicants write the same CV into ten different ATSs they do not control
-- Job seekers must *prove* activity to A-kassa with self-attestation
-- AI screening is spreading with zero transparency — and the EU AI Act
-  classifies recruitment as **high-risk**, demanding exactly the
-  auditability this platform was built on from day one
+The direction is now deliberately single-player first. No identity-verification
+track, no authority workflow and no employer-side platform until the personal
+tracker is sticky on its own.
 
-We already have the foundation nobody else starts with: verified identity
-(BankID), immutable application events, an append-only audit log, full
-disclosure transparency, candidate-owned portable data, and a live feed of
-the entire Swedish job market (JobTech). The plan is to grow from
-"verifiable evidence registry" into the place where **both sides can
-finally trust what they see**.
+## Current Strengths
 
-## Why anyone would switch
+- A kanban board over the application pipeline.
+- Manual rows for jobs found anywhere.
+- Live Platsbanken search through JobTech.
+- CV parsing and explainable skill matching.
+- Timeline entries per application.
+- CSV export and account deletion.
+- Production-ready Django/DRF API with a React/Vite frontend.
 
-| Audience | Today's pain | Our answer |
-| --- | --- | --- |
-| Candidates | Re-typing CVs, ghosting, no control over data | One verified profile, full market via JobTech, response-rate stats on employers, GDPR-grade control |
-| Employers | CV fraud, screening cost, ATS lock-in | BankID-verified candidates, attested work history, free modern ATS |
-| A-kassa / authorities | Self-attestation, fraud, manual checks | Signed evidence API (already live) |
-| Regulators | Black-box AI hiring | Every decision logged, explainable, exportable |
+## Product Phases
 
-The cold-start problem is solved by aggregation: we import the whole of
-Platsbanken, so candidates get full market coverage on day one — employers
-follow the candidates.
+### Phase 0 - Launch Confidence
 
-## Phases
+- [x] Render deployment blueprint.
+- [x] Password reset flow.
+- [x] Backend tests, linting and frontend build in CI.
+- [ ] Custom domain, uptime checks and Sentry.
+- [ ] Production SMTP configured and verified.
+- [ ] Privacy policy page and plain-language data handling summary.
+- [ ] Frontend smoke tests for signup, board, ad save and CV edit.
 
-### Phase 0 — Live and solid (days)
+### Phase 1 - Useful Every Day
 
-- [x] Production deploy (Render blueprint, bootstrap, hardening)
-- [ ] Custom domain + monitoring (Sentry) + uptime checks
-- [ ] Scheduled posting imports (Render cron) instead of manual command
-- [ ] E2E smoke tests (Playwright) on top of the 78 API tests
-- [ ] Accessibility and mobile pass on the frontend
+- [x] Board search and quick filters.
+- [x] Better empty-state onboarding from the board.
+- [x] Editable CV experience descriptions.
+- [ ] Reminder emails for overdue `next_action_at` rows.
+- [ ] Saved searches for JobTech queries.
+- [ ] Hide or deprioritize ads already saved to the board.
+- [ ] XLSX export alongside CSV.
 
-### Phase 1 — Useful every day: search & match
+### Phase 2 - Better Matching
 
-The product people return to daily.
+- [ ] Sort job ads by CV skill match.
+- [ ] Explain missing skills as well as matched skills.
+- [ ] Suggest search terms from the user's CV.
+- [ ] Let users mark skills as "must have", "nice to have" or "learning".
+- [ ] Add saved-search digest emails.
 
-- [x] Free text search over postings with location/source filters
-  (icontains; Postgres FTS is the upgrade path at volume)
-- [x] Skill matching: CV skills vs. posting text — match per posting for
-  logged-in users (rule-based, fully explainable)
-- [x] Favorites (saved postings)
-- [ ] Saved searches
-- [ ] Email notifications: new matching postings, status changes
-  (needs a transactional email provider + background jobs — next
-  infrastructure decision)
-- [ ] Larger, scheduled JobTech imports (all categories, daily refresh)
+### Phase 3 - Retention and Polish
 
-### Phase 2 — Communication & accountability
+- [ ] Calendar export for interviews and follow-ups.
+- [ ] Templates for notes, recruiter calls and interview prep.
+- [ ] Weekly summary: applications sent, follow-ups due, interviews booked.
+- [ ] Mobile polish pass with visual screenshots.
+- [ ] Accessibility pass for modal focus, keyboard movement and labels.
 
-Where the trust thesis becomes visible product.
+### Phase 4 - Scale When Needed
 
-- Messaging between employer and candidate (on-platform, logged)
-- ATS pipeline for employers: kanban over the existing status workflow,
-  team comments, interview scheduling
-- Structured rejections with reason codes
-- **Public employer accountability**: response rate and median response
-  time per employer, computed from data we already audit-log. No other
-  platform dares to show this — we can, because measurement is built in
+- Background jobs for reminders and digests.
+- Short-lived caching for JobTech searches.
+- Postgres full-text search for larger local datasets.
+- Structured logging, metrics and alerting.
 
-### Phase 3 — The real trust chain
+## Principles
 
-- Real BankID (RP certificate) replacing the mock — the flow, data model
-  and 503-gated endpoints are already shaped for it (docs/08)
-- Employer verification against Bolagsverket (org number lookup)
-- **Attested work history**: employers confirm employment periods,
-  producing portable, verified CV entries — the LinkedIn-killer feature:
-  claims on profiles stop being claims
-- Verified references (signed, revocable, candidate-controlled)
+1. The user owns the data: export and delete must stay obvious.
+2. The app should reduce anxiety, not add administration.
+3. Matching must be explainable.
+4. Store less whenever possible: parse CV files, never keep uploads.
+5. Prefer the personal tracker until user demand proves another surface.
 
-### Phase 4 — Transparent intelligence
+## Near-Term Implementation Order
 
-AI features, but auditable — our compliance moat under the EU AI Act.
-
-- Semantic matching (embeddings) between CV and postings
-- AI-assisted CV improvement and application drafts (candidate-side)
-- Screening assistance for employers where **every ranking is explained
-  and logged** in the same audit trail as everything else
-- Bias monitoring dashboards built on the audit log
-
-### Phase 5 — Ecosystem & scale
-
-- Webhooks + public API program (OpenAPI already published)
-- PWA/mobile app
-- More authority partners (CSN, Försäkringskassan-style integrations)
-- White-label for municipalities and trade unions
-- EU expansion: eIDAS identity instead of BankID
-
-## Architecture evolution required
-
-| Concern | Today | Needed from Phase |
-| --- | --- | --- |
-| Background work | Synchronous | Celery/RQ + Redis (Phase 1: imports, emails) |
-| Search | ORM filters | Postgres FTS (Phase 1), embeddings later (Phase 4) |
-| Email | None | Transactional provider (Phase 1) |
-| Realtime | None | Channels/SSE for messaging (Phase 2) |
-| Observability | Logs | Sentry + structured logging + metrics (Phase 0) |
-| Legal | Docs drafts | Terms, privacy policy, DPA for partners (Phase 2-3) |
-
-The monolith (Django + DRF + one `core` app) is correct until well into
-Phase 2; split apps (`identity`, `postings`, `ats`, `partners`) when the
-module boundaries hurt, not before.
-
-## Principles that do not bend
-
-1. **Append-only truth** — evidence and audit rows are never edited
-2. **Data minimization** — store the hash, not the number; parse the
-   file, never keep it
-3. **The candidate owns the profile** — export everything, delete
-   everything, see every disclosure
-4. **No black boxes** — any algorithm that affects a human is explainable
-   and logged
-5. **Least privilege** — every consumer sees the minimum, always
-
-## Honest risks
-
-- **Network effects**: aggregation buys reach, but employer-side traction
-  is the hard part; the free verified-candidate ATS is the wedge
-- **Real BankID** costs money and agreements (bank RP contract)
-- **Attested history** needs employer incentives — start with employers
-  already on the platform recruiting actively
-- **One developer**: phases are sequenced to ship value alone, in order
+1. Make the board faster to scan with filters, search and follow-up states.
+2. Make CV editing trustworthy after parsing.
+3. Add reminder delivery.
+4. Add saved searches and digest emails.
+5. Add frontend smoke tests and monitoring before public traffic.
