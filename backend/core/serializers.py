@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
 
+from .ad_url import ad_urls_equivalent, normalize_ad_url
 from .email_delivery import register_user_with_verification
 from .models import (
     ApplicationEvent,
@@ -137,17 +138,23 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             )
 
         ad_url = attrs.get("ad_url", getattr(self.instance, "ad_url", ""))
-        if (
-            ad_url
-            and request
-            and not self.instance
-            and JobApplication.objects.filter(
-                owner=request.user, ad_url=ad_url
-            ).exists()
-        ):
-            raise serializers.ValidationError(
-                {"ad_url": "Du har redan sparat den här annonsen på tavlan."}
+        if ad_url:
+            attrs["ad_url"] = normalize_ad_url(ad_url)
+            ad_url = attrs["ad_url"]
+
+        if ad_url and request:
+            others = JobApplication.objects.filter(owner=request.user).exclude(
+                ad_url=""
             )
+            if self.instance:
+                others = others.exclude(pk=self.instance.pk)
+            for existing in others.only("ad_url"):
+                if ad_urls_equivalent(existing.ad_url, ad_url):
+                    raise serializers.ValidationError(
+                        {
+                            "ad_url": "Du har redan sparat den här annonsen på tavlan."
+                        }
+                    )
         return attrs
 
 

@@ -1,7 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  externalUrl,
+  findDuplicateByAdUrl,
+  findSimilarByCompanyTitle,
+  normalizeAdUrl,
+} from "../adUrl.js";
 import { request } from "../api.js";
 import { STATUSES } from "../statuses.js";
+import ModalOverlay from "./ModalOverlay.jsx";
 
 const EMPTY = {
   company: "",
@@ -17,25 +24,15 @@ const EMPTY = {
   notes: "",
 };
 
-function externalUrl(value) {
-  const trimmed = value?.trim();
-  if (!trimmed) return null;
-  try {
-    const url = new URL(trimmed);
-    if (url.protocol === "http:" || url.protocol === "https:") return url.href;
-  } catch {
-    return null;
-  }
-  return null;
-}
-
 // Editor for one tracker row: create when `application` is null,
 // otherwise edit + timeline.
 export default function ApplicationModal({
   token,
   application,
+  existingApplications = [],
   onClose,
   onChanged,
+  onOpenExisting,
 }) {
   const [form, setForm] = useState(() =>
     application
@@ -51,6 +48,31 @@ export default function ApplicationModal({
   const [error, setError] = useState(null);
   const dialogRef = useRef(null);
   const adUrl = externalUrl(form.ad_url);
+  const duplicateByUrl = useMemo(
+    () =>
+      findDuplicateByAdUrl(
+        existingApplications,
+        form.ad_url,
+        application?.id ?? null
+      ),
+    [existingApplications, form.ad_url, application?.id]
+  );
+  const similarByTitle = useMemo(() => {
+    if (duplicateByUrl) return null;
+    return findSimilarByCompanyTitle(
+      existingApplications,
+      form.company,
+      form.title,
+      application?.id ?? null
+    );
+  }, [
+    duplicateByUrl,
+    existingApplications,
+    form.company,
+    form.title,
+    application?.id,
+  ]);
+  const duplicateBlocked = Boolean(duplicateByUrl);
 
   useEffect(() => {
     const previous = document.activeElement;
@@ -86,6 +108,7 @@ export default function ApplicationModal({
     delete body.status_label;
     delete body.created_at;
     delete body.updated_at;
+    body.ad_url = normalizeAdUrl(body.ad_url);
     // Empty strings are not valid dates.
     if (!body.applied_at) body.applied_at = null;
     if (!body.next_action_at) body.next_action_at = null;
@@ -95,6 +118,7 @@ export default function ApplicationModal({
 
   async function save(event) {
     event.preventDefault();
+    if (duplicateBlocked) return;
     setError(null);
     try {
       if (application) {
@@ -137,116 +161,139 @@ export default function ApplicationModal({
   }
 
   return (
-    <div className="overlay" onClick={onClose} role="presentation">
-      <div
-        className="modal"
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="application-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="row-between">
-          <h2 id="application-modal-title">
-            {application ? form.title || "Ansökan" : "Ny ansökan"}
-          </h2>
-          <button
-            type="button"
-            className="secondary small"
-            onClick={onClose}
-            aria-label="Stäng"
-          >
-            Stäng ✕
-          </button>
-        </div>
+    <ModalOverlay
+      onClose={onClose}
+      dialogRef={dialogRef}
+      labelledBy="application-modal-title"
+    >
+      <div className="row-between">
+        <h2 id="application-modal-title">
+          {application ? form.title || "Ansökan" : "Ny ansökan"}
+        </h2>
+        <button
+          type="button"
+          className="secondary small"
+          onClick={onClose}
+          aria-label="Stäng"
+        >
+          Stäng ✕
+        </button>
+      </div>
 
-        <form onSubmit={save}>
-          <div className="grid3">
-            <label>
-              Företag
-              <input {...field("company")} required placeholder="Acme AB" />
-            </label>
-            <label>
-              Roll
-              <input {...field("title")} required placeholder="Backendutvecklare" />
-            </label>
-            <label>
-              Ort
-              <input {...field("location")} />
-            </label>
-          </div>
-          <div className="grid3">
-            <label>
-              Status
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                style={{ width: "100%" }}
+      <form onSubmit={save}>
+        <div className="grid3">
+          <label>
+            Företag
+            <input {...field("company")} required placeholder="Acme AB" />
+          </label>
+          <label>
+            Roll
+            <input {...field("title")} required placeholder="Backendutvecklare" />
+          </label>
+          <label>
+            Ort
+            <input {...field("location")} />
+          </label>
+        </div>
+        <div className="grid3">
+          <label>
+            Status
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+              style={{ width: "100%" }}
+            >
+              {STATUSES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Sökt datum
+            <input {...field("applied_at", "date")} />
+          </label>
+          <label>
+            Sista ansökningsdag
+            <input {...field("deadline", "date")} />
+          </label>
+        </div>
+        <div className="grid3">
+          <label>
+            Nästa steg (datum)
+            <input {...field("next_action_at", "date")} />
+          </label>
+          <label>
+            Kontaktperson
+            <input {...field("contact_name")} placeholder="Rekryterare, chef…" />
+          </label>
+          <label>
+            Kontaktuppgift
+            <input {...field("contact_info")} placeholder="mail eller telefon" />
+          </label>
+        </div>
+        <label>
+          Länk till annonsen
+          <div className="input-with-link">
+            <input {...field("ad_url", "url")} placeholder="https://…" />
+            {adUrl && (
+              <a
+                className="secondary small input-link-btn"
+                href={adUrl}
+                target="_blank"
+                rel="noreferrer"
               >
-                {STATUSES.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Sökt datum
-              <input {...field("applied_at", "date")} />
-            </label>
-            <label>
-              Sista ansökningsdag
-              <input {...field("deadline", "date")} />
-            </label>
-          </div>
-          <div className="grid3">
-            <label>
-              Nästa steg (datum)
-              <input {...field("next_action_at", "date")} />
-            </label>
-            <label>
-              Kontaktperson
-              <input {...field("contact_name")} placeholder="Rekryterare, chef…" />
-            </label>
-            <label>
-              Kontaktuppgift
-              <input {...field("contact_info")} placeholder="mail eller telefon" />
-            </label>
-          </div>
-          <label>
-            Länk till annonsen
-            <div className="input-with-link">
-              <input {...field("ad_url", "url")} placeholder="https://…" />
-              {adUrl && (
-                <a
-                  className="secondary small input-link-btn"
-                  href={adUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Öppna annons ↗
-                </a>
-              )}
-            </div>
-          </label>
-          <label>
-            Anteckningar
-            <textarea {...field("notes")} />
-          </label>
-          {error && <p className="error">{error}</p>}
-          <div className="row-between">
-            <button>{application ? "Spara" : "Lägg till"}</button>
-            {application && (
-              <button type="button" className="danger small" onClick={remove}>
-                Ta bort
-              </button>
+                Öppna annons ↗
+              </a>
             )}
           </div>
-        </form>
+        </label>
+        {duplicateByUrl && (
+          <p className="warning" role="status">
+            Den här annonsen finns redan på tavlan som{" "}
+            <button
+              type="button"
+              className="linklike"
+              onClick={() => onOpenExisting?.(duplicateByUrl)}
+            >
+              {duplicateByUrl.title} @ {duplicateByUrl.company}
+            </button>
+            .
+          </p>
+        )}
+        {similarByTitle && (
+          <p className="warning warning--soft" role="status">
+            Du har redan en ansökan med samma företag och roll:{" "}
+            <button
+              type="button"
+              className="linklike"
+              onClick={() => onOpenExisting?.(similarByTitle)}
+            >
+              {similarByTitle.title} @ {similarByTitle.company}
+            </button>
+            . Kontrollera att det inte är samma jobb.
+          </p>
+        )}
+        <label>
+          Anteckningar
+          <textarea {...field("notes")} />
+        </label>
+        {error && <p className="error">{error}</p>}
+        <div className="row-between">
+          <button disabled={duplicateBlocked}>
+            {application ? "Spara" : "Lägg till"}
+          </button>
+          {application && (
+            <button type="button" className="danger small" onClick={remove}>
+              Ta bort
+            </button>
+          )}
+        </div>
+      </form>
 
-        {application && <Timeline events={events} onAdd={addEvent} />}
-      </div>
-    </div>
+      {application && <Timeline events={events} onAdd={addEvent} />}
+    </ModalOverlay>
   );
 }
 

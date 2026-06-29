@@ -414,6 +414,11 @@ export default function BoardPanel({ token, onNavigate }) {
         <ApplicationModal
           token={token}
           application={selected}
+          existingApplications={applications}
+          onOpenExisting={(app) => {
+            setSelected(app);
+            setAdding(false);
+          }}
           onClose={() => {
             setSelected(null);
             setAdding(false);

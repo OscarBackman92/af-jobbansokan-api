@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { normalizeAdUrl } from "../adUrl.js";
 import { request } from "../api.js";
+import ModalOverlay from "./ModalOverlay.jsx";
 
 const PAGE_SIZE = 25;
 
@@ -70,7 +72,10 @@ export default function PostingsPanel() {
         const urls = new Set();
         while (url) {
           const page = await request(url);
-          for (const a of page.results) if (a.ad_url) urls.add(a.ad_url);
+          for (const a of page.results) {
+            const key = normalizeAdUrl(a.ad_url);
+            if (key) urls.add(key);
+          }
           url = page.next;
         }
         setTracked(urls);
@@ -211,7 +216,7 @@ export default function PostingsPanel() {
         },
       });
       if (job.webpage_url) {
-        setTracked((prev) => new Set(prev).add(job.webpage_url));
+        setTracked((prev) => new Set(prev).add(normalizeAdUrl(job.webpage_url)));
       }
       setMessage(`"${job.title}" sparades på tavlan (Sparad).`);
       window.dispatchEvent(new Event("application-created"));
@@ -272,8 +277,8 @@ export default function PostingsPanel() {
 
   const total = data?.total ?? 0;
   const results = (data?.results ?? []).slice().sort((a, b) => {
-    const aTracked = a.webpage_url && tracked.has(a.webpage_url);
-    const bTracked = b.webpage_url && tracked.has(b.webpage_url);
+    const aTracked = a.webpage_url && tracked.has(normalizeAdUrl(a.webpage_url));
+    const bTracked = b.webpage_url && tracked.has(normalizeAdUrl(b.webpage_url));
     if (aTracked !== bTracked) return aTracked ? 1 : -1;
     const aMatch = a.match?.count ?? -1;
     const bMatch = b.match?.count ?? -1;
@@ -471,7 +476,9 @@ export default function PostingsPanel() {
           <JobCard
             key={job.id}
             job={job}
-            tracked={!!job.webpage_url && tracked.has(job.webpage_url)}
+            tracked={
+              !!job.webpage_url && tracked.has(normalizeAdUrl(job.webpage_url))
+            }
             onOpen={() => setSelected(job)}
             onTrack={() => track(job)}
           />
@@ -500,7 +507,10 @@ export default function PostingsPanel() {
       {selected && (
         <JobDetail
           job={selected}
-          tracked={!!selected.webpage_url && tracked.has(selected.webpage_url)}
+          tracked={
+            !!selected.webpage_url &&
+            tracked.has(normalizeAdUrl(selected.webpage_url))
+          }
           onTrack={() => {
             track(selected);
             setSelected(null);
@@ -580,16 +590,13 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
   }, [onClose]);
 
   return (
-    <div className="overlay" onClick={onClose} role="presentation">
-      <div
-        className="modal job-modal"
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="job-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-head">
+    <ModalOverlay
+      onClose={onClose}
+      className="modal job-modal"
+      dialogRef={dialogRef}
+      labelledBy="job-modal-title"
+    >
+      <div className="modal-head">
           <div className="modal-head-text">
             <h2 id="job-modal-title">{job.title}</h2>
             <p className="muted">
@@ -652,7 +659,6 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
         <div className="description">
           {job.description || "Ingen beskrivning tillgänglig för den här annonsen."}
         </div>
-      </div>
-    </div>
+    </ModalOverlay>
   );
 }
