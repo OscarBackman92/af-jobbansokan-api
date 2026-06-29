@@ -121,7 +121,7 @@ export default function App() {
         )}
       </header>
 
-      <main className="main">
+      <main className="main" key={showPrivacy ? "privacy" : tab}>
         {resetCreds && (
           <ResetPassword
             uid={resetCreds.uid}
