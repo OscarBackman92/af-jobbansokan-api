@@ -13,7 +13,7 @@ export const STATUSES = [
   { id: "withdrawn", label: "Återkallad" },
 ];
 
-// Kanban columns; the rest live in the archive.
+// Pipeline stages; the rest live in the archive.
 export const ACTIVE_STATUSES = [
   "wishlist",
   "applied",

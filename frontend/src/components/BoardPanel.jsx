@@ -78,7 +78,6 @@ export default function BoardPanel({ token, onNavigate }) {
   const [applications, setApplications] = useState(null);
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
-  const [dragOver, setDragOver] = useState(null);
   const [error, setError] = useState(null);
   const [query, setQuery] = useState("");
   const [quickFilter, setQuickFilter] = useState("all");
@@ -119,13 +118,6 @@ export default function BoardPanel({ token, onNavigate }) {
     } catch (err) {
       setError(err.message);
     }
-  }
-
-  function dropOn(event, status) {
-    event.preventDefault();
-    setDragOver(null);
-    const id = event.dataTransfer.getData("text/plain");
-    if (id) moveTo(id, status);
   }
 
   async function exportCsv() {
@@ -175,6 +167,23 @@ export default function BoardPanel({ token, onNavigate }) {
     setQuickFilter("all");
   }
 
+  const countsByStatus = Object.fromEntries(
+    STATUSES.map((status) => [
+      status.id,
+      applications.filter((a) => a.status === status.id).length,
+    ])
+  );
+  const activeFiltered = filteredApplications.filter((a) => !isClosed(a));
+  const activeGroups =
+    quickFilter === "closed"
+      ? []
+      : ACTIVE_STATUSES.map((status) => ({
+          id: status,
+          label: STATUS_LABELS[status],
+          applications: activeFiltered.filter((a) => a.status === status),
+        })).filter((group) => group.applications.length > 0 || !hasActiveFilters);
+  const showClosedGroup = closed.length > 0 || quickFilter === "closed";
+
   return (
     <div className="stack">
       {followUps.length > 0 && (
@@ -211,7 +220,7 @@ export default function BoardPanel({ token, onNavigate }) {
                 ? "Tomt än så länge — lägg till din första ansökan."
                 : `${applications.length} ansökningar, varav ${
                     applications.length - allClosed.length
-                  } pågående. Dra korten mellan kolumnerna.`}
+                  } pågående. Följ flödet status för status.`}
             </p>
           </div>
           <div className="row-gap">
@@ -287,101 +296,41 @@ export default function BoardPanel({ token, onNavigate }) {
                 </button>
               </div>
             ) : (
-              quickFilter !== "closed" && (
-                <div className="board">
-                  {ACTIVE_STATUSES.map((status) => {
-                    const cards = filteredApplications.filter(
-                      (a) => a.status === status
-                    );
-                    return (
-                      <div
-                        className={[
-                          "kcol",
-                          `kcol--${status}`,
-                          cards.length ? "kcol--has-cards" : "kcol--empty-col",
-                          cards.length > 6 ? "kcol--dense" : "",
-                          dragOver === status ? "dragover" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        key={status}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setDragOver(status);
-                        }}
-                        onDragLeave={() => setDragOver(null)}
-                        onDrop={(e) => dropOn(e, status)}
-                      >
-                        <div className="kcol-head">
-                          <span className="kcol-title">
-                            {STATUS_LABELS[status]}
-                          </span>
-                          <span className="kcol-count">{cards.length}</span>
-                        </div>
-                        {cards.length === 0 ? (
-                          <div className="kcol-empty">Dra hit</div>
-                        ) : (
-                          cards.map((a) => (
-                            <ApplicationCard
-                              key={a.id}
-                              application={a}
-                              onOpen={() => setSelected(a)}
-                              onMove={(next) => moveTo(a.id, next)}
-                            />
-                          ))
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )
+              <div className="pipeline">
+                <PipelineSummary
+                  countsByStatus={countsByStatus}
+                  activeCount={applications.length - allClosed.length}
+                  closedCount={allClosed.length}
+                />
+
+                {activeGroups.map((group) => (
+                  <PipelineStage
+                    key={group.id}
+                    status={group.id}
+                    label={group.label}
+                    applications={group.applications}
+                    onOpen={setSelected}
+                    onMove={moveTo}
+                  />
+                ))}
+
+                {showClosedGroup && (
+                  <PipelineStage
+                    status="closed"
+                    label="Avslutade"
+                    applications={closed}
+                    onOpen={setSelected}
+                    onMove={moveTo}
+                    emptyText="Inga avslutade ansökningar matchar filtret."
+                  />
+                )}
+              </div>
             )}
           </>
         )}
       </section>
 
       <MonthlyStats applications={applications} />
-
-      {(closed.length > 0 || quickFilter === "closed") && (
-        <section className="card">
-          <h2>Avslutade</h2>
-          {closed.length === 0 ? (
-            <p className="muted">Inga avslutade ansökningar matchar filtret.</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Företag</th>
-                  <th>Roll</th>
-                  <th>Status</th>
-                  <th>Sökt</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {closed.map((a) => (
-                  <tr key={a.id}>
-                    <td>{a.company}</td>
-                    <td>{a.title}</td>
-                    <td>
-                      <span className={`badge ${a.status}`}>{a.status_label}</span>
-                    </td>
-                    <td>{a.applied_at || "—"}</td>
-                    <td>
-                      <button
-                        className="secondary small"
-                        onClick={() => setSelected(a)}
-                      >
-                        Öppna
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
-      )}
 
       {(selected || adding) && (
         <ApplicationModal
@@ -395,6 +344,59 @@ export default function BoardPanel({ token, onNavigate }) {
         />
       )}
     </div>
+  );
+}
+
+function PipelineSummary({ countsByStatus, activeCount, closedCount }) {
+  return (
+    <div className="pipeline-summary" aria-label="Statusöversikt">
+      {ACTIVE_STATUSES.map((status) => (
+        <div className={`pipeline-step pipeline-step--${status}`} key={status}>
+          <span className="pipeline-step-label">{STATUS_LABELS[status]}</span>
+          <span className="pipeline-step-count">{countsByStatus[status] || 0}</span>
+        </div>
+      ))}
+      <div className="pipeline-step pipeline-step--closed">
+        <span className="pipeline-step-label">Avslutade</span>
+        <span className="pipeline-step-count">{closedCount}</span>
+      </div>
+      <div className="pipeline-total">
+        <strong>{activeCount}</strong>
+        <span>pågående</span>
+      </div>
+    </div>
+  );
+}
+
+function PipelineStage({
+  status,
+  label,
+  applications,
+  onOpen,
+  onMove,
+  emptyText = "Inga ansökningar här just nu.",
+}) {
+  return (
+    <section className={`pipeline-stage pipeline-stage--${status}`}>
+      <div className="pipeline-stage-head">
+        <h3>{label}</h3>
+        <span>{applications.length}</span>
+      </div>
+      {applications.length === 0 ? (
+        <p className="pipeline-empty">{emptyText}</p>
+      ) : (
+        <div className="pipeline-rows">
+          {applications.map((application) => (
+            <ApplicationRow
+              key={application.id}
+              application={application}
+              onOpen={() => onOpen(application)}
+              onMove={(next) => onMove(application.id, next)}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -412,47 +414,51 @@ function DeadlineBadge({ application }) {
   return <span className={`badge ${tone}`}>{text}</span>;
 }
 
-function ApplicationCard({ application, onOpen, onMove }) {
+function ApplicationRow({ application, onOpen, onMove }) {
+  const meta = [
+    application.company,
+    application.location,
+    application.applied_at ? `Sökt ${application.applied_at}` : "",
+    application.contact_name ? `Kontakt: ${application.contact_name}` : "",
+  ].filter(Boolean);
+
   return (
-    <div
-      className={`kcard kcard--${application.status}`}
-      draggable
-      onDragStart={(e) =>
-        e.dataTransfer.setData("text/plain", String(application.id))
-      }
-    >
-      <button className="kcard-body" onClick={onOpen}>
-        <span className="kcard-company">{application.company}</span>
-        <span className="kcard-title">{application.title}</span>
-      </button>
-      {(application.applied_at ||
-        application.deadline ||
-        application.next_action_at) && (
-        <div className="kcard-badges">
-          {application.applied_at && (
-            <span className="kcard-date">Sökt {application.applied_at}</span>
-          )}
-          <DeadlineBadge application={application} />
-          {application.next_action_at && (
-            <span className="badge neutral">
-              Nästa steg {application.next_action_at}
+    <div className={`pipeline-row pipeline-row--${application.status}`}>
+      <button className="pipeline-row-main" onClick={onOpen}>
+        <span className="pipeline-row-title">{application.title}</span>
+        <span className="pipeline-row-meta">{meta.join(" · ")}</span>
+        {(application.status_label ||
+          application.deadline ||
+          application.next_action_at) && (
+          <span className="pipeline-row-badges">
+            <span className={`badge ${application.status}`}>
+              {application.status_label}
             </span>
-          )}
-        </div>
-      )}
-      <select
-        className="kcard-move"
-        value={application.status}
-        onChange={(e) => onMove(e.target.value)}
-        onClick={(e) => e.stopPropagation()}
-        title="Flytta till status"
-      >
-        {STATUSES.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.label}
-          </option>
-        ))}
-      </select>
+            <DeadlineBadge application={application} />
+            {application.next_action_at && (
+              <span className="badge neutral">
+                Nästa steg {application.next_action_at}
+              </span>
+            )}
+          </span>
+        )}
+      </button>
+      <div className="pipeline-row-actions">
+        <select
+          value={application.status}
+          onChange={(e) => onMove(e.target.value)}
+          title="Flytta till status"
+        >
+          {STATUSES.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <button className="secondary small" onClick={onOpen}>
+          Öppna
+        </button>
+      </div>
     </div>
   );
 }
