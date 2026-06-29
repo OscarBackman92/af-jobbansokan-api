@@ -17,6 +17,18 @@ const EMPTY = {
   notes: "",
 };
 
+function externalUrl(value) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol === "http:" || url.protocol === "https:") return url.href;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 // Editor for one tracker row: create when `application` is null,
 // otherwise edit + timeline.
 export default function ApplicationModal({
@@ -38,6 +50,7 @@ export default function ApplicationModal({
   const [events, setEvents] = useState(application?.events ?? []);
   const [error, setError] = useState(null);
   const dialogRef = useRef(null);
+  const adUrl = externalUrl(form.ad_url);
 
   useEffect(() => {
     const previous = document.activeElement;
@@ -202,7 +215,19 @@ export default function ApplicationModal({
           </div>
           <label>
             Länk till annonsen
-            <input {...field("ad_url", "url")} placeholder="https://…" />
+            <div className="input-with-link">
+              <input {...field("ad_url", "url")} placeholder="https://…" />
+              {adUrl && (
+                <a
+                  className="secondary small input-link-btn"
+                  href={adUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Öppna annons ↗
+                </a>
+              )}
+            </div>
           </label>
           <label>
             Anteckningar

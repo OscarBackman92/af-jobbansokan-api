@@ -886,6 +886,26 @@ body::after {
   align-items: flex-start;
 }
 
+.input-with-link {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.input-with-link input {
+  flex: 1;
+  min-width: 0;
+}
+
+.input-link-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .muted {
   color: var(--muted);
   font-size: 0.9rem;
