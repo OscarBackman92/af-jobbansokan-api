@@ -20,7 +20,7 @@ from .jobtech import (
     OCCUPATION_FIELDS,
     REGIONS,
     JobTechError,
-    occupation_groups_by_field,
+    occupation_groups,
 )
 from .jobtech import search as jobtech_search
 from .matching import match_skills
@@ -416,21 +416,31 @@ def job_search(request):
 @permission_classes([IsAuthenticated])
 def job_filters(_request):
     """Region and occupation-field options for the ad-search dropdowns."""
-    try:
-        groups_by_field = occupation_groups_by_field()
-    except JobTechError:
-        groups_by_field = {}
-
     return Response(
         {
             "regions": [{"id": cid, "label": label} for cid, label in REGIONS],
-            "fields": [
-                {
-                    "id": cid,
-                    "label": label,
-                    "groups": groups_by_field.get(cid, []),
-                }
-                for cid, label in OCCUPATION_FIELDS
-            ],
+            "fields": [{"id": cid, "label": label} for cid, label in OCCUPATION_FIELDS],
         }
     )
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            "field", OpenApiTypes.STR, description="Occupation-field concept id."
+        ),
+    ],
+    responses={200: OpenApiTypes.OBJECT},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def job_groups(request):
+    """Occupation-group options for one selected occupation field."""
+    try:
+        groups = occupation_groups(request.query_params.get("field", ""))
+    except JobTechError:
+        return Response(
+            {"detail": "Kunde inte hämta yrken från Platsbanken just nu."},
+            status=drf_status.HTTP_502_BAD_GATEWAY,
+        )
+    return Response({"groups": groups})

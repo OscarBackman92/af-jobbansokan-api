@@ -8,6 +8,7 @@ from .views import (
     ResumeParseView,
     ResumeView,
     job_filters,
+    job_groups,
     job_search,
 )
 
@@ -21,5 +22,6 @@ urlpatterns = [
     path("me/resume/parse/", ResumeParseView.as_view(), name="my-resume-parse"),
     path("jobs/", job_search, name="job-search"),
     path("jobs/filters/", job_filters, name="job-filters"),
+    path("jobs/groups/", job_groups, name="job-groups"),
     path("", include(router.urls)),
 ]

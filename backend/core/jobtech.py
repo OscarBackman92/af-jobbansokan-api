@@ -5,8 +5,8 @@ queries JobTech on every request so the Annonser tab covers the whole of
 Platsbanken with real filters. No API key is required.
 
 Region and occupation-field concept IDs are fixed parts of JobTech's
-taxonomy; occupation groups are fetched from JobTech Taxonomy and cached
-so the UI can show each field's Platsbanken subcategories.
+taxonomy; occupation groups are fetched lazily from JobTech Taxonomy when
+the UI asks for a selected field's Platsbanken subcategories.
 """
 
 from __future__ import annotations
@@ -87,42 +87,43 @@ def _concept_option(concept: dict, *, field_id: str) -> dict[str, str] | None:
     return {"id": concept_id, "label": label, "field_id": field_id}
 
 
-@lru_cache(maxsize=1)
-def occupation_groups_by_field() -> dict[str, list[dict[str, str]]]:
-    """Return JobTech ssyk-level-4 occupation groups nested by occupation field."""
-    groups: dict[str, list[dict[str, str]]] = {cid: [] for cid, _ in OCCUPATION_FIELDS}
+@lru_cache(maxsize=64)
+def occupation_groups(field_id: str) -> list[dict[str, str]]:
+    """Return JobTech ssyk-level-4 occupation groups for one occupation field."""
+    if field_id not in _FIELD_IDS:
+        return []
+
     try:
-        for field_id, _label in OCCUPATION_FIELDS:
-            response = requests.get(
-                JOBTECH_TAXONOMY_CONCEPTS_URL,
-                params={
-                    "type": "ssyk-level-4",
-                    "relation": "narrower",
-                    "related-ids": field_id,
-                },
-                timeout=15,
-            )
-            response.raise_for_status()
-            payload = response.json()
-            seen: set[str] = set()
-            for concept in payload.get("value", []):
-                option = _concept_option(concept, field_id=field_id)
-                if not option or option["id"] in seen:
-                    continue
-                seen.add(option["id"])
-                groups[field_id].append(option)
-            groups[field_id].sort(key=lambda item: item["label"].lower())
+        response = requests.get(
+            JOBTECH_TAXONOMY_CONCEPTS_URL,
+            params={
+                "type": "ssyk-level-4",
+                "relation": "narrower",
+                "related-ids": field_id,
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+        payload = response.json()
     except requests.RequestException as exc:
         raise JobTechError(str(exc)) from exc
+
+    groups: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for concept in payload.get("value", []):
+        option = _concept_option(concept, field_id=field_id)
+        if not option or option["id"] in seen:
+            continue
+        seen.add(option["id"])
+        groups.append(option)
+    groups.sort(key=lambda item: item["label"].lower())
     return groups
 
 
-def _occupation_group_ids() -> set[str]:
-    return {
-        group["id"]
-        for field_groups in occupation_groups_by_field().values()
-        for group in field_groups
-    }
+def _is_occupation_group(field: str, group: str) -> bool:
+    return bool(group) and any(
+        option["id"] == group for option in occupation_groups(field)
+    )
 
 
 def hit_to_job(hit: dict) -> dict:
@@ -169,7 +170,7 @@ def search(
         params.append(("region", region))
     if field in _FIELD_IDS:
         params.append(("occupation-field", field))
-    if group and group in _occupation_group_ids():
+    if field in _FIELD_IDS and _is_occupation_group(field, group):
         params.append(("occupation-group", group))
     if remote:
         params.append(("remote", "true"))

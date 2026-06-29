@@ -10,6 +10,10 @@ export default function PostingsPanel() {
   const [region, setRegion] = useState("");
   const [field, setField] = useState("");
   const [group, setGroup] = useState("");
+  const [groups, setGroups] = useState([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [filtersError, setFiltersError] = useState(null);
+  const [groupsError, setGroupsError] = useState(null);
   const [remote, setRemote] = useState(false);
   // The query that results actually reflect (only changes on submit).
   const [query, setQuery] = useState({
@@ -30,7 +34,14 @@ export default function PostingsPanel() {
 
   // Load filter options + which ads are already on the board (by URL).
   useEffect(() => {
-    request("/api/v1/jobs/filters/").then(setFilters).catch(() => {});
+    request("/api/v1/jobs/filters/")
+      .then((result) => {
+        setFilters(result);
+        setFiltersError(null);
+      })
+      .catch(() => {
+        setFiltersError("Kunde inte hämta filter från Platsbanken.");
+      });
     (async () => {
       try {
         let url = "/api/v1/applications/";
@@ -46,6 +57,31 @@ export default function PostingsPanel() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    setGroups([]);
+    setGroupsError(null);
+    if (!field) {
+      setGroupsLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setGroupsLoading(true);
+    request(`/api/v1/jobs/groups/?field=${encodeURIComponent(field)}`)
+      .then((result) => {
+        if (!cancelled) setGroups(result.groups ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setGroupsError("Kunde inte hämta yrken just nu.");
+      })
+      .finally(() => {
+        if (!cancelled) setGroupsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [field]);
 
   const runSearch = useCallback(async () => {
     setLoading(true);
@@ -127,8 +163,16 @@ export default function PostingsPanel() {
   const results = data?.results ?? [];
   const showingFrom = total === 0 ? 0 : offset + 1;
   const showingTo = Math.min(offset + PAGE_SIZE, total);
-  const fieldGroups =
-    filters.fields.find((f) => f.id === field)?.groups ?? [];
+  const fieldGroups = groups;
+  const groupDisabled =
+    !field || groupsLoading || !!groupsError || fieldGroups.length === 0;
+  const groupPlaceholder = !field
+    ? "Välj yrkesområde först"
+    : groupsLoading
+      ? "Laddar yrken..."
+      : groupsError
+        ? "Kunde inte hämta yrken"
+        : "Alla yrken";
   const activeFilters =
     query.q || query.region || query.field || query.group || query.remote;
 
@@ -136,9 +180,8 @@ export default function PostingsPanel() {
     <section className="card">
       <h2>Sök jobb i hela Platsbanken</h2>
       <p className="muted">
-        Live från Arbetsförmedlingen. Filtrera på ort, yrkesområde,
-        underkategori och distans — spara intressanta annonser direkt på din
-        tavla.
+        Live från Arbetsförmedlingen. Filtrera på ort, yrkesområde, yrke och
+        distans — spara intressanta annonser direkt på din tavla.
       </p>
 
       <form className="job-search" onSubmit={submit}>
@@ -167,16 +210,14 @@ export default function PostingsPanel() {
         <select
           value={group}
           onChange={(e) => setGroup(e.target.value)}
-          disabled={!field}
+          disabled={groupDisabled}
           title={
             field
-              ? "Välj underkategori inom yrkesområdet"
+              ? "Välj yrke inom yrkesområdet"
               : "Välj yrkesområde först"
           }
         >
-          <option value="">
-            {field ? "Alla underkategorier" : "Välj yrkesområde först"}
-          </option>
+          <option value="">{groupPlaceholder}</option>
           {fieldGroups.map((g) => (
             <option key={g.id} value={g.id}>
               {g.label}
@@ -194,6 +235,8 @@ export default function PostingsPanel() {
         <button className="small">Sök</button>
       </form>
 
+      {filtersError && <p className="error">{filtersError}</p>}
+      {groupsError && <p className="error">{groupsError}</p>}
       {message && <p className="notice">{message}</p>}
       {error && <p className="error">{error}</p>}
 

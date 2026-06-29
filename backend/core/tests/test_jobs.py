@@ -10,6 +10,7 @@ pytestmark = pytest.mark.django_db
 
 SEARCH_URL = "/api/v1/jobs/"
 FILTERS_URL = "/api/v1/jobs/filters/"
+GROUPS_URL = "/api/v1/jobs/groups/"
 
 SAMPLE_PAYLOAD = {
     "total": {"value": 3},
@@ -56,33 +57,26 @@ def test_search_requires_auth(api_client):
     assert api_client.get(SEARCH_URL).status_code == 401
 
 
-def test_filters_lists_regions_fields_and_groups(api_client, user, monkeypatch):
-    monkeypatch.setattr(
-        views,
-        "occupation_groups_by_field",
-        lambda: {
-            "apaJ_2ja_LuF": [
-                {
-                    "id": "DJh5_yyF_hEM",
-                    "label": "Mjukvaru- och systemutvecklare m.fl.",
-                    "field_id": "apaJ_2ja_LuF",
-                }
-            ]
-        },
-    )
+def test_filters_lists_regions_and_fields(api_client, user):
     api_client.force_authenticate(user)
     body = api_client.get(FILTERS_URL).json()
     assert len(body["regions"]) == 21
     assert len(body["fields"]) == 21
-    data_it = next(f for f in body["fields"] if f["id"] == "apaJ_2ja_LuF")
-    assert data_it["label"] == "Data/IT"
-    assert data_it["groups"] == [
+    assert {"id": "apaJ_2ja_LuF", "label": "Data/IT"} in body["fields"]
+
+
+def test_groups_lists_occupation_groups_for_field(api_client, user, monkeypatch):
+    groups = [
         {
             "id": "DJh5_yyF_hEM",
             "label": "Mjukvaru- och systemutvecklare m.fl.",
             "field_id": "apaJ_2ja_LuF",
         }
     ]
+    monkeypatch.setattr(views, "occupation_groups", lambda field: groups)
+    api_client.force_authenticate(user)
+    body = api_client.get(GROUPS_URL, {"field": "apaJ_2ja_LuF"}).json()
+    assert body["groups"] == groups
 
 
 def test_search_maps_hits(api_client, user, mock_jobtech):
@@ -101,7 +95,7 @@ def test_search_maps_hits(api_client, user, mock_jobtech):
 def test_search_forwards_known_filters_only(
     api_client, user, mock_jobtech, monkeypatch
 ):
-    monkeypatch.setattr(jobtech, "occupation_groups_by_field", lambda: {})
+    monkeypatch.setattr(jobtech, "occupation_groups", lambda field: [])
     api_client.force_authenticate(user)
     api_client.get(
         SEARCH_URL,
@@ -124,16 +118,14 @@ def test_search_forwards_known_occupation_group(
 ):
     monkeypatch.setattr(
         jobtech,
-        "occupation_groups_by_field",
-        lambda: {
-            "apaJ_2ja_LuF": [
-                {
-                    "id": "DJh5_yyF_hEM",
-                    "label": "Mjukvaru- och systemutvecklare m.fl.",
-                    "field_id": "apaJ_2ja_LuF",
-                }
-            ]
-        },
+        "occupation_groups",
+        lambda field: [
+            {
+                "id": "DJh5_yyF_hEM",
+                "label": "Mjukvaru- och systemutvecklare m.fl.",
+                "field_id": field,
+            }
+        ],
     )
     api_client.force_authenticate(user)
     api_client.get(
