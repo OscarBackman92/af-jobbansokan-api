@@ -183,9 +183,59 @@ export default function BoardPanel({ token, onNavigate }) {
           applications: activeFiltered.filter((a) => a.status === status),
         })).filter((group) => group.applications.length > 0 || !hasActiveFilters);
   const showClosedGroup = closed.length > 0 || quickFilter === "closed";
+  const activeCount = applications.length - allClosed.length;
+  const deadlineSoonCount = applications.filter(hasDeadlineSoon).length;
+  const interviewTrackCount = applications.filter((a) =>
+    ["screening", "interview", "forwarded"].includes(a.status)
+  ).length;
+  const offerCount = applications.filter((a) =>
+    ["offer", "accepted"].includes(a.status)
+  ).length;
+  const acceptedCount = applications.filter((a) => a.status === "accepted").length;
+  const winRate = allClosed.length
+    ? Math.round((acceptedCount / allClosed.length) * 100)
+    : 0;
 
   return (
     <div className="stack">
+      <section className="command-hero">
+        <div className="command-hero-copy">
+          <span className="section-kicker">Ansökningsradar</span>
+          <h2>Command center</h2>
+          <p className="muted">
+            Prioritera nästa drag, håll koll på pipeline och fånga signaler
+            innan de blir brus.
+          </p>
+        </div>
+        <div className="metric-grid" aria-label="Översikt">
+          <MetricTile label="Pågående" value={activeCount} detail="aktiva case" />
+          <MetricTile
+            label="Följ upp"
+            value={followUps.length}
+            detail="behöver respons"
+            tone="amber"
+          />
+          <MetricTile
+            label="Deadline"
+            value={deadlineSoonCount}
+            detail="inom 7 dagar"
+            tone="red"
+          />
+          <MetricTile
+            label="Intervjuspår"
+            value={interviewTrackCount}
+            detail="i dialog"
+            tone="cyan"
+          />
+          <MetricTile
+            label="Erbjudande"
+            value={offerCount}
+            detail={`${winRate}% stängningsgrad`}
+            tone="green"
+          />
+        </div>
+      </section>
+
       {followUps.length > 0 && (
         <section className="card followups">
           <h2>Att följa upp</h2>
@@ -236,7 +286,7 @@ export default function BoardPanel({ token, onNavigate }) {
 
         {applications.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-emoji" aria-hidden="true">🗂️</div>
+            <div className="empty-icon" aria-hidden="true" />
             <h3>Din tavla är tom</h3>
             <p className="muted">
               Lägg till en ansökan manuellt, eller hitta en annons under
@@ -299,7 +349,7 @@ export default function BoardPanel({ token, onNavigate }) {
               <div className="pipeline">
                 <PipelineSummary
                   countsByStatus={countsByStatus}
-                  activeCount={applications.length - allClosed.length}
+                  activeCount={activeCount}
                   closedCount={allClosed.length}
                 />
 
@@ -343,6 +393,16 @@ export default function BoardPanel({ token, onNavigate }) {
           onChanged={reload}
         />
       )}
+    </div>
+  );
+}
+
+function MetricTile({ label, value, detail, tone = "default" }) {
+  return (
+    <div className={`metric-tile metric-tile--${tone}`}>
+      <span className="metric-label">{label}</span>
+      <strong>{value}</strong>
+      <span className="metric-detail">{detail}</span>
     </div>
   );
 }

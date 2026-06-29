@@ -4,24 +4,36 @@ import { request } from "../api.js";
 
 export default function AuthHero({ onLogin }) {
   return (
-    <div className="hero">
+    <div className="hero hero-auth">
       <div className="hero-copy">
-        <span className="eyebrow">Excel-arket, fast bättre</span>
+        <span className="section-kicker">Job Search Command</span>
         <h2>
-          Alla dina jobbansökningar.
+          Ditt personliga
           <br />
-          <span className="grad">Ett ställe.</span>
+          <span className="grad">ansökningscenter.</span>
         </h2>
         <p className="lede">
-          Sluta jaga statusar i kalkylblad. Samla varje ansökan, intervju och
-          kontakt på en tavla som visar exakt var du står.
+          En operativ översikt över varje ansökan — pipeline, deadlines,
+          intervjuer och Platsbanken i samma kontrollrum.
         </p>
         <ul className="checklist">
-          <li>Statusflöde från Ansökt till Erbjudande — som din process ser ut</li>
-          <li>Tidslinje per ansökan: samtal, intervjuer, anteckningar</li>
-          <li>Sök bland Platsbankens annonser och lägg dem direkt på tavlan</li>
-          <li>Exportera allt som CSV — datan är din</li>
+          <li>Live pipeline från Sparad till Erbjudande med tydliga signaler</li>
+          <li>Action-lista för uppföljningar och deadlines som närmar sig</li>
+          <li>Platsbanken-radar med direkt sparning till tavlan</li>
+          <li>Exportera all data som CSV — du har full kontroll</li>
         </ul>
+        <div className="hero-metrics" aria-hidden="true">
+          <div className="metric-tile metric-tile--cyan">
+            <span className="metric-label">Pipeline</span>
+            <strong>7</strong>
+            <span className="metric-detail">steg</span>
+          </div>
+          <div className="metric-tile metric-tile--green">
+            <span className="metric-label">Data</span>
+            <strong>100%</strong>
+            <span className="metric-detail">din kontroll</span>
+          </div>
+        </div>
       </div>
       <AuthCard onLogin={onLogin} />
     </div>
@@ -93,7 +105,8 @@ function AuthCard({ onLogin }) {
     mode === "login" ? "Logga in" : mode === "register" ? "Skapa konto" : "Glömt lösenord";
 
   return (
-    <form className="card narrow" onSubmit={submit}>
+    <form className="card narrow auth-card" onSubmit={submit}>
+      <span className="section-kicker">Access terminal</span>
       <h2>{heading}</h2>
       <p className="muted">
         {mode === "login" && "Välkommen tillbaka."}

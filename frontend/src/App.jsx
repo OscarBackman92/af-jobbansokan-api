@@ -16,25 +16,28 @@ function readResetCreds() {
 }
 
 const TABS = [
-  { id: "board", label: "Tavlan" },
-  { id: "postings", label: "Annonser" },
-  { id: "profile", label: "Profil & CV" },
+  { id: "board", label: "Tavlan", code: "OPS" },
+  { id: "postings", label: "Annonser", code: "RADAR" },
+  { id: "profile", label: "Profil & CV", code: "ID" },
 ];
 
 const THEMES = [
-  { id: "indigo", label: "Indigo" },
-  { id: "forest", label: "Skog" },
-  { id: "dark", label: "Mörk" },
+  { id: "command", label: "Command" },
+  { id: "daylight", label: "Daylight" },
+  { id: "signal", label: "Signal" },
 ];
+
+function readTheme() {
+  const stored = localStorage.getItem("theme");
+  return THEMES.some((theme) => theme.id === stored) ? stored : "command";
+}
 
 export default function App() {
   const [tab, setTab] = useState("board");
   const [token, setToken] = useState(() => getAccess());
   const [me, setMe] = useState(null);
   const [resetCreds, setResetCreds] = useState(() => readResetCreds());
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem("theme") || "indigo"
-  );
+  const [theme, setTheme] = useState(() => readTheme());
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -76,32 +79,40 @@ export default function App() {
               A
             </div>
             <div>
+              <span className="brand-kicker">Job Search Command</span>
               <h1>Ansökt</h1>
               <p className="tagline">Koll på varje ansökan</p>
             </div>
           </div>
           {token && (
-            <div className="account">
-              {me?.email && <span className="account-email">{me.email}</span>}
-              <button
-                className="secondary small"
-                onClick={logout}
-                title="Logga ut"
-              >
-                Logga ut
-              </button>
+            <div className="header-actions">
+              <span className="system-pill">
+                <span className="pulse-dot" aria-hidden="true" />
+                Online
+              </span>
+              <div className="account">
+                {me?.email && <span className="account-email">{me.email}</span>}
+                <button
+                  className="secondary small"
+                  onClick={logout}
+                  title="Logga ut"
+                >
+                  Logga ut
+                </button>
+              </div>
             </div>
           )}
         </div>
         {token && (
-          <nav className="tabs">
+          <nav className="tabs" aria-label="Huvudnavigering">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 className={tab === t.id ? "tab active" : "tab"}
                 onClick={() => setTab(t.id)}
               >
-                {t.label}
+                <span className="tab-code">{t.code}</span>
+                <span>{t.label}</span>
               </button>
             ))}
           </nav>
@@ -130,9 +141,10 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        Din ansökningsdata är din: exportera den som CSV när du vill, eller
-        radera kontot och allt med det.
-        <div className="theme-picker">
+        <span className="footer-kicker">System</span>
+        Din ansökningsdata är din: exportera som CSV eller radera kontot och allt
+        med det.
+        <div className="theme-picker" aria-label="Visuellt tema">
           {THEMES.map((t) => (
             <button
               key={t.id}
