@@ -4,6 +4,8 @@ from core.email_config import email_is_configured
 from django.conf import settings
 from django.core.checks import Warning, register
 
+_WEAK_ADMIN_USERNAMES = frozenset({"admin", "administrator", "root", "superuser"})
+
 
 @register(deploy=True)
 def email_host_configured(**kwargs):
@@ -28,5 +30,37 @@ def sentry_dsn_configured(**kwargs):
             "SENTRY_DSN is not set. Unhandled server errors will not be reported.",
             hint="Create a Sentry project and set SENTRY_DSN in production.",
             id="core.W001",
+        )
+    ]
+
+
+@register(deploy=True)
+def admin_username_not_predictable(**kwargs):
+    if settings.DEBUG:
+        return []
+    username = os.getenv("DJANGO_SUPERUSER_USERNAME", "").strip().lower()
+    if not username or username not in _WEAK_ADMIN_USERNAMES:
+        return []
+    return [
+        Warning(
+            f"DJANGO_SUPERUSER_USERNAME is '{username}', which is easy to guess.",
+            hint="Set a unique admin username in Render env vars (sync: false).",
+            id="core.W002",
+        )
+    ]
+
+
+@register(deploy=True)
+def sentry_allowed_domains_reminder(**kwargs):
+    if settings.DEBUG or not os.getenv("SENTRY_DSN"):
+        return []
+    return [
+        Warning(
+            "Configure Sentry Allowed Domains for the frontend DSN.",
+            hint=(
+                "In Sentry → Project Settings → Security → Allowed Domains, "
+                "allow only your production hostname (e.g. ansokt.onrender.com)."
+            ),
+            id="core.W003",
         )
     ]

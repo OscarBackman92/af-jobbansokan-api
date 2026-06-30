@@ -71,6 +71,7 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.SecurityHeadersMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -197,12 +198,14 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
     ),
     "DEFAULT_THROTTLE_RATES": {
         "anon": "30/min",
         "user": "300/min",
         "upload": "15/hour",
         "jobtech": "90/min",
+        "dj_rest_auth": "5/min",
     },
 }
 

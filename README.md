@@ -281,18 +281,32 @@ See [docs/06-gdpr-privacy.md](docs/06-gdpr-privacy.md) and
 
 ## Roadmap
 
+The product is feature-complete for personal use and live at
+<https://ansokt.onrender.com>. The current focus is the launch plan in
+[docs/13-lanseringsplan.md](docs/13-lanseringsplan.md): EU hosting and a
+persistent database, e-mail deliverability, then retention features
+(weekly summary, calendar export).
+
 - [x] Live JobTech search with region/occupation/remote filters
-- [x] Password reset by e-mail (SMTP via env in production)
-- [ ] Reminders for `next_action_at` (e-mail or notification)
+- [x] Password reset by e-mail (Brevo HTTP API in production)
+- [x] Mandatory e-mail verification + operator IDs
+- [x] Reminders for `next_action_at` (daily cron e-mail)
+- [x] Saved JobTech searches
+- [x] Duplicate detection for tracked ads
+- [x] Privacy policy page
+- [ ] EU hosting region (Render Frankfurt) + persistent Postgres
+- [ ] Custom domain, uptime check and verified e-mail sender domain
+- [ ] Weekly summary e-mail (applications, follow-ups, interviews)
+- [ ] Calendar export (ICS) for interviews and follow-ups
 - [ ] XLSX export alongside CSV
 - [ ] JobStream API for continuous ad updates
-- [ ] Privacy policy page before public launch
-- [ ] EU hosting region (Render Frankfurt)
 
 ## Documentation
 
 | Document | Contents |
 | --- | --- |
+| [13-lanseringsplan.md](docs/13-lanseringsplan.md) | **Current launch plan: hosting, go-public checklist, retention** |
+| [12-utvecklingsplan.md](docs/12-utvecklingsplan.md) | Earlier development plan (Phases 1–3, mostly done) |
 | [10-pivot-ansokt.md](docs/10-pivot-ansokt.md) | **The pivot: rationale, product, legal, what changed** |
 | [11-deploy-vercel.md](docs/11-deploy-vercel.md) | Deploy guide: frontend on Vercel, backend on Render |
 | [08-identity-bankid.md](docs/08-identity-bankid.md) | Archived note: identity verification is out of scope |

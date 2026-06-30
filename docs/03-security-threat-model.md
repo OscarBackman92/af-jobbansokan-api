@@ -30,12 +30,16 @@
   off.
 - JobTech requests have a timeout and return a friendly 502 on upstream failure.
 - Password reset avoids account enumeration.
+- Rate limiting on API, auth (`dj_rest_auth` 5/min), uploads and JobTech proxy.
+- CSV export cells are sanitized against spreadsheet formula injection.
+- Swagger/OpenAPI docs require staff in production (`DebugOrAdminPermission`).
+- Content-Security-Policy and related headers in production middleware.
+- Mandatory e-mail verification before API access.
 
 ## Next Mitigations
 
-- Add rate limiting for auth, uploads and live search.
-- Move token storage to a safer cookie-based setup if the deployment shape
-  allows it.
-- Add Sentry and structured security logging.
-- Add frontend accessibility and keyboard-flow tests.
-- Prefix dangerous CSV cells if spreadsheet injection becomes a concern.
+- Move token storage to httpOnly cookies if the deployment shape allows it.
+- Remove sensitive tokens from URL query parameters (verify/reset links).
+- Avoid account enumeration on registration (same response for existing e-mails).
+- Add `pip-audit` to CI for dependency vulnerabilities.
+- JSON size limits on CV fields.
