@@ -1,4 +1,5 @@
 import io
+from pathlib import Path
 
 import docx
 import pytest
@@ -219,6 +220,76 @@ def test_parse_realistic_pdf_extraction():
     assert "Lösningsorienterad" not in flat
     assert "Lämnas på förfrågan" not in flat
     assert "Övriga" not in flat
+
+
+OSCAR_CV_TEXT = Path(__file__).parent.joinpath(
+    "fixtures", "oscar-backman-cv-extracted.txt"
+).read_text(encoding="utf-8")
+
+
+def test_parse_oscar_backman_canva_cv():
+    """Two-column Canva PDF layout (verbatim pypdf output) must parse cleanly."""
+    draft = parse_resume_text(OSCAR_CV_TEXT)
+
+    assert draft["headline"] == "Business Operations Coordinator"
+    assert "snabblärd och strukturerad person" in draft["summary"]
+    assert draft["email"] == "Jan.oscar.backman@gmail.com"
+    assert draft["phone"] == "072-010 16 47"
+
+    assert draft["skills"] == [
+        "SuperOffice CRM",
+        "Visma Business ERP",
+        "Wint",
+        "Nettailer/Netset",
+        "SharePoint",
+        "Office",
+        "Power BI (grunder)",
+        "VS Code",
+        "GitHub",
+        "Claude (AI)",
+        "B-körkort",
+    ]
+
+    assert [
+        (row["title"], row["company"], row["years"]) for row in draft["experience"]
+    ] == [
+        (
+            "Business Operations Coordinator",
+            "ADNS House of Service AB",
+            "FEBRUARI 2026 - JULI 2026",
+        ),
+        ("Orderadministratör", "AVOKI Group AB", "NOVEMBER 2018 – OKTOBER 2025"),
+        ("Ekonomiassistent", "AVOKI", "SEPTEMBER 2017 – NOVEMBER 2018"),
+        ("Ekonomiassistent (praktik)", "IMG Sweden AB", "JUNI 2017 – AUGUSTI 2017"),
+    ]
+
+    assert draft["education"] == [
+        {
+            "degree": "Fullstack Development",
+            "school": "Code Institute",
+            "years": "2024",
+        },
+        {
+            "degree": "MS Teams & SharePoint för administratörer",
+            "school": "Informator",
+            "years": "2022",
+        },
+        {
+            "degree": "Certifierad Ekonomiassistent",
+            "school": "Påhlmans Handelsinstitut",
+            "years": "2017",
+        },
+        {
+            "degree": "Ekonomiutbildning",
+            "school": "Komvux Värmdö",
+            "years": "2014",
+        },
+        {
+            "degree": "Tekniskt gymnasium",
+            "school": "Värmdö Tekniska Gymnasium",
+            "years": "2010–2013",
+        },
+    ]
 
 
 def test_parse_txt_upload(api_client, user):
