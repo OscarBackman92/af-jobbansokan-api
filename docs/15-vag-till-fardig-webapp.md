@@ -147,14 +147,14 @@ Bravura m.fl. eftersom de flesta bemanningsbolag annonserar där):
 
 | Källa | Status | Kommentar |
 |-------|--------|-----------|
-| **Adzuna** | Bästa kandidaten | Gratis API-nyckel, `/v1/api/jobs/se/search`, aggregerar många sajter. Kräver attribution-länk. |
-| **Jooble** | Kandidat | Gratis nyckel efter ansökan, sökning per land. Aggregator likt Adzuna. |
+| Adzuna | **Förkastad** | Testad juli 2026 — hanterar inte svenska annonser i praktiken, trots `se`-endpoint. Integrationsförsöket är borttaget. |
+| **Jooble** | Kandidat | Gratis nyckel efter ansökan, sökning per land. Aggregator. |
 | Indeed | Nej | Publisher-API:t stängt för nya ansökningar sedan flera år. |
 | Academic Work | Nej | Inget publikt API; deras annonser finns i Platsbanken. |
 | Bravura | Nej | Inget publikt API; deras annonser finns i Platsbanken. |
 
-Om fler källor läggs till: dedupe på annons-URL/titel+företag och märk
-källan per annons i UI:t.
+Platsbanken/JobTech förblir enda källan. Om en källa läggs till senare:
+dedupe på annons-URL/titel+företag och märk källan per annons i UI:t.
 
 ---
 
