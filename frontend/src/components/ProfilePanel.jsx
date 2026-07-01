@@ -3,32 +3,8 @@ import { useEffect, useState } from "react";
 import { request } from "../api.js";
 
 export default function ProfilePanel({ token, me, onMeChange, onLogout }) {
-  const fullName = me
-    ? [me.first_name, me.last_name].filter(Boolean).join(" ")
-    : "";
-
   return (
     <div className="stack">
-      <section className="command-hero command-hero--compact">
-        <div className="command-hero-copy">
-          <span className="section-kicker">Identitet & kompetens</span>
-          <h2>Din profil</h2>
-          <p className="muted">
-            {fullName
-              ? `${fullName} — håll profil och CV uppdaterat för bättre matchning i Platsbanken.`
-              : "Håll profil och CV uppdaterat för bättre matchning i Platsbanken."}
-          </p>
-        </div>
-        {me && (
-          <div className="metric-inline" aria-label="Profilsammanfattning">
-            <div className="metric-tile metric-tile--cyan">
-              <span className="metric-label">Operatör-ID</span>
-              <strong>{me.operator_id || "—"}</strong>
-              <span className="metric-detail">unik identitet</span>
-            </div>
-          </div>
-        )}
-      </section>
       <ProfileCard
         token={token}
         me={me}

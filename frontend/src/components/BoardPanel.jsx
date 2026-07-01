@@ -67,14 +67,6 @@ function matchesQuickFilter(application, filter) {
   return true;
 }
 
-function matchesListFilter(application, quickFilter, statusFilter) {
-  if (statusFilter) {
-    if (statusFilter === "closed") return isClosed(application);
-    return application.status === statusFilter;
-  }
-  return matchesQuickFilter(application, quickFilter);
-}
-
 export default function BoardPanel({ token, onNavigate }) {
   const [applications, setApplications] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -82,7 +74,6 @@ export default function BoardPanel({ token, onNavigate }) {
   const [error, setError] = useState(null);
   const [query, setQuery] = useState("");
   const [quickFilter, setQuickFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState(null);
 
   const reload = useCallback(async () => {
     try {
@@ -153,11 +144,10 @@ export default function BoardPanel({ token, onNavigate }) {
 
   const allClosed = applications.filter(isClosed);
   const filteredApplications = applications.filter(
-    (a) =>
-      matchesSearch(a, query) && matchesListFilter(a, quickFilter, statusFilter)
+    (a) => matchesSearch(a, query) && matchesQuickFilter(a, quickFilter)
   );
   const closed = filteredApplications.filter(isClosed);
-  const hasActiveFilters = query.trim() || quickFilter !== "all" || statusFilter;
+  const hasActiveFilters = query.trim() || quickFilter !== "all";
   const followUps = applications
     .filter(isFollowUp)
     .sort(
@@ -169,40 +159,19 @@ export default function BoardPanel({ token, onNavigate }) {
   function resetFilters() {
     setQuery("");
     setQuickFilter("all");
-    setStatusFilter(null);
   }
 
-  function selectQuickFilter(filterId) {
-    setQuickFilter(filterId);
-    setStatusFilter(null);
-  }
-
-  function toggleStatusFilter(statusId) {
-    setQuickFilter("all");
-    setStatusFilter((current) => (current === statusId ? null : statusId));
-  }
-
-  const countsByStatus = Object.fromEntries(
-    STATUSES.map((status) => [
-      status.id,
-      applications.filter((a) => a.status === status.id).length,
-    ])
-  );
   const activeFiltered = filteredApplications.filter((a) => !isClosed(a));
+  // Empty stages are hidden: they carry no action, and the section
+  // headers already tell the user where each application stands.
   const activeGroups =
-    statusFilter === "closed" || quickFilter === "closed"
+    quickFilter === "closed"
       ? []
       : ACTIVE_STATUSES.map((status) => ({
           id: status,
           label: STATUS_LABELS[status],
           applications: activeFiltered.filter((a) => a.status === status),
-        })).filter((group) => {
-          if (statusFilter) return group.id === statusFilter;
-          return group.applications.length > 0 || !hasActiveFilters;
-        });
-  const showClosedGroup =
-    statusFilter === "closed" ||
-    (!statusFilter && (closed.length > 0 || quickFilter === "closed"));
+        })).filter((group) => group.applications.length > 0);
   const activeCount = applications.length - allClosed.length;
   const deadlineSoonCount = applications.filter(hasDeadlineSoon).length;
   const interviewTrackCount = applications.filter((a) =>
@@ -211,10 +180,6 @@ export default function BoardPanel({ token, onNavigate }) {
   const offerCount = applications.filter((a) =>
     ["offer", "accepted"].includes(a.status)
   ).length;
-  const acceptedCount = applications.filter((a) => a.status === "accepted").length;
-  const winRate = allClosed.length
-    ? Math.round((acceptedCount / allClosed.length) * 100)
-    : 0;
 
   return (
     <div className="stack">
@@ -223,12 +188,11 @@ export default function BoardPanel({ token, onNavigate }) {
           <span className="section-kicker">Din tavla</span>
           <h2>Överblicken</h2>
           <p className="muted">
-            Prioritera nästa drag, håll koll på pipeline och fånga signaler
-            innan de blir brus.
+            Prioritera nästa drag och se var varje ansökan står.
           </p>
         </div>
         <div className="metric-grid" aria-label="Översikt">
-          <MetricTile label="Pågående" value={activeCount} detail="aktiva case" />
+          <MetricTile label="Pågående" value={activeCount} detail="ansökningar" />
           <MetricTile
             label="Följ upp"
             value={followUps.length}
@@ -250,7 +214,7 @@ export default function BoardPanel({ token, onNavigate }) {
           <MetricTile
             label="Erbjudande"
             value={offerCount}
-            detail={`${winRate}% stängningsgrad`}
+            detail="att ta ställning till"
             tone="green"
           />
         </div>
@@ -314,8 +278,8 @@ export default function BoardPanel({ token, onNavigate }) {
                   <button
                     type="button"
                     key={filter.id}
-                    className={quickFilter === filter.id && !statusFilter ? "active" : ""}
-                    onClick={() => selectQuickFilter(filter.id)}
+                    className={quickFilter === filter.id ? "active" : ""}
+                    onClick={() => setQuickFilter(filter.id)}
                   >
                     {filter.label}
                   </button>
@@ -344,14 +308,6 @@ export default function BoardPanel({ token, onNavigate }) {
               </div>
             ) : (
               <div className="pipeline">
-                <PipelineSummary
-                  countsByStatus={countsByStatus}
-                  activeCount={activeCount}
-                  closedCount={allClosed.length}
-                  statusFilter={statusFilter}
-                  onToggleStatus={toggleStatusFilter}
-                />
-
                 {activeGroups.map((group) => (
                   <PipelineStage
                     key={group.id}
@@ -363,14 +319,13 @@ export default function BoardPanel({ token, onNavigate }) {
                   />
                 ))}
 
-                {showClosedGroup && (
+                {closed.length > 0 && (
                   <PipelineStage
                     status="closed"
                     label="Avslutade"
                     applications={closed}
                     onOpen={setSelected}
                     onMove={moveTo}
-                    emptyText="Inga avslutade ansökningar matchar filtret."
                   />
                 )}
               </div>
@@ -411,78 +366,23 @@ function MetricTile({ label, value, detail, tone = "default" }) {
   );
 }
 
-function PipelineSummary({
-  countsByStatus,
-  activeCount,
-  closedCount,
-  statusFilter,
-  onToggleStatus,
-}) {
-  return (
-    <div className="pipeline-summary" aria-label="Statusöversikt">
-      {ACTIVE_STATUSES.map((status) => (
-        <button
-          type="button"
-          key={status}
-          className={`pipeline-step pipeline-step--${status}${
-            statusFilter === status ? " active" : ""
-          }`}
-          onClick={() => onToggleStatus(status)}
-          aria-pressed={statusFilter === status}
-          title={`Filtrera: ${STATUS_LABELS[status]}`}
-        >
-          <span className="pipeline-step-label">{STATUS_LABELS[status]}</span>
-          <span className="pipeline-step-count">{countsByStatus[status] || 0}</span>
-        </button>
-      ))}
-      <button
-        type="button"
-        className={`pipeline-step pipeline-step--closed${
-          statusFilter === "closed" ? " active" : ""
-        }`}
-        onClick={() => onToggleStatus("closed")}
-        aria-pressed={statusFilter === "closed"}
-        title="Filtrera: Avslutade"
-      >
-        <span className="pipeline-step-label">Avslutade</span>
-        <span className="pipeline-step-count">{closedCount}</span>
-      </button>
-      <div className="pipeline-total" aria-hidden="true">
-        <strong>{activeCount}</strong>
-        <span>pågående</span>
-      </div>
-    </div>
-  );
-}
-
-function PipelineStage({
-  status,
-  label,
-  applications,
-  onOpen,
-  onMove,
-  emptyText = "Inga ansökningar här just nu.",
-}) {
+function PipelineStage({ status, label, applications, onOpen, onMove }) {
   return (
     <section className={`pipeline-stage pipeline-stage--${status}`}>
       <div className="pipeline-stage-head">
         <h3>{label}</h3>
         <span>{applications.length}</span>
       </div>
-      {applications.length === 0 ? (
-        <p className="pipeline-empty">{emptyText}</p>
-      ) : (
-        <div className="pipeline-rows">
-          {applications.map((application) => (
-            <ApplicationRow
-              key={application.id}
-              application={application}
-              onOpen={() => onOpen(application)}
-              onMove={(next) => onMove(application.id, next)}
-            />
-          ))}
-        </div>
-      )}
+      <div className="pipeline-rows">
+        {applications.map((application) => (
+          <ApplicationRow
+            key={application.id}
+            application={application}
+            onOpen={() => onOpen(application)}
+            onMove={(next) => onMove(application.id, next)}
+          />
+        ))}
+      </div>
     </section>
   );
 }
@@ -509,18 +409,27 @@ function ApplicationRow({ application, onOpen, onMove }) {
     application.contact_name ? `Kontakt: ${application.contact_name}` : "",
   ].filter(Boolean);
 
+  // The stage header already names the status for active rows; only the
+  // mixed "Avslutade" group needs a badge to tell outcomes apart.
+  const showStatusBadge = isClosed(application);
+  const deadlineIn = daysUntil(application.deadline);
+  const showDeadlineBadge =
+    !isClosed(application) && deadlineIn !== null && deadlineIn <= 14;
+  const hasBadges =
+    showStatusBadge || showDeadlineBadge || application.next_action_at;
+
   return (
     <div className={`pipeline-row pipeline-row--${application.status}`}>
       <button className="pipeline-row-main" onClick={onOpen}>
         <span className="pipeline-row-title">{application.title}</span>
         <span className="pipeline-row-meta">{meta.join(" · ")}</span>
-        {(application.status_label ||
-          application.deadline ||
-          application.next_action_at) && (
+        {hasBadges && (
           <span className="pipeline-row-badges">
-            <span className={`badge ${application.status}`}>
-              {application.status_label}
-            </span>
+            {showStatusBadge && (
+              <span className={`badge ${application.status}`}>
+                {application.status_label}
+              </span>
+            )}
             <DeadlineBadge application={application} />
             {application.next_action_at && (
               <span className="badge neutral">

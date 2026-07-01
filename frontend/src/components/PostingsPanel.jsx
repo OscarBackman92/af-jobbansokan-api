@@ -320,13 +320,13 @@ export default function PostingsPanel() {
       <section className="command-hero command-hero--compact">
         <div className="command-hero-copy">
           <span className="section-kicker">Platsbanken live</span>
-          <h2>Jobbradar</h2>
+          <h2>Hitta nästa jobb</h2>
           <p className="muted">
-            Skanna hela Platsbanken, filtrera signaler och spara intressanta
-            annonser direkt till din pipeline.
+            Sök i hela Platsbanken, filtrera på län, ort och yrke — och spara
+            intressanta annonser direkt på din tavla.
           </p>
         </div>
-        <div className="metric-inline" aria-label="Radarsammanfattning">
+        <div className="metric-inline" aria-label="Söksammanfattning">
           <div className="metric-tile metric-tile--cyan">
             <span className="metric-label">Träffar</span>
             <strong>{total.toLocaleString("sv-SE")}</strong>
@@ -341,12 +341,6 @@ export default function PostingsPanel() {
       </section>
 
       <section className="card">
-        <h2>Sök jobb i hela Platsbanken</h2>
-        <p className="muted">
-          Live från Arbetsförmedlingen. Filtrera på län, ort, yrkesområde, yrke
-          och distans — spara intressanta annonser direkt på din tavla.
-        </p>
-
       <form className="job-search" onSubmit={submit}>
         <input
           className="job-search-q"

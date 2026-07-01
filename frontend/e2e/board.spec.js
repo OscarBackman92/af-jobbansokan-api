@@ -18,10 +18,10 @@ test("create an application, move status, timeline logs the change", async ({
   await row.locator("select").selectOption("interview");
   await expect(
     page
-      .locator(".pipeline-row", { hasText: "QA-ingenjör" })
-      .locator(".badge")
-      .first()
-  ).toContainText("Intervju");
+      .locator(".pipeline-stage--interview .pipeline-row", {
+        hasText: "QA-ingenjör",
+      })
+  ).toBeVisible();
 
   await page
     .locator(".pipeline-row", { hasText: "QA-ingenjör" })
