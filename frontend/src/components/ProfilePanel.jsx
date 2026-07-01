@@ -12,7 +12,7 @@ export default function ProfilePanel({ token, me, onMeChange, onLogout }) {
       <section className="command-hero command-hero--compact">
         <div className="command-hero-copy">
           <span className="section-kicker">Identitet & kompetens</span>
-          <h2>Operatörprofil</h2>
+          <h2>Din profil</h2>
           <p className="muted">
             {fullName
               ? `${fullName} — håll profil och CV uppdaterat för bättre matchning i Platsbanken.`

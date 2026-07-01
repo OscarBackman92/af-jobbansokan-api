@@ -1,15 +1,18 @@
-# Ansökt
+# Jobbsöket
 
 ![CI](https://github.com/OscarBackman92/af-jobbansokan-api/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
 ![Django](https://img.shields.io/badge/django-5.2-092e20)
 ![DRF](https://img.shields.io/badge/DRF-3.16-a30000)
 
-**Koll på varje ansökan.** Job seekers build their own Excel sheets to
+**Koll på hela ditt jobbsök.** Job seekers build their own Excel sheets to
 track applications — statuses, recruiter calls, interviews, next steps.
-Ansökt is that sheet, done right: a kanban board over your applications,
-a timeline per application, search over Platsbanken's job ads, and CSV
-export because the data is yours.
+Jobbsöket (formerly "Ansökt") is that sheet, done right: a kanban board
+over your applications, a timeline per application, search over
+Platsbanken's job ads, and CSV export because the data is yours.
+
+> Render service names and URLs still use the original `ansokt` identifier;
+> renaming deployed services would break the existing deploy.
 
 > Pivoted 2026-06-12 from the earlier "verifiable job application events
 > for A-kassa" concept — see [docs/10-pivot-ansokt.md](docs/10-pivot-ansokt.md)
@@ -209,7 +212,7 @@ Postmark, …; the free tiers are enough):
 | `EMAIL_HOST_USER` | SMTP username |
 | `EMAIL_HOST_PASSWORD` | SMTP password / API key |
 | `EMAIL_USE_TLS` | `1` (default) or `0` |
-| `DEFAULT_FROM_EMAIL` | From address, e.g. `Ansökt <no-reply@dindomän.se>` |
+| `DEFAULT_FROM_EMAIL` | From address, e.g. `Jobbsöket <no-reply@dindomän.se>` |
 | `FRONTEND_URL` | Base URL the reset link points at (e.g. `https://ansokt.onrender.com`). Defaults to the request origin, which is correct for the single-service Render deploy; set it explicitly when the frontend is hosted separately (e.g. Vercel). |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. Enables "Fortsätt med Google": create an OAuth client in Google Cloud Console with the site URL (trailing slash) as authorized redirect URI. The login button is hidden while unset. |
 

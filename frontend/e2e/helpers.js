@@ -38,6 +38,6 @@ export async function login(
   await page.getByLabel("Lösenord").fill(password);
   await page.getByRole("button", { name: "Logga in", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Command center" })
+    page.getByRole("heading", { name: "Överblicken" })
   ).toBeVisible();
 }

@@ -212,7 +212,7 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Ansökt API",
+    "TITLE": "Jobbsöket API",
     "DESCRIPTION": "API for tracking your own job applications.",
     "VERSION": "0.2.0",
 }
@@ -220,9 +220,9 @@ SPECTACULAR_SETTINGS = {
 # Admin theme (django-unfold)
 
 UNFOLD = {
-    "SITE_TITLE": "Ansökt",
-    "SITE_HEADER": "Ansökt",
-    "SITE_SUBHEADER": "Koll på varje ansökan",
+    "SITE_TITLE": "Jobbsöket",
+    "SITE_HEADER": "Jobbsöket",
+    "SITE_SUBHEADER": "Koll på hela ditt jobbsök",
 }
 
 # Auth (dj-rest-auth + SimpleJWT)
@@ -264,7 +264,7 @@ elif os.getenv("EMAIL_HOST"):
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Ansökt <no-reply@ansokt.app>")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Jobbsöket <no-reply@ansokt.app>")
 
 # Where the password-reset link should point (the SPA). Falls back to the
 # request origin when unset (works for local dev and single-service Render).

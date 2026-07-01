@@ -67,7 +67,7 @@ class Command(BaseCommand):
 
         body = (
             "Hej!\n\n"
-            "Detta är en påminnelse från Ansökt om ansökningar som behöver "
+            "Detta är en påminnelse från Jobbsöket om ansökningar som behöver "
             "din uppmärksamhet:\n\n"
             + "\n".join(lines)
             + "\n\nÖppna tavlan för att uppdatera status eller nästa steg.\n"
@@ -77,7 +77,7 @@ class Command(BaseCommand):
             return 1
 
         send_mail(
-            subject="Ansökt — dags att följa upp",
+            subject="Jobbsöket — dags att följa upp",
             message=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],

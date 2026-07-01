@@ -1,4 +1,4 @@
-# Lanseringsplan – Ansökt
+# Lanseringsplan – Jobbsöket (f.d. Ansökt)
 
 Ny plan beslutad juni 2026, efter att Fas 1–3 i `12-utvecklingsplan.md` i
 praktiken är klara. Fokus skiftar från "bygga funktioner" till "göra

@@ -1,7 +1,7 @@
-# Väg till färdig webapp – Ansökt
+# Väg till färdig webapp – Jobbsöket
 
-Samlad checklista för att ta Ansökt från “funktionellt komplett” till en
-trygg, polerad webapp som kan delas brett. **Google Play / App Store är
+Samlad checklista för att ta Jobbsöket (f.d. "Ansökt") från “funktionellt
+komplett” till en trygg, polerad webapp som kan delas brett. **Google Play / App Store är
 avsiktligt pausat** tills webben känns stabil i veckor med riktiga
 användare.
 
@@ -45,7 +45,7 @@ Utan detta ska appen inte marknadsföras hårt.
 
 ### Domän & tillgänglighet
 
-- [ ] **Egen domän** (t.ex. `ansokt.se`) kopplad till Render eller Vercel+Render.
+- [ ] **Egen domän** (t.ex. `jobbsoket.se`) kopplad till Render eller Vercel+Render.
 - [ ] Sätt `FRONTEND_URL` till den publika URL:en (lösenordsåterställning,
       e-postlänkar, `django.contrib.sites`).
 - [ ] **Uptime-check** (UptimeRobot, Better Stack eller Render alerts).
@@ -139,6 +139,22 @@ Prioritera efter Fas 1–2.
 - [ ] Postgres fulltextsök om lokal annonsdata återinförs.
 - [ ] Strukturerad loggning, mätvärden, larm (utöver Sentry).
 - [ ] Bakgrundsjobb (Render cron räcker tills volymen växer).
+
+### Fler annonskällor (researchad juni 2026)
+
+Utöver JobTech/Platsbanken (huvudkällan, täcker även Academic Work,
+Bravura m.fl. eftersom de flesta bemanningsbolag annonserar där):
+
+| Källa | Status | Kommentar |
+|-------|--------|-----------|
+| **Adzuna** | Bästa kandidaten | Gratis API-nyckel, `/v1/api/jobs/se/search`, aggregerar många sajter. Kräver attribution-länk. |
+| **Jooble** | Kandidat | Gratis nyckel efter ansökan, sökning per land. Aggregator likt Adzuna. |
+| Indeed | Nej | Publisher-API:t stängt för nya ansökningar sedan flera år. |
+| Academic Work | Nej | Inget publikt API; deras annonser finns i Platsbanken. |
+| Bravura | Nej | Inget publikt API; deras annonser finns i Platsbanken. |
+
+Om fler källor läggs till: dedupe på annons-URL/titel+företag och märk
+källan per annons i UI:t.
 
 ---
 

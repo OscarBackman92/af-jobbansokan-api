@@ -220,8 +220,8 @@ export default function BoardPanel({ token, onNavigate }) {
     <div className="stack">
       <section className="command-hero">
         <div className="command-hero-copy">
-          <span className="section-kicker">Ansökningsradar</span>
-          <h2>Command center</h2>
+          <span className="section-kicker">Din tavla</span>
+          <h2>Överblicken</h2>
           <p className="muted">
             Prioritera nästa drag, håll koll på pipeline och fånga signaler
             innan de blir brus.

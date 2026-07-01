@@ -1,6 +1,6 @@
-# Utvecklingsplan – Ansökt
+# Utvecklingsplan – Jobbsöket (f.d. Ansökt)
 
-Konkret, prioriterad plan för vidareutveckling av Ansökt. Kompletterar den
+Konkret, prioriterad plan för vidareutveckling av Jobbsöket. Kompletterar den
 strategiska `09-master-plan.md` med faktiska uppgifter, kodkopplingar och
 föreslagen ordning. Uppdaterad efter command center-redesignen av frontend.
 

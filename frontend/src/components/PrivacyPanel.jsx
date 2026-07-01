@@ -13,7 +13,7 @@ export default function PrivacyPanel({ onClose }) {
 
       <div className="privacy-body">
         <p>
-          Ansökt är en personlig ansökningstavla. Du äger din data och kan
+          Jobbsöket är en personlig ansökningstavla. Du äger din data och kan
           exportera den som CSV eller radera kontot när som helst.
         </p>
 

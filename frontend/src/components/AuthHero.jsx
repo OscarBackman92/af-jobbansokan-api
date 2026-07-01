@@ -14,8 +14,8 @@ export default function AuthHero({ onLogin }) {
           <span className="grad">dina ansökningar.</span>
         </h2>
         <p className="lede">
-          Ansökt samlar pipeline, påminnelser och Platsbanken på ett ställe —
-          så du vet vad som händer idag och vad du ska göra härnäst.
+          Jobbsöket samlar pipeline, påminnelser och Platsbanken på ett
+          ställe — så du vet vad som händer idag och vad du ska göra härnäst.
         </p>
         <ul className="checklist">
           <li>Panelen Idag &amp; att göra med export till Google/Outlook-kalender</li>
@@ -127,7 +127,7 @@ function AuthCard({ onLogin }) {
 
   return (
     <form className="card narrow auth-card" onSubmit={submit}>
-      <span className="section-kicker">Access terminal</span>
+      <span className="section-kicker">Ditt konto</span>
       <h2>{heading}</h2>
       <p className="muted">
         {mode === "login" && "Välkommen tillbaka."}

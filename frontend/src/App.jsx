@@ -25,9 +25,9 @@ function readVerifyKey() {
 }
 
 const TABS = [
-  { id: "board", label: "Tavlan", code: "OPS" },
-  { id: "postings", label: "Annonser", code: "RADAR" },
-  { id: "profile", label: "Profil & CV", code: "ID" },
+  { id: "board", label: "Tavlan" },
+  { id: "postings", label: "Annonser" },
+  { id: "profile", label: "Profil & CV" },
 ];
 
 const THEMES = [
@@ -85,40 +85,14 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <div className="header-bar">
-          <div className="brand">
-            <div className="logo" aria-hidden="true">
-              A
-            </div>
-            <div>
-              <span className="brand-kicker">Job Search Command</span>
-              <h1>Ansökt</h1>
-              <p className="tagline">Koll på varje ansökan</p>
-            </div>
+        <div className="brand">
+          <div className="logo" aria-hidden="true">
+            J
           </div>
-          {token && (
-            <div className="header-actions">
-              <span className="system-pill">
-                <span className="pulse-dot" aria-hidden="true" />
-                Online
-              </span>
-              <div className="account">
-                {me?.operator_id && (
-                  <span className="account-id" title="Operatör-ID">
-                    {me.operator_id}
-                  </span>
-                )}
-                {me?.email && <span className="account-email">{me.email}</span>}
-                <button
-                  className="secondary small"
-                  onClick={logout}
-                  title="Logga ut"
-                >
-                  Logga ut
-                </button>
-              </div>
-            </div>
-          )}
+          <div className="brand-text">
+            <h1>Jobbsöket</h1>
+            <p className="tagline">Koll på hela ditt jobbsök</p>
+          </div>
         </div>
         {token && (
           <nav className="tabs" aria-label="Huvudnavigering">
@@ -128,11 +102,22 @@ export default function App() {
                 className={tab === t.id ? "tab active" : "tab"}
                 onClick={() => setTab(t.id)}
               >
-                <span className="tab-code">{t.code}</span>
-                <span>{t.label}</span>
+                {t.label}
               </button>
             ))}
           </nav>
+        )}
+        {token && (
+          <div className="header-actions">
+            {me?.email && <span className="account-email">{me.email}</span>}
+            <button
+              className="secondary small"
+              onClick={logout}
+              title="Logga ut"
+            >
+              Logga ut
+            </button>
+          </div>
         )}
       </header>
 
@@ -186,7 +171,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <span className="footer-kicker">System</span>
+        <span className="footer-kicker">Jobbsöket</span>
         Din ansökningsdata är din: exportera som CSV eller radera kontot och allt
         med det.{" "}
         <button type="button" className="linklike footer-link" onClick={() => setShowPrivacy(true)}>

@@ -1,4 +1,4 @@
-// Visual QA: drives the current Ansokt app and saves screenshots.
+// Visual QA: drives the current Jobbsöket app and saves screenshots.
 // Usage: node scripts/screenshots.mjs [outdir]   (default: ./shots)
 // Requires the Vite dev server on :5173 and Django on :8000.
 

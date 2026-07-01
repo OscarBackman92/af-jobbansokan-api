@@ -39,4 +39,4 @@ def test_updates_site_from_frontend_url(monkeypatch):
     _run()
     site = Site.objects.get(pk=1)
     assert site.domain == "ansokt.onrender.com"
-    assert site.name == "Ansökt"
+    assert site.name == "Jobbsöket"
