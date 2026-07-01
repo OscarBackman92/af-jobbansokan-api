@@ -51,7 +51,7 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
       });
       onMeChange(updated);
       setEditing(false);
-      setMessage("Profilen är uppdaterad.");
+      setMessage("✓ Profilen är sparad.");
     } catch (err) {
       setMessage(err.message);
     }
@@ -212,6 +212,10 @@ function ResumeCard({ token }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  // "clean" = matches the server, "dirty" = unsaved edits,
+  // "saved" = just saved in this session (drives the checkmark).
+  const [saveState, setSaveState] = useState("clean");
 
   useEffect(() => {
     setLoading(true);
@@ -220,15 +224,22 @@ function ResumeCard({ token }) {
         setResume(data);
         setSkillsText(data.skills.join(", "));
       })
-      .catch((err) => setMessage(err.message))
+      .catch((err) => setMessage({ tone: "error", text: err.message }))
       .finally(() => setLoading(false));
   }, [token]);
 
   function setField(name, value) {
+    setSaveState("dirty");
     setResume((current) => ({ ...current, [name]: value }));
   }
 
+  function changeSkills(value) {
+    setSaveState("dirty");
+    setSkillsText(value);
+  }
+
   function setRow(listName, index, key, value) {
+    setSaveState("dirty");
     setResume((current) => {
       const rows = current[listName].map((row, i) =>
         i === index ? { ...row, [key]: value } : row
@@ -238,6 +249,7 @@ function ResumeCard({ token }) {
   }
 
   function addRow(listName, emptyRow) {
+    setSaveState("dirty");
     setResume((current) => ({
       ...current,
       [listName]: [...current[listName], emptyRow],
@@ -245,6 +257,7 @@ function ResumeCard({ token }) {
   }
 
   function removeRow(listName, index) {
+    setSaveState("dirty");
     setResume((current) => ({
       ...current,
       [listName]: current[listName].filter((_, i) => i !== index),
@@ -275,18 +288,22 @@ function ResumeCard({ token }) {
       }));
       if (draft.skills.length) setSkillsText(draft.skills.join(", "));
       setOpen(true);
-      setMessage(
-        "CV:t är tolkat och formuläret förifyllt — granska och spara. " +
-          "Filen sparas aldrig."
-      );
+      setSaveState("dirty");
+      setMessage({
+        tone: "info",
+        text:
+          "CV:t är tolkat och formuläret förifyllt — granska och spara. " +
+          "Filen sparas aldrig.",
+      });
     } catch (err) {
-      setMessage(err.message);
+      setMessage({ tone: "error", text: err.message });
     }
   }
 
   async function save(event) {
     event.preventDefault();
     setMessage(null);
+    setSaving(true);
     try {
       const saved = await request("/api/v1/me/resume/", {
         method: "PUT",
@@ -301,9 +318,15 @@ function ResumeCard({ token }) {
       });
       setResume(saved);
       setSkillsText(saved.skills.join(", "));
-      setMessage("CV:t är sparat.");
+      setSaveState("saved");
+      setMessage({
+        tone: "success",
+        text: "CV:t är sparat — du kan fortsätta redigera eller stänga.",
+      });
     } catch (err) {
-      setMessage(err.message);
+      setMessage({ tone: "error", text: err.message });
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -331,7 +354,19 @@ function ResumeCard({ token }) {
           </button>
         </div>
       </div>
-      {message && <p className="notice">{message}</p>}
+      {message && (
+        <p
+          className={message.tone === "error" ? "error" : "notice"}
+          role="status"
+        >
+          {message.tone === "success" && (
+            <span className="notice-check" aria-hidden="true">
+              ✓
+            </span>
+          )}
+          {message.text}
+        </p>
+      )}
       {loading && (
         <div className="loading-row">
           <span className="spinner" /> Laddar CV…
@@ -359,7 +394,7 @@ function ResumeCard({ token }) {
             Kompetenser (kommaseparerade)
             <input
               value={skillsText}
-              onChange={(e) => setSkillsText(e.target.value)}
+              onChange={(e) => changeSkills(e.target.value)}
               placeholder="Python, Django, PostgreSQL"
             />
           </label>
@@ -453,8 +488,22 @@ function ResumeCard({ token }) {
             + Lägg till utbildning
           </button>
 
-          <div style={{ marginTop: "1rem" }}>
-            <button>Spara CV</button>
+          <div className="form-footer">
+            <button disabled={saving}>
+              {saving ? "Sparar…" : "Spara CV"}
+            </button>
+            <span className="save-indicator" role="status">
+              {!saving && saveState === "saved" && (
+                <span className="save-indicator-saved">
+                  ✓ Sparat — det är lugnt att stänga
+                </span>
+              )}
+              {!saving && saveState === "dirty" && (
+                <span className="save-indicator-dirty">
+                  Osparade ändringar
+                </span>
+              )}
+            </span>
           </div>
         </form>
       )}

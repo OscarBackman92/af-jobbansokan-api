@@ -41,8 +41,13 @@ function readTheme() {
   return THEMES.some((theme) => theme.id === stored) ? stored : "command";
 }
 
+function readTab() {
+  const stored = localStorage.getItem("tab");
+  return TABS.some((t) => t.id === stored) ? stored : "board";
+}
+
 export default function App() {
-  const [tab, setTab] = useState("board");
+  const [tab, setTab] = useState(() => readTab());
   const [token, setToken] = useState(() => getAccess());
   const [me, setMe] = useState(null);
   const [resetCreds, setResetCreds] = useState(() => readResetCreds());
@@ -55,6 +60,11 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("theme", theme);
   }, [theme]);
+
+  // Survive page reloads on the same tab; logout resets to the board.
+  useEffect(() => {
+    localStorage.setItem("tab", tab);
+  }, [tab]);
 
   useEffect(() => {
     if (!token) return;

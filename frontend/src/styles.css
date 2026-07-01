@@ -1110,6 +1110,32 @@ tbody tr:last-child td {
   font-size: 0.9rem;
 }
 
+.notice-check {
+  font-weight: 800;
+  margin-right: 0.4rem;
+}
+
+.form-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.save-indicator {
+  font-size: 0.88rem;
+}
+
+.save-indicator-saved {
+  color: var(--green);
+  font-weight: 650;
+}
+
+.save-indicator-dirty {
+  color: var(--amber);
+}
+
 /* ---------- Layout helpers ---------- */
 
 .grid3 {
