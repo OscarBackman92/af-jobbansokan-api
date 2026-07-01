@@ -12,7 +12,7 @@ describe("AuthHero", () => {
     render(<AuthHero onLogin={vi.fn()} />);
 
     expect(
-      screen.getByRole("heading", { name: /ansökningscenter/i })
+      screen.getByRole("heading", { name: /dina ansökningar/i })
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/e-postadress/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /logga in/i })).toBeInTheDocument();

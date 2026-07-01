@@ -3,7 +3,6 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     JobApplicationViewSet,
-    JobPostingViewSet,
     ProfileView,
     ResumeParseView,
     ResumeView,
@@ -17,7 +16,6 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r"applications", JobApplicationViewSet, basename="applications")
-router.register(r"postings", JobPostingViewSet, basename="postings")
 
 urlpatterns = [
     path("me/", ProfileView.as_view(), name="me"),

@@ -33,6 +33,12 @@ Deleting the profile deletes the account and owned data.
 `parse` accepts PDF, DOCX or TXT and returns a structured draft without storing
 the uploaded file.
 
+## Saved searches
+
+- `GET /api/v1/me/saved-searches/`
+- `POST /api/v1/me/saved-searches/`
+- `DELETE /api/v1/me/saved-searches/{id}/`
+
 ## Applications
 
 - `GET /api/v1/applications/`
@@ -41,7 +47,6 @@ the uploaded file.
 - `PATCH /api/v1/applications/{id}/`
 - `DELETE /api/v1/applications/{id}/`
 - `POST /api/v1/applications/{id}/events/`
-- `GET /api/v1/applications/stats/`
 - `GET /api/v1/applications/export/`
 
 List filters:
@@ -51,23 +56,25 @@ List filters:
 - `from`
 - `to`
 
-## Jobs
+Creating an application accepts either free-text fields (`company`, `title`, …)
+or an optional legacy `posting` id (historical DB reference only).
+
+## Jobs (live Platsbanken)
 
 - `GET /api/v1/jobs/`
 - `GET /api/v1/jobs/filters/`
+- `GET /api/v1/jobs/groups/`
+- `GET /api/v1/jobs/municipalities/`
 
 Job search parameters:
 
 - `q`
 - `region`
+- `municipality`
 - `field`
+- `group`
 - `remote`
 - `offset`
 - `limit`
 
-## Legacy Postings
-
-- `GET /api/v1/postings/`
-- `GET /api/v1/postings/{id}/`
-
-The live `/jobs/` endpoint is the primary ad-search surface.
+CV skills, when present, add a `match` object to each hit.

@@ -82,11 +82,12 @@ Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
 | `/api/v1/applications/` | GET, POST | Tracker rows; `?status=&search=&from=&to=` |
 | `/api/v1/applications/{id}/` | GET, PATCH, DELETE | Edit status, deadline, notes, contacts — fully mutable |
 | `/api/v1/applications/{id}/events/` | POST | Append a timeline event |
-| `/api/v1/applications/stats/` | GET | Counts per status |
 | `/api/v1/applications/export/` | GET | CSV download (filters apply) |
 | `/api/v1/jobs/` | GET | **Live Platsbanken search**; `?q=&region=&field=&remote=&offset=&limit=`; CV match per hit |
 | `/api/v1/jobs/filters/` | GET | Region + occupation-field options for the search dropdowns |
-| `/api/v1/postings/` | GET | Legacy DB-backed ads (optional `import_postings`); `?search=&location=&page_size=` |
+| `/api/v1/jobs/groups/` | GET | Occupation groups for a selected field |
+| `/api/v1/jobs/municipalities/` | GET | Municipalities for a selected region |
+| `/api/v1/me/saved-searches/` | GET, POST | Saved Platsbanken search presets |
 
 ## Getting started
 
@@ -107,13 +108,8 @@ python backend/manage.py createsuperuser
 python backend/manage.py runserver
 ```
 
-The **Annonser** tab searches Platsbanken live — no import needed. The
-`import_postings` command remains only to seed the legacy DB-backed
-`/api/v1/postings/` endpoint, and is optional:
-
-```bash
-python backend/manage.py import_postings --query "python" --limit 50
-```
+The **Annonser** tab searches Platsbanken live via `/api/v1/jobs/` — no
+import or local ad database is required.
 
 Then open:
 
@@ -162,11 +158,7 @@ curl -X PATCH http://127.0.0.1:8000/api/v1/applications/1/ \
   -H "Authorization: Bearer <access token>" -H "Content-Type: application/json" \
   -d '{"status": "screening"}'
 
-# 4. See where you stand
-curl http://127.0.0.1:8000/api/v1/applications/stats/ \
-  -H "Authorization: Bearer <access token>"
-
-# 5. When the access token expires, mint a new one with the refresh token
+# 4. When the access token expires, mint a new one with the refresh token
 curl -X POST http://127.0.0.1:8000/dj-rest-auth/token/refresh/ \
   -H "Content-Type: application/json" \
   -d '{"refresh": "<refresh token>"}'
@@ -186,8 +178,8 @@ host):
   SSL redirect (behind proxy header), secure cookies, manifest static
   storage, referrer policy
 - **Env-driven bootstrap on boot** (free tier has no shell): creates the
-  superuser (`DJANGO_SUPERUSER_USERNAME`/`_PASSWORD`) and imports
-  postings (`BOOTSTRAP_IMPORT_QUERY`, 50 ads) — idempotent and optional
+  superuser (`DJANGO_SUPERUSER_USERNAME`/`_PASSWORD`) and syncs the
+  public site domain from `FRONTEND_URL` — idempotent
 - CI runs the backend tests against **Postgres 16** (same engine as
   production) plus the frontend build
 
@@ -243,7 +235,7 @@ python backend/manage.py spectacular --validate --fail-on-warn
 backend/
   config/              # Django settings, root URLconf, WSGI/ASGI
   core/                # The single domain app
-    management/        #   import_postings + bootstrap commands
+    management/        #   bootstrap command
     migrations/
     tests/             #   pytest suite (applications, auth, jobs, resume, ...)
     models.py          #   JobApplication, ApplicationEvent, JobPosting, Resume
@@ -282,10 +274,11 @@ See [docs/06-gdpr-privacy.md](docs/06-gdpr-privacy.md) and
 ## Roadmap
 
 The product is feature-complete for personal use and live at
-<https://ansokt.onrender.com>. The current focus is the launch plan in
-[docs/13-lanseringsplan.md](docs/13-lanseringsplan.md): EU hosting and a
-persistent database, e-mail deliverability, then retention features
-(weekly summary, calendar export).
+<https://ansokt.onrender.com>. The current focus is
+[docs/15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md)
+and [docs/13-lanseringsplan.md](docs/13-lanseringsplan.md): EU hosting,
+e-mail deliverability, onboarding (Google login), retention, then mobile
+stores when the web app is stable.
 
 - [x] Live JobTech search with region/occupation/remote filters
 - [x] Password reset by e-mail (Brevo HTTP API in production)
@@ -305,7 +298,8 @@ persistent database, e-mail deliverability, then retention features
 
 | Document | Contents |
 | --- | --- |
-| [13-lanseringsplan.md](docs/13-lanseringsplan.md) | **Current launch plan: hosting, go-public checklist, retention** |
+| [15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md) | **Master checklist: drift, kvalitet, retention, mobil (pausat)** |
+| [13-lanseringsplan.md](docs/13-lanseringsplan.md) | Launch plan: hosting, go-public checklist, retention |
 | [12-utvecklingsplan.md](docs/12-utvecklingsplan.md) | Earlier development plan (Phases 1–3, mostly done) |
 | [10-pivot-ansokt.md](docs/10-pivot-ansokt.md) | **The pivot: rationale, product, legal, what changed** |
 | [11-deploy-vercel.md](docs/11-deploy-vercel.md) | Deploy guide: frontend on Vercel, backend on Render |

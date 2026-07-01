@@ -37,8 +37,10 @@ structured data is saved.
 
 ## JobPosting
 
-Legacy DB-backed job ads remain for optional imports and compatibility. The main
-ad-search experience uses live JobTech search instead.
+Legacy model kept for historical `JobApplication.posting` foreign keys.
+New applications are created from live JobTech hits (`/api/v1/jobs/`) as
+free-text snapshots (`company`, `title`, `ad_url`, …). The import command
+and `/api/v1/postings/` API were removed in 2026.
 
 ## Privacy Classification
 

@@ -17,14 +17,11 @@ föreslagen ordning. Uppdaterad efter command center-redesignen av frontend.
 
 **Kända luckor (utgångspunkt för planen):**
 
-- Inga frontend-tester eller E2E i CI.
-- Ingen rate limiting på auth, uppladdning eller JobTech-proxy.
-- Lösenordsåterställning är en tyst no-op i prod utan konfigurerad SMTP.
-- Ingen testtäckningsmätning (`pytest-cov` saknas).
-- Frontend saknar linter/formatter.
-- Kod/dokument-glapp: README nämner drag-and-drop, men UI använder status-dropdown.
-- Död kod: legacy `/api/v1/postings/` och oanvänt `/api/v1/applications/stats/`.
-- `frontend/scripts/screenshots.mjs` refererar gamla temanamn (`forest`, `dark`).
+- Inga E2E-röktester i CI.
+- Google-inloggning saknas (e-post + lösenord endast).
+- Produktionsdrift (EU-DB, domän, verifierad e-post) ej helt klar.
+
+Se [15-vag-till-fardig-webapp.md](15-vag-till-fardig-webapp.md) för full checklista.
 
 ## Spår
 
@@ -81,11 +78,10 @@ Fokus: gör appen till ett dagligt verktyg.
 - [ ] XLSX-export vid sidan av CSV.
 
 ### B. Kvalitet (städning)
-- [ ] Besluta om legacy `/api/v1/postings/` + `import_postings`/bootstrap ska
-      behållas eller tas bort. Om bort: radera vyer, tester, kommandon och docs.
-- [ ] Använd `/api/v1/applications/stats/` i frontend eller ta bort endpointen.
-- [x] Uppdatera README så drag-and-drop-påståendet matchar verkligheten.
-- [x] Uppdatera `frontend/scripts/screenshots.mjs` till nuvarande teman och selektorer.
+- [x] Ta bort legacy `/api/v1/postings/`, `import_postings` och bootstrap-import.
+- [x] Ta bort oanvänd `/api/v1/applications/stats/`.
+- [ ] 2–3 E2E-röktester i CI.
+- [ ] XLSX-export vid sidan av CSV.
 
 ---
 

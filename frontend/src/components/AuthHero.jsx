@@ -6,21 +6,21 @@ export default function AuthHero({ onLogin }) {
   return (
     <div className="hero hero-auth">
       <div className="hero-copy">
-        <span className="section-kicker">Job Search Command</span>
+        <span className="section-kicker">Gratis jobbsök-tracker</span>
         <h2>
-          Ditt personliga
+          Sluta tappa bort
           <br />
-          <span className="grad">ansökningscenter.</span>
+          <span className="grad">dina ansökningar.</span>
         </h2>
         <p className="lede">
-          En operativ översikt över varje ansökan — pipeline, deadlines,
-          intervjuer och Platsbanken i samma kontrollrum.
+          Ansökt samlar pipeline, påminnelser och Platsbanken på ett ställe —
+          så du vet vad som händer idag och vad du ska göra härnäst.
         </p>
         <ul className="checklist">
-          <li>Live pipeline från Sparad till Erbjudande med tydliga signaler</li>
-          <li>Action-lista för uppföljningar och deadlines som närmar sig</li>
-          <li>Platsbanken-radar med direkt sparning till tavlan</li>
-          <li>Exportera all data som CSV — du har full kontroll</li>
+          <li>Panelen Idag &amp; att göra med export till Google/Outlook-kalender</li>
+          <li>CV-match mot annonser — se vilka kompetenser som saknas</li>
+          <li>Sök live i Platsbanken och spara annonser direkt på tavlan</li>
+          <li>Kontaktuppgifter, tidslinje och CSV-export — din data, dina regler</li>
         </ul>
         <div className="hero-metrics" aria-hidden="true">
           <div className="metric-tile metric-tile--cyan">

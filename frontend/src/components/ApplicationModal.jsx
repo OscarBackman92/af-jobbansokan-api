@@ -160,6 +160,14 @@ export default function ApplicationModal({
     onChanged();
   }
 
+  async function logContactCall() {
+    const who = form.contact_name?.trim() || "kontakten";
+    await addEvent(
+      `Samtal med ${who}`,
+      new Date().toISOString().slice(0, 10)
+    );
+  }
+
   return (
     <ModalOverlay
       onClose={onClose}
@@ -195,6 +203,13 @@ export default function ApplicationModal({
             <input {...field("location")} />
           </label>
         </div>
+        <ContactPanel
+          form={form}
+          setForm={setForm}
+          field={field}
+          application={application}
+          onLogCall={logContactCall}
+        />
         <div className="grid3">
           <label>
             Status
@@ -219,20 +234,10 @@ export default function ApplicationModal({
             <input {...field("deadline", "date")} />
           </label>
         </div>
-        <div className="grid3">
-          <label>
-            Nästa steg (datum)
-            <input {...field("next_action_at", "date")} />
-          </label>
-          <label>
-            Kontaktperson
-            <input {...field("contact_name")} placeholder="Rekryterare, chef…" />
-          </label>
-          <label>
-            Kontaktuppgift
-            <input {...field("contact_info")} placeholder="mail eller telefon" />
-          </label>
-        </div>
+        <label>
+          Nästa steg (datum)
+          <input {...field("next_action_at", "date")} />
+        </label>
         <label>
           Länk till annonsen
           <div className="input-with-link">
@@ -294,6 +299,92 @@ export default function ApplicationModal({
 
       {application && <Timeline events={events} onAdd={addEvent} />}
     </ModalOverlay>
+  );
+}
+
+function parseContactInfo(info) {
+  const trimmed = info?.trim() || "";
+  if (!trimmed) return {};
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return { email: trimmed };
+  }
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length >= 7 && /^[\d\s+\-().]+$/.test(trimmed)) {
+    return { phone: trimmed };
+  }
+  return { raw: trimmed };
+}
+
+function ContactPanel({ form, setForm, field, application, onLogCall }) {
+  const links = parseContactInfo(form.contact_info);
+  const hasContact = Boolean(form.contact_name?.trim() || form.contact_info?.trim());
+
+  return (
+    <section className="contact-panel">
+      <div className="contact-panel-head">
+        <div>
+          <h3>Kontakt</h3>
+          <p className="muted">
+            Rekryterare, chef eller HR — snabb åtkomst när det är dags att följa upp.
+          </p>
+        </div>
+        {application && hasContact && (
+          <button
+            type="button"
+            className="secondary small"
+            onClick={onLogCall}
+          >
+            Logga samtal
+          </button>
+        )}
+      </div>
+      <div className="grid2">
+        <label>
+          Kontaktperson
+          <input {...field("contact_name")} placeholder="Rekryterare, chef…" />
+        </label>
+        <label>
+          Kontaktuppgift
+          <input {...field("contact_info")} placeholder="E-post eller telefon" />
+        </label>
+      </div>
+      {hasContact && (
+        <div className="contact-panel-actions">
+          {links.email && (
+            <a className="secondary small" href={`mailto:${links.email}`}>
+              Maila {form.contact_name?.trim() || links.email}
+            </a>
+          )}
+          {links.phone && (
+            <a
+              className="secondary small"
+              href={`tel:${links.phone.replace(/\s/g, "")}`}
+            >
+              Ring {form.contact_name?.trim() || links.phone}
+            </a>
+          )}
+          {links.raw && !links.email && !links.phone && (
+            <span className="muted">{links.raw}</span>
+          )}
+          {form.contact_name && form.contact_info && (
+            <button
+              type="button"
+              className="linklike small"
+              onClick={() =>
+                setForm({
+                  ...form,
+                  notes: [form.notes, `Kontakt: ${form.contact_name} (${form.contact_info})`]
+                    .filter(Boolean)
+                    .join("\n"),
+                })
+              }
+            >
+              Kopiera till anteckningar
+            </button>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

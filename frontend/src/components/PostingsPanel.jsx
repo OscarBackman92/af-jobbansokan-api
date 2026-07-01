@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { normalizeAdUrl } from "../adUrl.js";
 import { request } from "../api.js";
+import MatchScore from "./MatchScore.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
 
 const PAGE_SIZE = 25;
@@ -541,21 +542,7 @@ function JobCard({ job, tracked, onOpen, onTrack }) {
               Sista ansökningsdag {job.application_deadline}
             </span>
           )}
-          {job.match && (
-            <span
-              className={`badge ${job.match.count > 0 ? "applied" : "neutral"}`}
-              title={[
-                job.match.matched.join(", "),
-                job.match.missing?.length
-                  ? `Saknas: ${job.match.missing.join(", ")}`
-                  : "",
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            >
-              {job.match.count}/{job.match.total} kompetenser
-            </span>
-          )}
+          {job.match && <MatchScore match={job.match} variant="compact" />}
         </div>
       </div>
       <button
@@ -636,25 +623,7 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
           tavla.
         </p>
 
-        {job.match && (
-          <p className="modal-match">
-            <span
-              className={`badge ${job.match.count > 0 ? "applied" : "neutral"}`}
-            >
-              Matchar {job.match.count}/{job.match.total} av dina kompetenser
-            </span>{" "}
-            {job.match.matched.map((skill) => (
-              <span className="badge neutral" key={skill}>
-                {skill}
-              </span>
-            ))}
-            {job.match.missing?.map((skill) => (
-              <span className="badge rejected" key={`missing-${skill}`}>
-                Saknas: {skill}
-              </span>
-            ))}
-          </p>
-        )}
+        {job.match && <MatchScore match={job.match} variant="detail" />}
 
         <div className="description">
           {job.description || "Ingen beskrivning tillgänglig för den här annonsen."}

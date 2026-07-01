@@ -47,9 +47,12 @@ EU, fungerande e-post som inte fastnar i skräppost och övervakad uppetid.
 ## Fas B – Förtroende & städning (parallellt)
 
 - [ ] 2–3 E2E-röktester: registrering → tavla → spara annons.
-- [ ] Beslut om legacy `/api/v1/postings/` + `import_postings`: behåll eller ta bort.
-- [ ] Använd `/api/v1/applications/stats/` i frontend eller ta bort endpointen.
+- [x] Ta bort legacy `/api/v1/postings/` + `import_postings`.
+- [x] Ta bort oanvänd `/api/v1/applications/stats/`.
+- [ ] Google-inloggning (vid sidan av e-post).
 - [ ] XLSX-export vid sidan av CSV.
+
+Se [15-vag-till-fardig-webapp.md](15-vag-till-fardig-webapp.md) för full lista.
 
 ## Fas C – Stickiness (retention)
 

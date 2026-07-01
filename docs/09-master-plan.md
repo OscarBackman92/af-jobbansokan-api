@@ -76,8 +76,10 @@ tracker is sticky on its own.
 
 ## Near-Term Implementation Order
 
-1. Make the board faster to scan with filters, search and follow-up states.
-2. Make CV editing trustworthy after parsing.
-3. Add reminder delivery.
-4. Add saved searches and digest emails.
-5. Add frontend smoke tests and monitoring before public traffic.
+See [15-vag-till-fardig-webapp.md](15-vag-till-fardig-webapp.md) for the
+current Swedish checklist (drift, E2E, Google login, retention, paused mobile).
+
+1. Production hosting in EU with persistent Postgres and verified e-mail.
+2. E2E smoke tests and Google sign-in alongside e-mail registration.
+3. Weekly summary e-mail and calendar export for retention.
+4. Polish and scale only after real-user feedback.

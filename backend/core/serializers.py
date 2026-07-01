@@ -20,33 +20,6 @@ from .models import (
 User = get_user_model()
 
 
-class JobPostingSerializer(serializers.ModelSerializer):
-    """Lean list serializer — descriptions can be several kB each."""
-
-    class Meta:
-        model = JobPosting
-        fields = [
-            "id",
-            "source",
-            "external_id",
-            "title",
-            "company_name",
-            "location",
-            "published_at",
-            "application_deadline",
-            "created_at",
-        ]
-        read_only_fields = fields
-
-
-class JobPostingDetailSerializer(JobPostingSerializer):
-    """Full posting, including description and link to the original ad."""
-
-    class Meta(JobPostingSerializer.Meta):
-        fields = JobPostingSerializer.Meta.fields + ["description", "webpage_url"]
-        read_only_fields = fields
-
-
 class ApplicationEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicationEvent
@@ -156,14 +129,6 @@ class JobApplicationSerializer(serializers.ModelSerializer):
                         }
                     )
         return attrs
-
-
-class StatusCountSerializer(serializers.Serializer):
-    """Aggregate row for the dashboard: one status and its count."""
-
-    status = serializers.CharField()
-    label = serializers.CharField()
-    count = serializers.IntegerField()
 
 
 class EmailRegisterSerializer(RegisterSerializer):

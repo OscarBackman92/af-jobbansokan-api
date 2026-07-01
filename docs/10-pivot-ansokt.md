@@ -29,8 +29,8 @@ kontaktperson och nästa steg. **Ansökt är det arket, fast bättre.**
 ## Annonskälla: JobTech (Arbetsförmedlingen)
 
 - `https://jobsearch.api.jobtechdev.se/search` — öppet, gratis, ingen
-  API-nyckel. Täcker Platsbanken (~hela svenska annonsmarknaden i en
-  källa). Import via `manage.py import_postings`.
+  API-nyckel. Täcker Platsbanken. Appen söker live via `/api/v1/jobs/`
+  (ingen lokal annonsimport).
 - LinkedIn/Indeed har inga fria annons-API:er och förbjuder skrapning —
   de täcks av fri inmatning i stället.
 - Framtid: JobStream-API:t (samma huvudman) för realtidsuppdateringar.
@@ -59,11 +59,11 @@ kontaktperson och nästa steg. **Ansökt är det arket, fast bättre.**
 | Behölls | Togs bort |
 | --- | --- |
 | Django/DRF, JWT via dj-rest-auth | BankID-mock, identity-hashning |
-| `JobPosting` + JobTech-import | `Organization`, `EmployerProfile` |
+| `JobPosting` (legacy FK i DB, admin) | `Organization`, `EmployerProfile` |
 | `JobApplication` (nu redigerbar, rik status) | `PartnerClient`, partner-API |
 | `Resume` + matchning | `Favorite`, `AuditLog` (immutabilitetskravet föll) |
 | React/Vite-frontend, designsystemet | Employer-/Partner-panelerna |
 
-Nytt: `ApplicationEvent` (tidslinjen), statusflödet, `stats`- och
-`events`-endpoints, kanban-UI. Migrationerna är nollställda (0001) —
+Nytt: `ApplicationEvent` (tidslinjen), statusflödet, `events`-endpoint,
+kanban-UI, live JobTech-sök. Migrationerna är nollställda (0001) —
 gammal databas droppas vid deploy.

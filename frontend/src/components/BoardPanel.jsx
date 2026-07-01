@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { downloadBlob, request } from "../api.js";
+import { daysUntil } from "../dates.js";
 import {
   ACTIVE_STATUSES,
   CLOSED_STATUSES,
@@ -8,8 +9,7 @@ import {
   STATUS_LABELS,
 } from "../statuses.js";
 import ApplicationModal from "./ApplicationModal.jsx";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import TodayPanel from "./TodayPanel.jsx";
 const QUICK_FILTERS = [
   { id: "all", label: "Alla" },
   { id: "followups", label: "Att följa upp" },
@@ -18,13 +18,6 @@ const QUICK_FILTERS = [
   { id: "offers", label: "Erbjudanden" },
   { id: "closed", label: "Avslutade" },
 ];
-
-function daysUntil(dateString) {
-  if (!dateString) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.round((new Date(dateString) - today) / DAY_MS);
-}
 
 function isClosed(application) {
   return CLOSED_STATUSES.includes(application.status);
@@ -262,30 +255,7 @@ export default function BoardPanel({ token, onNavigate }) {
         </div>
       </section>
 
-      {followUps.length > 0 && (
-        <section className="card followups">
-          <h2>Att följa upp</h2>
-          <ul className="followup-list">
-            {followUps.map((a) => {
-              const nextIn = daysUntil(a.next_action_at);
-              const reason =
-                nextIn !== null && nextIn <= 0
-                  ? nextIn === 0
-                    ? "nästa steg idag"
-                    : `nästa steg ${a.next_action_at} har passerat`
-                  : `sista ansökningsdag ${a.deadline}`;
-              return (
-                <li key={a.id}>
-                  <button className="linklike" onClick={() => setSelected(a)}>
-                    {a.title} — {a.company}
-                  </button>{" "}
-                  <span className="muted">({reason})</span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+      <TodayPanel applications={applications} onOpen={setSelected} />
 
       <section className="card">
         <div className="row-between">

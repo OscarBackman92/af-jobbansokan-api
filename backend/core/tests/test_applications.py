@@ -201,19 +201,6 @@ def test_filter_by_status_and_search(api_client, user):
     assert body["results"][0]["company"] == "Beta"
 
 
-def test_stats_counts_per_status(api_client, user):
-    JobApplication.objects.create(owner=user, company="A", title="T", status="applied")
-    JobApplication.objects.create(owner=user, company="B", title="T", status="applied")
-    JobApplication.objects.create(owner=user, company="C", title="T", status="offer")
-
-    api_client.force_authenticate(user)
-    rows = {row["status"]: row for row in api_client.get(f"{URL}stats/").json()}
-    assert rows["applied"]["count"] == 2
-    assert rows["offer"]["count"] == 1
-    assert rows["offer"]["label"] == "Erbjudande"
-    assert rows["rejected"]["count"] == 0
-
-
 def test_export_csv(api_client, user):
     JobApplication.objects.create(
         owner=user, company="=cmd", title="Dev", status="applied"

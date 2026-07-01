@@ -4,7 +4,7 @@ import os
 from types import SimpleNamespace
 
 from django.conf import settings
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
 from drf_spectacular.types import OpenApiTypes
@@ -13,7 +13,6 @@ from rest_framework import generics, viewsets
 from rest_framework import status as drf_status
 from rest_framework.decorators import action, api_view, permission_classes, throttle_classes
 from rest_framework.exceptions import ValidationError
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny
 
@@ -34,7 +33,7 @@ from .jobtech import (
 from .jobtech import search as jobtech_search
 from .throttles import JobTechThrottle, UploadThrottle
 from .matching import match_skills
-from .models import JobApplication, JobPosting, Resume, SavedJobSearch
+from .models import JobApplication, Resume, SavedJobSearch
 from .resume import (
     MAX_UPLOAD_SIZE,
     SUPPORTED_EXTENSIONS,
@@ -44,13 +43,10 @@ from .resume import (
 from .serializers import (
     ApplicationEventSerializer,
     JobApplicationSerializer,
-    JobPostingDetailSerializer,
-    JobPostingSerializer,
     ProfileSerializer,
     ResumeSerializer,
     ResumeUploadSerializer,
     SavedJobSearchSerializer,
-    StatusCountSerializer,
 )
 
 
@@ -268,21 +264,6 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
         serializer.save(application=application)
         return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
 
-    @extend_schema(responses=StatusCountSerializer(many=True))
-    @action(detail=False, methods=["get"])
-    def stats(self, request):
-        """Application counts per status, for the dashboard."""
-        counts = dict(
-            JobApplication.objects.filter(owner=request.user)
-            .values_list("status")
-            .annotate(count=Count("id"))
-        )
-        data = [
-            {"status": value, "label": label, "count": counts.get(value, 0)}
-            for value, label in JobApplication.STATUS_CHOICES
-        ]
-        return Response(data)
-
     @extend_schema(responses={(200, "text/csv"): OpenApiTypes.STR})
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request):
@@ -326,87 +307,6 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                 ]
             )
         return response
-
-
-class PostingPagination(PageNumberPagination):
-    """Larger pages for browsing ads, with an optional ?page_size override."""
-
-    page_size = 50
-    page_size_query_param = "page_size"
-    max_page_size = 100
-
-
-@extend_schema_view(
-    list=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                "search",
-                OpenApiTypes.STR,
-                description="Free text over title, company, location and description.",
-            ),
-            OpenApiParameter(
-                "location", OpenApiTypes.STR, description="Filter by location."
-            ),
-        ]
-    )
-)
-class JobPostingViewSet(viewsets.ReadOnlyModelViewSet):
-    """Imported job ads (JobTech). Read-only; rows are created by import."""
-
-    permission_classes = [IsAuthenticatedUser]
-    pagination_class = PostingPagination
-
-    def get_serializer_class(self):
-        # Lean list payloads; full posting (description, link) in detail.
-        if self.action == "list":
-            return JobPostingSerializer
-        return JobPostingDetailSerializer
-
-    def _user_skills(self, request):
-        resume = getattr(request.user, "resume", None)
-        skills = resume.skills if resume else []
-        return skills or None
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        data = self.get_serializer(page, many=True).data
-        skills = self._user_skills(request)
-        if skills:
-            postings = {posting.id: posting for posting in page}
-            for item in data:
-                item["match"] = match_skills(skills, postings[item["id"]])
-        return self.get_paginated_response(data)
-
-    def retrieve(self, request, *args, **kwargs):
-        posting = self.get_object()
-        data = self.get_serializer(posting).data
-        skills = self._user_skills(request)
-        if skills:
-            data["match"] = match_skills(skills, posting)
-        return Response(data)
-
-    def get_queryset(self):
-        if getattr(self, "swagger_fake_view", False):  # schema generation
-            return JobPosting.objects.none()
-        qs = JobPosting.objects.all().order_by("-created_at")
-        params = self.request.query_params
-
-        # icontains works on SQLite and Postgres alike; upgrade path to
-        # Postgres FTS when volume demands it.
-        search = params.get("search", "").strip()
-        for term in search.split()[:6]:
-            qs = qs.filter(
-                Q(title__icontains=term)
-                | Q(company_name__icontains=term)
-                | Q(location__icontains=term)
-                | Q(description__icontains=term)
-            )
-
-        location = params.get("location", "").strip()
-        if location:
-            qs = qs.filter(location__icontains=location)
-        return qs
 
 
 def _truthy(value):

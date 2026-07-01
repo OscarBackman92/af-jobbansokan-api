@@ -28,8 +28,6 @@ services:
         sync: false
       - key: DJANGO_SUPERUSER_PASSWORD
         generateValue: true
-      - key: BOOTSTRAP_IMPORT_QUERY
-        value: utvecklare
       - key: DATABASE_URL
         fromDatabase:
           name: ansokt-db

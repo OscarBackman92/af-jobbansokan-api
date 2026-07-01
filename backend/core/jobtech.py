@@ -1,7 +1,6 @@
 """Live search against Arbetsförmedlingen's open JobTech JobSearch API.
 
-Unlike ``import_postings`` (which snapshots a fixed set into our DB), this
-queries JobTech on every request so the Annonser tab covers the whole of
+Queries JobTech on every request so the Annonser tab covers the whole of
 Platsbanken with real filters. No API key is required.
 
 Region and occupation-field concept IDs are fixed parts of JobTech's
