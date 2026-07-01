@@ -213,8 +213,7 @@ function ResumeCard({ token }) {
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  // "clean" = matches the server, "dirty" = unsaved edits,
-  // "saved" = just saved in this session (drives the checkmark).
+  // "clean" = matches the server, "dirty" = unsaved edits.
   const [saveState, setSaveState] = useState("clean");
 
   useEffect(() => {
@@ -318,11 +317,9 @@ function ResumeCard({ token }) {
       });
       setResume(saved);
       setSkillsText(saved.skills.join(", "));
-      setSaveState("saved");
-      setMessage({
-        tone: "success",
-        text: "CV:t är sparat — du kan fortsätta redigera eller stänga.",
-      });
+      setSaveState("clean");
+      setOpen(false);
+      setMessage({ tone: "success", text: "CV:t är sparat." });
     } catch (err) {
       setMessage({ tone: "error", text: err.message });
     } finally {
@@ -349,7 +346,13 @@ function ResumeCard({ token }) {
               hidden
             />
           </label>
-          <button className="secondary small" onClick={() => setOpen(!open)}>
+          <button
+            className="secondary small"
+            onClick={() => {
+              setMessage(null);
+              setOpen(!open);
+            }}
+          >
             {open ? "Stäng" : "Redigera"}
           </button>
         </div>
@@ -492,18 +495,11 @@ function ResumeCard({ token }) {
             <button disabled={saving}>
               {saving ? "Sparar…" : "Spara CV"}
             </button>
-            <span className="save-indicator" role="status">
-              {!saving && saveState === "saved" && (
-                <span className="save-indicator-saved">
-                  ✓ Sparat — det är lugnt att stänga
-                </span>
-              )}
-              {!saving && saveState === "dirty" && (
-                <span className="save-indicator-dirty">
-                  Osparade ändringar
-                </span>
-              )}
-            </span>
+            {!saving && saveState === "dirty" && (
+              <span className="save-indicator save-indicator-dirty" role="status">
+                Osparade ändringar
+              </span>
+            )}
           </div>
         </form>
       )}
