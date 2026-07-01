@@ -19,6 +19,13 @@ class JobApplicationAdmin(ModelAdmin):
 
 @admin.register(JobPosting)
 class JobPostingAdmin(ModelAdmin):
+    """Read-only legacy data.
+
+    The posting import and API were removed; the model only remains so
+    old rows (and their application FKs) survive. No new rows should be
+    created — deletion stays possible for manual cleanup.
+    """
+
     list_display = (
         "id",
         "title",
@@ -31,3 +38,9 @@ class JobPostingAdmin(ModelAdmin):
     )
     list_filter = ("source", "published_at", "created_at")
     search_fields = ("title", "company_name", "external_id")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

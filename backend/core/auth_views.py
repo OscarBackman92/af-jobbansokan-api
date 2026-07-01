@@ -1,9 +1,13 @@
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.jwt_auth import get_refresh_view
 from dj_rest_auth.registration.views import (
     RegisterView,
     ResendEmailVerificationView,
+    SocialLoginView,
     VerifyEmailView,
 )
+from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -18,6 +22,27 @@ class ThrottledResendEmailVerificationView(ResendEmailVerificationView):
 
 class ThrottledTokenRefreshView(get_refresh_view()):
     throttle_scope = "dj_rest_auth"
+
+
+class GoogleLoginView(SocialLoginView):
+    """Exchange a Google authorization code for our JWT pair.
+
+    The SPA redirects the user to Google's consent screen and posts the
+    returned ``code`` here. Requires GOOGLE_CLIENT_ID/SECRET in the
+    environment (the button is hidden in the SPA when unset).
+    """
+
+    adapter_class = GoogleOAuth2Adapter
+    client_class = OAuth2Client
+    throttle_scope = "dj_rest_auth"
+
+    @property
+    def callback_url(self):
+        # Must match the redirect_uri the SPA used (its own origin).
+        base = settings.FRONTEND_URL or (
+            f"{self.request.scheme}://{self.request.get_host()}"
+        )
+        return base.rstrip("/") + "/"
 
 
 class SPARegisterView(RegisterView):

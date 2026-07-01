@@ -1,8 +1,5 @@
 from allauth.account.models import EmailAddress
 from django.conf import settings
-from rest_framework.permissions import BasePermission
-
-
 from rest_framework.permissions import BasePermission, IsAuthenticated
 
 

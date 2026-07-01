@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { request } from "../api.js";
+import { googleClientId, startGoogleLogin } from "../googleAuth.js";
 
 export default function AuthHero({ onLogin }) {
   return (
@@ -167,6 +168,20 @@ function AuthCard({ onLogin }) {
               ? "Skapa konto"
               : "Skicka återställningslänk"}
       </button>
+      {mode !== "forgot" && googleClientId() && (
+        <>
+          <div className="auth-divider" aria-hidden="true">
+            <span>eller</span>
+          </div>
+          <button
+            type="button"
+            className="secondary google-btn"
+            onClick={startGoogleLogin}
+          >
+            Fortsätt med Google
+          </button>
+        </>
+      )}
 
       <div className="auth-links">
         {mode === "login" && (

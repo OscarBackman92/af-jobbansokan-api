@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     "anymail",
     "rest_framework_simplejwt.token_blacklist",
     # Local apps
@@ -193,7 +194,7 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("core.permissions.IsAuthenticatedUser",),
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "core.pagination.DefaultPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
@@ -205,7 +206,8 @@ REST_FRAMEWORK = {
         "user": "300/min",
         "upload": "15/hour",
         "jobtech": "90/min",
-        "dj_rest_auth": "5/min",
+        # Env override exists for E2E runs, which log in many times fast.
+        "dj_rest_auth": os.getenv("DJANGO_AUTH_THROTTLE_RATE", "5/min"),
     },
 }
 
@@ -247,6 +249,10 @@ if BREVO_API_KEY:
     ANYMAIL = {
         "BREVO_API_KEY": BREVO_API_KEY,
     }
+elif os.getenv("EMAIL_FILE_PATH"):
+    # Mail-to-directory backend; E2E tests read verification links here.
+    EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
+    EMAIL_FILE_PATH = os.getenv("EMAIL_FILE_PATH")
 elif os.getenv("EMAIL_HOST"):
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = os.getenv("EMAIL_HOST")
@@ -285,6 +291,28 @@ ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_CONFIRM_EMAIL_ON_GET = False
 ACCOUNT_ADAPTER = "core.adapters.SPAAccountAdapter"
+
+# Google login (active when GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET are set).
+# The SPA runs the authorization-code flow with redirect back to itself;
+# /dj-rest-auth/google/ exchanges the code for our JWT pair.
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": GOOGLE_CLIENT_ID,
+            "secret": GOOGLE_CLIENT_SECRET,
+            "key": "",
+        },
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+        # Google verifies the address; log into an existing e-mail account
+        # instead of erroring on "address already in use".
+        "EMAIL_AUTHENTICATION": True,
+    }
+}
+# Google-verified addresses skip our own verification mail.
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
 
 # Error monitoring (optional — active when SENTRY_DSN is set)
 SENTRY_DSN = os.getenv("SENTRY_DSN", "")

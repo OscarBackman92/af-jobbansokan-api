@@ -1,8 +1,9 @@
 import os
 
-from core.email_config import email_is_configured
 from django.conf import settings
 from django.core.checks import Warning, register
+
+from core.email_config import email_is_configured
 
 _WEAK_ADMIN_USERNAMES = frozenset({"admin", "administrator", "root", "superuser"})
 

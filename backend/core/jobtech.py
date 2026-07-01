@@ -10,13 +10,18 @@ the UI asks for a selected field's Platsbanken subcategories.
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 
 import requests
 
-JOBTECH_SEARCH_URL = "https://jobsearch.api.jobtechdev.se/search"
-JOBTECH_TAXONOMY_CONCEPTS_URL = (
-    "https://taxonomy.api.jobtechdev.se/v1/taxonomy/main/concepts"
+# Env overrides exist so E2E tests can point at a local mock server.
+JOBTECH_SEARCH_URL = os.getenv(
+    "JOBTECH_SEARCH_URL", "https://jobsearch.api.jobtechdev.se/search"
+)
+JOBTECH_TAXONOMY_CONCEPTS_URL = os.getenv(
+    "JOBTECH_TAXONOMY_URL",
+    "https://taxonomy.api.jobtechdev.se/v1/taxonomy/main/concepts",
 )
 MAX_LIMIT = 50
 

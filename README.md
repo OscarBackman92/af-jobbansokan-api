@@ -79,11 +79,13 @@ Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
 | `/api/v1/me/` | GET, PATCH, DELETE | Own profile; DELETE = GDPR erasure |
 | `/api/v1/me/resume/` | GET, PUT, DELETE | Structured CV |
 | `/api/v1/me/resume/parse/` | POST | Parse uploaded CV to a draft — file never stored |
-| `/api/v1/applications/` | GET, POST | Tracker rows; `?status=&search=&from=&to=` |
-| `/api/v1/applications/{id}/` | GET, PATCH, DELETE | Edit status, deadline, notes, contacts — fully mutable |
+| `/dj-rest-auth/google/` | POST | Google login (authorization code → JWT); active when `GOOGLE_CLIENT_ID`/`_SECRET` are set |
+| `/api/v1/applications/` | GET, POST | Tracker rows; `?status=&search=&from=&to=&page_size=` (list omits `events`) |
+| `/api/v1/applications/{id}/` | GET, PATCH, DELETE | Edit status, deadline, notes, contacts — fully mutable; includes `events` |
 | `/api/v1/applications/{id}/events/` | POST | Append a timeline event |
+| `/api/v1/applications/tracked-urls/` | GET | All ad URLs on the board (lets the ad search mark saved ads cheaply) |
 | `/api/v1/applications/export/` | GET | CSV download (filters apply) |
-| `/api/v1/jobs/` | GET | **Live Platsbanken search**; `?q=&region=&field=&remote=&offset=&limit=`; CV match per hit |
+| `/api/v1/jobs/` | GET | **Live Platsbanken search**; `?q=&region=&field=&remote=&offset=&limit=`; CV match per hit; identical searches cached 3 min |
 | `/api/v1/jobs/filters/` | GET | Region + occupation-field options for the search dropdowns |
 | `/api/v1/jobs/groups/` | GET | Occupation groups for a selected field |
 | `/api/v1/jobs/municipalities/` | GET | Municipalities for a selected region |
@@ -209,6 +211,7 @@ Postmark, …; the free tiers are enough):
 | `EMAIL_USE_TLS` | `1` (default) or `0` |
 | `DEFAULT_FROM_EMAIL` | From address, e.g. `Ansökt <no-reply@dindomän.se>` |
 | `FRONTEND_URL` | Base URL the reset link points at (e.g. `https://ansokt.onrender.com`). Defaults to the request origin, which is correct for the single-service Render deploy; set it explicitly when the frontend is hosted separately (e.g. Vercel). |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. Enables "Fortsätt med Google": create an OAuth client in Google Cloud Console with the site URL (trailing slash) as authorized redirect URI. The login button is hidden while unset. |
 
 The `render.yaml` blueprint lists these with `sync: false`, so Render
 prompts for the values at deploy time instead of baking them in.
@@ -219,9 +222,19 @@ prompts for the values at deploy time instead of baking them in.
 pytest            # backend test suite
 ruff check .
 black --check .
+
+cd frontend
+npm test          # Vitest unit tests
+npm run lint      # ESLint
+npm run test:e2e  # Playwright smoke tests (starts backend + frontend itself)
 ```
 
-CI (GitHub Actions) runs all three on every pull request against `main`.
+The E2E suite boots its own stack: a throwaway Django backend (fresh
+SQLite, mail written to files), a mocked JobTech server and the Vite dev
+server — no manual setup, but run `npx playwright install chromium` once.
+
+CI (GitHub Actions) runs everything on every pull request against `main`
+and on every push to `main`.
 
 The OpenAPI schema can be validated with:
 
@@ -287,10 +300,12 @@ stores when the web app is stable.
 - [x] Saved JobTech searches
 - [x] Duplicate detection for tracked ads
 - [x] Privacy policy page
+- [x] Calendar export (ICS) for follow-ups and deadlines (Idag-panel)
+- [x] Playwright E2E smoke tests in CI
+- [x] Google login (code ready — needs OAuth client + env vars)
 - [ ] EU hosting region (Render Frankfurt) + persistent Postgres
 - [ ] Custom domain, uptime check and verified e-mail sender domain
 - [ ] Weekly summary e-mail (applications, follow-ups, interviews)
-- [ ] Calendar export (ICS) for interviews and follow-ups
 - [ ] XLSX export alongside CSV
 - [ ] JobStream API for continuous ad updates
 

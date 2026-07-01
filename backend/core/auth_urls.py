@@ -1,4 +1,3 @@
-from django.urls import path
 from dj_rest_auth.views import (
     LoginView,
     LogoutView,
@@ -7,6 +6,7 @@ from dj_rest_auth.views import (
     PasswordResetView,
     UserDetailsView,
 )
+from django.urls import path
 from rest_framework_simplejwt.views import TokenVerifyView
 
 from core.auth_views import ThrottledTokenRefreshView

@@ -1,9 +1,11 @@
 import csv
+import hashlib
 import json
 import os
 from types import SimpleNamespace
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db.models import Q
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
@@ -11,16 +13,19 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import generics, viewsets
 from rest_framework import status as drf_status
-from rest_framework.decorators import action, api_view, permission_classes, throttle_classes
+from rest_framework.decorators import (
+    action,
+    api_view,
+    permission_classes,
+    throttle_classes,
+)
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny
-
-from core.email_config import email_is_configured
-
-from .permissions import IsAuthenticatedUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from core.email_config import email_is_configured
 
 from .csv_safety import sanitize_csv_cell
 from .jobtech import (
@@ -31,9 +36,9 @@ from .jobtech import (
     occupation_groups,
 )
 from .jobtech import search as jobtech_search
-from .throttles import JobTechThrottle, UploadThrottle
 from .matching import match_skills
 from .models import JobApplication, Resume, SavedJobSearch
+from .permissions import IsAuthenticatedUser
 from .resume import (
     MAX_UPLOAD_SIZE,
     SUPPORTED_EXTENSIONS,
@@ -42,12 +47,14 @@ from .resume import (
 )
 from .serializers import (
     ApplicationEventSerializer,
+    JobApplicationListSerializer,
     JobApplicationSerializer,
     ProfileSerializer,
     ResumeSerializer,
     ResumeUploadSerializer,
     SavedJobSearchSerializer,
 )
+from .throttles import JobTechThrottle, UploadThrottle
 
 
 @extend_schema(
@@ -63,15 +70,19 @@ def health(_request):
     return Response(payload)
 
 
+@extend_schema(exclude=True)  # serves JS for the SPA, not part of the API
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def runtime_config(_request):
     """Small JS snippet for optional frontend runtime config (e.g. Sentry DSN)."""
     payload = {
-        "sentryDsn": os.getenv("SENTRY_DSN_FRONTEND", "") or os.getenv("SENTRY_DSN", ""),
+        "sentryDsn": os.getenv("SENTRY_DSN_FRONTEND", "")
+        or os.getenv("SENTRY_DSN", ""),
         "sentryEnvironment": os.getenv(
             "SENTRY_ENVIRONMENT", "development" if settings.DEBUG else "production"
         ),
+        # Empty when Google login is not configured; the SPA hides the button.
+        "googleClientId": settings.GOOGLE_CLIENT_ID,
     }
     body = f"window.__ANSOKT_CONFIG__={json.dumps(payload)};"
     return HttpResponse(
@@ -207,14 +218,19 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
     serializer_class = JobApplicationSerializer
     permission_classes = [IsAuthenticatedUser]
 
+    def get_serializer_class(self):
+        if self.action == "list":
+            return JobApplicationListSerializer
+        return JobApplicationSerializer
+
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):  # schema generation
             return JobApplication.objects.none()
-        qs = (
-            JobApplication.objects.filter(owner=self.request.user)
-            .prefetch_related("events")
-            .order_by("-updated_at")
+        qs = JobApplication.objects.filter(owner=self.request.user).order_by(
+            "-updated_at"
         )
+        if self.action != "list":
+            qs = qs.prefetch_related("events")
         params = self.request.query_params
         date_from = _date_param(params, "from")
         date_to = _date_param(params, "to")
@@ -250,6 +266,18 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                 ),
                 status=application.status,
             )
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"], url_path="tracked-urls")
+    def tracked_urls(self, request):
+        """All ad URLs on the user's board — lets the ad search mark
+        already-saved ads without downloading every application row."""
+        urls = (
+            JobApplication.objects.filter(owner=request.user)
+            .exclude(ad_url="")
+            .values_list("ad_url", flat=True)
+        )
+        return Response({"urls": list(urls)})
 
     @extend_schema(
         request=ApplicationEventSerializer,
@@ -313,6 +341,25 @@ def _truthy(value):
     return str(value).lower() in ("1", "true", "yes", "on")
 
 
+JOBTECH_CACHE_TTL = 180  # seconds
+
+
+def _cached_jobtech_search(**kwargs):
+    """JobTech search with a short shared cache.
+
+    Search results are user-independent (CV matching is applied after),
+    so identical queries within the TTL are served without another
+    round trip to Platsbanken.
+    """
+    raw_key = json.dumps(kwargs, sort_keys=True)
+    cache_key = "jobtech:search:" + hashlib.sha256(raw_key.encode()).hexdigest()
+    data = cache.get(cache_key)
+    if data is None:
+        data = jobtech_search(**kwargs)
+        cache.set(cache_key, data, JOBTECH_CACHE_TTL)
+    return data
+
+
 @extend_schema(
     parameters=[
         OpenApiParameter("q", OpenApiTypes.STR, description="Free text query."),
@@ -345,7 +392,7 @@ def job_search(request):
         raise ValidationError({"detail": "offset/limit must be integers."}) from exc
 
     try:
-        data = jobtech_search(
+        data = _cached_jobtech_search(
             q=params.get("q", ""),
             region=params.get("region", ""),
             municipality=params.get("municipality", ""),

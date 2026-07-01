@@ -48,14 +48,11 @@ export default function ApplicationModal({
   const [error, setError] = useState(null);
   const dialogRef = useRef(null);
   const adUrl = externalUrl(form.ad_url);
+  const applicationId = application?.id ?? null;
+  const hasEmbeddedEvents = Boolean(application?.events);
   const duplicateByUrl = useMemo(
-    () =>
-      findDuplicateByAdUrl(
-        existingApplications,
-        form.ad_url,
-        application?.id ?? null
-      ),
-    [existingApplications, form.ad_url, application?.id]
+    () => findDuplicateByAdUrl(existingApplications, form.ad_url, applicationId),
+    [existingApplications, form.ad_url, applicationId]
   );
   const similarByTitle = useMemo(() => {
     if (duplicateByUrl) return null;
@@ -63,16 +60,32 @@ export default function ApplicationModal({
       existingApplications,
       form.company,
       form.title,
-      application?.id ?? null
+      applicationId
     );
   }, [
     duplicateByUrl,
     existingApplications,
     form.company,
     form.title,
-    application?.id,
+    applicationId,
   ]);
   const duplicateBlocked = Boolean(duplicateByUrl);
+
+  // List rows are lean (no timeline); fetch the full row when editing.
+  useEffect(() => {
+    if (!applicationId || hasEmbeddedEvents) return undefined;
+    let cancelled = false;
+    request(`/api/v1/applications/${applicationId}/`, { token })
+      .then((detail) => {
+        if (!cancelled) setEvents(detail.events ?? []);
+      })
+      .catch(() => {
+        /* timeline stays empty; the form is still usable */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [applicationId, hasEmbeddedEvents, token]);
 
   useEffect(() => {
     const previous = document.activeElement;

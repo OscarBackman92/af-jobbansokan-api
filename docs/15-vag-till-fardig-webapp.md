@@ -21,9 +21,10 @@ och [12-utvecklingsplan.md](12-utvecklingsplan.md) (historik).
 | Legacy `/api/v1/postings/` + `import_postings` | **Borttaget** — live `/jobs/` är enda annonskällan |
 | Oanvänd `/api/v1/applications/stats/` | **Borttaget** |
 | Produktionsdrift (EU-DB, domän, e-post) | Pågår / manuellt |
-| E2E-röktester | Ej påbörjat |
-| Google-inloggning | Ej påbörjat |
-| Retention (veckomejl, kalender) | Ej påbörjat |
+| E2E-röktester (Playwright, 3 flöden + CI) | Klart |
+| Google-inloggning | Kod klar — kräver OAuth-klient i Google Cloud + env-vars |
+| Prestanda (tracked-urls, lätt list-API, JobTech-cache) | Klart |
+| Retention (veckomejl, kalender) | Idag-panel + ICS-export klart; veckomejl ej påbörjat |
 
 **Tumregel:** ni är ~**90 %** på produktfunktioner men ~**75 %** på
 “redo att dela brett” p.g.a. drift och onboarding.
@@ -74,20 +75,26 @@ fungerande e-post och övervakad uppetid.
 
 ### Automatiserade tester
 
-- [ ] **2–3 E2E-röktester** (Playwright eller liknande):
-  1. Registrera → verifiera mejl (mock) → logga in
+- [x] **3 E2E-röktester** (Playwright, `frontend/e2e/`):
+  1. Registrera → verifiera mejl (läses från fil) → logga in
   2. Skapa ansökan på tavlan → byt status → tidslinje
-  3. Sök Platsbanken → spara annons på tavlan
-- [ ] Kör E2E i CI mot Postgres (samma som backend-tester idag).
+  3. Sök Platsbanken (mockad JobTech) → spara annons på tavlan
+- [x] E2E körs i CI (eget jobb, Chromium; backend på färsk SQLite,
+      JobTech mockas — kör lokalt med `npm run test:e2e`).
+- [x] CI körs nu även på push till `main`, inte bara PR.
 
 ### Inloggning & registrering
 
-- [ ] **Google-inloggning** (rekommenderat, ~1–2 dagar):
-  - Backend: `allauth` Google-provider + `dj-rest-auth` social endpoint
-  - Frontend: “Fortsätt med Google” i `AuthHero.jsx`
-  - Behåll e-post + lösenord som alternativ
-  - Uppdatera integritetspolicyn
-  - Hantera konto med samma e-post (manuellt + Google)
+- [x] **Google-inloggning** — koden är klar och env-styrd:
+  - Backend: `allauth` Google-provider + `POST /dj-rest-auth/google/`
+  - Frontend: “Fortsätt med Google” i `AuthHero` (visas bara när
+    `GOOGLE_CLIENT_ID` är satt; code-flow utan externa skript, CSP-säkert)
+  - E-post + lösenord kvar som standard; samma e-post loggar in på
+    befintligt konto (`EMAIL_AUTHENTICATION`)
+  - **Återstår (manuellt):** skapa OAuth-klient i Google Cloud Console
+    (redirect-URI = sajtens URL med avslutande `/`), sätt
+    `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` i Render, uppdatera
+    integritetspolicyn med Google som inloggningsmetod
 - [ ] Tydligare felmeddelanden vid ogiltig inloggning / overifierad e-post.
 
 ### Kodstädning (påbörjad)
@@ -95,8 +102,9 @@ fungerande e-post och övervakad uppetid.
 - [x] Ta bort legacy `/api/v1/postings/` och `import_postings`.
 - [x] Ta bort oanvänd `/api/v1/applications/stats/`.
 - [x] Förenkla `bootstrap` (ingen annonsimport vid boot).
-- [ ] Beslut: behåll `JobPosting`-modellen endast för gamla FK-rader i DB
-      (admin read-only) eller migrera bort `posting`-FK helt i v2.
+- [x] Beslut om `JobPosting`: modellen behålls endast för gamla FK-rader,
+      admin är read-only (ingen ny data kan skapas). Fullständig
+      borttagning av `posting`-FK skjuts till v2 om behovet uppstår.
 
 ---
 
@@ -118,7 +126,10 @@ Prioritera efter Fas 1–2.
 - [ ] **XLSX-export** vid sidan av CSV.
 - [ ] Anteckningsmallar (rekryterarsamtal, intervju).
 - [ ] Förbättra statistik på tavlan (räkna per status i frontend om behövs).
-- [ ] Prestanda: kort cache för JobTech-sökningar vid hög trafik.
+- [x] Prestanda: kort cache (3 min) för identiska JobTech-sökningar.
+- [x] Prestanda: tavlan hämtas i ett anrop (`?page_size=200`), list-API:t
+      skickar inte `events` längre, Annonser-fliken använder
+      `/applications/tracked-urls/` istället för att hämta alla rader.
 
 ---
 

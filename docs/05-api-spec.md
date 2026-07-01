@@ -11,6 +11,9 @@ Interactive schema:
 
 - `POST /dj-rest-auth/registration/`
 - `POST /dj-rest-auth/login/`
+- `POST /dj-rest-auth/google/` — Google login: exchanges the OAuth
+  authorization `code` for our JWT pair (requires `GOOGLE_CLIENT_ID` +
+  `GOOGLE_CLIENT_SECRET` in the environment)
 - `POST /dj-rest-auth/token/refresh/`
 - `POST /dj-rest-auth/password/reset/`
 - `POST /dj-rest-auth/password/reset/confirm/`
@@ -41,12 +44,14 @@ the uploaded file.
 
 ## Applications
 
-- `GET /api/v1/applications/`
+- `GET /api/v1/applications/` — lean rows without `events`
 - `POST /api/v1/applications/`
-- `GET /api/v1/applications/{id}/`
+- `GET /api/v1/applications/{id}/` — full row including `events`
 - `PATCH /api/v1/applications/{id}/`
 - `DELETE /api/v1/applications/{id}/`
 - `POST /api/v1/applications/{id}/events/`
+- `GET /api/v1/applications/tracked-urls/` — every `ad_url` on the board
+  (used by the ad search to mark already-saved ads)
 - `GET /api/v1/applications/export/`
 
 List filters:
@@ -55,6 +60,7 @@ List filters:
 - `search`
 - `from`
 - `to`
+- `page_size` (max 200 — the board fetches everything in one request)
 
 Creating an application accepts either free-text fields (`company`, `title`, …)
 or an optional legacy `posting` id (historical DB reference only).
@@ -78,3 +84,6 @@ Job search parameters:
 - `limit`
 
 CV skills, when present, add a `match` object to each hit.
+
+Identical searches are cached server-side for 3 minutes, so paging back
+and forth does not hit JobTech again.

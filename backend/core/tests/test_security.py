@@ -1,8 +1,7 @@
 import pytest
+from core.tests.conftest import register_user, verify_latest_email
 from django.conf import settings
 from django.test import override_settings
-
-from core.tests.conftest import register_user, verify_latest_email
 
 pytestmark = pytest.mark.django_db
 

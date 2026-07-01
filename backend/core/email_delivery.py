@@ -11,8 +11,7 @@ from rest_framework import serializers
 logger = logging.getLogger(__name__)
 
 _VERIFICATION_MAIL_ERROR = (
-    "Vi kunde inte skicka verifieringsmejlet just nu. "
-    "Försök igen om en stund."
+    "Vi kunde inte skicka verifieringsmejlet just nu. " "Försök igen om en stund."
 )
 
 

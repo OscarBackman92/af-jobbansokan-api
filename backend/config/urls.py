@@ -1,5 +1,5 @@
-from config.api_docs import DebugOrAdminPermission
 from core.auth_views import (
+    GoogleLoginView,
     SPARegisterView,
     ThrottledResendEmailVerificationView,
     ThrottledVerifyEmailView,
@@ -11,6 +11,8 @@ from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
 )
+
+from config.api_docs import DebugOrAdminPermission
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -30,6 +32,7 @@ urlpatterns = [
         name="swagger-ui",
     ),
     path("dj-rest-auth/", include("core.auth_urls")),
+    path("dj-rest-auth/google/", GoogleLoginView.as_view(), name="google_login"),
     path(
         "dj-rest-auth/registration/verify-email/",
         ThrottledVerifyEmailView.as_view(),

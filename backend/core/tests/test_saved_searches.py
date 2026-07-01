@@ -1,5 +1,4 @@
 import pytest
-
 from core.models import SavedJobSearch
 
 URL = "/api/v1/me/saved-searches/"

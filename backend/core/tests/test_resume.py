@@ -222,9 +222,11 @@ def test_parse_realistic_pdf_extraction():
     assert "Övriga" not in flat
 
 
-OSCAR_CV_TEXT = Path(__file__).parent.joinpath(
-    "fixtures", "oscar-backman-cv-extracted.txt"
-).read_text(encoding="utf-8")
+OSCAR_CV_TEXT = (
+    Path(__file__)
+    .parent.joinpath("fixtures", "oscar-backman-cv-extracted.txt")
+    .read_text(encoding="utf-8")
+)
 
 
 def test_parse_oscar_backman_canva_cv():

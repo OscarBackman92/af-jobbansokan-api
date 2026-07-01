@@ -259,6 +259,26 @@ def test_search_handles_upstream_failure(api_client, user, monkeypatch):
     assert response.status_code == 502
 
 
+def test_identical_searches_are_cached(api_client, user, mock_jobtech):
+    api_client.force_authenticate(user)
+    api_client.get(SEARCH_URL, {"q": "python"})
+    api_client.get(SEARCH_URL, {"q": "python"})
+    assert len(mock_jobtech) == 1  # second hit served from cache
+
+    api_client.get(SEARCH_URL, {"q": "django"})
+    assert len(mock_jobtech) == 2  # different query goes upstream
+
+
+def test_cached_search_still_applies_cv_match(api_client, user, mock_jobtech):
+    api_client.force_authenticate(user)
+    api_client.get(SEARCH_URL, {"q": "python"})  # warm cache without resume
+
+    Resume.objects.create(user=user, skills=["Python"])
+    body = api_client.get(SEARCH_URL, {"q": "python"}).json()
+    assert len(mock_jobtech) == 1
+    assert body["results"][0]["match"]["matched"] == ["Python"]
+
+
 # --- CV skill matching (regression guards for boundary-aware matching) ---
 
 

@@ -1,10 +1,7 @@
-import os
-
 import pytest
-from django.core.management import call_command
-from django.core import mail
-
 from core.models import JobApplication
+from django.core import mail
+from django.core.management import call_command
 
 
 @pytest.mark.django_db

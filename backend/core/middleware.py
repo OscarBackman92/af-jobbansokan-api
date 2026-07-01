@@ -28,5 +28,7 @@ class SecurityHeadersMiddleware:
             "upgrade-insecure-requests"
         )
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        response.headers.setdefault(
+            "Permissions-Policy", "camera=(), microphone=(), geolocation=()"
+        )
         return response

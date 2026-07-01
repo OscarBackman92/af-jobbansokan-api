@@ -134,6 +134,50 @@ def test_list_returns_only_own_rows(api_client, user, django_user_model):
     assert [item["id"] for item in body["results"]] == [mine.id]
 
 
+def test_list_is_lean_but_detail_includes_events(api_client, user):
+    application = JobApplication.objects.create(owner=user, company="Acme", title="Dev")
+    application.events.create(occurred_at="2026-06-01", note="Samtal")
+
+    api_client.force_authenticate(user)
+    row = api_client.get(URL).json()["results"][0]
+    assert "events" not in row
+    assert row["status_label"]
+
+    detail = api_client.get(f"{URL}{application.id}/").json()
+    assert len(detail["events"]) == 1
+    assert detail["events"][0]["note"] == "Samtal"
+
+
+def test_list_respects_page_size_param(api_client, user):
+    for i in range(25):
+        JobApplication.objects.create(owner=user, company=f"C{i}", title="Dev")
+
+    api_client.force_authenticate(user)
+    body = api_client.get(URL, {"page_size": 200}).json()
+    assert body["count"] == 25
+    assert len(body["results"]) == 25
+    assert body["next"] is None
+
+
+def test_tracked_urls_lists_own_ad_urls_only(api_client, user, django_user_model):
+    other = django_user_model.objects.create_user(username="other", password="x")
+    JobApplication.objects.create(
+        owner=other, company="X", title="Y", ad_url="https://example.com/other"
+    )
+    JobApplication.objects.create(
+        owner=user, company="Acme", title="Dev", ad_url="https://example.com/mine"
+    )
+    JobApplication.objects.create(owner=user, company="NoUrl", title="Dev")
+
+    api_client.force_authenticate(user)
+    body = api_client.get(f"{URL}tracked-urls/").json()
+    assert body["urls"] == ["https://example.com/mine"]
+
+
+def test_tracked_urls_requires_auth(api_client):
+    assert api_client.get(f"{URL}tracked-urls/").status_code == 401
+
+
 def test_status_update_appends_timeline_event(api_client, user):
     application = JobApplication.objects.create(
         owner=user, company="Acme", title="Dev", status="applied"

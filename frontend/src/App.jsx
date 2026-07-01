@@ -4,11 +4,13 @@ import { request } from "./api.js";
 import { clearTokens, getAccess, setTokens } from "./auth.js";
 import AuthHero from "./components/AuthHero.jsx";
 import BoardPanel from "./components/BoardPanel.jsx";
+import GoogleSignIn from "./components/GoogleSignIn.jsx";
 import PostingsPanel from "./components/PostingsPanel.jsx";
 import PrivacyPanel from "./components/PrivacyPanel.jsx";
 import ProfilePanel from "./components/ProfilePanel.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
 import VerifyEmail from "./components/VerifyEmail.jsx";
+import { readGoogleCallback } from "./googleAuth.js";
 
 function readResetCreds() {
   const params = new URLSearchParams(window.location.search);
@@ -45,6 +47,7 @@ export default function App() {
   const [me, setMe] = useState(null);
   const [resetCreds, setResetCreds] = useState(() => readResetCreds());
   const [verifyKey, setVerifyKey] = useState(() => readVerifyKey());
+  const [googleCode, setGoogleCode] = useState(() => readGoogleCallback());
   const [theme, setTheme] = useState(() => readTheme());
   const [showPrivacy, setShowPrivacy] = useState(false);
 
@@ -134,7 +137,21 @@ export default function App() {
       </header>
 
       <main className="main" key={showPrivacy ? "privacy" : tab}>
-        {verifyKey && (
+        {googleCode && !token && (
+          <GoogleSignIn
+            code={googleCode}
+            onLogin={(tokens) => {
+              window.history.replaceState({}, "", window.location.pathname);
+              setGoogleCode(null);
+              login(tokens);
+            }}
+            onDone={() => {
+              window.history.replaceState({}, "", window.location.pathname);
+              setGoogleCode(null);
+            }}
+          />
+        )}
+        {verifyKey && !googleCode && (
           <VerifyEmail
             verifyKey={verifyKey}
             onDone={() => {
@@ -153,7 +170,7 @@ export default function App() {
             }}
           />
         )}
-        {!resetCreds && !verifyKey && !token && !showPrivacy && (
+        {!resetCreds && !verifyKey && !googleCode && !token && !showPrivacy && (
           <AuthHero onLogin={login} />
         )}
         {!resetCreds && !verifyKey && token && tab === "board" && !showPrivacy && (

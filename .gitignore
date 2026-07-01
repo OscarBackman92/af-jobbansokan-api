@@ -19,6 +19,12 @@ frontend/dist/
 frontend/.vite/
 frontend/shots/
 
+# E2E (Playwright)
+frontend/e2e/.mail/
+frontend/e2e/.e2e-db.sqlite3
+frontend/test-results/
+frontend/playwright-report/
+
 # IDE
 .vscode/
 .idea/

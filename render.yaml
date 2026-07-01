@@ -55,6 +55,13 @@ services:
       # Base URL for the reset link; defaults to the request origin if unset.
       - key: FRONTEND_URL
         sync: false
+      # Google login (optional — the SPA hides the button when unset).
+      # Create an OAuth client in Google Cloud Console with the site's
+      # URL as authorized redirect URI (with trailing slash).
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
       # Sentry (optional). Also configure Allowed Domains in Sentry dashboard
       # (see docs/14-sakerhet-produktion.md).
       - key: SENTRY_DSN

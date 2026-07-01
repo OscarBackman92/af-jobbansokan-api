@@ -69,15 +69,11 @@ export default function PostingsPanel() {
       });
     (async () => {
       try {
-        let url = "/api/v1/applications/";
+        const data = await request("/api/v1/applications/tracked-urls/");
         const urls = new Set();
-        while (url) {
-          const page = await request(url);
-          for (const a of page.results) {
-            const key = normalizeAdUrl(a.ad_url);
-            if (key) urls.add(key);
-          }
-          url = page.next;
+        for (const adUrl of data.urls) {
+          const key = normalizeAdUrl(adUrl);
+          if (key) urls.add(key);
         }
         setTracked(urls);
       } catch {

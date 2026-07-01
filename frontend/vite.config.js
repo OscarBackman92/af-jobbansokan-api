@@ -4,7 +4,8 @@ import { defineConfig } from "vite";
 
 // All API paths are proxied to the Django dev server, so the browser
 // only ever talks same-origin and no CORS configuration is needed.
-const DJANGO = "http://127.0.0.1:8000";
+// VITE_BACKEND lets the E2E suite point at its own backend port.
+const DJANGO = process.env.VITE_BACKEND || "http://127.0.0.1:8000";
 
 export default defineConfig({
   plugins: [react()],
@@ -19,5 +20,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: "./src/test/setup.js",
+    // Keep Playwright specs (e2e/) out of the Vitest run.
+    include: ["src/**/*.{test,spec}.{js,jsx}"],
   },
 });

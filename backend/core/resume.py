@@ -225,9 +225,7 @@ def _looks_like_title_line(line: str) -> bool:
     if not words or len(words) > 6:
         return False
     if len(words) <= 3 and all(word.isupper() for word in words):
-        if not any(
-            hint in word.lower() for word in words for hint in JOB_TITLE_HINTS
-        ):
+        if not any(hint in word.lower() for word in words for hint in JOB_TITLE_HINTS):
             return False
     upperish = sum(1 for word in words if word.isupper() or word[:1].isupper())
     return upperish >= max(1, len(words) - 1)
@@ -333,7 +331,11 @@ def _bucket_lines(text: str) -> dict[str, list[str]]:
                 continue
 
             mode = left_mode if side == "left" else right_mode
-            if side == "left" and mode in (None, "profile") and right_mode == "experience":
+            if (
+                side == "left"
+                and mode in (None, "profile")
+                and right_mode == "experience"
+            ):
                 mode = "experience"
             if side == "left" and mode in (None, "profile") and left_mode == "skills":
                 mode = "skills"
@@ -372,10 +374,7 @@ def _bucket_lines(text: str) -> dict[str, list[str]]:
                         DATE_RANGE_RE.match(_clean(part))
                         or DATE_RANGE_SEARCH_RE.search(_clean(part))
                         or _looks_like_title_line(part)
-                        or (
-                            len(_clean(part).split()) <= 4
-                            and _clean(part).isupper()
-                        )
+                        or (len(_clean(part).split()) <= 4 and _clean(part).isupper())
                     )
                 ):
                     mode = "experience"
@@ -442,7 +441,9 @@ def _parse_experience(lines: list[str]) -> list[dict]:
                     pending_date = ""
                     continue
 
-            if BULLET_RE.match(segment) or (rows and rows[-1]["title"] and cleaned[:1].islower()):
+            if BULLET_RE.match(segment) or (
+                rows and rows[-1]["title"] and cleaned[:1].islower()
+            ):
                 add_description(cleaned)
                 continue
 
@@ -615,9 +616,7 @@ def _parse_education(lines: list[str]) -> list[dict]:
                 pending_em_degree = ""
 
     if pending_degree and pending_years:
-        rows.append(
-            {"degree": pending_degree, "school": "", "years": pending_years}
-        )
+        rows.append({"degree": pending_degree, "school": "", "years": pending_years})
     return rows
 
 

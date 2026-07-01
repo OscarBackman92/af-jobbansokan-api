@@ -12,7 +12,6 @@ from .email_delivery import register_user_with_verification
 from .models import (
     ApplicationEvent,
     JobApplication,
-    JobPosting,
     Resume,
     SavedJobSearch,
 )
@@ -30,6 +29,39 @@ class ApplicationEventSerializer(serializers.ModelSerializer):
         if value > timezone.localdate():
             raise serializers.ValidationError("occurred_at cannot be in the future.")
         return value
+
+
+class JobApplicationListSerializer(serializers.ModelSerializer):
+    """Lean row for list responses — no timeline.
+
+    The board renders hundreds of rows; shipping every row's full event
+    history made the list payload grow with total activity. The detail
+    endpoint still includes ``events``.
+    """
+
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = JobApplication
+        fields = [
+            "id",
+            "posting",
+            "company",
+            "title",
+            "location",
+            "ad_url",
+            "status",
+            "status_label",
+            "applied_at",
+            "deadline",
+            "contact_name",
+            "contact_info",
+            "notes",
+            "next_action_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
 
 
 class JobApplicationSerializer(serializers.ModelSerializer):
@@ -124,9 +156,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             for existing in others.only("ad_url"):
                 if ad_urls_equivalent(existing.ad_url, ad_url):
                     raise serializers.ValidationError(
-                        {
-                            "ad_url": "Du har redan sparat den här annonsen på tavlan."
-                        }
+                        {"ad_url": "Du har redan sparat den här annonsen på tavlan."}
                     )
         return attrs
 

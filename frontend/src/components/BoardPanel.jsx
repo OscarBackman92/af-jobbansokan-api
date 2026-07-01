@@ -87,8 +87,9 @@ export default function BoardPanel({ token, onNavigate }) {
   const reload = useCallback(async () => {
     try {
       setError(null);
-      // The board needs every row; walk the pagination.
-      let url = "/api/v1/applications/";
+      // The board needs every row; one big page covers realistic
+      // trackers, the loop only continues past 200 rows.
+      let url = "/api/v1/applications/?page_size=200";
       const rows = [];
       while (url) {
         const page = await request(url, { token });

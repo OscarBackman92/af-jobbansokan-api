@@ -1,5 +1,4 @@
 import pytest
-
 from core.tests.conftest import register_user, verify_latest_email
 
 pytestmark = pytest.mark.django_db
@@ -7,6 +6,17 @@ pytestmark = pytest.mark.django_db
 REGISTER_URL = "/dj-rest-auth/registration/"
 LOGIN_URL = "/dj-rest-auth/login/"
 REFRESH_URL = "/dj-rest-auth/token/refresh/"
+
+
+def test_google_login_requires_code_or_token(api_client):
+    response = api_client.post("/dj-rest-auth/google/", {})
+    assert response.status_code == 400
+
+
+def test_runtime_config_exposes_google_client_id(client, settings):
+    settings.GOOGLE_CLIENT_ID = "test-client-id.apps.googleusercontent.com"
+    body = client.get("/runtime-config.js").content.decode()
+    assert "test-client-id.apps.googleusercontent.com" in body
 
 
 def test_register_sends_verification_email(api_client, mailoutbox):
@@ -33,7 +43,9 @@ def test_register_rolls_back_when_verification_mail_fails(api_client, monkeypatc
     response = register_user(api_client)
     assert response.status_code == 400
     body = response.json()
-    errors = body if isinstance(body, list) else body.get("non_field_errors", [str(body)])
+    errors = (
+        body if isinstance(body, list) else body.get("non_field_errors", [str(body)])
+    )
     assert any("verifieringsmejlet" in str(msg).lower() for msg in errors)
     assert not get_user_model().objects.filter(email="anna@example.com").exists()
 
