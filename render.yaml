@@ -52,6 +52,9 @@ services:
         value: "10"
       - key: DEFAULT_FROM_EMAIL
         sync: false
+      # Public contact for the privacy policy and /.well-known/security.txt.
+      - key: CONTACT_EMAIL
+        sync: false
       # Base URL for the reset link; defaults to the request origin if unset.
       - key: FRONTEND_URL
         sync: false
@@ -73,14 +76,15 @@ services:
       - key: SENTRY_TRACES_SAMPLE_RATE
         value: "0.1"
 
-  # Daily follow-up reminders at 06:00 UTC (~07:00 CET).
+  # Daily at 06:00 UTC (~07:00 CET): follow-up reminders + GDPR retention
+  # (warn accounts inactive 24 months, delete 30 days after the warning).
   - type: cron
     name: ansokt-reminders
     runtime: docker
     region: frankfurt
     schedule: "0 6 * * *"
     dockerfilePath: ./Dockerfile
-    dockerCommand: python backend/manage.py send_reminders
+    dockerCommand: sh -c "python backend/manage.py send_reminders && python backend/manage.py prune_inactive_accounts"
     envVars:
       - key: DJANGO_DEBUG
         value: "0"
@@ -142,6 +146,11 @@ services:
           type: web
           name: ansokt
           envVarKey: DEFAULT_FROM_EMAIL
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: FRONTEND_URL
       - key: SENTRY_DSN
         fromService:
           type: web

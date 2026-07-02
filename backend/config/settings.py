@@ -236,6 +236,12 @@ REST_AUTH = {
     "JWT_AUTH_HTTPONLY": False,
     "REGISTER_SERIALIZER": "core.serializers.EmailRegisterSerializer",
     "PASSWORD_RESET_SERIALIZER": "core.serializers.FrontendPasswordResetSerializer",
+    # Both revoke the user's outstanding refresh tokens, so a password
+    # change/reset signs out every other device.
+    "PASSWORD_CHANGE_SERIALIZER": ("core.serializers.RevokingPasswordChangeSerializer"),
+    "PASSWORD_RESET_CONFIRM_SERIALIZER": (
+        "core.serializers.RevokingPasswordResetConfirmSerializer"
+    ),
 }
 
 # E-mail. Console backend in development prints the mail to the server log.
@@ -265,6 +271,10 @@ else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Jobbsöket <no-reply@ansokt.app>")
+
+# Public contact address for privacy questions and vulnerability reports.
+# Shown in the privacy policy and served at /.well-known/security.txt.
+CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "")
 
 # Where the password-reset link should point (the SPA). Falls back to the
 # request origin when unset (works for local dev and single-service Render).

@@ -22,5 +22,9 @@ COPY --from=frontend /app/frontend/dist frontend/dist
 
 RUN python backend/manage.py collectstatic --no-input
 
+# Run as an unprivileged user; the app only needs read access to /app.
+RUN useradd --uid 10001 --create-home appuser
+USER appuser
+
 EXPOSE 8000
 CMD ["sh", "-c", "python backend/manage.py migrate --no-input && python backend/manage.py bootstrap && gunicorn config.wsgi:application --chdir backend --bind 0.0.0.0:${PORT:-8000} --workers 2"]

@@ -160,7 +160,7 @@ class SavedJobSearch(models.Model):
 
 
 class OperatorProfile(models.Model):
-    """Public operator identity shown in the command-center UI."""
+    """Per-user profile extras (operator id, retention bookkeeping)."""
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -168,6 +168,8 @@ class OperatorProfile(models.Model):
         related_name="operator_profile",
     )
     operator_id = models.CharField(max_length=16, unique=True)
+    # Set when the inactivity warning mail is sent; cleared on activity.
+    deletion_warned_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

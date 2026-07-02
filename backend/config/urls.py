@@ -4,7 +4,7 @@ from core.auth_views import (
     ThrottledResendEmailVerificationView,
     ThrottledVerifyEmailView,
 )
-from core.views import health, runtime_config
+from core.views import health, runtime_config, security_txt
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import (
@@ -18,6 +18,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", health),
     path("runtime-config.js", runtime_config, name="runtime-config"),
+    path(".well-known/security.txt", security_txt, name="security-txt"),
     path(
         "api/schema/",
         SpectacularAPIView.as_view(permission_classes=[DebugOrAdminPermission]),

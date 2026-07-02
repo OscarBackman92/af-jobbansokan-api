@@ -1,7 +1,7 @@
 # Produktionssäkerhet — checklista
 
 Steg för säkerhetsåtgärder 1–6. Kodändringar för 4–6 sker i repot;
-1–3 kräver åtgärder i Render och Sentry.
+1–3 kräver åtgärder i Render och Sentry. GDPR-åtgärder: se punkt 7.
 
 ## 1. Betald Postgres i EU (Frankfurt)
 
@@ -75,6 +75,27 @@ källor — minskar skadan om någon hittar ett XSS-hål.
 **Implementerat i:** `core/middleware.py` (`SecurityHeadersMiddleware`).
 
 Tillåtet: egna scripts, Google Fonts, Sentry. Aktivt när `DEBUG=0`.
+
+## 7. GDPR-pappersarbete (manuella steg utanför repot)
+
+Koden uppfyller sin del (policy i appen, gallringskommando,
+incidentrutin i `docs/16`, registerförteckning i `docs/17`).
+Kvar att göra som ägare:
+
+1. **Sätt `CONTACT_EMAIL`** i Render (web service) — visas i
+   integritetspolicyn och på `/.well-known/security.txt`. Utan den
+   saknar policyn kontaktväg.
+2. **Acceptera biträdesavtal (DPA):**
+   - Render: [render.com/dpa](https://render.com/dpa) (ingår i ToS —
+     verifiera versionen).
+   - Brevo: DPA finns under Account → Legal i deras dashboard.
+   - Sentry: godkänns under Organization Settings → Legal & Compliance.
+   - Google Cloud (OAuth): [Data Processing Addendum](https://cloud.google.com/terms/data-processing-addendum).
+3. **Sentry EU-datalagring:** skapa/flytta projektet till EU-regionen
+   (Settings → region visas vid projektskapande) så felrapporter
+   stannar i EU.
+4. **Incident:** läs `docs/16-incidentrutin.md` en gång nu — inte
+   först när det brinner.
 
 ## Verifiera efter deploy
 

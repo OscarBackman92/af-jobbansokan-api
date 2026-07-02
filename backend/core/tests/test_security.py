@@ -54,3 +54,37 @@ def test_login_throttled_after_repeated_failures(api_client, mailoutbox):
         {"email": "anna@example.com", "password": "wrong-password"},
     )
     assert blocked.status_code == 429
+
+
+def test_security_txt_serves_contact(client, settings):
+    settings.CONTACT_EMAIL = "security@example.com"
+    response = client.get("/.well-known/security.txt")
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "Contact: mailto:security@example.com" in body
+    assert "Expires:" in body
+
+
+def test_security_txt_missing_without_contact(client, settings):
+    settings.CONTACT_EMAIL = ""
+    response = client.get("/.well-known/security.txt")
+    assert response.status_code == 404
+
+
+def test_password_change_revokes_refresh_tokens(api_client, user):
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    refresh = RefreshToken.for_user(user)
+    api_client.force_authenticate(user)
+
+    response = api_client.post(
+        "/dj-rest-auth/password/change/",
+        {"new_password1": "NyttLosen123!", "new_password2": "NyttLosen123!"},
+    )
+    assert response.status_code == 200
+
+    api_client.force_authenticate(None)
+    refreshed = api_client.post(
+        "/dj-rest-auth/token/refresh/", {"refresh": str(refresh)}
+    )
+    assert refreshed.status_code == 401, "old refresh token must be blacklisted"

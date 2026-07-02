@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from dj_rest_auth.registration.serializers import RegisterSerializer
-from dj_rest_auth.serializers import PasswordResetSerializer
+from dj_rest_auth.serializers import (
+    PasswordChangeSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetSerializer,
+)
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -15,6 +19,7 @@ from .models import (
     Resume,
     SavedJobSearch,
 )
+from .tokens import revoke_refresh_tokens
 
 User = get_user_model()
 
@@ -206,6 +211,23 @@ class FrontendPasswordResetSerializer(PasswordResetSerializer):
 
     def get_email_options(self):
         return {"url_generator": _spa_reset_url}
+
+
+class RevokingPasswordChangeSerializer(PasswordChangeSerializer):
+    """Password change also signs out every other device."""
+
+    def save(self):
+        super().save()
+        revoke_refresh_tokens(self.user)
+
+
+class RevokingPasswordResetConfirmSerializer(PasswordResetConfirmSerializer):
+    """Password reset also signs out every other device."""
+
+    def save(self):
+        result = super().save()
+        revoke_refresh_tokens(self.user)
+        return result
 
 
 class ProfileSerializer(serializers.ModelSerializer):

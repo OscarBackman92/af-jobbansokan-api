@@ -2,12 +2,14 @@ import csv
 import hashlib
 import json
 import os
+from datetime import timedelta
 from types import SimpleNamespace
 
 from django.conf import settings
 from django.core.cache import cache
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
+from django.utils import timezone
 from django.utils.dateparse import parse_date
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -83,6 +85,8 @@ def runtime_config(_request):
         ),
         # Empty when Google login is not configured; the SPA hides the button.
         "googleClientId": settings.GOOGLE_CLIENT_ID,
+        # Shown in the privacy policy as the controller contact address.
+        "contactEmail": settings.CONTACT_EMAIL,
     }
     body = f"window.__ANSOKT_CONFIG__={json.dumps(payload)};"
     return HttpResponse(
@@ -90,6 +94,24 @@ def runtime_config(_request):
         content_type="application/javascript; charset=utf-8",
         headers={"Cache-Control": "no-store"},
     )
+
+
+@extend_schema(exclude=True)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def security_txt(_request):
+    """RFC 9116 security.txt — a contact channel for vulnerability reports."""
+    if not settings.CONTACT_EMAIL:
+        raise Http404
+    expires = timezone.now() + timedelta(days=365)
+    body = "\n".join(
+        [
+            f"Contact: mailto:{settings.CONTACT_EMAIL}",
+            f"Expires: {expires.strftime('%Y-%m-%dT%H:%M:%SZ')}",
+            "Preferred-Languages: sv, en",
+        ]
+    )
+    return HttpResponse(body + "\n", content_type="text/plain; charset=utf-8")
 
 
 class ProfileView(generics.RetrieveUpdateDestroyAPIView):

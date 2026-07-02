@@ -88,6 +88,37 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+  # Informational dependency audit — findings appear in the job log without
+  # blocking merges (transitive CVEs often lack an upstream fix).
+  audit:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: pip-audit
+        run: |
+          python -m pip install --upgrade pip pip-audit
+          pip-audit -r requirements.txt
+
+      - name: Set up Node
+        if: always()
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: npm audit (production deps, high+)
+        if: always()
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
   e2e:
     runs-on: ubuntu-latest
 
