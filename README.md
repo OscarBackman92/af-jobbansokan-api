@@ -287,6 +287,8 @@ infra/                 # docker-compose for local PostgreSQL
 - Retention: accounts inactive for 24 months are deleted by the daily
   cron (`prune_inactive_accounts`) after a 30-day warning e-mail;
   logging in resets the clock
+- Monday weekly summary e-mail with pipeline overview and new hits from
+  saved Platsbanken searches (`send_weekly_summary`)
 - Password change/reset revokes all outstanding refresh tokens
 - Vulnerability reports: `/.well-known/security.txt` (served when
   `CONTACT_EMAIL` is set)
@@ -317,7 +319,7 @@ stores when the web app is stable.
 - [x] Google login (code ready — needs OAuth client + env vars)
 - [ ] EU hosting region (Render Frankfurt) + persistent Postgres
 - [ ] Custom domain, uptime check and verified e-mail sender domain
-- [ ] Weekly summary e-mail (applications, follow-ups, interviews)
+- [x] Weekly summary e-mail (applications, follow-ups, saved-search digest)
 - [ ] XLSX export alongside CSV
 - [ ] JobStream API for continuous ad updates
 
@@ -325,6 +327,7 @@ stores when the web app is stable.
 
 | Document | Contents |
 | --- | --- |
+| [18-manuell-test-och-cron.md](docs/18-manuell-test-och-cron.md) | **Cron on Render + manual test checklist (desktop & mobile)** |
 | [15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md) | **Master checklist: drift, kvalitet, retention, mobil (pausat)** |
 | [13-lanseringsplan.md](docs/13-lanseringsplan.md) | Launch plan: hosting, go-public checklist, retention |
 | [12-utvecklingsplan.md](docs/12-utvecklingsplan.md) | Earlier development plan (Phases 1–3, mostly done) |

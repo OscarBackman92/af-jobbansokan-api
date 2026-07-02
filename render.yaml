@@ -159,6 +159,81 @@ services:
       - key: SENTRY_ENVIRONMENT
         value: production
 
+  # Monday 07:00 UTC (~08:00 CET): weekly pipeline summary + saved-search digest.
+  - type: cron
+    name: ansokt-weekly-summary
+    runtime: docker
+    region: frankfurt
+    schedule: "0 7 * * 1"
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python backend/manage.py send_weekly_summary
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: PYTHONPATH
+        value: /app/backend
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ansokt-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: DJANGO_SECRET_KEY
+      - key: BREVO_API_KEY
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: BREVO_API_KEY
+      - key: EMAIL_HOST
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_HOST
+      - key: EMAIL_PORT
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_PORT
+      - key: EMAIL_HOST_USER
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_HOST_USER
+      - key: EMAIL_HOST_PASSWORD
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_HOST_PASSWORD
+      - key: EMAIL_USE_TLS
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_USE_TLS
+      - key: EMAIL_USE_SSL
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_USE_SSL
+      - key: EMAIL_TIMEOUT
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: EMAIL_TIMEOUT
+      - key: DEFAULT_FROM_EMAIL
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: DEFAULT_FROM_EMAIL
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: FRONTEND_URL
+
 databases:
   - name: ansokt-db
     plan: basic-256mb

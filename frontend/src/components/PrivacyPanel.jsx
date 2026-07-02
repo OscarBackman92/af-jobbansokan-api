@@ -50,6 +50,10 @@ export default function PrivacyPanel({ onClose }) {
             Påminnelsemejl skickas bara om du själv satt datum för nästa
             steg på en ansökan.
           </li>
+          <li>
+            Veckosammanfattning per mejl på måndagar när du har aktivitet
+            på tavlan eller nya annonser i sparade sökningar.
+          </li>
         </ul>
 
         <h3>Vad vi inte lagrar</h3>

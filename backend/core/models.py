@@ -150,6 +150,8 @@ class SavedJobSearch(models.Model):
     field = models.CharField(max_length=80, blank=True)
     group = models.CharField(max_length=80, blank=True)
     remote = models.BooleanField(default=False)
+    # Last time a digest e-mail included this search; drives "new since".
+    digest_checked_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -170,6 +172,8 @@ class OperatorProfile(models.Model):
     operator_id = models.CharField(max_length=16, unique=True)
     # Set when the inactivity warning mail is sent; cleared on activity.
     deletion_warned_at = models.DateTimeField(null=True, blank=True)
+    # Idempotency for the Monday weekly summary cron.
+    weekly_summary_sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
