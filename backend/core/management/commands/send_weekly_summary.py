@@ -86,9 +86,7 @@ class Command(BaseCommand):
             searches = SavedJobSearch.objects.filter(owner=user)
             digests = build_search_digests(searches, today=today)
 
-            if not summary_has_content(
-                summary, digest_count=digest_job_count(digests)
-            ):
+            if not summary_has_content(summary, digest_count=digest_job_count(digests)):
                 skipped += 1
                 continue
 
