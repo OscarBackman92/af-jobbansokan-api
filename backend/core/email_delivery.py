@@ -32,8 +32,12 @@ def send_signup_verification_email(request, user) -> None:
 
     try:
         send_email_confirmation(request, user, signup=True)
-    except _mail_delivery_errors():
-        logger.exception("Signup verification e-mail failed for %s", user.email)
+    except _mail_delivery_errors() as exc:
+        logger.exception(
+            "Signup verification e-mail failed for %s: %s",
+            user.email,
+            exc,
+        )
         raise serializers.ValidationError(_VERIFICATION_MAIL_ERROR) from None
 
 

@@ -27,7 +27,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.email_config import email_is_configured
+from core.email_health import email_delivery_warnings
 
 from .csv_safety import sanitize_csv_cell
 from .jobtech import (
@@ -67,8 +67,9 @@ from .throttles import JobTechThrottle, UploadThrottle
 def health(_request):
     """Public health check endpoint."""
     payload = {"status": "ok"}
-    if not settings.DEBUG and not email_is_configured():
-        payload["warnings"] = ["email_not_configured"]
+    warnings = email_delivery_warnings(debug=settings.DEBUG)
+    if warnings:
+        payload["warnings"] = warnings
     return Response(payload)
 
 

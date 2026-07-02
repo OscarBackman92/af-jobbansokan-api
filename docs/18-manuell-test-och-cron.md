@@ -92,6 +92,7 @@ python backend/manage.py send_weekly_summary --dry-run --force
 | Symptom | Åtgärd |
 |---------|--------|
 | `E-post är inte konfigurerad` | Sätt `BREVO_API_KEY` på web **och** cron; deploya om cron efter ändring |
+| Brevo 401 *unrecognised IP* i Render Logs | Brevo → Security → **Authorized IPs** — lägg till Renders utgående IP, eller **inaktivera IP-restriktion** (bättre på Render) |
 | Inga mejl trots “Sent” | Kolla skräppost; verifiera avsändare i Brevo |
 | `Not Monday; skipping` | Förväntat — använd `--force` i shell eller vänta till måndag |
 | Cron finns inte | Deploya blueprint på nytt eller skapa manuellt (B ovan) |
@@ -234,7 +235,9 @@ Samma URL som på dator. Testa i **Safari** (iPhone) och **Chrome** (Android).
 
 ## Relaterad dokumentation
 
-- [claude-chrome-testprompt.md](claude-chrome-testprompt.md) — prompt för Claude in Chrome (QA-rapport)
+- [claude-chrome-testprompt.md](claude-chrome-testprompt.md) — prompt för Claude in Chrome QA testing
+- [claude-chrome-verification-email-prompt.md](claude-chrome-verification-email-prompt.md) — prompt för att testa verifieringsmejl
+- [claude-chrome-fix-email-prompt.md](claude-chrome-fix-email-prompt.md) — prompt för att felsöka/fixa Brevo + Render (dela aldrig API-nycklar i chatten)
 - [14-sakerhet-produktion.md](14-sakerhet-produktion.md) — env-vars, Sentry, DPA
 - [13-lanseringsplan.md](13-lanseringsplan.md) — lansering och retention
 - [README.md](../README.md) — lokal utveckling

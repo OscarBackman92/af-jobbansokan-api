@@ -97,6 +97,26 @@ Kvar att göra som ägare:
 4. **Incident:** läs `docs/16-incidentrutin.md` en gång nu — inte
    först när det brinner.
 
+## 8. Brevo — auktoriserade IP-adresser (Render)
+
+Om registrering ger *"Vi kunde inte skicka verifieringsmejlet"* men
+`BREVO_API_KEY` är satt, kolla Render Logs för `401` och texten
+*unrecognised IP address*.
+
+**Orsak:** Brevo → Security → **Authorized IPs** blockerar Renders
+utgående IP (ändras vid omdeploy på free/starter).
+
+**Åtgärd (välj en):**
+
+1. **Rekommenderat för Render:** Inaktivera IP-restriktion i Brevo
+   (API-nyckeln är hemligheten; IP-lås är opraktiskt med dynamisk hosting).
+2. **Alternativ:** Lägg till Renders aktuella utgående IP i listan efter
+   varje omdeploy (fragilt).
+
+Efter kod-deploy flaggar `/health/` ogiltig Brevo-nyckel; IP-block syns
+fortfarande först vid faktiskt utskick — testa med
+`python backend/manage.py send_test_email dig@epost.se` i Render Shell.
+
 ## Verifiera efter deploy
 
 ```bash
