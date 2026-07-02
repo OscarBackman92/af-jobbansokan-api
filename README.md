@@ -328,6 +328,7 @@ stores when the web app is stable.
 | Document | Contents |
 | --- | --- |
 | [18-manuell-test-och-cron.md](docs/18-manuell-test-och-cron.md) | **Cron on Render + manual test checklist (desktop & mobile)** |
+| [claude-chrome-testprompt.md](docs/claude-chrome-testprompt.md) | Copy-paste prompt for Claude in Chrome QA testing |
 | [15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md) | **Master checklist: drift, kvalitet, retention, mobil (pausat)** |
 | [13-lanseringsplan.md](docs/13-lanseringsplan.md) | Launch plan: hosting, go-public checklist, retention |
 | [12-utvecklingsplan.md](docs/12-utvecklingsplan.md) | Earlier development plan (Phases 1–3, mostly done) |

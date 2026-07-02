@@ -234,6 +234,7 @@ Samma URL som på dator. Testa i **Safari** (iPhone) och **Chrome** (Android).
 
 ## Relaterad dokumentation
 
+- [claude-chrome-testprompt.md](claude-chrome-testprompt.md) — prompt för Claude in Chrome (QA-rapport)
 - [14-sakerhet-produktion.md](14-sakerhet-produktion.md) — env-vars, Sentry, DPA
 - [13-lanseringsplan.md](13-lanseringsplan.md) — lansering och retention
 - [README.md](../README.md) — lokal utveckling
