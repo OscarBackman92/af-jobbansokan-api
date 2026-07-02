@@ -209,6 +209,8 @@ function CvReadView({ resume, skillsText }) {
 function ResumeCard({ token }) {
   const [resume, setResume] = useState(EMPTY_RESUME);
   const [skillsText, setSkillsText] = useState("");
+  const [savedResume, setSavedResume] = useState(EMPTY_RESUME);
+  const [savedSkillsText, setSavedSkillsText] = useState("");
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -222,10 +224,35 @@ function ResumeCard({ token }) {
       .then((data) => {
         setResume(data);
         setSkillsText(data.skills.join(", "));
+        setSavedResume(data);
+        setSavedSkillsText(data.skills.join(", "));
+        setSaveState("clean");
       })
       .catch((err) => setMessage({ tone: "error", text: err.message }))
       .finally(() => setLoading(false));
   }, [token]);
+
+  function revertEdits() {
+    setResume(savedResume);
+    setSkillsText(savedSkillsText);
+    setSaveState("clean");
+  }
+
+  function toggleEditor() {
+    setMessage(null);
+    if (open) {
+      if (saveState === "dirty") {
+        const discard = window.confirm(
+          "Du har osparade ändringar i CV:t. Stäng utan att spara?"
+        );
+        if (!discard) return;
+        revertEdits();
+      }
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+  }
 
   function setField(name, value) {
     setSaveState("dirty");
@@ -317,6 +344,8 @@ function ResumeCard({ token }) {
       });
       setResume(saved);
       setSkillsText(saved.skills.join(", "));
+      setSavedResume(saved);
+      setSavedSkillsText(saved.skills.join(", "));
       setSaveState("clean");
       setOpen(false);
       setMessage({ tone: "success", text: "CV:t är sparat." });
@@ -346,13 +375,7 @@ function ResumeCard({ token }) {
               hidden
             />
           </label>
-          <button
-            className="secondary small"
-            onClick={() => {
-              setMessage(null);
-              setOpen(!open);
-            }}
-          >
+          <button className="secondary small" onClick={toggleEditor}>
             {open ? "Stäng" : "Redigera"}
           </button>
         </div>

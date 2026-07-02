@@ -42,7 +42,8 @@ Gå igenom i ordning. Efter varje avsnitt: ✅ OK, ⚠️ DELVIS, ❌ FAIL, elle
 ### 1. Startsida & varumärke
 - [ ] Sidan laddar utan vit skärm/lång spinner
 - [ ] Rubrik/tagline “Jobbsöket” syns
-- [ ] Flikar: Tavlan, Annonser, Idag, Profil & CV (eller motsvarande)
+- [ ] Flikar: **Tavlan**, **Annonser**, **Profil & CV** (3 st)
+- [ ] “Idag & att göra” är en **sektion på Tavlan**, inte en egen flik
 - [ ] Footer med integritetslänk
 
 ### 2. Konto (hoppa över om redan inloggad och jag säger det)
@@ -60,7 +61,7 @@ Gå igenom i ordning. Efter varje avsnitt: ✅ OK, ⚠️ DELVIS, ❌ FAIL, elle
 - [ ] Öppna ansökan — modal med detaljer och tidslinje
 - [ ] Sökfält filtrerar
 - [ ] Snabbfilter (Följ upp, Deadline, etc.) fungerar
-- [ ] “Idag & att göra”-panel om nästa steg är idag/igår (sätt datum om behövs)
+- [ ] “Idag & att göra”-panel på **Tavlan** om nästa steg är idag/igår (sätt datum om behövs)
 - [ ] CSV-export laddar ner fil
 
 ### 4. Annonser (Platsbanken)
