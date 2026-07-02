@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from functools import lru_cache
+from types import SimpleNamespace
 
 
 @lru_cache(maxsize=512)
@@ -42,3 +43,16 @@ def match_skills(skills: list[str], posting) -> dict:
         "count": len(matched),
         "total": len(normalized),
     }
+
+
+def match_application(skills: list[str], application) -> dict:
+    """Match CV skills against a tracker row (title, notes, linked posting)."""
+    description_parts = [application.company, application.notes]
+    posting = getattr(application, "posting", None)
+    if posting is not None and posting.description:
+        description_parts.append(posting.description)
+    posting_like = SimpleNamespace(
+        title=application.title,
+        description="\n".join(part for part in description_parts if part),
+    )
+    return match_skills(skills, posting_like)

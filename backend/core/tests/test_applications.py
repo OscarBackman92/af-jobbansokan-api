@@ -134,6 +134,26 @@ def test_list_returns_only_own_rows(api_client, user, django_user_model):
     assert [item["id"] for item in body["results"]] == [mine.id]
 
 
+def test_list_includes_cv_match_when_resume_has_skills(api_client, user, posting):
+    from core.models import Resume
+
+    Resume.objects.create(user=user, skills=["Python", "Django"])
+    JobApplication.objects.create(
+        owner=user,
+        posting=posting,
+        company=posting.company_name,
+        title=posting.title,
+        notes="Python backend role",
+    )
+    JobApplication.objects.create(owner=user, company="Other", title="Säljare")
+
+    api_client.force_authenticate(user)
+    rows = api_client.get(URL).json()["results"]
+    by_title = {row["title"]: row for row in rows}
+    assert by_title["Backend Developer"]["match"]["matched"] == ["Python"]
+    assert by_title["Säljare"]["match"]["count"] == 0
+
+
 def test_list_is_lean_but_detail_includes_events(api_client, user):
     application = JobApplication.objects.create(owner=user, company="Acme", title="Dev")
     application.events.create(occurred_at="2026-06-01", note="Samtal")

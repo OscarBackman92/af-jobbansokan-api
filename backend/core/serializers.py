@@ -13,6 +13,7 @@ from rest_framework import serializers
 
 from .ad_url import ad_urls_equivalent, normalize_ad_url
 from .email_delivery import register_user_with_verification
+from .matching import match_application
 from .models import (
     ApplicationEvent,
     JobApplication,
@@ -45,6 +46,7 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
     """
 
     status_label = serializers.CharField(source="get_status_display", read_only=True)
+    match = serializers.SerializerMethodField()
 
     class Meta:
         model = JobApplication
@@ -63,10 +65,17 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
             "contact_info",
             "notes",
             "next_action_at",
+            "match",
             "created_at",
             "updated_at",
         ]
         read_only_fields = fields
+
+    def get_match(self, obj):
+        skills = self.context.get("cv_skills")
+        if not skills:
+            return None
+        return match_application(skills, obj)
 
 
 class JobApplicationSerializer(serializers.ModelSerializer):

@@ -32,6 +32,7 @@ export default function PostingsPanel() {
     remote: false,
   });
   const [offset, setOffset] = useState(0);
+  const resultsAnchorRef = useRef(null);
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -163,6 +164,10 @@ export default function PostingsPanel() {
   useEffect(() => {
     runSearch();
   }, [runSearch]);
+
+  useEffect(() => {
+    resultsAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [offset, query]);
 
   function submit(event) {
     event.preventDefault();
@@ -448,7 +453,7 @@ export default function PostingsPanel() {
       )}
 
       {!error && !loading && (
-        <p className="muted job-count">
+        <p className="muted job-count" ref={resultsAnchorRef}>
           {total === 0
             ? "Inga annonser matchade din sökning."
             : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(

@@ -132,17 +132,26 @@ const EMPTY_RESUME = {
   education: [],
 };
 
+function hasCvContent(resume, skillsText) {
+  const skills = skillsText
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return (
+    resume.headline ||
+    resume.summary ||
+    skills.length ||
+    resume.experience.length ||
+    resume.education.length
+  );
+}
+
 function CvReadView({ resume, skillsText }) {
   const skills = skillsText
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const hasContent =
-    resume.headline ||
-    resume.summary ||
-    skills.length ||
-    resume.experience.length ||
-    resume.education.length;
+  const hasContent = hasCvContent(resume, skillsText);
 
   if (!hasContent) {
     return (
@@ -215,6 +224,7 @@ function ResumeCard({ token }) {
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   // "clean" = matches the server, "dirty" = unsaved edits.
   const [saveState, setSaveState] = useState("clean");
 
@@ -356,6 +366,31 @@ function ResumeCard({ token }) {
     }
   }
 
+  async function deleteResume() {
+    const sure = window.confirm(
+      "Radera allt CV-innehåll? Detta går inte att ångra."
+    );
+    if (!sure) return;
+    setMessage(null);
+    setDeleting(true);
+    try {
+      await request("/api/v1/me/resume/", { method: "DELETE", token });
+      setResume(EMPTY_RESUME);
+      setSkillsText("");
+      setSavedResume(EMPTY_RESUME);
+      setSavedSkillsText("");
+      setSaveState("clean");
+      setOpen(false);
+      setMessage({ tone: "success", text: "CV:t är raderat." });
+    } catch (err) {
+      setMessage({ tone: "error", text: err.message });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const cvHasContent = hasCvContent(resume, skillsText);
+
   return (
     <section className="card">
       <div className="row-between">
@@ -378,6 +413,16 @@ function ResumeCard({ token }) {
           <button className="secondary small" onClick={toggleEditor}>
             {open ? "Stäng" : "Redigera"}
           </button>
+          {cvHasContent && (
+            <button
+              type="button"
+              className="danger small"
+              onClick={deleteResume}
+              disabled={deleting || saving}
+            >
+              {deleting ? "Raderar…" : "Radera CV"}
+            </button>
+          )}
         </div>
       </div>
       {message && (
@@ -401,6 +446,11 @@ function ResumeCard({ token }) {
       {!loading && !open && <CvReadView resume={resume} skillsText={skillsText} />}
       {!loading && open && (
         <form onSubmit={save}>
+          <p className="muted cv-edit-hint">
+            Varje block under Erfarenhet och Utbildning är en rad i CV:t.
+            Knappen &quot;Ta bort rad&quot; tar bort just den raden — inte hela
+            CV:t.
+          </p>
           <label>
             Rubrik
             <input
@@ -427,42 +477,60 @@ function ResumeCard({ token }) {
 
           <h3>Erfarenhet</h3>
           {resume.experience.map((row, i) => (
-            <div className="resume-row" key={i}>
-              <div className="rowline">
-                <input
-                  value={row.title}
-                  onChange={(e) => setRow("experience", i, "title", e.target.value)}
-                  placeholder="Titel"
-                />
-                <input
-                  value={row.company}
-                  onChange={(e) =>
-                    setRow("experience", i, "company", e.target.value)
-                  }
-                  placeholder="Företag"
-                />
-                <input
-                  value={row.years}
-                  onChange={(e) => setRow("experience", i, "years", e.target.value)}
-                  placeholder="År"
-                />
-                <button
-                  type="button"
-                  className="danger small"
-                  onClick={() => removeRow("experience", i)}
-                >
-                  ✕
-                </button>
+            <fieldset className="resume-entry" key={i}>
+              <legend>Erfarenhet {i + 1}</legend>
+              <div className="resume-fields">
+                <label>
+                  Arbetstitel
+                  <input
+                    value={row.title}
+                    onChange={(e) =>
+                      setRow("experience", i, "title", e.target.value)
+                    }
+                    placeholder="t.ex. Backendutvecklare"
+                  />
+                </label>
+                <label>
+                  Arbetsgivare
+                  <input
+                    value={row.company}
+                    onChange={(e) =>
+                      setRow("experience", i, "company", e.target.value)
+                    }
+                    placeholder="t.ex. Acme AB"
+                  />
+                </label>
+                <label>
+                  Period
+                  <input
+                    value={row.years}
+                    onChange={(e) =>
+                      setRow("experience", i, "years", e.target.value)
+                    }
+                    placeholder="t.ex. 2020–2024"
+                  />
+                </label>
               </div>
-              <textarea
-                className="resume-description"
-                value={row.description || ""}
-                onChange={(e) =>
-                  setRow("experience", i, "description", e.target.value)
-                }
-                placeholder="Kort beskrivning, ansvar eller resultat"
-              />
-            </div>
+              <label>
+                Beskrivning
+                <textarea
+                  className="resume-description"
+                  value={row.description || ""}
+                  onChange={(e) =>
+                    setRow("experience", i, "description", e.target.value)
+                  }
+                  placeholder="Kort beskrivning, ansvar eller resultat"
+                />
+              </label>
+              <button
+                type="button"
+                className="danger small"
+                onClick={() => removeRow("experience", i)}
+                aria-label={`Ta bort erfarenhet ${i + 1}`}
+              >
+                Ta bort rad
+              </button>
+            </fieldset>
           ))}
           <button
             type="button"
@@ -481,30 +549,49 @@ function ResumeCard({ token }) {
 
           <h3>Utbildning</h3>
           {resume.education.map((row, i) => (
-            <div className="rowline" key={i}>
-              <input
-                value={row.school}
-                onChange={(e) => setRow("education", i, "school", e.target.value)}
-                placeholder="Lärosäte"
-              />
-              <input
-                value={row.degree}
-                onChange={(e) => setRow("education", i, "degree", e.target.value)}
-                placeholder="Examen/inriktning"
-              />
-              <input
-                value={row.years}
-                onChange={(e) => setRow("education", i, "years", e.target.value)}
-                placeholder="År"
-              />
+            <fieldset className="resume-entry" key={i}>
+              <legend>Utbildning {i + 1}</legend>
+              <div className="resume-fields">
+                <label>
+                  Lärosäte
+                  <input
+                    value={row.school}
+                    onChange={(e) =>
+                      setRow("education", i, "school", e.target.value)
+                    }
+                    placeholder="t.ex. KTH"
+                  />
+                </label>
+                <label>
+                  Examen / inriktning
+                  <input
+                    value={row.degree}
+                    onChange={(e) =>
+                      setRow("education", i, "degree", e.target.value)
+                    }
+                    placeholder="t.ex. Civilingenjör datateknik"
+                  />
+                </label>
+                <label>
+                  Period
+                  <input
+                    value={row.years}
+                    onChange={(e) =>
+                      setRow("education", i, "years", e.target.value)
+                    }
+                    placeholder="t.ex. 2016–2020"
+                  />
+                </label>
+              </div>
               <button
                 type="button"
                 className="danger small"
                 onClick={() => removeRow("education", i)}
+                aria-label={`Ta bort utbildning ${i + 1}`}
               >
-                ✕
+                Ta bort rad
               </button>
-            </div>
+            </fieldset>
           ))}
           <button
             type="button"

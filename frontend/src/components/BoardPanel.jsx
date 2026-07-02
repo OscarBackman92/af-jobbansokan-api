@@ -9,9 +9,14 @@ import {
   STATUS_LABELS,
 } from "../statuses.js";
 import ApplicationModal from "./ApplicationModal.jsx";
+import MatchScore from "./MatchScore.jsx";
 import TodayPanel from "./TodayPanel.jsx";
+
+const GOOD_MATCH_PERCENT = 40;
+
 const QUICK_FILTERS = [
   { id: "all", label: "Alla" },
+  { id: "good_match", label: "Passar mitt CV" },
   { id: "followups", label: "Att följa upp" },
   { id: "deadline", label: "Deadline snart" },
   { id: "interviews", label: "Intervjuer" },
@@ -55,6 +60,7 @@ function matchesSearch(application, query) {
 
 function matchesQuickFilter(application, filter) {
   if (filter === "all") return true;
+  if (filter === "good_match") return isGoodMatch(application);
   if (filter === "followups") return isFollowUp(application);
   if (filter === "deadline") return hasDeadlineSoon(application);
   if (filter === "interviews") {
@@ -67,6 +73,24 @@ function matchesQuickFilter(application, filter) {
   return true;
 }
 
+function isGoodMatch(application) {
+  const match = application.match;
+  if (!match?.total) return false;
+  return (match.count / match.total) * 100 >= GOOD_MATCH_PERCENT;
+}
+
+function matchesStageFilter(application, stageFilter) {
+  if (!stageFilter) return true;
+  if (stageFilter === "closed") return isClosed(application);
+  return application.status === stageFilter;
+}
+
+function stageFilterLabel(stageFilter) {
+  if (!stageFilter) return "";
+  if (stageFilter === "closed") return "Avslutade";
+  return STATUS_LABELS[stageFilter] || stageFilter;
+}
+
 export default function BoardPanel({ token, onNavigate }) {
   const [applications, setApplications] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -74,6 +98,7 @@ export default function BoardPanel({ token, onNavigate }) {
   const [error, setError] = useState(null);
   const [query, setQuery] = useState("");
   const [quickFilter, setQuickFilter] = useState("all");
+  const [stageFilter, setStageFilter] = useState(null);
 
   const reload = useCallback(async () => {
     try {
@@ -144,10 +169,14 @@ export default function BoardPanel({ token, onNavigate }) {
 
   const allClosed = applications.filter(isClosed);
   const filteredApplications = applications.filter(
-    (a) => matchesSearch(a, query) && matchesQuickFilter(a, quickFilter)
+    (a) =>
+      matchesSearch(a, query) &&
+      matchesQuickFilter(a, quickFilter) &&
+      matchesStageFilter(a, stageFilter)
   );
   const closed = filteredApplications.filter(isClosed);
-  const hasActiveFilters = query.trim() || quickFilter !== "all";
+  const hasActiveFilters =
+    query.trim() || quickFilter !== "all" || stageFilter !== null;
   const followUps = applications
     .filter(isFollowUp)
     .sort(
@@ -159,19 +188,29 @@ export default function BoardPanel({ token, onNavigate }) {
   function resetFilters() {
     setQuery("");
     setQuickFilter("all");
+    setStageFilter(null);
+  }
+
+  function toggleStageFilter(status) {
+    setStageFilter((current) => (current === status ? null : status));
   }
 
   const activeFiltered = filteredApplications.filter((a) => !isClosed(a));
   // Empty stages are hidden: they carry no action, and the section
   // headers already tell the user where each application stands.
   const activeGroups =
-    quickFilter === "closed"
+    quickFilter === "closed" || stageFilter === "closed"
       ? []
-      : ACTIVE_STATUSES.map((status) => ({
-          id: status,
-          label: STATUS_LABELS[status],
-          applications: activeFiltered.filter((a) => a.status === status),
-        })).filter((group) => group.applications.length > 0);
+      : ACTIVE_STATUSES.filter((status) => !stageFilter || stageFilter === status)
+          .map((status) => ({
+            id: status,
+            label: STATUS_LABELS[status],
+            applications: activeFiltered.filter((a) => a.status === status),
+          }))
+          .filter(
+            (group) =>
+              stageFilter === group.id || group.applications.length > 0
+          );
   const activeCount = applications.length - allClosed.length;
   const deadlineSoonCount = applications.filter(hasDeadlineSoon).length;
   const interviewTrackCount = applications.filter((a) =>
@@ -289,7 +328,14 @@ export default function BoardPanel({ token, onNavigate }) {
 
             {hasActiveFilters && (
               <p className="muted filter-summary">
-                Visar {filteredApplications.length} av {applications.length}.
+                Visar {filteredApplications.length} av {applications.length}
+                {stageFilter && (
+                  <>
+                    {" "}
+                    · status: <strong>{stageFilterLabel(stageFilter)}</strong>
+                  </>
+                )}
+                .
                 <button className="linklike" onClick={resetFilters}>
                   Rensa filter
                 </button>
@@ -314,16 +360,20 @@ export default function BoardPanel({ token, onNavigate }) {
                     status={group.id}
                     label={group.label}
                     applications={group.applications}
+                    activeFilter={stageFilter}
+                    onFilterToggle={toggleStageFilter}
                     onOpen={setSelected}
                     onMove={moveTo}
                   />
                 ))}
 
-                {closed.length > 0 && (
+                {(stageFilter === "closed" || !stageFilter) && closed.length > 0 && (
                   <PipelineStage
                     status="closed"
                     label="Avslutade"
                     applications={closed}
+                    activeFilter={stageFilter}
+                    onFilterToggle={toggleStageFilter}
                     onOpen={setSelected}
                     onMove={moveTo}
                   />
@@ -366,12 +416,39 @@ function MetricTile({ label, value, detail, tone = "default" }) {
   );
 }
 
-function PipelineStage({ status, label, applications, onOpen, onMove }) {
+function PipelineStage({
+  status,
+  label,
+  applications,
+  activeFilter,
+  onFilterToggle,
+  onOpen,
+  onMove,
+}) {
+  const isActive = activeFilter === status;
   return (
     <section className={`pipeline-stage pipeline-stage--${status}`}>
-      <div className="pipeline-stage-head">
-        <h3>{label}</h3>
-        <span>{applications.length}</span>
+      <div
+        className={
+          isActive
+            ? "pipeline-stage-head pipeline-stage-head--active"
+            : "pipeline-stage-head"
+        }
+      >
+        <button
+          type="button"
+          className="pipeline-stage-filter"
+          onClick={() => onFilterToggle(status)}
+          aria-pressed={isActive}
+          title={
+            isActive
+              ? `Visa alla statusar (filtrerar på ${label})`
+              : `Visa bara ${label}`
+          }
+        >
+          <h3>{label}</h3>
+          <span>{applications.length}</span>
+        </button>
       </div>
       <div className="pipeline-rows">
         {applications.map((application) => (
@@ -423,6 +500,9 @@ function ApplicationRow({ application, onOpen, onMove }) {
       <button className="pipeline-row-main" onClick={onOpen}>
         <span className="pipeline-row-title">{application.title}</span>
         <span className="pipeline-row-meta">{meta.join(" · ")}</span>
+        {application.match && (
+          <MatchScore match={application.match} variant="compact" />
+        )}
         {hasBadges && (
           <span className="pipeline-row-badges">
             {showStatusBadge && (

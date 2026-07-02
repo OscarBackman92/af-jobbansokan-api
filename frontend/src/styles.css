@@ -1155,6 +1155,39 @@ tbody tr:last-child td {
   margin-bottom: 0.7rem;
 }
 
+.cv-edit-hint {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.resume-entry {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.resume-entry legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0 0.35rem;
+}
+
+.resume-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0.55rem;
+}
+
+.resume-entry .danger.small {
+  margin-top: 0.35rem;
+}
+
 .resume-description {
   min-height: 4rem;
   margin-top: 0.2rem;
@@ -1263,6 +1296,46 @@ tbody tr:last-child td {
   justify-content: space-between;
   gap: 0.8rem;
   margin-bottom: 0.65rem;
+}
+
+.pipeline-stage-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.pipeline-stage-filter:hover {
+  color: var(--ink);
+  transform: none;
+  filter: none;
+}
+
+.pipeline-stage-filter:focus-visible {
+  outline: 2px solid var(--accent, #2563eb);
+  outline-offset: 2px;
+}
+
+.pipeline-stage-head--active .pipeline-stage-filter {
+  color: var(--ink);
+}
+
+.pipeline-stage-head--active {
+  padding: 0.15rem 0.35rem;
+  margin: -0.15rem -0.35rem 0.5rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
 }
 
 .pipeline-stage-head h3 {
@@ -2054,6 +2127,10 @@ tbody tr:last-child td {
 
 /* ---------- Match score ---------- */
 
+.pipeline-row-main .match-score {
+  margin-top: 0.35rem;
+}
+
 .match-score {
   margin-top: 0.35rem;
   width: 100%;
@@ -2180,6 +2257,10 @@ tbody tr:last-child td {
 
 @media (max-width: 640px) {
   .grid2 {
+    grid-template-columns: 1fr;
+  }
+
+  .resume-fields {
     grid-template-columns: 1fr;
   }
 

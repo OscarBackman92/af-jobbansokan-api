@@ -246,13 +246,22 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
             return JobApplicationListSerializer
         return JobApplicationSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if self.action == "list" and self.request.user.is_authenticated:
+            resume = Resume.objects.filter(user=self.request.user).first()
+            context["cv_skills"] = resume.skills if resume else []
+        return context
+
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):  # schema generation
             return JobApplication.objects.none()
         qs = JobApplication.objects.filter(owner=self.request.user).order_by(
             "-updated_at"
         )
-        if self.action != "list":
+        if self.action == "list":
+            qs = qs.select_related("posting")
+        else:
             qs = qs.prefetch_related("events")
         params = self.request.query_params
         date_from = _date_param(params, "from")
