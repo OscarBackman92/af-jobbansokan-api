@@ -66,6 +66,10 @@ export function flattenSkillGroups(groups) {
   return flat;
 }
 
+export function hasSkillContent(groups) {
+  return flattenSkillGroups(groups).length > 0;
+}
+
 export function addSkillToText(text, label) {
   const items = String(text ?? "")
     .split(",")
