@@ -13,6 +13,7 @@ from rest_framework import serializers
 
 from .ad_url import ad_urls_equivalent, normalize_ad_url
 from .email_delivery import register_user_with_verification
+from .matching import match_application
 from .skill_groups import (
     EMPTY_SKILL_GROUPS,
     flatten_skill_groups,
