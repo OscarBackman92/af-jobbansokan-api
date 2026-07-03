@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { request } from "../api.js";
 
-export default function ProfilePanel({ token, me, onMeChange, onLogout }) {
+export default function ProfilePanel({ token, me, onMeChange, onLogout, profileLeaveGuardRef }) {
   return (
     <div className="stack">
       <ProfileCard
@@ -11,7 +11,7 @@ export default function ProfilePanel({ token, me, onMeChange, onLogout }) {
         onMeChange={onMeChange}
         onLogout={onLogout}
       />
-      <ResumeCard token={token} />
+      <ResumeCard token={token} profileLeaveGuardRef={profileLeaveGuardRef} />
     </div>
   );
 }
@@ -215,7 +215,7 @@ function CvReadView({ resume, skillsText }) {
   );
 }
 
-function ResumeCard({ token }) {
+function ResumeCard({ token, profileLeaveGuardRef }) {
   const [resume, setResume] = useState(EMPTY_RESUME);
   const [skillsText, setSkillsText] = useState("");
   const [savedResume, setSavedResume] = useState(EMPTY_RESUME);
@@ -247,6 +247,25 @@ function ResumeCard({ token }) {
     setSkillsText(savedSkillsText);
     setSaveState("clean");
   }
+
+  useEffect(() => {
+    if (!profileLeaveGuardRef) return undefined;
+    profileLeaveGuardRef.current = () => {
+      if (!open || saveState !== "dirty") return true;
+      const discard = window.confirm(
+        "Du har osparade ändringar i CV:t. Lämna sidan utan att spara?"
+      );
+      if (discard) {
+        setResume(savedResume);
+        setSkillsText(savedSkillsText);
+        setSaveState("clean");
+      }
+      return discard;
+    };
+    return () => {
+      profileLeaveGuardRef.current = null;
+    };
+  }, [open, saveState, profileLeaveGuardRef, savedResume, savedSkillsText]);
 
   function toggleEditor() {
     setMessage(null);

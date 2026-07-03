@@ -331,6 +331,7 @@ stores when the web app is stable.
 | [claude-chrome-testprompt.md](docs/claude-chrome-testprompt.md) | Copy-paste prompt for Claude in Chrome QA testing |
 | [claude-chrome-verification-email-prompt.md](docs/claude-chrome-verification-email-prompt.md) | Claude in Chrome prompt to test signup verification e-mail |
 | [claude-chrome-fix-email-prompt.md](docs/claude-chrome-fix-email-prompt.md) | Claude in Chrome prompt to fix Brevo/Render e-mail (no API keys in chat) |
+| [claude-chrome-sprint1-2-qa-prompt.md](docs/claude-chrome-sprint1-2-qa-prompt.md) | Claude in Chrome QA for Sprint 1 & 2 UX (scroll, CV, board filters, match) |
 | [15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md) | **Master checklist: drift, kvalitet, retention, mobil (pausat)** |
 | [13-lanseringsplan.md](docs/13-lanseringsplan.md) | Launch plan: hosting, go-public checklist, retention |
 | [12-utvecklingsplan.md](docs/12-utvecklingsplan.md) | Earlier development plan (Phases 1–3, mostly done) |

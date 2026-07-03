@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { request } from "./api.js";
 import { clearTokens, getAccess, setTokens } from "./auth.js";
@@ -55,6 +55,19 @@ export default function App() {
   const [googleCode, setGoogleCode] = useState(() => readGoogleCallback());
   const [theme, setTheme] = useState(() => readTheme());
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const profileLeaveGuardRef = useRef(null);
+
+  function changeTab(next) {
+    if (
+      next !== tab &&
+      tab === "profile" &&
+      profileLeaveGuardRef.current &&
+      !profileLeaveGuardRef.current()
+    ) {
+      return;
+    }
+    setTab(next);
+  }
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -110,7 +123,7 @@ export default function App() {
               <button
                 key={t.id}
                 className={tab === t.id ? "tab active" : "tab"}
-                onClick={() => setTab(t.id)}
+                onClick={() => changeTab(t.id)}
               >
                 {t.label}
               </button>
@@ -169,13 +182,19 @@ export default function App() {
           <AuthHero onLogin={login} />
         )}
         {!resetCreds && !verifyKey && token && tab === "board" && !showPrivacy && (
-          <BoardPanel token={token} onNavigate={setTab} />
+          <BoardPanel token={token} onNavigate={changeTab} />
         )}
         {!resetCreds && !verifyKey && token && tab === "postings" && !showPrivacy && (
           <PostingsPanel />
         )}
         {!resetCreds && !verifyKey && token && tab === "profile" && !showPrivacy && (
-          <ProfilePanel token={token} me={me} onMeChange={setMe} onLogout={logout} />
+          <ProfilePanel
+            token={token}
+            me={me}
+            onMeChange={setMe}
+            onLogout={logout}
+            profileLeaveGuardRef={profileLeaveGuardRef}
+          />
         )}
         {showPrivacy && <PrivacyPanel onClose={() => setShowPrivacy(false)} />}
       </main>

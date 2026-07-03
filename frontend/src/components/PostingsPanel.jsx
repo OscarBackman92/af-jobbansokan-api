@@ -33,6 +33,8 @@ export default function PostingsPanel() {
   });
   const [offset, setOffset] = useState(0);
   const resultsAnchorRef = useRef(null);
+  const pendingScrollRef = useRef(false);
+  const skipInitialScrollRef = useRef(true);
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -166,8 +168,32 @@ export default function PostingsPanel() {
   }, [runSearch]);
 
   useEffect(() => {
-    resultsAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (skipInitialScrollRef.current) {
+      skipInitialScrollRef.current = false;
+      return;
+    }
+    pendingScrollRef.current = true;
   }, [offset, query]);
+
+  useEffect(() => {
+    if (loading || !pendingScrollRef.current) return;
+    pendingScrollRef.current = false;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        resultsAnchorRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+    });
+  }, [loading, data]);
+
+  function goToPage(nextOffset) {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    setOffset(nextOffset);
+  }
 
   function submit(event) {
     event.preventDefault();
@@ -486,14 +512,14 @@ export default function PostingsPanel() {
           <button
             className="secondary small"
             disabled={offset === 0 || loading}
-            onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+            onClick={() => goToPage(Math.max(0, offset - PAGE_SIZE))}
           >
             ← Föregående
           </button>
           <button
             className="secondary small"
             disabled={offset + PAGE_SIZE >= total || loading}
-            onClick={() => setOffset(offset + PAGE_SIZE)}
+            onClick={() => goToPage(offset + PAGE_SIZE)}
           >
             Nästa →
           </button>
