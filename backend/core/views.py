@@ -38,6 +38,7 @@ from .jobtech import (
     occupation_groups,
 )
 from .jobtech import search as jobtech_search
+from .experience_skills import suggest_skills_from_experience
 from .matching import match_skills
 from .models import JobApplication, Resume, SavedJobSearch
 from .permissions import IsAuthenticatedUser
@@ -56,6 +57,7 @@ from .serializers import (
     ResumeUploadSerializer,
     SavedJobSearchSerializer,
 )
+from .skill_groups import normalize_skill_groups, skill_groups_from_flat
 from .throttles import JobTechThrottle, UploadThrottle
 
 
@@ -200,7 +202,36 @@ class ResumeParseView(APIView):
         except Exception as exc:  # corrupt/unreadable file
             raise ValidationError({"file": "The file could not be read."}) from exc
 
-        return Response(parse_resume_text(text))
+        draft = parse_resume_text(text)
+        draft["skill_suggestions"] = suggest_skills_from_experience(
+            draft.get("experience", []),
+            existing_groups=skill_groups_from_flat(draft.get("skills", [])),
+        )
+        return Response(draft)
+
+
+class ResumeSuggestSkillsView(APIView):
+    """Suggest categorized skills extracted from experience rows."""
+
+    permission_classes = [IsAuthenticatedUser]
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def post(self, request):
+        experience = request.data.get("experience", [])
+        if not isinstance(experience, list):
+            raise ValidationError({"experience": "Expected a list."})
+        try:
+            groups = normalize_skill_groups(request.data.get("skill_groups", {}))
+        except ValueError as exc:
+            raise ValidationError({"skill_groups": str(exc)}) from exc
+        return Response(
+            {
+                "suggestions": suggest_skills_from_experience(
+                    experience,
+                    existing_groups=groups,
+                )
+            }
+        )
 
 
 def _date_param(params, name):

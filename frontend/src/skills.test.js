@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   EMPTY_SKILL_GROUPS,
+  addSkillToText,
   flattenSkillGroups,
   groupsToText,
   normalizeSkillGroups,
@@ -50,5 +51,10 @@ describe("skills helpers", () => {
       domain: "",
       languages: "Svenska",
     });
+  });
+
+  test("addSkillToText avoids duplicates", () => {
+    expect(addSkillToText("Python, Django", "Python")).toBe("Python, Django");
+    expect(addSkillToText("Python", "Wint")).toBe("Python, Wint");
   });
 });

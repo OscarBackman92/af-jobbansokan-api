@@ -5,11 +5,14 @@ import {
   EMPTY_SKILL_GROUPS,
   SKILL_GROUP_HINTS,
   SKILL_GROUP_LABELS,
+  addSkillToText,
   groupsToText,
   hasSkillContent,
   normalizeSkillGroups,
+  removeSuggestion,
   textToGroups,
 } from "../skills.js";
+import SkillSuggestions from "./SkillSuggestions.jsx";
 
 export default function ProfilePanel({ token, me, onMeChange, onLogout, profileLeaveGuardRef }) {
   return (
@@ -236,6 +239,8 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
   const [deleting, setDeleting] = useState(false);
   // "clean" = matches the server, "dirty" = unsaved edits.
   const [saveState, setSaveState] = useState("clean");
+  const [skillSuggestions, setSkillSuggestions] = useState(null);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -251,6 +256,43 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
       .catch((err) => setMessage({ tone: "error", text: err.message }))
       .finally(() => setLoading(false));
   }, [token]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const hasExperienceText = resume.experience.some(
+      (row) => row.description?.trim() || row.title?.trim()
+    );
+    if (!hasExperienceText) {
+      setSkillSuggestions(null);
+      setSuggestionsLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setSuggestionsLoading(true);
+      try {
+        const data = await request("/api/v1/me/resume/suggest-skills/", {
+          method: "POST",
+          token,
+          body: {
+            experience: resume.experience,
+            skill_groups: textToGroups(skillGroupsText),
+          },
+        });
+        if (!cancelled) setSkillSuggestions(data.suggestions);
+      } catch {
+        if (!cancelled) setSkillSuggestions(null);
+      } finally {
+        if (!cancelled) setSuggestionsLoading(false);
+      }
+    }, 600);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [open, resume.experience, skillGroupsText, token]);
 
   function revertEdits() {
     setResume(savedResume);
@@ -301,6 +343,37 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
   function changeSkillGroup(key, value) {
     setSaveState("dirty");
     setSkillGroupsText((current) => ({ ...current, [key]: value }));
+  }
+
+  function addSuggestion(category, label) {
+    setSaveState("dirty");
+    setSkillGroupsText((current) => ({
+      ...current,
+      [category]: addSkillToText(current[category], label),
+    }));
+    setSkillSuggestions((current) => removeSuggestion(current, category, label));
+  }
+
+  function addAllSuggestions() {
+    if (!skillSuggestions) return;
+    setSaveState("dirty");
+    setSkillGroupsText((current) => {
+      let next = { ...current };
+      for (const [category, items] of Object.entries(skillSuggestions)) {
+        for (const item of items ?? []) {
+          next = {
+            ...next,
+            [category]: addSkillToText(next[category], item.label),
+          };
+        }
+      }
+      return next;
+    });
+    setSkillSuggestions({ technical: [], domain: [], languages: [] });
+  }
+
+  function dismissSuggestion(category, label) {
+    setSkillSuggestions((current) => removeSuggestion(current, category, label));
   }
 
   function setRow(listName, index, key, value) {
@@ -355,6 +428,9 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
         setSkillGroupsText(groupsToText(draft.skill_groups));
       } else if (draft.skills?.length) {
         setSkillGroupsText(groupsToText({ ...EMPTY_SKILL_GROUPS, technical: draft.skills }));
+      }
+      if (draft.skill_suggestions) {
+        setSkillSuggestions(draft.skill_suggestions);
       }
       setOpen(true);
       setSaveState("dirty");
@@ -506,6 +582,14 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
               </label>
             ))}
           </div>
+
+          <SkillSuggestions
+            suggestions={skillSuggestions}
+            loading={suggestionsLoading}
+            onAdd={addSuggestion}
+            onAddAll={addAllSuggestions}
+            onDismiss={dismissSuggestion}
+          />
 
           <h3>Erfarenhet</h3>
           {resume.experience.map((row, i) => (

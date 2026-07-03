@@ -66,6 +66,29 @@ export function flattenSkillGroups(groups) {
   return flat;
 }
 
-export function hasSkillContent(groups) {
-  return flattenSkillGroups(groups).length > 0;
+export function addSkillToText(text, label) {
+  const items = String(text ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (items.some((item) => item.toLowerCase() === label.toLowerCase())) {
+    return items.join(", ");
+  }
+  return items.length ? `${items.join(", ")}, ${label}` : label;
+}
+
+export function countSuggestions(suggestions) {
+  if (!suggestions) return 0;
+  return Object.values(suggestions).reduce(
+    (total, items) => total + (items?.length ?? 0),
+    0
+  );
+}
+
+export function removeSuggestion(suggestions, category, label) {
+  if (!suggestions?.[category]) return suggestions;
+  return {
+    ...suggestions,
+    [category]: suggestions[category].filter((item) => item.label !== label),
+  };
 }

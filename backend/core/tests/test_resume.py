@@ -12,6 +12,7 @@ pytestmark = pytest.mark.django_db
 
 URL = "/api/v1/me/resume/"
 PARSE_URL = "/api/v1/me/resume/parse/"
+SUGGEST_URL = "/api/v1/me/resume/suggest-skills/"
 
 CV_TEXT = """Anna Svensson
 Backendutvecklare med fem års erfarenhet
@@ -365,3 +366,30 @@ def test_corrupt_pdf_gives_400(api_client, user):
     upload = SimpleUploadedFile("cv.pdf", b"not a pdf at all")
     response = api_client.post(PARSE_URL, {"file": upload}, format="multipart")
     assert response.status_code == 400
+
+
+def test_parse_includes_skill_suggestions(api_client, user):
+    api_client.force_authenticate(user)
+    upload = SimpleUploadedFile("cv.txt", CV_TEXT.encode("utf-8"))
+    body = api_client.post(PARSE_URL, {"file": upload}, format="multipart").json()
+    assert "skill_suggestions" in body
+    labels = [
+        item["label"].lower()
+        for items in body["skill_suggestions"].values()
+        for item in items
+    ]
+    assert "python" not in labels  # already in explicit skills section
+    assert "django" not in labels
+
+
+def test_suggest_skills_endpoint(api_client, user):
+    from core.tests.test_experience_skills import FINANCE_EXPERIENCE
+
+    api_client.force_authenticate(user)
+    body = api_client.post(
+        SUGGEST_URL,
+        {"experience": FINANCE_EXPERIENCE, "skill_groups": {"technical": [], "domain": [], "languages": []}},
+        format="json",
+    ).json()
+    labels = [item["label"] for item in body["suggestions"]["technical"]]
+    assert "Wint" in labels

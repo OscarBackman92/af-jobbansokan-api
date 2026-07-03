@@ -1811,6 +1811,103 @@ tbody tr:last-child td {
   border-color: color-mix(in srgb, var(--cyan, var(--brand)) 25%, var(--border));
 }
 
+.skill-suggestions {
+  margin: 1rem 0 1.25rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+}
+
+.skill-suggestions-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.skill-suggestions-head h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.skill-suggestions-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.skill-suggestions-group + .skill-suggestions-group {
+  margin-top: 0.75rem;
+}
+
+.skill-suggestions-group-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.skill-suggestions-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.skill-suggestion-chip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.skill-suggestion-add {
+  padding: 0.15rem 0.55rem;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--brand-ink, var(--ink));
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+  min-height: auto;
+}
+
+.skill-suggestion-add:hover {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+  transform: none;
+  filter: none;
+}
+
+.skill-suggestion-source {
+  font-size: 0.72rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skill-suggestion-dismiss {
+  padding: 0 0.35rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+  min-height: auto;
+}
+
 .cv-list {
   list-style: none;
   padding: 0;
