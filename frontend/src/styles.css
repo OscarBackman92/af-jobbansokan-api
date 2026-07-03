@@ -1770,6 +1770,47 @@ tbody tr:last-child td {
   margin: 0.7rem 0;
 }
 
+.cv-skill-group {
+  margin: 0.75rem 0 0.35rem;
+}
+
+.cv-skill-group-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.cv-skill-group .cv-skills {
+  margin: 0 0 0.5rem;
+}
+
+.skill-fields {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.badge--skill-technical {
+  background: var(--accent-soft);
+  color: var(--chip-ink);
+  border-color: var(--accent-border);
+}
+
+.badge--skill-domain {
+  background: var(--amber-bg);
+  color: var(--amber);
+  border-color: var(--amber-border, var(--border));
+}
+
+.badge--skill-languages {
+  background: var(--cyan-bg, var(--accent-soft));
+  color: var(--cyan, var(--chip-ink));
+  border-color: color-mix(in srgb, var(--cyan, var(--brand)) 25%, var(--border));
+}
+
 .cv-list {
   list-style: none;
   padding: 0;
@@ -1889,7 +1930,8 @@ tbody tr:last-child td {
   display: grid;
   grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.2fr);
   width: min(560px, 92vw);
-  max-height: min(420px, 70vh);
+  height: min(480px, calc(100dvh - 220px));
+  max-height: min(480px, calc(100dvh - 220px));
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -1901,6 +1943,8 @@ tbody tr:last-child td {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .multi-select-column + .multi-select-column {
@@ -1919,6 +1963,7 @@ tbody tr:last-child td {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--label);
+  flex-shrink: 0;
 }
 
 .multi-select-clear {
@@ -1931,7 +1976,24 @@ tbody tr:last-child td {
   list-style: none;
   margin: 0;
   padding: 0.35rem 0;
-  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--brand) 35%, var(--border)) transparent;
+}
+
+.multi-select-primary::-webkit-scrollbar,
+.multi-select-secondary::-webkit-scrollbar {
+  width: 6px;
+}
+
+.multi-select-primary::-webkit-scrollbar-thumb,
+.multi-select-secondary::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand) 35%, var(--border));
 }
 
 .multi-select-primary-item {
@@ -1972,6 +2034,9 @@ tbody tr:last-child td {
   padding: 0.8rem;
   margin: 0;
   font-size: 0.85rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .save-search-modal input {

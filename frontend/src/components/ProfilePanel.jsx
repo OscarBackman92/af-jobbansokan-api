@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 
 import { request } from "../api.js";
+import {
+  EMPTY_SKILL_GROUPS,
+  SKILL_GROUP_HINTS,
+  SKILL_GROUP_LABELS,
+  groupsToText,
+  hasSkillContent,
+  normalizeSkillGroups,
+  textToGroups,
+} from "../skills.js";
 
 export default function ProfilePanel({ token, me, onMeChange, onLogout, profileLeaveGuardRef }) {
   return (
@@ -132,26 +141,19 @@ const EMPTY_RESUME = {
   education: [],
 };
 
-function hasCvContent(resume, skillsText) {
-  const skills = skillsText
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+function hasCvContent(resume, skillGroups) {
   return (
     resume.headline ||
     resume.summary ||
-    skills.length ||
+    hasSkillContent(skillGroups) ||
     resume.experience.length ||
     resume.education.length
   );
 }
 
-function CvReadView({ resume, skillsText }) {
-  const skills = skillsText
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const hasContent = hasCvContent(resume, skillsText);
+function CvReadView({ resume, skillGroups }) {
+  const groups = normalizeSkillGroups(skillGroups);
+  const hasContent = hasCvContent(resume, groups);
 
   if (!hasContent) {
     return (
@@ -167,14 +169,19 @@ function CvReadView({ resume, skillsText }) {
       {resume.headline && <p className="cv-headline">{resume.headline}</p>}
       {resume.summary && <p className="muted">{resume.summary}</p>}
 
-      {skills.length > 0 && (
-        <div className="cv-skills">
-          {skills.map((skill) => (
-            <span className="badge" key={skill}>
-              {skill}
-            </span>
-          ))}
-        </div>
+      {Object.entries(SKILL_GROUP_LABELS).map(([key, label]) =>
+        groups[key]?.length ? (
+          <div className="cv-skill-group" key={key}>
+            <h3 className="cv-skill-group-label">{label}</h3>
+            <div className="cv-skills">
+              {groups[key].map((skill) => (
+                <span className={`badge badge--skill-${key}`} key={skill}>
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null
       )}
 
       {resume.experience.length > 0 && (
@@ -217,9 +224,11 @@ function CvReadView({ resume, skillsText }) {
 
 function ResumeCard({ token, profileLeaveGuardRef }) {
   const [resume, setResume] = useState(EMPTY_RESUME);
-  const [skillsText, setSkillsText] = useState("");
+  const [skillGroupsText, setSkillGroupsText] = useState(() => groupsToText(EMPTY_SKILL_GROUPS));
   const [savedResume, setSavedResume] = useState(EMPTY_RESUME);
-  const [savedSkillsText, setSavedSkillsText] = useState("");
+  const [savedSkillGroupsText, setSavedSkillGroupsText] = useState(() =>
+    groupsToText(EMPTY_SKILL_GROUPS)
+  );
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -233,9 +242,10 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     request("/api/v1/me/resume/", { token })
       .then((data) => {
         setResume(data);
-        setSkillsText(data.skills.join(", "));
+        const text = groupsToText(data.skill_groups);
+        setSkillGroupsText(text);
         setSavedResume(data);
-        setSavedSkillsText(data.skills.join(", "));
+        setSavedSkillGroupsText(text);
         setSaveState("clean");
       })
       .catch((err) => setMessage({ tone: "error", text: err.message }))
@@ -244,7 +254,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
 
   function revertEdits() {
     setResume(savedResume);
-    setSkillsText(savedSkillsText);
+    setSkillGroupsText(savedSkillGroupsText);
     setSaveState("clean");
   }
 
@@ -257,7 +267,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
       );
       if (discard) {
         setResume(savedResume);
-        setSkillsText(savedSkillsText);
+        setSkillGroupsText(savedSkillGroupsText);
         setSaveState("clean");
       }
       return discard;
@@ -265,7 +275,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     return () => {
       profileLeaveGuardRef.current = null;
     };
-  }, [open, saveState, profileLeaveGuardRef, savedResume, savedSkillsText]);
+  }, [open, saveState, profileLeaveGuardRef, savedResume, savedSkillGroupsText]);
 
   function toggleEditor() {
     setMessage(null);
@@ -288,9 +298,9 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     setResume((current) => ({ ...current, [name]: value }));
   }
 
-  function changeSkills(value) {
+  function changeSkillGroup(key, value) {
     setSaveState("dirty");
-    setSkillsText(value);
+    setSkillGroupsText((current) => ({ ...current, [key]: value }));
   }
 
   function setRow(listName, index, key, value) {
@@ -341,7 +351,11 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
           : current.experience,
         education: draft.education.length ? draft.education : current.education,
       }));
-      if (draft.skills.length) setSkillsText(draft.skills.join(", "));
+      if (draft.skill_groups) {
+        setSkillGroupsText(groupsToText(draft.skill_groups));
+      } else if (draft.skills?.length) {
+        setSkillGroupsText(groupsToText({ ...EMPTY_SKILL_GROUPS, technical: draft.skills }));
+      }
       setOpen(true);
       setSaveState("dirty");
       setMessage({
@@ -365,16 +379,14 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
         token,
         body: {
           ...resume,
-          skills: skillsText
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
+          skill_groups: textToGroups(skillGroupsText),
         },
       });
+      const text = groupsToText(saved.skill_groups);
       setResume(saved);
-      setSkillsText(saved.skills.join(", "));
+      setSkillGroupsText(text);
       setSavedResume(saved);
-      setSavedSkillsText(saved.skills.join(", "));
+      setSavedSkillGroupsText(text);
       setSaveState("clean");
       setOpen(false);
       setMessage({ tone: "success", text: "CV:t är sparat." });
@@ -395,9 +407,9 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     try {
       await request("/api/v1/me/resume/", { method: "DELETE", token });
       setResume(EMPTY_RESUME);
-      setSkillsText("");
+      setSkillGroupsText(groupsToText(EMPTY_SKILL_GROUPS));
       setSavedResume(EMPTY_RESUME);
-      setSavedSkillsText("");
+      setSavedSkillGroupsText(groupsToText(EMPTY_SKILL_GROUPS));
       setSaveState("clean");
       setOpen(false);
       setMessage({ tone: "success", text: "CV:t är raderat." });
@@ -408,7 +420,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     }
   }
 
-  const cvHasContent = hasCvContent(resume, skillsText);
+  const cvHasContent = hasCvContent(resume, textToGroups(skillGroupsText));
 
   return (
     <section className="card">
@@ -416,7 +428,8 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
         <div>
           <h2>Mitt CV</h2>
           <p className="muted">
-            Används för att matcha dina kompetenser mot annonserna.
+            Kompetenserna jämförs mot annonstexten — dela upp dem så matchningen
+            blir tydligare.
           </p>
         </div>
         <div className="row-gap">
@@ -452,7 +465,9 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
           <span className="spinner" /> Laddar CV…
         </div>
       )}
-      {!loading && !open && <CvReadView resume={resume} skillsText={skillsText} />}
+      {!loading && !open && (
+        <CvReadView resume={resume} skillGroups={textToGroups(skillGroupsText)} />
+      )}
       {!loading && open && (
         <form onSubmit={save}>
           <p className="muted cv-edit-hint">
@@ -475,14 +490,22 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
               onChange={(e) => setField("summary", e.target.value)}
             />
           </label>
-          <label>
-            Kompetenser (kommaseparerade)
-            <input
-              value={skillsText}
-              onChange={(e) => changeSkills(e.target.value)}
-              placeholder="Python, Django, PostgreSQL"
-            />
-          </label>
+          <div className="skill-fields">
+            <p className="muted cv-edit-hint">
+              Kommaseparerade listor. Verktyg och metoder matchas mot annonsens
+              text när du söker jobb.
+            </p>
+            {Object.entries(SKILL_GROUP_LABELS).map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <input
+                  value={skillGroupsText[key]}
+                  onChange={(e) => changeSkillGroup(key, e.target.value)}
+                  placeholder={SKILL_GROUP_HINTS[key]}
+                />
+              </label>
+            ))}
+          </div>
 
           <h3>Erfarenhet</h3>
           {resume.experience.map((row, i) => (

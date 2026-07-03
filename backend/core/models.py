@@ -199,6 +199,7 @@ class Resume(models.Model):
     headline = models.CharField(max_length=255, blank=True)
     summary = models.TextField(blank=True)
     skills = models.JSONField(default=list, blank=True)
+    skill_groups = models.JSONField(default=dict, blank=True)
     experience = models.JSONField(default=list, blank=True)
     education = models.JSONField(default=list, blank=True)
     updated_at = models.DateTimeField(auto_now=True)

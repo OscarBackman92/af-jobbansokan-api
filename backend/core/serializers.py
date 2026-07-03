@@ -13,7 +13,12 @@ from rest_framework import serializers
 
 from .ad_url import ad_urls_equivalent, normalize_ad_url
 from .email_delivery import register_user_with_verification
-from .matching import match_application
+from .skill_groups import (
+    EMPTY_SKILL_GROUPS,
+    flatten_skill_groups,
+    normalize_skill_groups,
+    skill_groups_from_flat,
+)
 from .models import (
     ApplicationEvent,
     JobApplication,
@@ -253,24 +258,36 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class ResumeSerializer(serializers.ModelSerializer):
+    skills = serializers.ListField(child=serializers.CharField(), read_only=True)
+
     class Meta:
         model = Resume
         fields = [
             "headline",
             "summary",
             "skills",
+            "skill_groups",
             "experience",
             "education",
             "updated_at",
         ]
-        read_only_fields = ["updated_at"]
+        read_only_fields = ["updated_at", "skills"]
 
-    def validate_skills(self, value):
-        if not isinstance(value, list) or not all(
-            isinstance(item, str) for item in value
-        ):
-            raise serializers.ValidationError("Expected a list of strings.")
-        return [item.strip() for item in value if item.strip()]
+    def validate_skill_groups(self, value):
+        try:
+            return normalize_skill_groups(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+
+    def validate(self, attrs):
+        groups = attrs.get("skill_groups")
+        if groups is None and self.instance:
+            groups = normalize_skill_groups(self.instance.skill_groups)
+        if groups is None:
+            groups = dict(EMPTY_SKILL_GROUPS)
+        attrs["skill_groups"] = groups
+        attrs["skills"] = flatten_skill_groups(groups)
+        return attrs
 
     def _validate_rows(self, value, allowed_keys):
         if not isinstance(value, list) or not all(
@@ -290,6 +307,17 @@ class ResumeSerializer(serializers.ModelSerializer):
 
     def validate_education(self, value):
         return self._validate_rows(value, {"school", "degree", "years"})
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        try:
+            groups = normalize_skill_groups(data.get("skill_groups") or {})
+        except ValueError:
+            groups = dict(EMPTY_SKILL_GROUPS)
+        if not any(groups.values()) and data.get("skills"):
+            groups = skill_groups_from_flat(data["skills"])
+        data["skill_groups"] = groups
+        return data
 
 
 class ResumeUploadSerializer(serializers.Serializer):

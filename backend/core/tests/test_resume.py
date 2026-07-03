@@ -39,6 +39,7 @@ def test_get_creates_empty_resume(api_client, user):
     body = api_client.get(URL).json()
     assert body["headline"] == ""
     assert body["skills"] == []
+    assert body["skill_groups"] == {"technical": [], "domain": [], "languages": []}
     assert Resume.objects.filter(user=user).exists()
 
 
@@ -47,7 +48,11 @@ def test_put_saves_structured_resume(api_client, user):
     payload = {
         "headline": "Backendutvecklare",
         "summary": "Fem års erfarenhet av Python.",
-        "skills": ["Python", "Django", " PostgreSQL "],
+        "skill_groups": {
+            "technical": ["Python", "Django", " PostgreSQL "],
+            "domain": ["Agile"],
+            "languages": ["Svenska"],
+        },
         "experience": [
             {
                 "title": "Backendutvecklare",
@@ -65,13 +70,16 @@ def test_put_saves_structured_resume(api_client, user):
 
     body = api_client.get(URL).json()
     assert body["headline"] == "Backendutvecklare"
-    assert body["skills"] == ["Python", "Django", "PostgreSQL"]
+    assert body["skills"] == ["Python", "Django", "PostgreSQL", "Agile", "Svenska"]
+    assert body["skill_groups"]["technical"] == ["Python", "Django", "PostgreSQL"]
     assert body["experience"][0]["company"] == "Acme AB"
 
 
-def test_invalid_skills_rejected(api_client, user):
+def test_invalid_skill_groups_rejected(api_client, user):
     api_client.force_authenticate(user)
-    response = api_client.put(URL, {"skills": [{"namn": "Python"}]}, format="json")
+    response = api_client.put(
+        URL, {"skill_groups": {"technical": [{"namn": "Python"}]}}, format="json"
+    )
     assert response.status_code == 400
 
 
@@ -86,6 +94,7 @@ def test_parse_resume_text_sections():
     # The person's name is not a headline; the title line below it is.
     assert draft["headline"] == "Backendutvecklare med fem års erfarenhet"
     assert draft["skills"] == ["Python", "Django", "PostgreSQL", "Docker"]
+    assert draft["skill_groups"]["technical"] == draft["skills"]
     assert [
         (row["title"], row["company"], row["years"]) for row in draft["experience"]
     ] == [

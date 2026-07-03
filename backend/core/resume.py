@@ -680,10 +680,16 @@ def parse_resume_text(text: str) -> dict:
         and line.lower().strip() not in {"stockholm, sverige", "stockholm"}
     ]
 
+    skills = _parse_skills(buckets["skills"])
     return {
         "headline": headline,
         "summary": _clean(" ".join(summary_lines)),
-        "skills": _parse_skills(buckets["skills"]),
+        "skills": skills,
+        "skill_groups": {
+            "technical": skills,
+            "domain": [],
+            "languages": [],
+        },
         "experience": _parse_experience(buckets["experience"]),
         "education": _parse_education(buckets["education"]),
         "email": email_match.group(0) if email_match else "",
