@@ -17,6 +17,23 @@ def test_csp_header_in_production(client):
     assert "frame-ancestors 'none'" in csp
 
 
+def test_security_headers_middleware_before_whitenoise():
+    """WhiteNoise short-circuits; headers middleware must run first."""
+    middleware = settings.MIDDLEWARE
+    sh_idx = middleware.index("core.middleware.SecurityHeadersMiddleware")
+    wn_idx = middleware.index("whitenoise.middleware.WhiteNoiseMiddleware")
+    assert sh_idx < wn_idx
+
+
+@override_settings(DEBUG=False)
+def test_csp_header_on_spa_root(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    csp = response.headers.get("Content-Security-Policy", "")
+    assert "default-src 'self'" in csp
+    assert response.headers.get("X-Frame-Options") == "DENY"
+
+
 @override_settings(DEBUG=True)
 def test_csp_header_absent_in_debug(client):
     response = client.get("/health/")

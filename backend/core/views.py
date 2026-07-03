@@ -150,6 +150,7 @@ class SavedJobSearchListCreateView(generics.ListCreateAPIView):
 
     serializer_class = SavedJobSearchSerializer
     permission_classes = [IsAuthenticatedUser]
+    pagination_class = None
 
     def get_queryset(self):
         return SavedJobSearch.objects.filter(owner=self.request.user)

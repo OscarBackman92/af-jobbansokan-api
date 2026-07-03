@@ -52,7 +52,7 @@ export default function PostingsPanel() {
   const loadSavedSearches = useCallback(async () => {
     try {
       const rows = await request("/api/v1/me/saved-searches/");
-      setSavedSearches(rows);
+      setSavedSearches(Array.isArray(rows) ? rows : (rows?.results ?? []));
     } catch {
       /* non-fatal when logged out */
     }
@@ -168,8 +168,12 @@ export default function PostingsPanel() {
 
   function scrollToResults() {
     const section = resultsSectionRef.current;
-    if (!section) return;
-    section.scrollIntoView({ behavior: "auto", block: "start" });
+    if (!section) {
+      window.scrollTo(0, 0);
+      return;
+    }
+    const top = section.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: Math.max(0, top - 8), left: 0, behavior: "auto" });
   }
 
   function requestResultsScroll() {
@@ -177,9 +181,13 @@ export default function PostingsPanel() {
     scrollToResults();
   }
 
-  // After new results paint, scroll again (covers layout shifts when the list swaps).
+  // Pin to results while loading (list collapse otherwise leaves scrollY too high).
   useLayoutEffect(() => {
-    if (!pendingScrollRef.current || loading) return;
+    if (loading) {
+      if (pendingScrollRef.current) scrollToResults();
+      return;
+    }
+    if (!pendingScrollRef.current) return;
     pendingScrollRef.current = false;
     scrollToResults();
   }, [loading, data, offset, query]);
