@@ -334,6 +334,7 @@ stores when the web app is stable.
 | [claude-chrome-sprint1-2-qa-prompt.md](docs/claude-chrome-sprint1-2-qa-prompt.md) | Claude in Chrome QA for Sprint 1 & 2 UX (scroll, CV, board filters, match) |
 | [claude-design-prompt.md](docs/claude-design-prompt.md) | Claude design/UX audit prompt (visual hierarchy, themes, mobile, top 5 fixes) |
 | [claude-chrome-deploy-qa-prompt.md](docs/claude-chrome-deploy-qa-prompt.md) | Claude in Chrome QA for latest deploy (scroll, sprint 1–2, design fixes) |
+| [chatgpt-manuell-test-prompt.md](docs/chatgpt-manuell-test-prompt.md) | Full manual test suite prompt for ChatGPT → structured report for Cursor |
 | [15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md) | **Master checklist: drift, kvalitet, retention, mobil (pausat)** |
 | [13-lanseringsplan.md](docs/13-lanseringsplan.md) | Launch plan: hosting, go-public checklist, retention |
 | [12-utvecklingsplan.md](docs/12-utvecklingsplan.md) | Earlier development plan (Phases 1–3, mostly done) |
