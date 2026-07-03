@@ -1819,6 +1819,10 @@ tbody tr:last-child td {
   gap: 0.6rem;
 }
 
+.job-results {
+  scroll-margin-top: 0.5rem;
+}
+
 .job-card {
   display: flex;
   align-items: center;

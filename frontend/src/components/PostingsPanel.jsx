@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { normalizeAdUrl } from "../adUrl.js";
 import { request } from "../api.js";
@@ -32,9 +32,8 @@ export default function PostingsPanel() {
     remote: false,
   });
   const [offset, setOffset] = useState(0);
-  const resultsAnchorRef = useRef(null);
+  const resultsSectionRef = useRef(null);
   const pendingScrollRef = useRef(false);
-  const skipInitialScrollRef = useRef(true);
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -167,36 +166,35 @@ export default function PostingsPanel() {
     runSearch();
   }, [runSearch]);
 
-  useEffect(() => {
-    if (skipInitialScrollRef.current) {
-      skipInitialScrollRef.current = false;
-      return;
-    }
-    pendingScrollRef.current = true;
-  }, [offset, query]);
+  function scrollToResults() {
+    const section = resultsSectionRef.current;
+    if (!section) return;
+    section.scrollIntoView({ behavior: "auto", block: "start" });
+  }
 
-  useEffect(() => {
-    if (loading || !pendingScrollRef.current) return;
+  function requestResultsScroll() {
+    pendingScrollRef.current = true;
+    scrollToResults();
+  }
+
+  // After new results paint, scroll again (covers layout shifts when the list swaps).
+  useLayoutEffect(() => {
+    if (!pendingScrollRef.current || loading) return;
     pendingScrollRef.current = false;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        resultsAnchorRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      });
-    });
-  }, [loading, data]);
+    scrollToResults();
+  }, [loading, data, offset, query]);
 
   function goToPage(nextOffset) {
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
+    requestResultsScroll();
     setOffset(nextOffset);
   }
 
   function submit(event) {
     event.preventDefault();
+    requestResultsScroll();
     setOffset(0);
     setQuery({ q, region, municipality, field, group, remote });
   }
@@ -208,6 +206,7 @@ export default function PostingsPanel() {
     setField("");
     setGroup("");
     setRemote(false);
+    requestResultsScroll();
     setOffset(0);
     setQuery({
       q: "",
@@ -283,6 +282,7 @@ export default function PostingsPanel() {
     setField(saved.field || "");
     setGroup(saved.group || "");
     setRemote(!!saved.remote);
+    requestResultsScroll();
     setOffset(0);
     setQuery({
       q: saved.q || "",
@@ -472,40 +472,48 @@ export default function PostingsPanel() {
       {message && <p className="notice">{message}</p>}
       {error && <p className="error">{error}</p>}
 
-      {loading && (
-        <div className="loading-row">
-          <span className="spinner" /> Söker i Platsbanken…
-        </div>
-      )}
+      <section
+        ref={resultsSectionRef}
+        className="job-results"
+        aria-label="Sökresultat"
+      >
+        {loading && (
+          <div className="loading-row">
+            <span className="spinner" /> Söker i Platsbanken…
+          </div>
+        )}
 
-      {!error && !loading && (
-        <p className="muted job-count" ref={resultsAnchorRef}>
-          {total === 0
-            ? "Inga annonser matchade din sökning."
-            : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
-                "sv-SE"
-              )} annonser`}
-          {activeFilters && (
-            <button className="linklike job-clear" onClick={clearFilters}>
-              Rensa filter
-            </button>
-          )}
-        </p>
-      )}
+        {!error && !loading && (
+          <p className="muted job-count">
+            {total === 0
+              ? "Inga annonser matchade din sökning."
+              : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
+                  "sv-SE"
+                )} annonser`}
+            {activeFilters && (
+              <button className="linklike job-clear" onClick={clearFilters}>
+                Rensa filter
+              </button>
+            )}
+          </p>
+        )}
 
-      <div className="job-list">
-        {results.map((job) => (
-          <JobCard
-            key={job.id}
-            job={job}
-            tracked={
-              !!job.webpage_url && tracked.has(normalizeAdUrl(job.webpage_url))
-            }
-            onOpen={() => setSelected(job)}
-            onTrack={() => track(job)}
-          />
-        ))}
-      </div>
+        {!loading && (
+          <div className="job-list">
+            {results.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                tracked={
+                  !!job.webpage_url && tracked.has(normalizeAdUrl(job.webpage_url))
+                }
+                onOpen={() => setSelected(job)}
+                onTrack={() => track(job)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
 
       {total > PAGE_SIZE && (
         <div className="pager">

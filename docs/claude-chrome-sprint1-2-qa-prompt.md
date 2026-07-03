@@ -18,6 +18,10 @@ Använd denna **korta prompt** om full QA redan körts och bara avsnitt **A**
 **Krav:** Render har deployat `c08249e` eller senare (kolla Render dashboard eller
 vänta 1–2 min efter push).
 
+**Uppdatering:** Om retest efter `c08249e` fortfarande failar (inkonsekvent scroll),
+deploya commit med scroll-fix v2 (döljer listan under laddning + `useLayoutEffect`
+efter render). Retesta mot den commiten.
+
 ### Kopiera retest-prompten
 
 ```
