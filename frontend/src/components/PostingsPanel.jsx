@@ -4,33 +4,45 @@ import { normalizeAdUrl } from "../adUrl.js";
 import { request } from "../api.js";
 import MatchScore from "./MatchScore.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
+import MultiSelectFilter from "./MultiSelectFilter.jsx";
 
 const PAGE_SIZE = 25;
+
+const EMPTY_QUERY = {
+  q: "",
+  municipalities: [],
+  groups: [],
+  remote: false,
+  matchCv: false,
+};
+
+function appendIdParams(params, key, items) {
+  for (const item of items) {
+    const id = typeof item === "string" ? item : item?.id;
+    if (id) params.append(key, id);
+  }
+}
+
+function countSummary(count, singular, plural) {
+  if (!count) return null;
+  return count === 1 ? `1 ${singular}` : `${count} ${plural}`;
+}
 
 export default function PostingsPanel() {
   const [filters, setFilters] = useState({ regions: [], fields: [] });
   const [q, setQ] = useState("");
-  const [region, setRegion] = useState("");
-  const [municipality, setMunicipality] = useState("");
-  const [municipalities, setMunicipalities] = useState([]);
+  const [browseRegion, setBrowseRegion] = useState("");
+  const [browseField, setBrowseField] = useState("");
+  const [selectedMunicipalities, setSelectedMunicipalities] = useState([]);
+  const [selectedGroups, setSelectedGroups] = useState([]);
+  const [municipalityCache, setMunicipalityCache] = useState({});
+  const [groupCache, setGroupCache] = useState({});
   const [municipalitiesLoading, setMunicipalitiesLoading] = useState(false);
-  const [municipalitiesError, setMunicipalitiesError] = useState(null);
-  const [field, setField] = useState("");
-  const [group, setGroup] = useState("");
-  const [groups, setGroups] = useState([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [filtersError, setFiltersError] = useState(null);
-  const [groupsError, setGroupsError] = useState(null);
   const [remote, setRemote] = useState(false);
-  // The query that results actually reflect (only changes on submit).
-  const [query, setQuery] = useState({
-    q: "",
-    region: "",
-    municipality: "",
-    field: "",
-    group: "",
-    remote: false,
-  });
+  const [matchCvOnly, setMatchCvOnly] = useState(false);
+  const [query, setQuery] = useState(EMPTY_QUERY);
   const [offset, setOffset] = useState(0);
   const resultsSectionRef = useRef(null);
   const pendingScrollRef = useRef(false);
@@ -42,11 +54,34 @@ export default function PostingsPanel() {
   const [selected, setSelected] = useState(null);
   const [tracked, setTracked] = useState(() => new Set());
   const [savedSearches, setSavedSearches] = useState([]);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveLabel, setSaveLabel] = useState("");
+  const [renameTarget, setRenameTarget] = useState(null);
+  const [renameLabel, setRenameLabel] = useState("");
 
   function buildSearchLabel(search) {
     if (search.label?.trim()) return search.label.trim();
     if (search.q?.trim()) return search.q.trim();
+    const municipalityCount = search.municipalities?.length ?? 0;
+    const groupCount = search.groups?.length ?? 0;
+    if (groupCount === 1 && search.group_labels?.[0]) return search.group_labels[0];
+    if (municipalityCount === 1) return "1 ort";
+    if (groupCount) return `${groupCount} yrken`;
+    if (municipalityCount) return `${municipalityCount} orter`;
+    if (search.match_cv) return "Passar mitt CV";
+    if (search.remote) return "Distansjobb";
     return "Sparad sökning";
+  }
+
+  function buildSuggestedLabel() {
+    if (q.trim()) return q.trim();
+    if (selectedGroups.length === 1) return selectedGroups[0].label;
+    if (selectedMunicipalities.length === 1) return selectedMunicipalities[0].label;
+    if (selectedGroups.length) return `${selectedGroups.length} yrken`;
+    if (selectedMunicipalities.length) return `${selectedMunicipalities.length} orter`;
+    if (matchCvOnly) return "Passar mitt CV";
+    if (remote) return "Distansjobb";
+    return "Min sökning";
   }
 
   const loadSavedSearches = useCallback(async () => {
@@ -58,22 +93,23 @@ export default function PostingsPanel() {
     }
   }, []);
 
-  // Load filter options + which ads are already on the board (by URL).
   useEffect(() => {
     loadSavedSearches();
     request("/api/v1/jobs/filters/")
       .then((result) => {
         setFilters(result);
         setFiltersError(null);
+        setBrowseRegion((prev) => prev || result.regions?.[0]?.id || "");
+        setBrowseField((prev) => prev || result.fields?.[0]?.id || "");
       })
       .catch(() => {
         setFiltersError("Kunde inte hämta filter från Platsbanken.");
       });
     (async () => {
       try {
-        const data = await request("/api/v1/applications/tracked-urls/");
+        const trackedData = await request("/api/v1/applications/tracked-urls/");
         const urls = new Set();
-        for (const adUrl of data.urls) {
+        for (const adUrl of trackedData.urls) {
           const key = normalizeAdUrl(adUrl);
           if (key) urls.add(key);
         }
@@ -85,21 +121,22 @@ export default function PostingsPanel() {
   }, [loadSavedSearches]);
 
   useEffect(() => {
-    setMunicipalities([]);
-    setMunicipalitiesError(null);
-    if (!region) {
-      setMunicipalitiesLoading(false);
-      return undefined;
-    }
-
+    if (!browseRegion || municipalityCache[browseRegion]) return undefined;
     let cancelled = false;
     setMunicipalitiesLoading(true);
-    request(`/api/v1/jobs/municipalities/?region=${encodeURIComponent(region)}`)
+    request(`/api/v1/jobs/municipalities/?region=${encodeURIComponent(browseRegion)}`)
       .then((result) => {
-        if (!cancelled) setMunicipalities(result.municipalities ?? []);
+        if (!cancelled) {
+          setMunicipalityCache((prev) => ({
+            ...prev,
+            [browseRegion]: result.municipalities ?? [],
+          }));
+        }
       })
       .catch(() => {
-        if (!cancelled) setMunicipalitiesError("Kunde inte hämta orter just nu.");
+        if (!cancelled) {
+          setMunicipalityCache((prev) => ({ ...prev, [browseRegion]: [] }));
+        }
       })
       .finally(() => {
         if (!cancelled) setMunicipalitiesLoading(false);
@@ -107,24 +144,25 @@ export default function PostingsPanel() {
     return () => {
       cancelled = true;
     };
-  }, [region]);
+  }, [browseRegion, municipalityCache]);
 
   useEffect(() => {
-    setGroups([]);
-    setGroupsError(null);
-    if (!field) {
-      setGroupsLoading(false);
-      return undefined;
-    }
-
+    if (!browseField || groupCache[browseField]) return undefined;
     let cancelled = false;
     setGroupsLoading(true);
-    request(`/api/v1/jobs/groups/?field=${encodeURIComponent(field)}`)
+    request(`/api/v1/jobs/groups/?field=${encodeURIComponent(browseField)}`)
       .then((result) => {
-        if (!cancelled) setGroups(result.groups ?? []);
+        if (!cancelled) {
+          setGroupCache((prev) => ({
+            ...prev,
+            [browseField]: result.groups ?? [],
+          }));
+        }
       })
       .catch(() => {
-        if (!cancelled) setGroupsError("Kunde inte hämta yrken just nu.");
+        if (!cancelled) {
+          setGroupCache((prev) => ({ ...prev, [browseField]: [] }));
+        }
       })
       .finally(() => {
         if (!cancelled) setGroupsLoading(false);
@@ -132,7 +170,7 @@ export default function PostingsPanel() {
     return () => {
       cancelled = true;
     };
-  }, [field]);
+  }, [browseField, groupCache]);
 
   const runSearch = useCallback(async () => {
     setLoading(true);
@@ -143,11 +181,10 @@ export default function PostingsPanel() {
         limit: String(PAGE_SIZE),
       });
       if (query.q.trim()) params.set("q", query.q.trim());
-      if (query.region) params.set("region", query.region);
-      if (query.municipality) params.set("municipality", query.municipality);
-      if (query.field) params.set("field", query.field);
-      if (query.group) params.set("group", query.group);
+      appendIdParams(params, "municipality", query.municipalities);
+      appendIdParams(params, "group", query.groups);
       if (query.remote) params.set("remote", "true");
+      if (query.matchCv) params.set("match_cv", "true");
       const result = await request(`/api/v1/jobs/?${params.toString()}`);
       setData(result);
     } catch (err) {
@@ -168,12 +205,13 @@ export default function PostingsPanel() {
 
   function scrollToResults() {
     const section = resultsSectionRef.current;
+    const scrollOpts = { left: 0, behavior: "instant" };
     if (!section) {
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, ...scrollOpts });
       return;
     }
-    const top = section.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo({ top: Math.max(0, top - 8), left: 0, behavior: "auto" });
+    const top = section.getBoundingClientRect().top + window.scrollY - 12;
+    window.scrollTo({ top: Math.max(0, top), ...scrollOpts });
   }
 
   function requestResultsScroll() {
@@ -181,15 +219,18 @@ export default function PostingsPanel() {
     scrollToResults();
   }
 
-  // Pin to results while loading (list collapse otherwise leaves scrollY too high).
   useLayoutEffect(() => {
+    if (!pendingScrollRef.current) return;
     if (loading) {
-      if (pendingScrollRef.current) scrollToResults();
+      scrollToResults();
       return;
     }
-    if (!pendingScrollRef.current) return;
     pendingScrollRef.current = false;
     scrollToResults();
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(scrollToResults);
+    });
+    return () => cancelAnimationFrame(frame);
   }, [loading, data, offset, query]);
 
   function goToPage(nextOffset) {
@@ -204,36 +245,78 @@ export default function PostingsPanel() {
     event.preventDefault();
     requestResultsScroll();
     setOffset(0);
-    setQuery({ q, region, municipality, field, group, remote });
+    setQuery({
+      q,
+      municipalities: selectedMunicipalities,
+      groups: selectedGroups,
+      remote,
+      matchCv: matchCvOnly,
+    });
   }
 
   function clearFilters() {
     setQ("");
-    setRegion("");
-    setMunicipality("");
-    setField("");
-    setGroup("");
+    setSelectedMunicipalities([]);
+    setSelectedGroups([]);
     setRemote(false);
+    setMatchCvOnly(false);
     requestResultsScroll();
     setOffset(0);
-    setQuery({
-      q: "",
-      region: "",
-      municipality: "",
-      field: "",
-      group: "",
-      remote: false,
+    setQuery(EMPTY_QUERY);
+  }
+
+  function toggleMunicipality(option) {
+    setSelectedMunicipalities((prev) => {
+      if (prev.some((row) => row.id === option.id)) {
+        return prev.filter((row) => row.id !== option.id);
+      }
+      return [...prev, { id: option.id, label: option.label }];
     });
   }
 
-  function changeRegion(nextRegion) {
-    setRegion(nextRegion);
-    setMunicipality("");
+  function selectAllMunicipalities(checked, options) {
+    if (!checked) {
+      const remove = new Set(options.map((option) => option.id));
+      setSelectedMunicipalities((prev) => prev.filter((row) => !remove.has(row.id)));
+      return;
+    }
+    setSelectedMunicipalities((prev) => {
+      const byId = new Map(prev.map((row) => [row.id, row]));
+      for (const option of options) byId.set(option.id, option);
+      return [...byId.values()];
+    });
   }
 
-  function changeField(nextField) {
-    setField(nextField);
-    setGroup("");
+  function clearVisibleMunicipalities(options) {
+    const remove = new Set(options.map((option) => option.id));
+    setSelectedMunicipalities((prev) => prev.filter((row) => !remove.has(row.id)));
+  }
+
+  function toggleGroup(option) {
+    setSelectedGroups((prev) => {
+      if (prev.some((row) => row.id === option.id)) {
+        return prev.filter((row) => row.id !== option.id);
+      }
+      return [...prev, { id: option.id, label: option.label }];
+    });
+  }
+
+  function selectAllGroups(checked, options) {
+    if (!checked) {
+      const remove = new Set(options.map((option) => option.id));
+      setSelectedGroups((prev) => prev.filter((row) => !remove.has(row.id)));
+      return;
+    }
+    setSelectedGroups((prev) => {
+      const byId = new Map(prev.map((row) => [row.id, row]));
+      for (const option of options) byId.set(option.id, option);
+      return [...byId.values()];
+    });
+  }
+
+  function clearVisibleGroups(options) {
+    const remove = new Set(options.map((option) => option.id));
+    setSelectedGroups((prev) => prev.filter((row) => !remove.has(row.id)));
   }
 
   async function track(job) {
@@ -260,23 +343,28 @@ export default function PostingsPanel() {
     }
   }
 
-  async function saveCurrentSearch() {
+  function openSaveDialog() {
+    setSaveLabel(buildSuggestedLabel());
+    setSaveDialogOpen(true);
+  }
+
+  async function confirmSaveSearch() {
     setMessage(null);
-    const label = q.trim() || "Sparad sökning";
+    const label = saveLabel.trim() || buildSuggestedLabel();
     try {
       await request("/api/v1/me/saved-searches/", {
         method: "POST",
         body: {
           label,
           q,
-          region,
-          municipality,
-          field,
-          group,
+          municipalities: selectedMunicipalities.map((row) => row.id),
+          groups: selectedGroups.map((row) => row.id),
           remote,
+          match_cv: matchCvOnly,
         },
       });
       setMessage(`Sökningen "${label}" sparades.`);
+      setSaveDialogOpen(false);
       loadSavedSearches();
     } catch (err) {
       setMessage(err.message);
@@ -285,20 +373,20 @@ export default function PostingsPanel() {
 
   function applySavedSearch(saved) {
     setQ(saved.q || "");
-    setRegion(saved.region || "");
-    setMunicipality(saved.municipality || "");
-    setField(saved.field || "");
-    setGroup(saved.group || "");
     setRemote(!!saved.remote);
+    setMatchCvOnly(!!saved.match_cv);
+    setSelectedMunicipalities(
+      (saved.municipalities ?? []).map((id) => ({ id, label: id }))
+    );
+    setSelectedGroups((saved.groups ?? []).map((id) => ({ id, label: id })));
     requestResultsScroll();
     setOffset(0);
     setQuery({
       q: saved.q || "",
-      region: saved.region || "",
-      municipality: saved.municipality || "",
-      field: saved.field || "",
-      group: saved.group || "",
+      municipalities: (saved.municipalities ?? []).map((id) => ({ id, label: id })),
+      groups: (saved.groups ?? []).map((id) => ({ id, label: id })),
       remote: !!saved.remote,
+      matchCv: !!saved.match_cv,
     });
   }
 
@@ -306,6 +394,27 @@ export default function PostingsPanel() {
     try {
       await request(`/api/v1/me/saved-searches/${id}/`, { method: "DELETE" });
       setSavedSearches((rows) => rows.filter((row) => row.id !== id));
+    } catch (err) {
+      setMessage(err.message);
+    }
+  }
+
+  function openRenameDialog(saved) {
+    setRenameTarget(saved);
+    setRenameLabel(buildSearchLabel(saved));
+  }
+
+  async function confirmRenameSearch() {
+    if (!renameTarget) return;
+    const label = renameLabel.trim();
+    if (!label) return;
+    try {
+      await request(`/api/v1/me/saved-searches/${renameTarget.id}/`, {
+        method: "PATCH",
+        body: { label },
+      });
+      setRenameTarget(null);
+      loadSavedSearches();
     } catch (err) {
       setMessage(err.message);
     }
@@ -323,36 +432,26 @@ export default function PostingsPanel() {
   });
   const showingFrom = total === 0 ? 0 : offset + 1;
   const showingTo = Math.min(offset + PAGE_SIZE, total);
-  const locationOptions = municipalities;
-  const municipalityDisabled =
-    !region ||
-    municipalitiesLoading ||
-    !!municipalitiesError ||
-    locationOptions.length === 0;
-  const municipalityPlaceholder = !region
-    ? "Välj län först"
-    : municipalitiesLoading
-      ? "Laddar orter..."
-      : municipalitiesError
-        ? "Kunde inte hämta orter"
-        : "Alla orter";
-  const fieldGroups = groups;
-  const groupDisabled =
-    !field || groupsLoading || !!groupsError || fieldGroups.length === 0;
-  const groupPlaceholder = !field
-    ? "Välj yrkesområde först"
-    : groupsLoading
-      ? "Laddar yrken..."
-      : groupsError
-        ? "Kunde inte hämta yrken"
-        : "Alla yrken";
+  const locationSummary = countSummary(
+    selectedMunicipalities.length,
+    "ort",
+    "orter"
+  );
+  const occupationSummary = countSummary(selectedGroups.length, "yrke", "yrken");
   const activeFilters =
     query.q ||
-    query.region ||
-    query.municipality ||
-    query.field ||
-    query.group ||
-    query.remote;
+    query.municipalities.length ||
+    query.groups.length ||
+    query.remote ||
+    query.matchCv;
+  const canSave =
+    q ||
+    selectedMunicipalities.length ||
+    selectedGroups.length ||
+    remote ||
+    matchCvOnly;
+  const municipalityOptions = municipalityCache[browseRegion] ?? [];
+  const groupOptions = groupCache[browseField] ?? [];
 
   return (
     <div className="stack">
@@ -361,8 +460,8 @@ export default function PostingsPanel() {
           <span className="section-kicker">Platsbanken live</span>
           <h2>Hitta nästa jobb</h2>
           <p className="muted">
-            Sök i hela Platsbanken, filtrera på län, ort och yrke — och spara
-            intressanta annonser direkt på din tavla.
+            Sök i hela Platsbanken, filtrera på ort och yrke — och spara intressanta
+            annonser direkt på din tavla.
           </p>
         </div>
         <div className="metric-inline" aria-label="Söksammanfattning">
@@ -380,147 +479,157 @@ export default function PostingsPanel() {
       </section>
 
       <section className="card">
-      <form className="job-search" onSubmit={submit}>
-        <input
-          className="job-search-q"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Sök yrke, företag, kompetens…"
-          aria-label="Sökord"
-        />
-        <select
-          value={region}
-          onChange={(e) => changeRegion(e.target.value)}
-          aria-label="Län"
-        >
-          <option value="">Hela Sverige</option>
-          {filters.regions.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={municipality}
-          onChange={(e) => setMunicipality(e.target.value)}
-          disabled={municipalityDisabled}
-          title={region ? "Välj ort inom länet" : "Välj län först"}
-          aria-label="Ort"
-        >
-          <option value="">{municipalityPlaceholder}</option>
-          {locationOptions.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={field}
-          onChange={(e) => changeField(e.target.value)}
-          aria-label="Yrkesområde"
-        >
-          <option value="">Alla yrkesområden</option>
-          {filters.fields.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={group}
-          onChange={(e) => setGroup(e.target.value)}
-          disabled={groupDisabled}
-          title={
-            field
-              ? "Välj yrke inom yrkesområdet"
-              : "Välj yrkesområde först"
-          }
-          aria-label="Yrke"
-        >
-          <option value="">{groupPlaceholder}</option>
-          {fieldGroups.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.label}
-            </option>
-          ))}
-        </select>
-        <label className="job-remote" title="Visa bara jobb som kan utföras på distans">
+        <form className="job-search job-search--advanced" onSubmit={submit}>
           <input
-            type="checkbox"
-            checked={remote}
-            onChange={(e) => setRemote(e.target.checked)}
+            className="job-search-q"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Sök yrke, företag, kompetens…"
+            aria-label="Sökord"
           />
-          Endast distans
-        </label>
-        <button type="submit" className="job-search-submit">
-          Sök
-        </button>
-      </form>
 
-      <div className="saved-search-tools">
-        <button
-          type="button"
-          className="secondary small"
-          onClick={saveCurrentSearch}
-          disabled={!(q || region || municipality || field || group || remote)}
+          <MultiSelectFilter
+            triggerLabel="Ort"
+            summary={locationSummary}
+            primaryTitle="Län"
+            secondaryTitle="Kommuner"
+            primaryOptions={filters.regions}
+            secondaryOptions={municipalityOptions}
+            activePrimaryId={browseRegion}
+            onActivePrimaryChange={setBrowseRegion}
+            selectedIds={selectedMunicipalities.map((row) => row.id)}
+            onToggleSecondary={toggleMunicipality}
+            onSelectAllSecondary={selectAllMunicipalities}
+            onClearSecondary={() => clearVisibleMunicipalities(municipalityOptions)}
+            secondaryLoading={municipalitiesLoading && !municipalityCache[browseRegion]}
+          />
+
+          <MultiSelectFilter
+            triggerLabel="Yrke"
+            summary={occupationSummary}
+            primaryTitle="Yrkesområden"
+            secondaryTitle="Yrken"
+            primaryOptions={filters.fields}
+            secondaryOptions={groupOptions}
+            activePrimaryId={browseField}
+            onActivePrimaryChange={setBrowseField}
+            selectedIds={selectedGroups.map((row) => row.id)}
+            onToggleSecondary={toggleGroup}
+            onSelectAllSecondary={selectAllGroups}
+            onClearSecondary={() => clearVisibleGroups(groupOptions)}
+            secondaryLoading={groupsLoading && !groupCache[browseField]}
+            secondaryEmptyText="Välj yrkesområde till vänster"
+          />
+
+          <label
+            className="job-remote"
+            title="Visa bara jobb som kan utföras på distans"
+          >
+            <input
+              type="checkbox"
+              checked={remote}
+              onChange={(e) => setRemote(e.target.checked)}
+            />
+            Endast distans
+          </label>
+
+          <label
+            className="job-remote"
+            title="Kräver CV med kompetenser — visar jobb där minst 40% matchar"
+          >
+            <input
+              type="checkbox"
+              checked={matchCvOnly}
+              onChange={(e) => setMatchCvOnly(e.target.checked)}
+            />
+            Passar mitt CV
+          </label>
+
+          <button type="submit" className="job-search-submit">
+            Sök
+          </button>
+        </form>
+
+        <div className="saved-search-tools">
+          <button
+            type="button"
+            className="secondary small"
+            onClick={openSaveDialog}
+            disabled={!canSave}
+          >
+            Spara sökning
+          </button>
+          {savedSearches.length > 0 && (
+            <div className="saved-search-list" aria-label="Sparade sökningar">
+              {savedSearches.map((saved) => (
+                <span className="saved-search-chip" key={saved.id}>
+                  <button type="button" onClick={() => applySavedSearch(saved)}>
+                    {buildSearchLabel(saved)}
+                  </button>
+                  <button
+                    type="button"
+                    className="saved-search-edit"
+                    onClick={() => openRenameDialog(saved)}
+                    aria-label={`Byt namn på ${buildSearchLabel(saved)}`}
+                  >
+                    ✎
+                  </button>
+                  <button
+                    type="button"
+                    className="saved-search-remove"
+                    onClick={() => removeSavedSearch(saved.id)}
+                    aria-label={`Ta bort ${buildSearchLabel(saved)}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {filtersError && <p className="error">{filtersError}</p>}
+        {message && <p className="notice">{message}</p>}
+        {error && <p className="error">{error}</p>}
+
+        <section
+          ref={resultsSectionRef}
+          className="job-results"
+          aria-label="Sökresultat"
         >
-          Spara sökning
-        </button>
-        {savedSearches.length > 0 && (
-          <div className="saved-search-list" aria-label="Sparade sökningar">
-            {savedSearches.map((saved) => (
-              <span className="saved-search-chip" key={saved.id}>
-                <button type="button" onClick={() => applySavedSearch(saved)}>
-                  {buildSearchLabel(saved)}
+          {loading && (
+            <div className="loading-row">
+              <span className="spinner" /> Söker i Platsbanken…
+            </div>
+          )}
+
+          {!error && (
+            <p className="muted job-count">
+              {loading && total > 0
+                ? `Laddar sida ${Math.floor(offset / PAGE_SIZE) + 1}…`
+                : total === 0
+                  ? query.matchCv
+                    ? "Inga annonser matchade ditt CV i denna sökning."
+                    : "Inga annonser matchade din sökning."
+                  : query.matchCv
+                    ? `Visar ${results.length} CV-matchande av ${showingFrom}–${showingTo} (totalt ${total.toLocaleString(
+                        "sv-SE"
+                      )})`
+                    : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
+                        "sv-SE"
+                      )} annonser`}
+              {!loading && activeFilters && (
+                <button className="linklike job-clear" onClick={clearFilters}>
+                  Rensa filter
                 </button>
-                <button
-                  type="button"
-                  className="saved-search-remove"
-                  onClick={() => removeSavedSearch(saved.id)}
-                  aria-label={`Ta bort ${buildSearchLabel(saved)}`}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+              )}
+            </p>
+          )}
 
-      {filtersError && <p className="error">{filtersError}</p>}
-      {municipalitiesError && <p className="error">{municipalitiesError}</p>}
-      {groupsError && <p className="error">{groupsError}</p>}
-      {message && <p className="notice">{message}</p>}
-      {error && <p className="error">{error}</p>}
-
-      <section
-        ref={resultsSectionRef}
-        className="job-results"
-        aria-label="Sökresultat"
-      >
-        {loading && (
-          <div className="loading-row">
-            <span className="spinner" /> Söker i Platsbanken…
-          </div>
-        )}
-
-        {!error && !loading && (
-          <p className="muted job-count">
-            {total === 0
-              ? "Inga annonser matchade din sökning."
-              : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
-                  "sv-SE"
-                )} annonser`}
-            {activeFilters && (
-              <button className="linklike job-clear" onClick={clearFilters}>
-                Rensa filter
-              </button>
-            )}
-          </p>
-        )}
-
-        {!loading && (
-          <div className="job-list">
+          <div
+            className={loading ? "job-list job-list--loading" : "job-list"}
+            aria-busy={loading}
+          >
             {results.map((job) => (
               <JobCard
                 key={job.id}
@@ -533,44 +642,131 @@ export default function PostingsPanel() {
               />
             ))}
           </div>
+        </section>
+
+        {total > PAGE_SIZE && (
+          <div className="pager">
+            <button
+              className="secondary small"
+              disabled={offset === 0 || loading}
+              onClick={() => goToPage(Math.max(0, offset - PAGE_SIZE))}
+            >
+              ← Föregående
+            </button>
+            <button
+              className="secondary small"
+              disabled={offset + PAGE_SIZE >= total || loading}
+              onClick={() => goToPage(offset + PAGE_SIZE)}
+            >
+              Nästa →
+            </button>
+          </div>
+        )}
+
+        {selected && (
+          <JobDetail
+            job={selected}
+            tracked={
+              !!selected.webpage_url &&
+              tracked.has(normalizeAdUrl(selected.webpage_url))
+            }
+            onTrack={() => {
+              track(selected);
+              setSelected(null);
+            }}
+            onClose={() => setSelected(null)}
+          />
+        )}
+
+        {saveDialogOpen && (
+          <SaveSearchDialog
+            label={saveLabel}
+            onLabelChange={setSaveLabel}
+            onCancel={() => setSaveDialogOpen(false)}
+            onSave={confirmSaveSearch}
+          />
+        )}
+
+        {renameTarget && (
+          <SaveSearchDialog
+            title="Byt namn på sökning"
+            label={renameLabel}
+            onLabelChange={setRenameLabel}
+            onCancel={() => setRenameTarget(null)}
+            onSave={confirmRenameSearch}
+            saveText="Spara namn"
+          />
         )}
       </section>
-
-      {total > PAGE_SIZE && (
-        <div className="pager">
-          <button
-            className="secondary small"
-            disabled={offset === 0 || loading}
-            onClick={() => goToPage(Math.max(0, offset - PAGE_SIZE))}
-          >
-            ← Föregående
-          </button>
-          <button
-            className="secondary small"
-            disabled={offset + PAGE_SIZE >= total || loading}
-            onClick={() => goToPage(offset + PAGE_SIZE)}
-          >
-            Nästa →
-          </button>
-        </div>
-      )}
-
-      {selected && (
-        <JobDetail
-          job={selected}
-          tracked={
-            !!selected.webpage_url &&
-            tracked.has(normalizeAdUrl(selected.webpage_url))
-          }
-          onTrack={() => {
-            track(selected);
-            setSelected(null);
-          }}
-          onClose={() => setSelected(null)}
-        />
-      )}
-    </section>
     </div>
+  );
+}
+
+function SaveSearchDialog({
+  title = "Spara sökning",
+  label,
+  onLabelChange,
+  onCancel,
+  onSave,
+  saveText = "Spara",
+}) {
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const previous = document.activeElement;
+    dialogRef.current?.querySelector("input")?.focus();
+    function onKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCancel();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previous?.focus?.();
+    };
+  }, [onCancel]);
+
+  return (
+    <ModalOverlay
+      onClose={onCancel}
+      className="modal save-search-modal"
+      dialogRef={dialogRef}
+      labelledBy="save-search-title"
+    >
+      <div className="modal-head">
+        <div className="modal-head-text">
+          <h2 id="save-search-title">{title}</h2>
+          <p className="muted">Ge sökningen ett namn du känner igen.</p>
+        </div>
+        <button
+          type="button"
+          className="secondary small modal-close"
+          onClick={onCancel}
+          aria-label="Stäng"
+        >
+          ✕
+        </button>
+      </div>
+      <label className="stack-tight">
+        <span className="field-label">Namn</span>
+        <input
+          value={label}
+          onChange={(e) => onLabelChange(e.target.value)}
+          maxLength={120}
+          placeholder="t.ex. Python distans Stockholm"
+        />
+      </label>
+      <div className="modal-actions">
+        <button type="button" className="secondary" onClick={onCancel}>
+          Avbryt
+        </button>
+        <button type="button" className="btn-primary" onClick={onSave}>
+          {saveText}
+        </button>
+      </div>
+    </ModalOverlay>
   );
 }
 
@@ -634,50 +830,50 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
       labelledBy="job-modal-title"
     >
       <div className="modal-head">
-          <div className="modal-head-text">
-            <h2 id="job-modal-title">{job.title}</h2>
-            <p className="muted">
-              {job.company_name}
-              {job.location && ` — ${job.location}`}
-              {job.application_deadline &&
-                ` · sista ansökningsdag ${job.application_deadline}`}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="secondary small modal-close"
-            onClick={onClose}
-            aria-label="Stäng"
+        <div className="modal-head-text">
+          <h2 id="job-modal-title">{job.title}</h2>
+          <p className="muted">
+            {job.company_name}
+            {job.location && ` — ${job.location}`}
+            {job.application_deadline &&
+              ` · sista ansökningsdag ${job.application_deadline}`}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="secondary small modal-close"
+          onClick={onClose}
+          aria-label="Stäng"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="modal-actions">
+        {job.webpage_url && (
+          <a
+            className="btn-primary"
+            href={job.webpage_url}
+            target="_blank"
+            rel="noreferrer"
           >
-            ✕
-          </button>
-        </div>
+            Ansök på platsannonsen ↗
+          </a>
+        )}
+        <button className="secondary" onClick={onTrack} disabled={tracked}>
+          {tracked ? "På tavlan ✓" : "+ Spara på tavlan"}
+        </button>
+      </div>
+      <p className="muted modal-hint">
+        Ansökan görs hos arbetsgivaren — spara den här så följer du den på din
+        tavla.
+      </p>
 
-        <div className="modal-actions">
-          {job.webpage_url && (
-            <a
-              className="btn-primary"
-              href={job.webpage_url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Ansök på platsannonsen ↗
-            </a>
-          )}
-          <button className="secondary" onClick={onTrack} disabled={tracked}>
-            {tracked ? "På tavlan ✓" : "+ Spara på tavlan"}
-          </button>
-        </div>
-        <p className="muted modal-hint">
-          Ansökan görs hos arbetsgivaren — spara den här så följer du den på din
-          tavla.
-        </p>
+      {job.match && <MatchScore match={job.match} variant="detail" />}
 
-        {job.match && <MatchScore match={job.match} variant="detail" />}
-
-        <div className="description">
-          {job.description || "Ingen beskrivning tillgänglig för den här annonsen."}
-        </div>
+      <div className="description">
+        {job.description || "Ingen beskrivning tillgänglig för den här annonsen."}
+      </div>
     </ModalOverlay>
   );
 }

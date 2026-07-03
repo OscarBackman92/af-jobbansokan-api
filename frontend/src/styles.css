@@ -1805,6 +1805,12 @@ tbody tr:last-child td {
   margin: 0.9rem 0;
 }
 
+.job-search--advanced {
+  grid-template-columns:
+    minmax(180px, 2fr) minmax(140px, 1fr) minmax(140px, 1fr)
+    auto auto auto;
+}
+
 .job-search input,
 .job-search select {
   margin-top: 0;
@@ -1832,6 +1838,144 @@ tbody tr:last-child td {
   min-height: 2.65rem;
   padding: 0.55rem 1.25rem;
   font-weight: 600;
+}
+
+.multi-select-filter {
+  position: relative;
+}
+
+.multi-select-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  min-height: 2.65rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.multi-select-trigger--active {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--input-border));
+}
+
+.multi-select-trigger--open {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+
+.multi-select-summary {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.multi-select-chevron {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.multi-select-panel {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.2fr);
+  width: min(560px, 92vw);
+  max-height: min(420px, 70vh);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.multi-select-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.multi-select-column + .multi-select-column {
+  border-left: 1px solid var(--border);
+}
+
+.multi-select-column-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--label);
+}
+
+.multi-select-clear {
+  font-size: 0.78rem;
+  color: var(--red);
+}
+
+.multi-select-primary,
+.multi-select-secondary {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem 0;
+  overflow: auto;
+}
+
+.multi-select-primary-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.multi-select-primary-item:hover,
+.multi-select-primary-item--active {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  color: var(--ink);
+}
+
+.multi-select-check {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+
+.multi-select-check input {
+  width: auto;
+  margin: 0;
+}
+
+.multi-select-empty {
+  padding: 0.8rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.save-search-modal input {
+  width: 100%;
 }
 
 .danger-zone {
@@ -1874,7 +2018,12 @@ tbody tr:last-child td {
 }
 
 .job-results {
-  scroll-margin-top: 0.5rem;
+  scroll-margin-top: 5rem;
+}
+
+.job-list--loading {
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 .job-card {
@@ -1983,6 +2132,13 @@ tbody tr:last-child td {
   color: var(--muted) !important;
   padding: 0.35rem 0.55rem !important;
   border-left: 1px solid var(--border) !important;
+}
+
+.saved-search-edit {
+  color: var(--muted) !important;
+  padding: 0.35rem 0.45rem !important;
+  font-size: 0.82rem !important;
+  min-height: auto !important;
 }
 
 .privacy-body h3 {
@@ -2734,7 +2890,8 @@ code {
   .board-tools,
   .rowline,
   .timeline-form,
-  .job-search {
+  .job-search,
+  .job-search--advanced {
     grid-template-columns: 1fr;
   }
 

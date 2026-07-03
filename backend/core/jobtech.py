@@ -170,16 +170,52 @@ def municipalities(region_id: str) -> list[dict[str, str]]:
     return locations
 
 
-def _is_occupation_group(field: str, group: str) -> bool:
-    return bool(group) and any(
-        option["id"] == group for option in occupation_groups(field)
-    )
+def _valid_municipality_ids(ids: list[str]) -> list[str]:
+    valid: list[str] = []
+    seen: set[str] = set()
+    for municipality_id in ids:
+        if not municipality_id or municipality_id in seen:
+            continue
+        for region_id in _REGION_IDS:
+            if any(option["id"] == municipality_id for option in municipalities(region_id)):
+                valid.append(municipality_id)
+                seen.add(municipality_id)
+                break
+    return valid
 
 
-def _is_municipality(region: str, municipality: str) -> bool:
-    return bool(municipality) and any(
-        option["id"] == municipality for option in municipalities(region)
-    )
+def _valid_region_ids(ids: list[str]) -> list[str]:
+    valid: list[str] = []
+    seen: set[str] = set()
+    for region_id in ids:
+        if region_id in _REGION_IDS and region_id not in seen:
+            valid.append(region_id)
+            seen.add(region_id)
+    return valid
+
+
+def _valid_occupation_group_ids(ids: list[str]) -> list[str]:
+    valid: list[str] = []
+    seen: set[str] = set()
+    for group_id in ids:
+        if not group_id or group_id in seen:
+            continue
+        for field_id in _FIELD_IDS:
+            if any(option["id"] == group_id for option in occupation_groups(field_id)):
+                valid.append(group_id)
+                seen.add(group_id)
+                break
+    return valid
+
+
+def _valid_occupation_field_ids(ids: list[str]) -> list[str]:
+    valid: list[str] = []
+    seen: set[str] = set()
+    for field_id in ids:
+        if field_id in _FIELD_IDS and field_id not in seen:
+            valid.append(field_id)
+            seen.add(field_id)
+    return valid
 
 
 def hit_to_job(hit: dict) -> dict:
@@ -203,18 +239,19 @@ def hit_to_job(hit: dict) -> dict:
 def search(
     *,
     q: str = "",
-    region: str = "",
-    municipality: str = "",
-    field: str = "",
-    group: str = "",
+    regions: list[str] | None = None,
+    municipalities: list[str] | None = None,
+    fields: list[str] | None = None,
+    groups: list[str] | None = None,
     remote: bool = False,
     offset: int = 0,
     limit: int = 25,
 ) -> dict:
     """Query JobTech live and return {"total": int, "results": [job, ...]}.
 
-    Unknown region/field concept IDs are ignored rather than passed
-    upstream (where they would 400).
+    Unknown concept IDs are ignored rather than passed upstream (where
+    they would 400). Multiple values for the same filter are OR-ed by
+    JobTech, matching Platsbanken's multi-select behaviour.
     """
     params: list[tuple[str, object]] = [
         ("offset", max(0, offset)),
@@ -223,17 +260,25 @@ def search(
     ]
     if q.strip():
         params.append(("q", q.strip()))
-    has_municipality = region in _REGION_IDS and _is_municipality(region, municipality)
-    if has_municipality:
-        params.append(("municipality", municipality))
-    elif region in _REGION_IDS:
-        params.append(("region", region))
 
-    has_occupation_group = field in _FIELD_IDS and _is_occupation_group(field, group)
-    if has_occupation_group:
-        params.append(("occupation-group", group))
-    elif field in _FIELD_IDS:
-        params.append(("occupation-field", field))
+    valid_municipalities = _valid_municipality_ids(list(municipalities or []))
+    valid_regions = _valid_region_ids(list(regions or []))
+    if valid_municipalities:
+        for municipality_id in valid_municipalities:
+            params.append(("municipality", municipality_id))
+    elif valid_regions:
+        for region_id in valid_regions:
+            params.append(("region", region_id))
+
+    valid_groups = _valid_occupation_group_ids(list(groups or []))
+    valid_fields = _valid_occupation_field_ids(list(fields or []))
+    if valid_groups:
+        for group_id in valid_groups:
+            params.append(("occupation-group", group_id))
+    elif valid_fields:
+        for field_id in valid_fields:
+            params.append(("occupation-field", field_id))
+
     if remote:
         params.append(("remote", "true"))
 

@@ -28,10 +28,10 @@ def fetch_new_jobs(search: SavedJobSearch, *, since: date) -> list[dict]:
     try:
         payload = jobtech.search(
             q=search.q,
-            region=search.region,
-            municipality=search.municipality,
-            field=search.field,
-            group=search.group,
+            regions=search.regions,
+            municipalities=search.municipalities,
+            fields=search.occupation_fields,
+            groups=search.occupation_groups,
             remote=search.remote,
             limit=25,
         )

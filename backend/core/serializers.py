@@ -297,17 +297,31 @@ class ResumeUploadSerializer(serializers.Serializer):
 
 
 class SavedJobSearchSerializer(serializers.ModelSerializer):
+    fields = serializers.ListField(
+        child=serializers.CharField(max_length=80),
+        source="occupation_fields",
+        required=False,
+        default=list,
+    )
+    groups = serializers.ListField(
+        child=serializers.CharField(max_length=80),
+        source="occupation_groups",
+        required=False,
+        default=list,
+    )
+
     class Meta:
         model = SavedJobSearch
         fields = [
             "id",
             "label",
             "q",
-            "region",
-            "municipality",
-            "field",
-            "group",
+            "regions",
+            "municipalities",
+            "fields",
+            "groups",
             "remote",
+            "match_cv",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]

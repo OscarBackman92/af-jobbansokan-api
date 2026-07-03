@@ -159,9 +159,10 @@ class SavedJobSearchListCreateView(generics.ListCreateAPIView):
         serializer.save(owner=self.request.user)
 
 
-class SavedJobSearchDetailView(generics.RetrieveDestroyAPIView):
+class SavedJobSearchDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SavedJobSearchSerializer
     permission_classes = [IsAuthenticatedUser]
+    http_method_names = ["get", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
         return SavedJobSearch.objects.filter(owner=self.request.user)
@@ -374,6 +375,34 @@ def _truthy(value):
     return str(value).lower() in ("1", "true", "yes", "on")
 
 
+GOOD_MATCH_PERCENT = 40
+
+
+def _parse_id_list(params, *keys):
+    """Collect unique concept IDs from repeated or comma-separated query params."""
+    ids: list[str] = []
+    seen: set[str] = set()
+    for key in keys:
+        for value in params.getlist(key):
+            for part in value.split(","):
+                part = part.strip()
+                if part and part not in seen:
+                    seen.add(part)
+                    ids.append(part)
+    return ids
+
+
+def _filter_jobs_by_cv_match(results, *, min_percent=GOOD_MATCH_PERCENT):
+    filtered = []
+    for job in results:
+        match = job.get("match")
+        if not match or not match.get("total"):
+            continue
+        if (match["count"] / match["total"]) * 100 >= min_percent:
+            filtered.append(job)
+    return filtered
+
+
 JOBTECH_CACHE_TTL = 180  # seconds
 
 
@@ -396,17 +425,32 @@ def _cached_jobtech_search(**kwargs):
 @extend_schema(
     parameters=[
         OpenApiParameter("q", OpenApiTypes.STR, description="Free text query."),
-        OpenApiParameter("region", OpenApiTypes.STR, description="Region concept id."),
         OpenApiParameter(
-            "municipality", OpenApiTypes.STR, description="Municipality concept id."
+            "region",
+            OpenApiTypes.STR,
+            description="Region concept id (repeatable).",
         ),
         OpenApiParameter(
-            "field", OpenApiTypes.STR, description="Occupation-field concept id."
+            "municipality",
+            OpenApiTypes.STR,
+            description="Municipality concept id (repeatable).",
         ),
         OpenApiParameter(
-            "group", OpenApiTypes.STR, description="Occupation-group concept id."
+            "field",
+            OpenApiTypes.STR,
+            description="Occupation-field concept id (repeatable).",
+        ),
+        OpenApiParameter(
+            "group",
+            OpenApiTypes.STR,
+            description="Occupation-group concept id (repeatable).",
         ),
         OpenApiParameter("remote", OpenApiTypes.BOOL, description="Remote only."),
+        OpenApiParameter(
+            "match_cv",
+            OpenApiTypes.BOOL,
+            description="Only jobs that match the user's CV (≥40%).",
+        ),
         OpenApiParameter("offset", OpenApiTypes.INT),
         OpenApiParameter("limit", OpenApiTypes.INT),
     ],
@@ -427,10 +471,10 @@ def job_search(request):
     try:
         data = _cached_jobtech_search(
             q=params.get("q", ""),
-            region=params.get("region", ""),
-            municipality=params.get("municipality", ""),
-            field=params.get("field", ""),
-            group=params.get("group", ""),
+            regions=_parse_id_list(params, "region", "regions"),
+            municipalities=_parse_id_list(params, "municipality", "municipalities"),
+            fields=_parse_id_list(params, "field", "fields"),
+            groups=_parse_id_list(params, "group", "groups"),
             remote=_truthy(params.get("remote", "")),
             offset=offset,
             limit=limit,
@@ -449,6 +493,14 @@ def job_search(request):
                 skills,
                 SimpleNamespace(title=job["title"], description=job["description"]),
             )
+
+    if _truthy(params.get("match_cv", "")):
+        if not skills:
+            raise ValidationError(
+                {"match_cv": "Ladda upp CV med kompetenser för att använda detta filter."}
+            )
+        data["results"] = _filter_jobs_by_cv_match(data["results"])
+        data["match_cv_filtered"] = True
 
     data["offset"] = offset
     data["limit"] = limit

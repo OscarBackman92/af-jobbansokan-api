@@ -249,6 +249,21 @@ def test_search_adds_cv_match(api_client, user, mock_jobtech):
     assert body["results"][0]["match"]["matched"] == ["Python"]
 
 
+def test_search_match_cv_filter(api_client, user, mock_jobtech):
+    Resume.objects.create(user=user, skills=["Python", "Rust"])
+    api_client.force_authenticate(user)
+    body = api_client.get(SEARCH_URL, {"q": "python", "match_cv": "true"}).json()
+    assert body["match_cv_filtered"] is True
+    assert len(body["results"]) == 1
+    assert body["results"][0]["match"]["matched"] == ["Python"]
+
+
+def test_search_match_cv_requires_resume(api_client, user, mock_jobtech):
+    api_client.force_authenticate(user)
+    response = api_client.get(SEARCH_URL, {"match_cv": "true"})
+    assert response.status_code == 400
+
+
 def test_search_handles_upstream_failure(api_client, user, monkeypatch):
     def boom(url, params=None, timeout=None):
         raise requests.RequestException("down")

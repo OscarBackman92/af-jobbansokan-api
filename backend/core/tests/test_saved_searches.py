@@ -12,7 +12,10 @@ def test_create_and_list_saved_search(api_client, user):
         {
             "label": "Distans Python",
             "q": "python",
-            "region": "region-stockholm",
+            "regions": ["CifL_Rzy_Mku"],
+            "municipalities": [],
+            "fields": [],
+            "groups": [],
             "remote": True,
         },
         format="json",
@@ -47,3 +50,11 @@ def test_delete_saved_search(api_client, user):
     response = api_client.delete(f"{URL}{saved.id}/")
     assert response.status_code == 204
     assert not SavedJobSearch.objects.filter(pk=saved.id).exists()
+
+
+def test_rename_saved_search(api_client, user):
+    saved = SavedJobSearch.objects.create(owner=user, label="Old", q="dev")
+    api_client.force_authenticate(user)
+    response = api_client.patch(f"{URL}{saved.id}/", {"label": "Python distans"}, format="json")
+    assert response.status_code == 200
+    assert response.json()["label"] == "Python distans"
