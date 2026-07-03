@@ -378,8 +378,13 @@ export default function PostingsPanel() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Sök yrke, företag, kompetens…"
+          aria-label="Sökord"
         />
-        <select value={region} onChange={(e) => changeRegion(e.target.value)}>
+        <select
+          value={region}
+          onChange={(e) => changeRegion(e.target.value)}
+          aria-label="Län"
+        >
           <option value="">Hela Sverige</option>
           {filters.regions.map((r) => (
             <option key={r.id} value={r.id}>
@@ -392,6 +397,7 @@ export default function PostingsPanel() {
           onChange={(e) => setMunicipality(e.target.value)}
           disabled={municipalityDisabled}
           title={region ? "Välj ort inom länet" : "Välj län först"}
+          aria-label="Ort"
         >
           <option value="">{municipalityPlaceholder}</option>
           {locationOptions.map((m) => (
@@ -400,7 +406,11 @@ export default function PostingsPanel() {
             </option>
           ))}
         </select>
-        <select value={field} onChange={(e) => changeField(e.target.value)}>
+        <select
+          value={field}
+          onChange={(e) => changeField(e.target.value)}
+          aria-label="Yrkesområde"
+        >
           <option value="">Alla yrkesområden</option>
           {filters.fields.map((f) => (
             <option key={f.id} value={f.id}>
@@ -417,6 +427,7 @@ export default function PostingsPanel() {
               ? "Välj yrke inom yrkesområdet"
               : "Välj yrkesområde först"
           }
+          aria-label="Yrke"
         >
           <option value="">{groupPlaceholder}</option>
           {fieldGroups.map((g) => (
@@ -433,7 +444,9 @@ export default function PostingsPanel() {
           />
           Endast distans
         </label>
-        <button className="small">Sök</button>
+        <button type="submit" className="job-search-submit">
+          Sök
+        </button>
       </form>
 
       <div className="saved-search-tools">

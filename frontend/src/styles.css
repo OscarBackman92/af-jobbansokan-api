@@ -26,6 +26,9 @@
   --red-border: #f5d5d5;
   --amber: #92600a;
   --amber-bg: #fdf3e0;
+  --amber-border: #e8d4a8;
+  --cyan: #0891b2;
+  --cyan-bg: #e0f7fa;
   --star: #d9a514;
   --radius: 16px;
   --radius-sm: 10px;
@@ -80,6 +83,8 @@
   --amber: #fbbf24;
   --amber-bg: rgba(251, 191, 36, 0.12);
   --amber-border: rgba(251, 191, 36, 0.28);
+  --cyan: #22d3ee;
+  --cyan-bg: rgba(34, 211, 238, 0.12);
   --star: #fbbf24;
   --radius: 14px;
   --radius-sm: 8px;
@@ -125,6 +130,9 @@
   --red-border: #f5d5d5;
   --amber: #92600a;
   --amber-bg: #fdf3e0;
+  --amber-border: #e8d4a8;
+  --cyan: #0891b2;
+  --cyan-bg: #e0f7fa;
   --star: #d9a514;
   --shadow-sm: 0 1px 2px rgba(22, 22, 31, 0.05), 0 1px 6px rgba(22, 22, 31, 0.04);
   --shadow-md: 0 4px 16px rgba(22, 22, 31, 0.08), 0 1px 4px rgba(22, 22, 31, 0.05);
@@ -168,6 +176,9 @@
   --red-border: rgba(248, 113, 113, 0.28);
   --amber: #fbbf24;
   --amber-bg: rgba(251, 191, 36, 0.12);
+  --amber-border: rgba(251, 191, 36, 0.28);
+  --cyan: #38bdf8;
+  --cyan-bg: rgba(56, 189, 248, 0.12);
   --star: #fbbf24;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -176,7 +187,7 @@
   --grad: linear-gradient(135deg, #4ade80, #16a34a);
   --grid-line: rgba(74, 222, 128, 0.04);
   --st-wishlist: #64748b;
-  --st-applied: #4ade80;
+  --st-applied: #38bdf8;
   --st-screening: #fbbf24;
   --st-interview: #f59e0b;
   --st-forwarded: #a78bfa;
@@ -431,7 +442,7 @@ body::after {
 .tagline {
   margin: 0;
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   letter-spacing: 0.04em;
   font-weight: 500;
   white-space: nowrap;
@@ -1603,11 +1614,25 @@ tbody tr:last-child td {
 }
 
 @media (hover: hover) {
-  .metric-tile:hover {
+  .metric-tile--interactive:hover {
     transform: translateY(-2px);
     border-color: var(--accent-border);
     box-shadow: 0 8px 24px color-mix(in srgb, var(--button-glow) 45%, transparent);
   }
+}
+
+.metric-tile--interactive {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  box-shadow: var(--shadow-sm);
+}
+
+.metric-tile--interactive:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
 .metric-tile strong {
@@ -1620,9 +1645,9 @@ tbody tr:last-child td {
 
 .metric-label {
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -1796,6 +1821,30 @@ tbody tr:last-child td {
   font-weight: 500;
   color: var(--label);
   white-space: nowrap;
+}
+
+.job-search-submit {
+  min-height: 2.65rem;
+  padding: 0.55rem 1.25rem;
+  font-weight: 600;
+}
+
+.danger-zone {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--red-border);
+  border-radius: var(--radius-sm);
+  background: var(--red-bg);
+}
+
+.danger-zone h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  color: var(--red);
+}
+
+.danger-zone p {
+  margin: 0 0 0.75rem;
 }
 
 .job-remote input {
@@ -2041,7 +2090,7 @@ tbody tr:last-child td {
 .followups h2::after {
   content: "ACTION";
   font-family: var(--mono);
-  font-size: 0.58rem;
+  font-size: 0.7rem;
   letter-spacing: 0.12em;
   padding: 0.2rem 0.45rem;
   border-radius: 4px;
@@ -2102,7 +2151,7 @@ tbody tr:last-child td {
 
 .today-kind {
   font-family: var(--mono);
-  font-size: 0.58rem;
+  font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   width: fit-content;
@@ -2545,7 +2594,7 @@ tbody tr:last-child td {
 .footer-kicker {
   display: block;
   font-family: var(--mono);
-  font-size: 0.58rem;
+  font-size: 0.7rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--brand);

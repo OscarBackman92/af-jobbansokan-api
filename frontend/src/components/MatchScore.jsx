@@ -1,5 +1,5 @@
 /** Explainable CV ↔ job match (Teal-style score + missing skills). */
-export default function MatchScore({ match, variant = "compact" }) {
+export default function MatchScore({ match, variant = "compact", showMissing = true }) {
   if (!match?.total) return null;
 
   const percent = Math.round((match.count / match.total) * 100);
@@ -25,7 +25,7 @@ export default function MatchScore({ match, variant = "compact" }) {
         >
           <span style={{ width: `${percent}%` }} />
         </div>
-        {match.missing?.length > 0 && (
+        {showMissing && match.missing?.length > 0 && (
           <p className="match-score-missing muted">
             Saknas: {match.missing.slice(0, 4).join(", ")}
             {match.missing.length > 4 ? ` +${match.missing.length - 4}` : ""}

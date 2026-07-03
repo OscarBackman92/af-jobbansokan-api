@@ -191,6 +191,11 @@ export default function BoardPanel({ token, onNavigate }) {
     setStageFilter(null);
   }
 
+  function applyMetricFilter(filterId) {
+    setStageFilter(null);
+    setQuickFilter(filterId);
+  }
+
   function toggleStageFilter(status) {
     setStageFilter((current) => (current === status ? null : status));
   }
@@ -231,30 +236,44 @@ export default function BoardPanel({ token, onNavigate }) {
           </p>
         </div>
         <div className="metric-grid" aria-label="Översikt">
-          <MetricTile label="Pågående" value={activeCount} detail="ansökningar" />
+          <MetricTile
+            label="Pågående"
+            value={activeCount}
+            detail="ansökningar"
+            filterId="all"
+            onFilter={applyMetricFilter}
+          />
           <MetricTile
             label="Följ upp"
             value={followUps.length}
             detail="behöver respons"
             tone="amber"
+            filterId="followups"
+            onFilter={applyMetricFilter}
           />
           <MetricTile
             label="Deadline"
             value={deadlineSoonCount}
             detail="inom 7 dagar"
             tone="red"
+            filterId="deadline"
+            onFilter={applyMetricFilter}
           />
           <MetricTile
             label="Intervjuspår"
             value={interviewTrackCount}
             detail="i dialog"
             tone="cyan"
+            filterId="interviews"
+            onFilter={applyMetricFilter}
           />
           <MetricTile
             label="Erbjudande"
             value={offerCount}
             detail="att ta ställning till"
             tone="green"
+            filterId="offers"
+            onFilter={applyMetricFilter}
           />
         </div>
       </section>
@@ -406,14 +425,30 @@ export default function BoardPanel({ token, onNavigate }) {
   );
 }
 
-function MetricTile({ label, value, detail, tone = "default" }) {
-  return (
-    <div className={`metric-tile metric-tile--${tone}`}>
+function MetricTile({ label, value, detail, tone = "default", filterId, onFilter }) {
+  const className = `metric-tile metric-tile--${tone}${
+    filterId ? " metric-tile--interactive" : ""
+  }`;
+  const content = (
+    <>
       <span className="metric-label">{label}</span>
       <strong>{value}</strong>
       <span className="metric-detail">{detail}</span>
-    </div>
+    </>
   );
+  if (filterId && onFilter) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={() => onFilter(filterId)}
+        aria-label={`Filtrera: ${label}`}
+      >
+        {content}
+      </button>
+    );
+  }
+  return <div className={className}>{content}</div>;
 }
 
 function PipelineStage({
@@ -501,7 +536,7 @@ function ApplicationRow({ application, onOpen, onMove }) {
         <span className="pipeline-row-title">{application.title}</span>
         <span className="pipeline-row-meta">{meta.join(" · ")}</span>
         {application.match && (
-          <MatchScore match={application.match} variant="compact" />
+          <MatchScore match={application.match} variant="compact" showMissing={false} />
         )}
         {hasBadges && (
           <span className="pipeline-row-badges">
@@ -531,9 +566,6 @@ function ApplicationRow({ application, onOpen, onMove }) {
             </option>
           ))}
         </select>
-        <button className="secondary small" onClick={onOpen}>
-          Öppna
-        </button>
       </div>
     </div>
   );

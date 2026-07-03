@@ -432,16 +432,6 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
           <button className="secondary small" onClick={toggleEditor}>
             {open ? "Stäng" : "Redigera"}
           </button>
-          {cvHasContent && (
-            <button
-              type="button"
-              className="danger small"
-              onClick={deleteResume}
-              disabled={deleting || saving}
-            >
-              {deleting ? "Raderar…" : "Radera CV"}
-            </button>
-          )}
         </div>
       </div>
       {message && (
@@ -619,6 +609,23 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
           >
             + Lägg till utbildning
           </button>
+
+          {cvHasContent && (
+            <div className="danger-zone">
+              <h3>Radera CV</h3>
+              <p className="muted">
+                Tar bort allt sparat CV-innehåll permanent. Detta går inte att ångra.
+              </p>
+              <button
+                type="button"
+                className="danger small"
+                onClick={deleteResume}
+                disabled={deleting || saving}
+              >
+                {deleting ? "Raderar…" : "Radera allt CV-innehåll"}
+              </button>
+            </div>
+          )}
 
           <div className="form-footer">
             <button disabled={saving}>

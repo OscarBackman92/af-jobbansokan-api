@@ -124,6 +124,7 @@ export default function App() {
                 key={t.id}
                 className={tab === t.id ? "tab active" : "tab"}
                 onClick={() => changeTab(t.id)}
+                aria-current={tab === t.id ? "page" : undefined}
               >
                 {t.label}
               </button>
