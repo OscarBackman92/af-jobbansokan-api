@@ -1,0 +1,92 @@
+import { CATEGORY_LABELS } from "../jobProfiles.js";
+
+function SuggestionChips({ items, onAdd, onDismiss }) {
+  if (!items?.length) return null;
+  return (
+    <div className="evidence-suggestions">
+      {items.map((item) => (
+        <span className="evidence-suggestion" key={`${item.term}-${item.category}`}>
+          <button type="button" onClick={() => onAdd(item)} title={`Lägg till ${item.term}`}>
+            + {item.term}
+          </button>
+          <button
+            type="button"
+            className="evidence-suggestion-dismiss"
+            onClick={() => onDismiss(item.term)}
+            aria-label={`Ignorera ${item.term}`}
+          >
+            ×
+          </button>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export default function EvidenceRow({
+  title,
+  evidence,
+  suggestions,
+  onAddSuggestion,
+  onDismissSuggestion,
+  onRemoveEvidence,
+}) {
+  return (
+    <div className="evidence-row">
+      <div className="evidence-row-head">
+        <span className="evidence-row-title">{title}</span>
+      </div>
+      {evidence.length > 0 && (
+        <div className="evidence-chips">
+          {evidence.map((item) => (
+            <span className="evidence-chip" key={item.id}>
+              <span>{item.term}</span>
+              <span className="evidence-chip-category">{CATEGORY_LABELS[item.category]}</span>
+              <button
+                type="button"
+                className="evidence-chip-remove"
+                onClick={() => onRemoveEvidence(item.term)}
+                aria-label={`Ta bort ${item.term}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <SuggestionChips
+        items={suggestions}
+        onAdd={onAddSuggestion}
+        onDismiss={onDismissSuggestion}
+      />
+    </div>
+  );
+}
+
+export function ManualEvidenceAdd({ onAdd }) {
+  function submit(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const term = form.term.value.trim();
+    const category = form.category.value;
+    if (!term) return;
+    onAdd({ term, category });
+    form.reset();
+  }
+
+  return (
+    <form className="manual-evidence-add" onSubmit={submit}>
+      <input name="term" placeholder="Lägg till kompetens manuellt" aria-label="Kompetens" />
+      <select name="category" defaultValue="domain" aria-label="Kategori">
+        {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+          <option key={key} value={key}>
+            {label}
+          </option>
+        ))}
+      </select>
+      <button type="submit" className="secondary small">
+        Lägg till
+      </button>
+    </form>
+  );
+}

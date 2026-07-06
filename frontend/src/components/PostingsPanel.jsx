@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 
 import { normalizeAdUrl } from "../adUrl.js";
 import { request } from "../api.js";
+import { recordJobMatchGaps } from "../marketHints.js";
 import MatchScore from "./MatchScore.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
 import MultiSelectFilter from "./MultiSelectFilter.jsx";
@@ -804,6 +805,12 @@ function JobCard({ job, tracked, onOpen, onTrack }) {
 
 function JobDetail({ job, tracked, onTrack, onClose }) {
   const dialogRef = useRef(null);
+
+  useEffect(() => {
+    if (job.match?.missing?.length) {
+      recordJobMatchGaps(job.match.missing);
+    }
+  }, [job.match]);
 
   useEffect(() => {
     const previous = document.activeElement;

@@ -1,17 +1,23 @@
-/** Explainable CV ↔ job match (Teal-style score + missing skills). */
+/** Explainable CV ↔ job match with evidence sources. */
 export default function MatchScore({ match, variant = "compact", showMissing = true }) {
   if (!match?.total) return null;
 
   const percent = Math.round((match.count / match.total) * 100);
   const tone =
     percent >= 70 ? "strong" : percent >= 40 ? "medium" : percent > 0 ? "weak" : "none";
+  const matchedDetail = match.matched_detail ?? [];
+
+  function sourceLabel(source) {
+    if (!source?.label) return null;
+    return source.label;
+  }
 
   if (variant === "compact") {
     return (
       <div className={`match-score match-score--${tone}`}>
         <div className="match-score-head">
           <span className="match-score-label">
-            {match.count}/{match.total} kompetenser
+            {match.count}/{match.total} bevis
           </span>
           <span className="match-score-pct">{percent}%</span>
         </div>
@@ -21,10 +27,20 @@ export default function MatchScore({ match, variant = "compact", showMissing = t
           aria-valuenow={match.count}
           aria-valuemin={0}
           aria-valuemax={match.total}
-          aria-label={`Matchar ${match.count} av ${match.total} kompetenser`}
+          aria-label={`Matchar ${match.count} av ${match.total} bevis`}
         >
           <span style={{ width: `${percent}%` }} />
         </div>
+        {matchedDetail.length > 0 && (
+          <ul className="match-evidence-list muted">
+            {matchedDetail.slice(0, 3).map((item) => (
+              <li key={item.term}>
+                {item.term}
+                {sourceLabel(item.source) ? ` — ${sourceLabel(item.source)}` : ""}
+              </li>
+            ))}
+          </ul>
+        )}
         {showMissing && match.missing?.length > 0 && (
           <p className="match-score-missing muted">
             Saknas: {match.missing.slice(0, 4).join(", ")}
@@ -39,7 +55,7 @@ export default function MatchScore({ match, variant = "compact", showMissing = t
     <div className={`match-score match-score--detail match-score--${tone}`}>
       <div className="match-score-head">
         <span className={`badge ${match.count > 0 ? "applied" : "neutral"}`}>
-          Matchar {match.count}/{match.total} kompetenser ({percent}%)
+          Matchar {match.count}/{match.total} bevis ({percent}%)
         </span>
       </div>
       <div
@@ -51,13 +67,14 @@ export default function MatchScore({ match, variant = "compact", showMissing = t
       >
         <span style={{ width: `${percent}%` }} />
       </div>
-      {match.matched?.length > 0 && (
+      {matchedDetail.length > 0 && (
         <div className="match-score-group">
-          <span className="match-score-group-label">Du har</span>
+          <span className="match-score-group-label">Du har bevis för</span>
           <div className="match-score-chips">
-            {match.matched.map((skill) => (
-              <span className="badge applied" key={skill}>
-                {skill}
+            {matchedDetail.map((item) => (
+              <span className="badge applied" key={item.term} title={sourceLabel(item.source) || ""}>
+                {item.term}
+                {sourceLabel(item.source) ? ` · ${sourceLabel(item.source)}` : ""}
               </span>
             ))}
           </div>
@@ -65,7 +82,7 @@ export default function MatchScore({ match, variant = "compact", showMissing = t
       )}
       {match.missing?.length > 0 && (
         <div className="match-score-group">
-          <span className="match-score-group-label">Saknas i CV</span>
+          <span className="match-score-group-label">Saknas i profilen</span>
           <div className="match-score-chips">
             {match.missing.map((skill) => (
               <span className="badge rejected" key={`missing-${skill}`}>

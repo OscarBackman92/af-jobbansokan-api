@@ -2351,6 +2351,166 @@ tbody tr:last-child td {
   gap: 0.35rem;
 }
 
+.match-evidence-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.78rem;
+}
+
+.match-evidence-list li {
+  margin: 0.1rem 0;
+}
+
+/* ---------- Job profiles & evidence ---------- */
+
+.job-profile-selector {
+  margin: 0.75rem 0 1rem;
+}
+
+.job-profile-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.job-profile-tab {
+  border: 1px solid var(--border);
+  background: var(--surface-2, transparent);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.job-profile-tab.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.job-profile-tab--add {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.job-profile-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+}
+
+.evidence-row {
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2, rgba(255, 255, 255, 0.02));
+}
+
+.evidence-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.evidence-row-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.evidence-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.evidence-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.82rem;
+}
+
+.evidence-chip-category {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.evidence-chip-remove {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 0.15rem;
+  line-height: 1;
+}
+
+.evidence-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.evidence-suggestion {
+  display: inline-flex;
+  align-items: center;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.evidence-suggestion button {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 0.2rem 0.45rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.evidence-suggestion-dismiss {
+  color: var(--muted) !important;
+  padding-left: 0 !important;
+  padding-right: 0.35rem !important;
+}
+
+.manual-evidence-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.75rem 0;
+  align-items: center;
+}
+
+.manual-evidence-add input {
+  flex: 1 1 12rem;
+}
+
+.market-hints {
+  margin: 0.75rem 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2, rgba(255, 255, 255, 0.02));
+}
+
+.cv-evidence-group {
+  margin-bottom: 0.65rem;
+}
+
+.cv-evidence-group h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+}
+
 /* ---------- Contact panel ---------- */
 
 .contact-panel {

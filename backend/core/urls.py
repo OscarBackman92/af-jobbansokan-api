@@ -5,6 +5,7 @@ from .views import (
     JobApplicationViewSet,
     ProfileView,
     ResumeParseView,
+    ResumeSuggestEvidenceView,
     ResumeSuggestSkillsView,
     ResumeView,
     SavedJobSearchDetailView,
@@ -22,6 +23,11 @@ urlpatterns = [
     path("me/", ProfileView.as_view(), name="me"),
     path("me/resume/", ResumeView.as_view(), name="my-resume"),
     path("me/resume/parse/", ResumeParseView.as_view(), name="my-resume-parse"),
+    path(
+        "me/resume/suggest-evidence/",
+        ResumeSuggestEvidenceView.as_view(),
+        name="my-resume-suggest-evidence",
+    ),
     path(
         "me/resume/suggest-skills/",
         ResumeSuggestSkillsView.as_view(),

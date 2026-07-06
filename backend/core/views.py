@@ -41,11 +41,19 @@ from .jobtech import search as jobtech_search
 from .experience_skills import (
     merge_skill_suggestions,
     skills_list_to_suggestions,
+    suggest_evidence_by_source,
     suggest_skills_from_experience,
+)
+from .job_profiles import (
+    active_profile,
+    confirmed_evidence,
+    normalize_job_profiles,
+    profile_skill_terms,
+    profiles_from_skill_groups,
 )
 from .skill_groups import EMPTY_SKILL_GROUPS, normalize_skill_groups, skill_groups_from_flat
 from .throttles import JobTechThrottle, UploadThrottle
-from .matching import match_skills
+from .matching import match_evidence, match_skills
 from .models import JobApplication, Resume, SavedJobSearch
 from .permissions import IsAuthenticatedUser
 from .resume import (
@@ -63,6 +71,35 @@ from .serializers import (
     ResumeUploadSerializer,
     SavedJobSearchSerializer,
 )
+
+
+def _resume_match_context(user) -> dict:
+    """Skills and evidence from the user's active job profile."""
+    resume = Resume.objects.filter(user=user).first()
+    if not resume:
+        return {"cv_skills": [], "cv_evidence": []}
+    try:
+        profiles = normalize_job_profiles(resume.job_profiles, headline=resume.headline)
+    except ValueError:
+        profiles = []
+    has_evidence = any(profile.get("evidence") for profile in profiles)
+    if not has_evidence:
+        groups = normalize_skill_groups(resume.skill_groups or {})
+        if any(groups.values()):
+            profiles = profiles_from_skill_groups(groups, headline=resume.headline)
+        elif resume.skills:
+            profiles = profiles_from_skill_groups(
+                skill_groups_from_flat(resume.skills),
+                headline=resume.headline,
+            )
+        else:
+            profiles = normalize_job_profiles(profiles or [], headline=resume.headline)
+    profile = active_profile(profiles)
+    evidence = confirmed_evidence(profile)
+    return {
+        "cv_skills": profile_skill_terms(profile),
+        "cv_evidence": evidence,
+    }
 
 
 @extend_schema(
@@ -222,7 +259,53 @@ class ResumeParseView(APIView):
             cv_suggestions,
             exp_suggestions,
         )
+        draft["evidence_suggestions"] = suggest_evidence_by_source(
+            draft.get("experience", []),
+            draft.get("education", []),
+            profile_evidence=[],
+            parsed_skills=parsed_skills,
+        )
+        draft["job_profiles"] = []
         return Response(draft)
+
+
+class ResumeSuggestEvidenceView(APIView):
+    """Suggest evidence terms keyed by CV source row."""
+
+    permission_classes = [IsAuthenticatedUser]
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def post(self, request):
+        experience = request.data.get("experience", [])
+        education = request.data.get("education", [])
+        if not isinstance(experience, list):
+            raise ValidationError({"experience": "Expected a list."})
+        if not isinstance(education, list):
+            raise ValidationError({"education": "Expected a list."})
+        profile_id = request.data.get("active_profile_id")
+        profiles_raw = request.data.get("job_profiles")
+        try:
+            profiles = normalize_job_profiles(
+                profiles_raw if profiles_raw is not None else [],
+                headline=str(request.data.get("headline") or ""),
+            )
+        except ValueError as exc:
+            raise ValidationError({"job_profiles": str(exc)}) from exc
+        profile = active_profile(profiles)
+        if profile_id:
+            for candidate in profiles:
+                if candidate.get("id") == profile_id:
+                    profile = candidate
+                    break
+        return Response(
+            {
+                "by_source": suggest_evidence_by_source(
+                    experience,
+                    education,
+                    profile_evidence=profile.get("evidence", []),
+                )
+            }
+        )
 
 
 class ResumeSuggestSkillsView(APIView):
@@ -297,8 +380,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
     def get_serializer_context(self):
         context = super().get_serializer_context()
         if self.action == "list" and self.request.user.is_authenticated:
-            resume = Resume.objects.filter(user=self.request.user).first()
-            context["cv_skills"] = resume.skills if resume else []
+            context.update(_resume_match_context(self.request.user))
         return context
 
     def get_queryset(self):
@@ -531,19 +613,25 @@ def job_search(request):
             status=drf_status.HTTP_502_BAD_GATEWAY,
         )
 
-    resume = getattr(request.user, "resume", None)
-    skills = (resume.skills if resume else None) or None
-    if skills:
+    match_ctx = _resume_match_context(request.user)
+    skills = match_ctx["cv_skills"] or None
+    evidence = match_ctx["cv_evidence"] or None
+    if evidence or skills:
         for job in data["results"]:
-            job["match"] = match_skills(
-                skills,
-                SimpleNamespace(title=job["title"], description=job["description"]),
-            )
+            posting = SimpleNamespace(title=job["title"], description=job["description"])
+            if evidence:
+                job["match"] = match_evidence(evidence, posting)
+            else:
+                job["match"] = match_skills(skills, posting)
 
     if _truthy(params.get("match_cv", "")):
         if not skills:
             raise ValidationError(
-                {"match_cv": "Ladda upp CV med kompetenser för att använda detta filter."}
+                {
+                    "match_cv": (
+                        "Lägg till bevis i din jobbprofil för att använda detta filter."
+                    )
+                }
             )
         data["results"] = _filter_jobs_by_cv_match(data["results"])
         data["match_cv_filtered"] = True

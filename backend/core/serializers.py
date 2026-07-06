@@ -13,7 +13,15 @@ from rest_framework import serializers
 
 from .ad_url import ad_urls_equivalent, normalize_ad_url
 from .email_delivery import register_user_with_verification
-from .matching import match_application
+from .matching import match_application, match_application_evidence
+from .job_profiles import (
+    active_profile,
+    confirmed_evidence,
+    evidence_to_skill_groups,
+    normalize_job_profiles,
+    profiles_from_skill_groups,
+    profile_skill_terms,
+)
 from .skill_groups import (
     EMPTY_SKILL_GROUPS,
     flatten_skill_groups,
@@ -78,6 +86,9 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_match(self, obj):
+        evidence = self.context.get("cv_evidence")
+        if evidence:
+            return match_application_evidence(evidence, obj)
         skills = self.context.get("cv_skills")
         if not skills:
             return None
@@ -260,6 +271,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class ResumeSerializer(serializers.ModelSerializer):
     skills = serializers.ListField(child=serializers.CharField(), read_only=True)
+    active_profile_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Resume
@@ -268,11 +280,31 @@ class ResumeSerializer(serializers.ModelSerializer):
             "summary",
             "skills",
             "skill_groups",
+            "job_profiles",
+            "active_profile_id",
             "experience",
             "education",
             "updated_at",
         ]
-        read_only_fields = ["updated_at", "skills"]
+        read_only_fields = ["updated_at", "skills", "active_profile_id"]
+
+    def get_active_profile_id(self, obj):
+        try:
+            profiles = normalize_job_profiles(obj.job_profiles, headline=obj.headline)
+        except ValueError:
+            profiles = profiles_from_skill_groups(obj.skill_groups, headline=obj.headline)
+        return active_profile(profiles).get("id")
+
+    def validate_job_profiles(self, value):
+        try:
+            headline = ""
+            if self.instance:
+                headline = self.instance.headline
+            elif isinstance(self.initial_data, dict):
+                headline = str(self.initial_data.get("headline") or "")
+            return normalize_job_profiles(value, headline=headline)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
     def validate_skill_groups(self, value):
         try:
@@ -281,11 +313,38 @@ class ResumeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(str(exc)) from exc
 
     def validate(self, attrs):
-        groups = attrs.get("skill_groups")
-        if groups is None and self.instance:
-            groups = normalize_skill_groups(self.instance.skill_groups)
-        if groups is None:
-            groups = dict(EMPTY_SKILL_GROUPS)
+        headline = attrs.get("headline")
+        if headline is None and self.instance:
+            headline = self.instance.headline
+        headline = headline or ""
+
+        profiles = attrs.get("job_profiles")
+        if profiles is None:
+            groups = attrs.get("skill_groups")
+            if groups is not None:
+                groups = normalize_skill_groups(groups)
+            elif self.instance:
+                groups = normalize_skill_groups(self.instance.skill_groups)
+            else:
+                groups = dict(EMPTY_SKILL_GROUPS)
+
+            if any(groups.values()):
+                profiles = profiles_from_skill_groups(groups, headline=headline)
+            elif self.instance:
+                try:
+                    profiles = normalize_job_profiles(
+                        self.instance.job_profiles, headline=headline
+                    )
+                except ValueError:
+                    profiles = profiles_from_skill_groups(
+                        self.instance.skill_groups, headline=headline
+                    )
+            else:
+                profiles = normalize_job_profiles([], headline=headline)
+
+        attrs["job_profiles"] = profiles
+        active = active_profile(profiles)
+        groups = evidence_to_skill_groups(confirmed_evidence(active))
         attrs["skill_groups"] = groups
         attrs["skills"] = flatten_skill_groups(groups)
         return attrs
@@ -311,13 +370,25 @@ class ResumeSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+        headline = data.get("headline") or ""
         try:
-            groups = normalize_skill_groups(data.get("skill_groups") or {})
+            profiles = normalize_job_profiles(data.get("job_profiles") or [], headline=headline)
         except ValueError:
-            groups = dict(EMPTY_SKILL_GROUPS)
+            profiles = profiles_from_skill_groups(data.get("skill_groups") or {}, headline=headline)
+        if not profiles or (
+            not any(p.get("evidence") for p in profiles)
+            and data.get("skill_groups")
+            and any(normalize_skill_groups(data.get("skill_groups") or {}).values())
+        ):
+            profiles = profiles_from_skill_groups(data.get("skill_groups") or {}, headline=headline)
+        active = active_profile(profiles)
+        groups = evidence_to_skill_groups(confirmed_evidence(active))
         if not any(groups.values()) and data.get("skills"):
             groups = skill_groups_from_flat(data["skills"])
+        data["job_profiles"] = profiles
         data["skill_groups"] = groups
+        data["skills"] = flatten_skill_groups(groups)
+        data["active_profile_id"] = active.get("id")
         return data
 
 

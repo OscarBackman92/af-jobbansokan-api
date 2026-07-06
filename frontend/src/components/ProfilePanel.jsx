@@ -1,18 +1,28 @@
 import { useEffect, useState } from "react";
 
 import { request } from "../api.js";
+import EvidenceRow, { ManualEvidenceAdd } from "./EvidenceEditor.jsx";
+import JobProfileSelector from "./JobProfileSelector.jsx";
 import {
-  EMPTY_SKILL_GROUPS,
-  SKILL_GROUP_HINTS,
-  SKILL_GROUP_LABELS,
-  addSkillToText,
-  groupsToText,
-  hasSkillContent,
-  normalizeSkillGroups,
+  activeProfile,
+  addEvidence,
+  addProfile,
+  anyProfileHasEvidence,
+  applyEvidenceToProfiles,
+  confirmedEvidence,
+  countSuggestions,
+  educationSourceLabel,
+  evidenceForSource,
+  evidenceByLabel,
+  experienceSourceLabel,
+  groupEvidenceBySource,
+  normalizeJobProfiles,
+  removeEvidence,
   removeSuggestion,
-  textToGroups,
-} from "../skills.js";
-import SkillSuggestions from "./SkillSuggestions.jsx";
+  setActiveProfile,
+  updateProfileLabel,
+} from "../jobProfiles.js";
+import { getMarketHints, recordJobMatchGaps } from "../marketHints.js";
 
 export default function ProfilePanel({ token, me, onMeChange, onLogout, profileLeaveGuardRef }) {
   return (
@@ -142,21 +152,24 @@ const EMPTY_RESUME = {
   skills: [],
   experience: [],
   education: [],
+  job_profiles: [],
 };
 
-function hasCvContent(resume, skillGroups) {
+function hasCvContent(resume, jobProfiles) {
   return (
     resume.headline ||
     resume.summary ||
-    hasSkillContent(skillGroups) ||
+    anyProfileHasEvidence(jobProfiles) ||
     resume.experience.length ||
     resume.education.length
   );
 }
 
-function CvReadView({ resume, skillGroups }) {
-  const groups = normalizeSkillGroups(skillGroups);
-  const hasContent = hasCvContent(resume, groups);
+function CvReadView({ resume, jobProfiles }) {
+  const profiles = normalizeJobProfiles(jobProfiles, resume.headline);
+  const profile = activeProfile(profiles);
+  const evidence = confirmedEvidence(profile);
+  const hasContent = hasCvContent(resume, profiles);
 
   if (!hasContent) {
     return (
@@ -167,24 +180,32 @@ function CvReadView({ resume, skillGroups }) {
     );
   }
 
+  const bySource = groupEvidenceBySource(profile);
+
   return (
     <div className="cv-read">
+      <p className="cv-profile-label">
+        Aktiv profil: <strong>{profile.label}</strong>
+      </p>
       {resume.headline && <p className="cv-headline">{resume.headline}</p>}
       {resume.summary && <p className="muted">{resume.summary}</p>}
 
-      {Object.entries(SKILL_GROUP_LABELS).map(([key, label]) =>
-        groups[key]?.length ? (
-          <div className="cv-skill-group" key={key}>
-            <h3 className="cv-skill-group-label">{label}</h3>
-            <div className="cv-skills">
-              {groups[key].map((skill) => (
-                <span className={`badge badge--skill-${key}`} key={skill}>
-                  {skill}
-                </span>
-              ))}
+      {evidence.length > 0 && (
+        <>
+          <h3>Bevis i profilen</h3>
+          {[...bySource.entries()].map(([sourceLabel, items]) => (
+            <div className="cv-evidence-group" key={sourceLabel}>
+              <p className="muted cv-evidence-source">{items[0]?.source?.label || sourceLabel}</p>
+              <div className="cv-skills">
+                {items.map((item) => (
+                  <span className="badge badge--skill-domain" key={item.id}>
+                    {item.term}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-        ) : null
+          ))}
+        </>
       )}
 
       {resume.experience.length > 0 && (
@@ -227,30 +248,30 @@ function CvReadView({ resume, skillGroups }) {
 
 function ResumeCard({ token, profileLeaveGuardRef }) {
   const [resume, setResume] = useState(EMPTY_RESUME);
-  const [skillGroupsText, setSkillGroupsText] = useState(() => groupsToText(EMPTY_SKILL_GROUPS));
+  const [jobProfiles, setJobProfiles] = useState(() => normalizeJobProfiles([]));
   const [savedResume, setSavedResume] = useState(EMPTY_RESUME);
-  const [savedSkillGroupsText, setSavedSkillGroupsText] = useState(() =>
-    groupsToText(EMPTY_SKILL_GROUPS)
-  );
+  const [savedJobProfiles, setSavedJobProfiles] = useState(() => normalizeJobProfiles([]));
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  // "clean" = matches the server, "dirty" = unsaved edits.
   const [saveState, setSaveState] = useState("clean");
-  const [skillSuggestions, setSkillSuggestions] = useState(null);
+  const [evidenceSuggestions, setEvidenceSuggestions] = useState(null);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [marketHints, setMarketHints] = useState([]);
+
+  const active = activeProfile(jobProfiles);
 
   useEffect(() => {
     setLoading(true);
     request("/api/v1/me/resume/", { token })
       .then((data) => {
+        const profiles = normalizeJobProfiles(data.job_profiles, data.headline);
         setResume(data);
-        const text = groupsToText(data.skill_groups);
-        setSkillGroupsText(text);
+        setJobProfiles(profiles);
         setSavedResume(data);
-        setSavedSkillGroupsText(text);
+        setSavedJobProfiles(profiles);
         setSaveState("clean");
       })
       .catch((err) => setMessage({ tone: "error", text: err.message }))
@@ -259,11 +280,13 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
 
   useEffect(() => {
     if (!open) return undefined;
-    const hasExperienceText = resume.experience.some(
-      (row) => row.description?.trim() || row.title?.trim()
-    );
-    if (!hasExperienceText) {
-      setSkillSuggestions(null);
+    setMarketHints(getMarketHints(confirmedEvidence(active).map((item) => item.term)));
+
+    const hasText =
+      resume.experience.some((row) => row.description?.trim() || row.title?.trim()) ||
+      resume.education.some((row) => row.degree?.trim() || row.school?.trim());
+    if (!hasText) {
+      setEvidenceSuggestions(null);
       setSuggestionsLoading(false);
       return undefined;
     }
@@ -272,17 +295,20 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     const timer = setTimeout(async () => {
       setSuggestionsLoading(true);
       try {
-        const data = await request("/api/v1/me/resume/suggest-skills/", {
+        const data = await request("/api/v1/me/resume/suggest-evidence/", {
           method: "POST",
           token,
           body: {
+            headline: resume.headline,
             experience: resume.experience,
-            skill_groups: textToGroups(skillGroupsText),
+            education: resume.education,
+            job_profiles: jobProfiles,
+            active_profile_id: active.id,
           },
         });
-        if (!cancelled) setSkillSuggestions(data.suggestions);
+        if (!cancelled) setEvidenceSuggestions(data.by_source);
       } catch {
-        if (!cancelled) setSkillSuggestions(null);
+        if (!cancelled) setEvidenceSuggestions(null);
       } finally {
         if (!cancelled) setSuggestionsLoading(false);
       }
@@ -292,11 +318,11 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [open, resume.experience, skillGroupsText, token]);
+  }, [open, resume.experience, resume.education, resume.headline, jobProfiles, active.id, token]);
 
   function revertEdits() {
     setResume(savedResume);
-    setSkillGroupsText(savedSkillGroupsText);
+    setJobProfiles(savedJobProfiles);
     setSaveState("clean");
   }
 
@@ -307,17 +333,13 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
       const discard = window.confirm(
         "Du har osparade ändringar i CV:t. Lämna sidan utan att spara?"
       );
-      if (discard) {
-        setResume(savedResume);
-        setSkillGroupsText(savedSkillGroupsText);
-        setSaveState("clean");
-      }
+      if (discard) revertEdits();
       return discard;
     };
     return () => {
       profileLeaveGuardRef.current = null;
     };
-  }, [open, saveState, profileLeaveGuardRef, savedResume, savedSkillGroupsText]);
+  }, [open, saveState, profileLeaveGuardRef, savedResume, savedJobProfiles]);
 
   function toggleEditor() {
     setMessage(null);
@@ -340,22 +362,38 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     setResume((current) => ({ ...current, [name]: value }));
   }
 
-  function changeSkillGroup(key, value) {
+  function mutateProfiles(updater) {
     setSaveState("dirty");
-    setSkillGroupsText((current) => ({ ...current, [key]: value }));
+    setJobProfiles((current) => updater(current));
   }
 
-  function addSuggestion(category, label) {
-    setSaveState("dirty");
-    setSkillGroupsText((current) => ({
-      ...current,
-      [category]: addSkillToText(current[category], label),
-    }));
-    setSkillSuggestions((current) => removeSuggestion(current, category, label));
+  function addEvidenceItem(source, item) {
+    mutateProfiles((profiles) =>
+      applyEvidenceToProfiles(profiles, active.id, (profile) =>
+        addEvidence(profile, {
+          term: item.term,
+          category: item.category,
+          source,
+        })
+      )
+    );
+    const sourceKey =
+      source.type === "experience"
+        ? `experience:${source.index}`
+        : source.type === "education"
+          ? `education:${source.index}`
+          : "cv_section";
+    setEvidenceSuggestions((current) => removeSuggestion(current, sourceKey, item.term));
   }
 
-  function dismissSuggestion(category, label) {
-    setSkillSuggestions((current) => removeSuggestion(current, category, label));
+  function removeEvidenceItem(term) {
+    mutateProfiles((profiles) =>
+      applyEvidenceToProfiles(profiles, active.id, (profile) => removeEvidence(profile, term))
+    );
+  }
+
+  function dismissSuggestion(sourceKey, term) {
+    setEvidenceSuggestions((current) => removeSuggestion(current, sourceKey, term));
   }
 
   function setRow(listName, index, key, value) {
@@ -406,15 +444,15 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
           : current.experience,
         education: draft.education.length ? draft.education : current.education,
       }));
-      if (draft.skill_suggestions) {
-        setSkillSuggestions(draft.skill_suggestions);
+      if (draft.evidence_suggestions) {
+        setEvidenceSuggestions(draft.evidence_suggestions);
       }
       setOpen(true);
       setSaveState("dirty");
       setMessage({
         tone: "info",
         text:
-          "CV:t är tolkat — granska erfarenhet och välj kompetenser du vill behålla. " +
+          "CV:t är tolkat — granska erfarenhet och lägg till bevis i din jobbprofil. " +
           "Filen sparas aldrig.",
       });
     } catch (err) {
@@ -432,14 +470,14 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
         token,
         body: {
           ...resume,
-          skill_groups: textToGroups(skillGroupsText),
+          job_profiles: jobProfiles,
         },
       });
-      const text = groupsToText(saved.skill_groups);
+      const profiles = normalizeJobProfiles(saved.job_profiles, saved.headline);
       setResume(saved);
-      setSkillGroupsText(text);
+      setJobProfiles(profiles);
       setSavedResume(saved);
-      setSavedSkillGroupsText(text);
+      setSavedJobProfiles(profiles);
       setSaveState("clean");
       setOpen(false);
       setMessage({ tone: "success", text: "CV:t är sparat." });
@@ -460,9 +498,9 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     try {
       await request("/api/v1/me/resume/", { method: "DELETE", token });
       setResume(EMPTY_RESUME);
-      setSkillGroupsText(groupsToText(EMPTY_SKILL_GROUPS));
+      setJobProfiles(normalizeJobProfiles([]));
       setSavedResume(EMPTY_RESUME);
-      setSavedSkillGroupsText(groupsToText(EMPTY_SKILL_GROUPS));
+      setSavedJobProfiles(normalizeJobProfiles([]));
       setSaveState("clean");
       setOpen(false);
       setMessage({ tone: "success", text: "CV:t är raderat." });
@@ -473,7 +511,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     }
   }
 
-  const cvHasContent = hasCvContent(resume, textToGroups(skillGroupsText));
+  const cvHasContent = hasCvContent(resume, jobProfiles);
 
   return (
     <section className="card">
@@ -481,8 +519,8 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
         <div>
           <h2>Mitt CV</h2>
           <p className="muted">
-            En kort, kuraterad lista matchas mot annonser. CV-import ger förslag —
-            du väljer vad som ska gälla.
+            Bygg en jobbprofil med bevis från CV:t — det styr matchning mot
+            annonser och tavlan.
           </p>
         </div>
         <div className="row-gap">
@@ -519,7 +557,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
         </div>
       )}
       {!loading && !open && (
-        <CvReadView resume={resume} skillGroups={textToGroups(skillGroupsText)} />
+        <CvReadView resume={resume} jobProfiles={jobProfiles} />
       )}
       {!loading && open && (
         <form onSubmit={save}>
@@ -543,28 +581,70 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
               onChange={(e) => setField("summary", e.target.value)}
             />
           </label>
-          <div className="skill-fields">
-            <p className="muted cv-edit-hint">
-              Lägg bara till det som är relevant för jobbsök. Synonymer slås ihop
-              automatiskt (t.ex. Excel och Microsoft Excel).
-            </p>
-            {Object.entries(SKILL_GROUP_LABELS).map(([key, label]) => (
-              <label key={key}>
-                {label}
-                <input
-                  value={skillGroupsText[key]}
-                  onChange={(e) => changeSkillGroup(key, e.target.value)}
-                  placeholder={SKILL_GROUP_HINTS[key]}
-                />
-              </label>
-            ))}
-          </div>
+          <JobProfileSelector
+            profiles={jobProfiles}
+            activeId={active.id}
+            onSelect={(id) => mutateProfiles((profiles) => setActiveProfile(profiles, id))}
+            onAdd={() => {
+              const label = window.prompt("Namn på ny profil", `Profil ${jobProfiles.length + 1}`);
+              if (!label?.trim()) return;
+              mutateProfiles((profiles) => addProfile(profiles, label.trim()));
+            }}
+            onRename={(id, label) =>
+              mutateProfiles((profiles) => updateProfileLabel(profiles, id, label))
+            }
+          />
 
-          <SkillSuggestions
-            suggestions={skillSuggestions}
-            loading={suggestionsLoading}
-            onAdd={addSuggestion}
-            onDismiss={dismissSuggestion}
+          {marketHints.length > 0 && (
+            <section className="market-hints" aria-live="polite">
+              <h3>Populärt i jobb du tittat på</h3>
+              <p className="muted">Saknades i matchningen — lägg till om det stämmer.</p>
+              <div className="evidence-suggestions">
+                {marketHints.map((item) => (
+                  <span className="evidence-suggestion" key={item.term}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        addEvidenceItem(
+                          { type: "manual", index: null, label: "Från annonser du tittat på" },
+                          item
+                        )
+                      }
+                    >
+                      + {item.term}
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {suggestionsLoading && (
+            <p className="muted">
+              <span className="spinner" /> Letar bevis i CV:t…
+            </p>
+          )}
+
+          {!suggestionsLoading && countSuggestions(evidenceSuggestions) > 0 && (
+            <EvidenceRow
+              title="CV: kompetenssektion"
+              evidence={evidenceByLabel(active, "CV: kompetenssektion")}
+              suggestions={evidenceSuggestions?.cv_section ?? []}
+              onAddSuggestion={(item) =>
+                addEvidenceItem(
+                  { type: "manual", index: null, label: "CV: kompetenssektion" },
+                  item
+                )
+              }
+              onDismissSuggestion={(term) => dismissSuggestion("cv_section", term)}
+              onRemoveEvidence={removeEvidenceItem}
+            />
+          )}
+
+          <ManualEvidenceAdd
+            onAdd={(item) =>
+              addEvidenceItem({ type: "manual", index: null, label: "Manuellt tillagd" }, item)
+            }
           />
 
           <h3>Erfarenhet</h3>
@@ -614,6 +694,23 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
                   placeholder="Kort beskrivning, ansvar eller resultat"
                 />
               </label>
+              <EvidenceRow
+                title="Bevis från denna rad"
+                evidence={evidenceForSource(active, `experience:${i}`)}
+                suggestions={evidenceSuggestions?.[`experience:${i}`] ?? []}
+                onAddSuggestion={(item) =>
+                  addEvidenceItem(
+                    {
+                      type: "experience",
+                      index: i,
+                      label: experienceSourceLabel(i, row),
+                    },
+                    item
+                  )
+                }
+                onDismissSuggestion={(term) => dismissSuggestion(`experience:${i}`, term)}
+                onRemoveEvidence={removeEvidenceItem}
+              />
               <button
                 type="button"
                 className="danger small"
@@ -675,6 +772,23 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
                   />
                 </label>
               </div>
+              <EvidenceRow
+                title="Bevis från utbildningen"
+                evidence={evidenceForSource(active, `education:${i}`)}
+                suggestions={evidenceSuggestions?.[`education:${i}`] ?? []}
+                onAddSuggestion={(item) =>
+                  addEvidenceItem(
+                    {
+                      type: "education",
+                      index: i,
+                      label: educationSourceLabel(i, row),
+                    },
+                    item
+                  )
+                }
+                onDismissSuggestion={(term) => dismissSuggestion(`education:${i}`, term)}
+                onRemoveEvidence={removeEvidenceItem}
+              />
               <button
                 type="button"
                 className="danger small"

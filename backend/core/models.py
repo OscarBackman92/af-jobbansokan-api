@@ -202,6 +202,7 @@ class Resume(models.Model):
     skill_groups = models.JSONField(default=dict, blank=True)
     experience = models.JSONField(default=list, blank=True)
     education = models.JSONField(default=list, blank=True)
+    job_profiles = models.JSONField(default=list, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:

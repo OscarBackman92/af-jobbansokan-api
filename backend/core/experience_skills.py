@@ -247,3 +247,87 @@ def merge_skill_suggestions(*parts: dict[str, list]) -> dict[str, list[dict]]:
                     }
                 )
     return merged
+
+
+def _education_text(row: dict) -> str:
+    return "\n".join(
+        part.strip()
+        for part in (
+            str(row.get("degree") or ""),
+            str(row.get("school") or ""),
+            str(row.get("years") or ""),
+        )
+        if part and str(part).strip()
+    )
+
+
+def suggest_evidence_by_source(
+    experience: list,
+    education: list | None = None,
+    *,
+    profile_evidence: list[dict] | None = None,
+    parsed_skills: list[str] | None = None,
+) -> dict[str, list[dict]]:
+    """Suggest evidence keyed by source id (experience:0, education:1, cv_section)."""
+    existing_lower = {
+        str(item.get("term") or "").lower()
+        for item in (profile_evidence or [])
+        if item.get("term")
+    }
+    by_source: dict[str, list[dict]] = {}
+    seen = set(existing_lower)
+
+    for index, row in enumerate(experience or []):
+        if not isinstance(row, dict):
+            continue
+        text = _experience_text(row)
+        if len(text) < 15:
+            continue
+        key = f"experience:{index}"
+        items: list[dict] = []
+        for label, category in _find_terms(text):
+            term = canonical_skill_label(label)
+            lowered = term.lower()
+            if lowered in seen or lowered in GENERIC_SKIP:
+                continue
+            seen.add(lowered)
+            items.append({"term": term, "category": category})
+        if items:
+            by_source[key] = items
+
+    for index, row in enumerate(education or []):
+        if not isinstance(row, dict):
+            continue
+        text = _education_text(row)
+        if len(text) < 8:
+            continue
+        key = f"education:{index}"
+        items = []
+        for label, category in _find_terms(text):
+            term = canonical_skill_label(label)
+            lowered = term.lower()
+            if lowered in seen or lowered in GENERIC_SKIP:
+                continue
+            seen.add(lowered)
+            items.append({"term": term, "category": category})
+        if items:
+            by_source[key] = items
+
+    if parsed_skills:
+        items = []
+        for raw in parsed_skills:
+            if not isinstance(raw, str):
+                continue
+            term = canonical_skill_label(raw)
+            if not term:
+                continue
+            lowered = term.lower()
+            if lowered in seen or lowered in GENERIC_SKIP:
+                continue
+            seen.add(lowered)
+            category = _categorize_parsed_skill(term)
+            items.append({"term": term, "category": category})
+        if items:
+            by_source["cv_section"] = items
+
+    return by_source

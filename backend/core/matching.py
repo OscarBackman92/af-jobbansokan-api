@@ -49,6 +49,39 @@ def match_skills(skills: list[str], posting) -> dict:
     }
 
 
+def match_evidence(evidence: list[dict], posting) -> dict:
+    """Match confirmed evidence against posting text with source attribution."""
+    confirmed = [item for item in evidence if item.get("confirmed") and item.get("term")]
+    terms = [item["term"] for item in confirmed]
+    base = match_skills(terms, posting)
+    matched_detail = []
+    for item in confirmed:
+        if item["term"] in base["matched"]:
+            matched_detail.append(
+                {
+                    "term": item["term"],
+                    "source": item.get("source") or {},
+                }
+            )
+    return {
+        **base,
+        "matched_detail": matched_detail,
+    }
+
+
+def match_application_evidence(evidence: list[dict], application) -> dict:
+    """Match evidence against a tracker row."""
+    description_parts = [application.company, application.notes]
+    posting = getattr(application, "posting", None)
+    if posting is not None and posting.description:
+        description_parts.append(posting.description)
+    posting_like = SimpleNamespace(
+        title=application.title,
+        description="\n".join(part for part in description_parts if part),
+    )
+    return match_evidence(evidence, posting_like)
+
+
 def match_application(skills: list[str], application) -> dict:
     """Match CV skills against a tracker row (title, notes, linked posting)."""
     description_parts = [application.company, application.notes]
