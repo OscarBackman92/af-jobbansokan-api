@@ -35,8 +35,8 @@
   --shadow-sm: 0 1px 2px rgba(22, 22, 31, 0.05), 0 1px 6px rgba(22, 22, 31, 0.04);
   --shadow-md: 0 4px 16px rgba(22, 22, 31, 0.08), 0 1px 4px rgba(22, 22, 31, 0.05);
   --shadow-lg: 0 24px 60px rgba(22, 22, 31, 0.22);
-  --button-glow: rgba(79, 70, 229, 0.28);
-  --grad: linear-gradient(120deg, var(--brand), var(--brand-2));
+  --button-glow: transparent;
+  --grad: var(--brand);
 
   /* Per-status accents — the pipeline reads left (cool) to right (warm/go) */
   --st-wishlist: #94a3b8;
@@ -50,7 +50,7 @@
   --grid-line: transparent;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --glass-blur: 18px;
-  --ring: 0 0 0 3px var(--button-glow);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--brand) 28%, transparent);
 }
 
 /* ---------- Command center (default) ---------- */
@@ -92,8 +92,8 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.65);
-  --button-glow: rgba(34, 211, 238, 0.32);
-  --grad: linear-gradient(135deg, #22d3ee 0%, #6366f1 55%, #818cf8 100%);
+  --button-glow: transparent;
+  --grad: var(--brand);
   --grid-line: rgba(34, 211, 238, 0.045);
   --st-wishlist: #64748b;
   --st-applied: #38bdf8;
@@ -138,8 +138,8 @@
   --shadow-sm: 0 1px 2px rgba(22, 22, 31, 0.05), 0 1px 6px rgba(22, 22, 31, 0.04);
   --shadow-md: 0 4px 16px rgba(22, 22, 31, 0.08), 0 1px 4px rgba(22, 22, 31, 0.05);
   --shadow-lg: 0 24px 60px rgba(22, 22, 31, 0.22);
-  --button-glow: rgba(79, 70, 229, 0.28);
-  --grad: linear-gradient(120deg, var(--brand), var(--brand-2));
+  --button-glow: transparent;
+  --grad: var(--brand);
   --grid-line: transparent;
   --st-wishlist: #94a3b8;
   --st-applied: #6366f1;
@@ -184,8 +184,8 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.7);
-  --button-glow: rgba(74, 222, 128, 0.3);
-  --grad: linear-gradient(135deg, #4ade80, #16a34a);
+  --button-glow: transparent;
+  --grad: var(--brand);
   --grid-line: rgba(74, 222, 128, 0.04);
   --st-wishlist: #64748b;
   --st-applied: #38bdf8;
@@ -359,17 +359,14 @@ body::after {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: var(--grad);
+  background: var(--brand);
   color: #fff;
   font-weight: 800;
   font-size: 0.95rem;
   letter-spacing: 0.02em;
   display: grid;
   place-items: center;
-  box-shadow:
-    0 4px 14px var(--button-glow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid color-mix(in srgb, var(--brand) 80%, var(--border));
   flex-shrink: 0;
 }
 
@@ -380,10 +377,7 @@ body::after {
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.1;
-  background: linear-gradient(135deg, var(--ink) 20%, color-mix(in srgb, var(--brand) 55%, var(--ink)));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--ink);
   white-space: nowrap;
 }
 
@@ -451,11 +445,8 @@ body::after {
 }
 
 .tab.active {
-  background: var(--grad);
-  color: #fff;
-  box-shadow:
-    0 4px 14px var(--button-glow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  color: var(--brand);
+  box-shadow: none;
 }
 
 /* ---------- Hero ---------- */
@@ -514,10 +505,7 @@ body::after {
 }
 
 .grad {
-  background: var(--grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--brand);
 }
 
 .lede {
@@ -834,7 +822,7 @@ select {
 /* ---------- Buttons ---------- */
 
 button {
-  background: var(--grad);
+  background: var(--brand);
   color: #fff;
   border: none;
   border-radius: var(--radius-sm);
@@ -847,17 +835,13 @@ button {
     transform 0.15s var(--ease-out),
     box-shadow 0.2s var(--ease-out),
     filter 0.2s var(--ease-out);
-  box-shadow:
-    0 4px 16px var(--button-glow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow: var(--shadow-sm);
 }
 
 button:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.04);
   transform: translateY(-1px);
-  box-shadow:
-    0 8px 22px var(--button-glow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  box-shadow: var(--shadow-md);
 }
 
 button:active {
@@ -1509,10 +1493,7 @@ tbody tr:last-child td {
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.12;
-  background: linear-gradient(135deg, var(--ink), color-mix(in srgb, var(--brand) 50%, var(--ink)));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--ink);
 }
 
 .command-hero-copy .muted {
