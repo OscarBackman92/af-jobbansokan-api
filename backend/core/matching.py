@@ -5,6 +5,9 @@ from functools import lru_cache
 from types import SimpleNamespace
 
 
+from .skill_canonical import skill_match_terms
+
+
 @lru_cache(maxsize=512)
 def _skill_pattern(skill: str) -> re.Pattern[str]:
     """Compile a case-insensitive, boundary-aware matcher for one skill.
@@ -30,11 +33,12 @@ def match_skills(skills: list[str], posting) -> dict:
     path is semantic matching, never a black box.
     """
     text = f"{posting.title}\n{posting.description}"
-    matched = [
-        skill
-        for skill in skills
-        if skill.strip() and _skill_pattern(skill).search(text)
-    ]
+    matched = []
+    for skill in skills:
+        if not skill.strip():
+            continue
+        if any(_skill_pattern(term).search(text) for term in skill_match_terms(skill)):
+            matched.append(skill)
     normalized = [skill for skill in skills if skill.strip()]
     missing = [skill for skill in normalized if skill not in matched]
     return {

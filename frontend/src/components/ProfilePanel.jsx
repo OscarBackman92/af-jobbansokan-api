@@ -354,24 +354,6 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     setSkillSuggestions((current) => removeSuggestion(current, category, label));
   }
 
-  function addAllSuggestions() {
-    if (!skillSuggestions) return;
-    setSaveState("dirty");
-    setSkillGroupsText((current) => {
-      let next = { ...current };
-      for (const [category, items] of Object.entries(skillSuggestions)) {
-        for (const item of items ?? []) {
-          next = {
-            ...next,
-            [category]: addSkillToText(next[category], item.label),
-          };
-        }
-      }
-      return next;
-    });
-    setSkillSuggestions({ technical: [], domain: [], languages: [] });
-  }
-
   function dismissSuggestion(category, label) {
     setSkillSuggestions((current) => removeSuggestion(current, category, label));
   }
@@ -424,11 +406,6 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
           : current.experience,
         education: draft.education.length ? draft.education : current.education,
       }));
-      if (draft.skill_groups) {
-        setSkillGroupsText(groupsToText(draft.skill_groups));
-      } else if (draft.skills?.length) {
-        setSkillGroupsText(groupsToText({ ...EMPTY_SKILL_GROUPS, technical: draft.skills }));
-      }
       if (draft.skill_suggestions) {
         setSkillSuggestions(draft.skill_suggestions);
       }
@@ -437,7 +414,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
       setMessage({
         tone: "info",
         text:
-          "CV:t är tolkat och formuläret förifyllt — granska och spara. " +
+          "CV:t är tolkat — granska erfarenhet och välj kompetenser du vill behålla. " +
           "Filen sparas aldrig.",
       });
     } catch (err) {
@@ -504,8 +481,8 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
         <div>
           <h2>Mitt CV</h2>
           <p className="muted">
-            Kompetenserna jämförs mot annonstexten — dela upp dem så matchningen
-            blir tydligare.
+            En kort, kuraterad lista matchas mot annonser. CV-import ger förslag —
+            du väljer vad som ska gälla.
           </p>
         </div>
         <div className="row-gap">
@@ -568,8 +545,8 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
           </label>
           <div className="skill-fields">
             <p className="muted cv-edit-hint">
-              Kommaseparerade listor. Verktyg och metoder matchas mot annonsens
-              text när du söker jobb.
+              Lägg bara till det som är relevant för jobbsök. Synonymer slås ihop
+              automatiskt (t.ex. Excel och Microsoft Excel).
             </p>
             {Object.entries(SKILL_GROUP_LABELS).map(([key, label]) => (
               <label key={key}>
@@ -587,7 +564,6 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
             suggestions={skillSuggestions}
             loading={suggestionsLoading}
             onAdd={addSuggestion}
-            onAddAll={addAllSuggestions}
             onDismiss={dismissSuggestion}
           />
 

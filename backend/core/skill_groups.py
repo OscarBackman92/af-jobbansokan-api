@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from .skill_canonical import canonical_skill_label
+
 SKILL_GROUP_KEYS = ("technical", "domain", "languages")
 
 EMPTY_SKILL_GROUPS: dict[str, list[str]] = {
@@ -28,9 +30,11 @@ def normalize_skill_groups(raw) -> dict[str, list[str]]:
         for item in items:
             if not isinstance(item, str):
                 raise ValueError(f"{key} must be a list of strings.")
-            text = item.strip()
+            text = canonical_skill_label(item.strip())
+            if not text:
+                continue
             lowered = text.lower()
-            if text and lowered not in seen:
+            if lowered not in seen:
                 seen.add(lowered)
                 cleaned.append(text)
         groups[key] = cleaned

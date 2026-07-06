@@ -1,15 +1,9 @@
-import {
-  SKILL_GROUP_LABELS,
-  addSkillToText,
-  countSuggestions,
-  removeSuggestion,
-} from "../skills.js";
+import { SKILL_GROUP_LABELS, countSuggestions } from "../skills.js";
 
 export default function SkillSuggestions({
   suggestions,
   loading,
   onAdd,
-  onAddAll,
   onDismiss,
 }) {
   if (!loading && countSuggestions(suggestions) === 0) return null;
@@ -20,19 +14,15 @@ export default function SkillSuggestions({
         <div>
           <h3>Föreslagna kompetenser</h3>
           <p className="muted">
-            Hittade i dina erfarenhetsbeskrivningar — lägg till det som stämmer.
+            Hittade i CV eller erfarenhetsbeskrivningar. Lägg till det som stämmer
+            — skippa dubletter och vaga ord.
           </p>
         </div>
-        {!loading && countSuggestions(suggestions) > 1 && (
-          <button type="button" className="secondary small" onClick={onAddAll}>
-            Lägg till alla
-          </button>
-        )}
       </div>
 
       {loading && (
         <p className="muted skill-suggestions-loading">
-          <span className="spinner" /> Letar kompetenser i erfarenheterna…
+          <span className="spinner" /> Letar kompetenser…
         </p>
       )}
 

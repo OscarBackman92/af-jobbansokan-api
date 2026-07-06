@@ -38,7 +38,13 @@ from .jobtech import (
     occupation_groups,
 )
 from .jobtech import search as jobtech_search
-from .experience_skills import suggest_skills_from_experience
+from .experience_skills import (
+    merge_skill_suggestions,
+    skills_list_to_suggestions,
+    suggest_skills_from_experience,
+)
+from .skill_groups import EMPTY_SKILL_GROUPS, normalize_skill_groups, skill_groups_from_flat
+from .throttles import JobTechThrottle, UploadThrottle
 from .matching import match_skills
 from .models import JobApplication, Resume, SavedJobSearch
 from .permissions import IsAuthenticatedUser
@@ -57,8 +63,6 @@ from .serializers import (
     ResumeUploadSerializer,
     SavedJobSearchSerializer,
 )
-from .skill_groups import normalize_skill_groups, skill_groups_from_flat
-from .throttles import JobTechThrottle, UploadThrottle
 
 
 @extend_schema(
@@ -203,9 +207,20 @@ class ResumeParseView(APIView):
             raise ValidationError({"file": "The file could not be read."}) from exc
 
         draft = parse_resume_text(text)
-        draft["skill_suggestions"] = suggest_skills_from_experience(
+        parsed_skills = draft.get("skills", [])
+        draft["skills"] = []
+        draft["skill_groups"] = dict(EMPTY_SKILL_GROUPS)
+        cv_suggestions = skills_list_to_suggestions(
+            parsed_skills,
+            source="CV: kompetenssektion",
+        )
+        exp_suggestions = suggest_skills_from_experience(
             draft.get("experience", []),
-            existing_groups=skill_groups_from_flat(draft.get("skills", [])),
+            existing_groups={},
+        )
+        draft["skill_suggestions"] = merge_skill_suggestions(
+            cv_suggestions,
+            exp_suggestions,
         )
         return Response(draft)
 

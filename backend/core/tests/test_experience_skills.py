@@ -33,7 +33,7 @@ def test_suggest_finance_experience_includes_wint_and_domain_terms():
     assert "wint" in labels
     assert "kontering" in labels
     assert "bokföring" in labels
-    assert "projektledare" in labels
+    assert "projektledning" in labels
     assert "regelefterlevnad" in labels
     assert suggestions["technical"][0]["label"] == "Wint"
     assert suggestions["technical"][0]["source"].startswith("Erfarenhet 1:")

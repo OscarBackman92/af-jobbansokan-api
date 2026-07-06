@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .matching import _skill_pattern
+from .skill_canonical import canonical_skill_label
 from .skill_groups import SKILL_GROUP_KEYS, flatten_skill_groups, normalize_skill_groups
 
 # (canonical label, category). Longer phrases are matched first.
@@ -167,14 +168,82 @@ def suggest_skills_from_experience(
             continue
         source = _source_label(index, row)
         for label, category in _find_terms(text):
-            lowered = label.lower()
+            lowered = canonical_skill_label(label).lower()
             if lowered in seen:
                 continue
             seen.add(lowered)
-            suggestions[category].append({"label": label, "source": source})
+            suggestions[category].append({"label": canonical_skill_label(label), "source": source})
 
     return suggestions
 
 
 def has_skill_suggestions(suggestions: dict[str, list]) -> bool:
     return any(suggestions.get(key) for key in SKILL_GROUP_KEYS)
+
+
+def _categorize_parsed_skill(label: str) -> str:
+    """Best-effort bucket for free-text CV skills."""
+    lowered = label.lower()
+    for term, category in ALL_TERMS:
+        if lowered == term.lower():
+            return category
+    if len(label.split()) <= 3:
+        return "domain"
+    return "technical"
+
+
+def skills_list_to_suggestions(
+    skills: list[str],
+    *,
+    source: str,
+    existing_groups: dict | None = None,
+) -> dict[str, list[dict]]:
+    """Turn parsed CV skills into reviewable suggestions (not auto-saved)."""
+    existing_lower = {
+        skill.lower()
+        for skill in flatten_skill_groups(normalize_skill_groups(existing_groups or {}))
+    }
+    suggestions: dict[str, list[dict]] = {key: [] for key in SKILL_GROUP_KEYS}
+    seen = set(existing_lower)
+
+    for raw in skills:
+        if not isinstance(raw, str):
+            continue
+        label = canonical_skill_label(raw)
+        if not label:
+            continue
+        lowered = label.lower()
+        if lowered in seen or lowered in GENERIC_SKIP:
+            continue
+        seen.add(lowered)
+        category = _categorize_parsed_skill(label)
+        suggestions[category].append({"label": label, "source": source})
+
+    return suggestions
+
+
+def merge_skill_suggestions(*parts: dict[str, list]) -> dict[str, list[dict]]:
+    """Merge suggestion dicts without duplicate labels."""
+    merged: dict[str, list[dict]] = {key: [] for key in SKILL_GROUP_KEYS}
+    seen: set[str] = set()
+    for part in parts:
+        if not isinstance(part, dict):
+            continue
+        for key in SKILL_GROUP_KEYS:
+            for item in part.get(key, []):
+                if not isinstance(item, dict):
+                    continue
+                label = canonical_skill_label(str(item.get("label") or ""))
+                if not label:
+                    continue
+                lowered = label.lower()
+                if lowered in seen:
+                    continue
+                seen.add(lowered)
+                merged[key].append(
+                    {
+                        "label": label,
+                        "source": str(item.get("source") or "").strip() or "CV",
+                    }
+                )
+    return merged

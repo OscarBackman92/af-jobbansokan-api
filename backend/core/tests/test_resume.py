@@ -309,7 +309,16 @@ def test_parse_txt_upload(api_client, user):
     upload = SimpleUploadedFile("cv.txt", CV_TEXT.encode(), "text/plain")
     response = api_client.post(PARSE_URL, {"file": upload}, format="multipart")
     assert response.status_code == 200
-    assert response.json()["skills"] == ["Python", "Django", "PostgreSQL", "Docker"]
+    body = response.json()
+    assert body["skills"] == []
+    assert body["skill_groups"] == {"technical": [], "domain": [], "languages": []}
+    labels = [
+        item["label"].lower()
+        for items in body["skill_suggestions"].values()
+        for item in items
+    ]
+    assert "python" in labels
+    assert "django" in labels
 
 
 def test_parse_docx_upload(api_client, user):
@@ -373,13 +382,14 @@ def test_parse_includes_skill_suggestions(api_client, user):
     upload = SimpleUploadedFile("cv.txt", CV_TEXT.encode("utf-8"))
     body = api_client.post(PARSE_URL, {"file": upload}, format="multipart").json()
     assert "skill_suggestions" in body
+    assert body["skill_groups"] == {"technical": [], "domain": [], "languages": []}
     labels = [
         item["label"].lower()
         for items in body["skill_suggestions"].values()
         for item in items
     ]
-    assert "python" not in labels  # already in explicit skills section
-    assert "django" not in labels
+    assert "python" in labels
+    assert "django" in labels
 
 
 def test_suggest_skills_endpoint(api_client, user):
