@@ -38,7 +38,13 @@ const THEMES = [
 
 function readTheme() {
   const stored = localStorage.getItem("theme");
-  return THEMES.some((theme) => theme.id === stored) ? stored : "command";
+  if (stored && THEMES.some((theme) => theme.id === stored)) {
+    return stored;
+  }
+  if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    return "command";
+  }
+  return "daylight";
 }
 
 function readTab() {
