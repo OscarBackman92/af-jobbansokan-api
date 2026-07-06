@@ -120,7 +120,6 @@ export default function App() {
           </div>
           <div className="brand-text">
             <h1>Jobbsöket</h1>
-            <p className="tagline">Koll på hela ditt jobbsök</p>
           </div>
         </div>
         {token && (
