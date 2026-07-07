@@ -25,7 +25,7 @@ test("create an application, move status, timeline logs the change", async ({
 
   await page
     .locator(".pipeline-row", { hasText: "QA-ingenjör" })
-    .getByRole("button", { name: "Öppna" })
+    .locator(".pipeline-row-main")
     .click();
   await expect(page.getByRole("heading", { name: "Tidslinje" })).toBeVisible();
   await expect(page.locator(".timeline")).toContainText("Status:");
