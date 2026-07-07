@@ -1,22 +1,32 @@
 import { useState } from "react";
 
 function EyeIcon({ open }) {
+  const props = {
+    viewBox: "0 0 24 24",
+    width: 20,
+    height: 20,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": true,
+  };
+
   if (open) {
     return (
-      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-        <path
-          fill="currentColor"
-          d="M12 5c-5.5 0-9.5 4.5-10.7 7 1.2 2.5 5.2 7 10.7 7s9.5-4.5 10.7-7C21.5 9.5 17.5 5 12 5Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"
-        />
+      <svg {...props}>
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
       </svg>
     );
   }
+
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M3.3 2.3 2 3.6l2.1 2.1C3.1 7.2 1.6 9.2.3 12c1.3 2.8 5.3 7 11.7 7 2.2 0 4.2-.6 5.9-1.5l2.5 2.5 1.3-1.3L3.3 2.3ZM12 17a4.8 4.8 0 0 1-4.8-4.8c0-.7.2-1.4.5-2L9.6 14c.6.6 1.3.9 2.1.9 1 0 1.9-.5 2.4-1.3l1.9 1.9A4.7 4.7 0 0 1 12 17Zm7.2-2.2-1.6-1.6a6.8 6.8 0 0 0 1.4-2.2c-1.1-2.3-4.5-5.5-8.9-5.5-.9 0-1.7.1-2.5.4l-1.8-1.8C7.5 4.2 9.7 4 12 4c6.4 0 10.4 4.2 11.7 7-.6 1.3-1.7 2.9-3.2 4.2l1.7 1.6Z"
-      />
+    <svg {...props}>
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+      <line x1="1" y1="1" x2="23" y2="23" />
     </svg>
   );
 }

@@ -1,13 +1,13 @@
-/* Public marketing pages — aligned with Jobbsöket daylight theme */
+/* Public marketing pages — matches app daylight theme */
 :root {
   color-scheme: light;
   --bg: #f6f4ef;
-  --surface: #fffdf9;
-  --text: #1a1a1a;
-  --muted: #5c5a54;
-  --border: #e4dfd4;
-  --accent: #c45c26;
-  --accent-hover: #a34a1c;
+  --surface: #ffffff;
+  --text: #1d1f26;
+  --muted: #676a72;
+  --border: #e4dfd5;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
   --radius: 10px;
   --font: "Schibsted Grotesk", "Inter", system-ui, sans-serif;
 }

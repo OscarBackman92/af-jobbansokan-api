@@ -559,36 +559,50 @@ body {
   position: relative;
   display: flex;
   align-items: center;
+  margin-top: 0.35rem;
 }
 
 .password-input input {
   width: 100%;
-  padding-right: 2.6rem;
+  margin-top: 0;
+  padding-right: 2.75rem;
 }
 
-.password-input-toggle {
+.password-input button.password-input-toggle {
   position: absolute;
-  right: 0.35rem;
+  right: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--muted);
+  color: var(--label);
+  box-shadow: none;
   cursor: pointer;
 }
 
-.password-input-toggle:hover {
-  color: var(--text);
-  background: color-mix(in srgb, var(--text) 6%, transparent);
+.password-input button.password-input-toggle:hover {
+  color: var(--ink);
+  background: var(--hover);
+  filter: none;
+  transform: translateY(-50%);
+  box-shadow: none;
 }
 
-.password-input-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+.password-input button.password-input-toggle:active {
+  transform: translateY(-50%);
+}
+
+.password-input button.password-input-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 .hero .card.narrow {
