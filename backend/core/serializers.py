@@ -221,9 +221,10 @@ def _spa_reset_url(request, user, temp_key):
     """
     from allauth.account.utils import user_pk_to_url_str
 
-    base = settings.FRONTEND_URL or f"{request.scheme}://{request.get_host()}"
+    from .spa_urls import spa_app_url
+
     uid = user_pk_to_url_str(user)
-    return f"{base.rstrip('/')}/?reset_uid={uid}&reset_token={temp_key}"
+    return spa_app_url(request=request, query=f"reset_uid={uid}&reset_token={temp_key}")
 
 
 class FrontendPasswordResetSerializer(PasswordResetSerializer):

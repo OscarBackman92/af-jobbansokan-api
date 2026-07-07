@@ -142,13 +142,13 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# The built frontend (frontend/dist) is served by WhiteNoise at the site
-# root: index.html on "/", hashed assets under /assets/. Django routes
-# (admin, api, ...) take precedence via URL resolution order.
+# The built frontend (frontend/dist) is served by WhiteNoise; the React app
+# lives under /app/ (see core.marketing_views.spa_app). Django serves the
+# crawlable landing page at /.
 FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
 if FRONTEND_DIST.exists():
     WHITENOISE_ROOT = FRONTEND_DIST
-    WHITENOISE_INDEX_FILE = True
+    WHITENOISE_INDEX_FILE = False
 
 if not DEBUG:
     STORAGES = {

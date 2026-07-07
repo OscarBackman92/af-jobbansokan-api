@@ -7,9 +7,10 @@ from dj_rest_auth.registration.views import (
     SocialLoginView,
     VerifyEmailView,
 )
-from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
+
+from .spa_urls import spa_app_url
 
 
 class ThrottledVerifyEmailView(VerifyEmailView):
@@ -38,11 +39,8 @@ class GoogleLoginView(SocialLoginView):
 
     @property
     def callback_url(self):
-        # Must match the redirect_uri the SPA used (its own origin).
-        base = settings.FRONTEND_URL or (
-            f"{self.request.scheme}://{self.request.get_host()}"
-        )
-        return base.rstrip("/") + "/"
+        # Must match the redirect_uri the SPA used (/app/ on same origin).
+        return spa_app_url(request=self.request)
 
 
 class SPARegisterView(RegisterView):

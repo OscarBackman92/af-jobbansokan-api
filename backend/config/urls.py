@@ -4,6 +4,7 @@ from core.auth_views import (
     ThrottledResendEmailVerificationView,
     ThrottledVerifyEmailView,
 )
+from core.marketing_views import landing, privacy_page, robots_txt, sitemap_xml, spa_app
 from core.views import health, runtime_config, security_txt
 from django.contrib import admin
 from django.urls import include, path
@@ -15,6 +16,12 @@ from drf_spectacular.views import (
 from config.api_docs import DebugOrAdminPermission
 
 urlpatterns = [
+    path("", landing, name="landing"),
+    path("integritet/", privacy_page, name="privacy"),
+    path("robots.txt", robots_txt, name="robots"),
+    path("sitemap.xml", sitemap_xml, name="sitemap"),
+    path("app/", spa_app, name="spa-app"),
+    path("app/<path:subpath>", spa_app, name="spa-app-catchall"),
     path("admin/", admin.site.urls),
     path("health/", health),
     path("runtime-config.js", runtime_config, name="runtime-config"),

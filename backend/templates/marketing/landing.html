@@ -1,0 +1,107 @@
+{% extends "marketing/base.html" %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Jobbsöket",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "sv",
+  "description": "Gratis verktyg för att hålla koll på jobbansökningar med tavla, påminnelser, Platsbanken-sök och förklarbar CV-matchning.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "SEK"
+  }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<main>
+  <section class="marketing-hero">
+    <div>
+      <span class="kicker">Gratis jobbsök-tracker</span>
+      <h2>Sluta tappa bort dina ansökningar.</h2>
+      <p class="lede">
+        Jobbsöket samlar pipeline, påminnelser och Platsbanken på ett ställe — så du
+        vet vad som händer idag och vad du ska göra härnäst.
+      </p>
+      <p style="margin-top: 1.25rem">
+        <a class="btn-primary" href="{{ app_url }}">Kom igång gratis</a>
+      </p>
+      <ul class="checklist">
+        <li>Panelen Idag &amp; att göra med export till Google/Outlook-kalender</li>
+        <li>CV-match mot annonser — se vilka kompetenser som saknas, med bevis från CV:t</li>
+        <li>Sök live i Platsbanken och spara annonser direkt på tavlan</li>
+        <li>Kontaktuppgifter, tidslinje och CSV-export — din data, dina regler</li>
+      </ul>
+    </div>
+    <aside class="hero-card">
+      <h3>För dig som jobbsöker i Sverige</h3>
+      <p>
+        Ett Excel-ark räcker inte när du har tio pågående processer, deadlines och
+        uppföljningar. Jobbsöket är din personliga tavla — inte en rekryteringstjänst.
+      </p>
+      <a class="btn-primary" href="{{ app_url }}">Logga in eller skapa konto</a>
+      <div class="metric-row" aria-hidden="true">
+        <div class="metric">
+          <strong>7</strong>
+          <span>steg i pipelinen</span>
+        </div>
+        <div class="metric">
+          <strong>100%</strong>
+          <span>din data</span>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="marketing-section" aria-labelledby="features-heading">
+    <h2 id="features-heading">Allt du behöver i ett jobbsök</h2>
+    <div class="feature-grid">
+      <article class="feature-card">
+        <h3>Ansökningstavla</h3>
+        <p>
+          Från sparad annons till intervju och erbjudande — flytta kort, filtrera och
+          se vad som behöver uppföljas.
+        </p>
+      </article>
+      <article class="feature-card">
+        <h3>Platsbanken live</h3>
+        <p>
+          Sök hela Platsbanken via Arbetsförmedlingens öppna API. Spara annonser på
+          tavlan med ett klick.
+        </p>
+      </article>
+      <article class="feature-card">
+        <h3>Bevisprofiler</h3>
+        <p>
+          Koppla kompetenser till rader i CV:t. Matchningen visar varför en annons
+          passar — inte bara en procentsiffra.
+        </p>
+      </article>
+      <article class="feature-card">
+        <h3>Integritet först</h3>
+        <p>
+          Ingen spårning, ingen CV-fillagring. Exportera CSV eller radera kontot och
+          all data permanent.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="marketing-section">
+    <h2>Redo att samla jobbsöket?</h2>
+    <p class="lede">
+      Skapa ett gratis konto på under en minut. Inga annonser, ingen försäljning av
+      din data till arbetsgivare.
+    </p>
+    <p>
+      <a class="btn-primary" href="{{ app_url }}">Öppna Jobbsöket</a>
+    </p>
+  </section>
+</main>
+{% endblock %}

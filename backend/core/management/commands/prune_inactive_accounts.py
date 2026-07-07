@@ -15,6 +15,7 @@ from django.utils import timezone
 
 from core.email_config import email_is_configured
 from core.models import OperatorProfile
+from core.spa_urls import spa_app_url
 
 INACTIVITY_DAYS = 730  # 24 months
 WARNING_DAYS = 30
@@ -106,7 +107,7 @@ class Command(BaseCommand):
             f"Enligt vår lagringspolicy raderas kontot och all data om "
             f"{WARNING_DAYS} dagar.\n\n"
             "Vill du behålla kontot? Logga bara in, så avbryts raderingen:\n"
-            f"{settings.FRONTEND_URL or 'https://ansokt.onrender.com'}\n\n"
+            f"{spa_app_url() or 'https://ansokt.onrender.com/app/'}\n\n"
             "Vill du inte det behöver du inte göra någonting.\n\n"
             "Hälsningar,\nJobbsöket"
         )

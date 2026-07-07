@@ -13,7 +13,7 @@ export function startGoogleLogin() {
   sessionStorage.setItem(STATE_KEY, state);
   const params = new URLSearchParams({
     client_id: googleClientId(),
-    redirect_uri: `${window.location.origin}/`,
+    redirect_uri: `${window.location.origin}/app/`,
     response_type: "code",
     scope: "openid email profile",
     state,

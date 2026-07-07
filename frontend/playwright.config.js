@@ -10,7 +10,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["list"], ["github"]] : [["list"]],
   use: {
-    baseURL: "http://127.0.0.1:5273",
+    baseURL: "http://127.0.0.1:5273/app",
     trace: "retain-on-failure",
   },
   webServer: [

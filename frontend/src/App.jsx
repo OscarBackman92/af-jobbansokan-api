@@ -6,7 +6,6 @@ import AuthHero from "./components/AuthHero.jsx";
 import BoardPanel from "./components/BoardPanel.jsx";
 import GoogleSignIn from "./components/GoogleSignIn.jsx";
 import PostingsPanel from "./components/PostingsPanel.jsx";
-import PrivacyPanel from "./components/PrivacyPanel.jsx";
 import ProfilePanel from "./components/ProfilePanel.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
 import VerifyEmail from "./components/VerifyEmail.jsx";
@@ -60,7 +59,6 @@ export default function App() {
   const [verifyKey, setVerifyKey] = useState(() => readVerifyKey());
   const [googleCode, setGoogleCode] = useState(() => readGoogleCallback());
   const [theme, setTheme] = useState(() => readTheme());
-  const [showPrivacy, setShowPrivacy] = useState(false);
   const profileLeaveGuardRef = useRef(null);
 
   function changeTab(next) {
@@ -146,7 +144,7 @@ export default function App() {
         )}
       </header>
 
-      <main className="main" key={showPrivacy ? "privacy" : tab}>
+      <main className="main" key={tab}>
         {googleCode && !token && (
           <GoogleSignIn
             code={googleCode}
@@ -180,16 +178,16 @@ export default function App() {
             }}
           />
         )}
-        {!resetCreds && !verifyKey && !googleCode && !token && !showPrivacy && (
+        {!resetCreds && !verifyKey && !googleCode && !token && (
           <AuthHero onLogin={login} />
         )}
-        {!resetCreds && !verifyKey && token && tab === "board" && !showPrivacy && (
+        {!resetCreds && !verifyKey && token && tab === "board" && (
           <BoardPanel token={token} onNavigate={changeTab} />
         )}
-        {!resetCreds && !verifyKey && token && tab === "postings" && !showPrivacy && (
+        {!resetCreds && !verifyKey && token && tab === "postings" && (
           <PostingsPanel />
         )}
-        {!resetCreds && !verifyKey && token && tab === "profile" && !showPrivacy && (
+        {!resetCreds && !verifyKey && token && tab === "profile" && (
           <ProfilePanel
             token={token}
             me={me}
@@ -198,16 +196,15 @@ export default function App() {
             profileLeaveGuardRef={profileLeaveGuardRef}
           />
         )}
-        {showPrivacy && <PrivacyPanel onClose={() => setShowPrivacy(false)} />}
       </main>
 
       <footer className="footer">
         <span className="footer-kicker">Jobbsöket</span>
         Din ansökningsdata är din: exportera som CSV eller radera kontot och allt
         med det.{" "}
-        <button type="button" className="linklike footer-link" onClick={() => setShowPrivacy(true)}>
+        <a className="footer-link" href="/integritet/">
           Integritetspolicy
-        </button>
+        </a>
         <div className="theme-picker" aria-label="Visuellt tema">
           {THEMES.map((t) => (
             <button

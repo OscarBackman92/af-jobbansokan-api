@@ -12,6 +12,7 @@ from django.utils import timezone
 from core.email_config import email_is_configured
 from core.models import JobApplication, OperatorProfile, SavedJobSearch
 from core.search_digest import build_search_digests, digest_job_count
+from core.spa_urls import spa_app_url
 from core.weekly_summary import (
     build_weekly_summary,
     format_weekly_summary_email,
@@ -67,7 +68,7 @@ class Command(BaseCommand):
             self.stdout.write("No eligible users.")
             return
 
-        frontend_url = settings.FRONTEND_URL
+        frontend_url = spa_app_url() or settings.FRONTEND_URL
         sent = skipped = 0
         week_start = today - timedelta(days=today.weekday())
 

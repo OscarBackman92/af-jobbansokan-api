@@ -1,0 +1,52 @@
+{% load static %}
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Jobbsöket — koll på hela ditt jobbsök{% endblock %}</title>
+    <meta
+      name="description"
+      content="{% block meta_description %}Gratis jobbsök-tracker: tavla över ansökningar, påminnelser, live-sök i Platsbanken och CV-matchning med bevis. Din data, dina regler.{% endblock %}"
+    />
+    <link rel="canonical" href="{% block canonical %}{{ canonical_url }}{% endblock %}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="sv_SE" />
+    <meta property="og:title" content="{% block og_title %}Jobbsöket — koll på hela ditt jobbsök{% endblock %}" />
+    <meta
+      property="og:description"
+      content="{% block og_description %}Samlar pipeline, påminnelser och Platsbanken på ett ställe. Exportera CSV eller radera kontot när du vill.{% endblock %}"
+    />
+    <meta property="og:url" content="{% block og_url %}{{ canonical_url }}{% endblock %}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Schibsted+Grotesk:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{% static 'marketing/marketing.css' %}" />
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body>
+    <div class="marketing-wrap">
+      <header class="marketing-header">
+        <a class="marketing-brand" href="{{ home_url|default:'/' }}">
+          <span class="marketing-logo" aria-hidden="true">J</span>
+          <h1>Jobbsöket</h1>
+        </a>
+        <nav class="marketing-nav" aria-label="Huvudnavigering">
+          <a href="{{ privacy_url }}">Integritet</a>
+          <a class="btn-primary" href="{{ app_url }}">Öppna appen</a>
+        </nav>
+      </header>
+      {% block content %}{% endblock %}
+      <footer class="marketing-footer">
+        <p>
+          Jobbsöket — din ansökningsdata är din. Exportera som CSV eller radera kontot
+          och allt med det.
+          <a href="{{ privacy_url }}">Integritetspolicy</a>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,90 @@
+{% extends "marketing/base.html" %}
+
+{% block title %}Integritetspolicy — Jobbsöket{% endblock %}
+{% block meta_description %}Hur Jobbsöket behandlar dina personuppgifter: lagring i EU, ingen CV-fillagring, export och radering.{% endblock %}
+{% block og_title %}Integritetspolicy — Jobbsöket{% endblock %}
+
+{% block content %}
+<main class="privacy-body">
+  <span class="kicker">Data &amp; integritet</span>
+  <h2>Integritetspolicy</h2>
+  <p>
+    Jobbsöket är en personlig ansökningstavla. Du äger din data: allt kan
+    exporteras som CSV och kontot kan raderas när som helst, med all data.
+  </p>
+
+  <h3>Personuppgiftsansvarig</h3>
+  <p>
+    Jobbsöket drivs som en privat tjänst och den som driver tjänsten är
+    personuppgiftsansvarig.
+    {% if contact_email %}
+      Kontakta oss om dina personuppgifter på
+      <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.
+    {% else %}
+      Kontaktuppgifter för integritetsfrågor publiceras här.
+    {% endif %}
+  </p>
+
+  <h3>Vad vi lagrar och varför</h3>
+  <ul>
+    <li>
+      Kontouppgifter (e-post, namn) och dina ansökningar, kontakter, anteckningar
+      och CV i strukturerad form — för att tillhandahålla tjänsten. Rättslig grund:
+      avtalet med dig (art. 6.1 b GDPR).
+    </li>
+    <li>
+      Tekniska loggar och felrapporter utan personligt innehåll — för drift och
+      säkerhet. Rättslig grund: berättigat intresse (art. 6.1 f).
+    </li>
+    <li>Påminnelsemejl skickas bara om du själv satt datum för nästa steg.</li>
+    <li>
+      Veckosammanfattning per mejl på måndagar när du har aktivitet på tavlan eller
+      nya annonser i sparade sökningar.
+    </li>
+  </ul>
+
+  <h3>Vad vi inte lagrar</h3>
+  <ul>
+    <li>Uppladdade CV-filer — de tolkas i minnet och sparas aldrig.</li>
+    <li>Platsbankens annonser — sökningar görs live och cachas bara kortvarigt.</li>
+    <li>
+      Inga spårningskakor och ingen analys av ditt beteende. Webbläsarens lagring
+      används enbart för inloggning och dina egna inställningar.
+    </li>
+  </ul>
+
+  <h3>Vilka som behandlar data för vår räkning</h3>
+  <ul>
+    <li><strong>Render</strong> — serverdrift och databas i Frankfurt (EU).</li>
+    <li><strong>Brevo</strong> — verifierings-, återställnings- och påminnelsemejl.</li>
+    <li><strong>Sentry</strong> — teknisk felrapportering utan personuppgifter.</li>
+    <li>
+      <strong>Google</strong> — endast om du väljer att logga in med Google.
+    </li>
+  </ul>
+  <p>Vi säljer aldrig data och delar den inte med arbetsgivare eller annonsörer.</p>
+
+  <h3>Hur länge data sparas</h3>
+  <ul>
+    <li>Ditt konto och din data finns kvar tills du raderar kontot.</li>
+    <li>
+      Konton inaktiva i 24 månader raderas, med varningsmejl 30 dagar innan.
+    </li>
+    <li>Raderar du kontot försvinner all data direkt och permanent.</li>
+  </ul>
+
+  <h3>Dina rättigheter</h3>
+  <ul>
+    <li>Se all din data i appen och exportera den som CSV.</li>
+    <li>Rätta uppgifter direkt i appen.</li>
+    <li>Radera kontot och all data under Profil &amp; CV.</li>
+    <li>
+      Klaga hos Integritetsskyddsmyndigheten (IMY):
+      <a href="https://www.imy.se" rel="noreferrer">imy.se</a>.
+    </li>
+  </ul>
+
+  <p class="lede">Senast uppdaterad: juli 2026.</p>
+  <p><a class="btn-primary" href="{{ app_url }}">Till appen</a></p>
+</main>
+{% endblock %}

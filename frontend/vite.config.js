@@ -8,7 +8,12 @@ import { defineConfig } from "vite";
 const DJANGO = process.env.VITE_BACKEND || "http://127.0.0.1:8000";
 
 export default defineConfig({
+  base: "/app/",
   plugins: [react()],
+  build: {
+    outDir: "dist/app",
+    emptyOutDir: true,
+  },
   server: {
     proxy: {
       "/api": DJANGO,
