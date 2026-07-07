@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 import { CATEGORY_LABELS } from "../jobProfiles.js";
 
 function SuggestionChips({ items, onAdd, onDismiss }) {
@@ -64,29 +66,42 @@ export default function EvidenceRow({
 }
 
 export function ManualEvidenceAdd({ onAdd }) {
-  function submit(event) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const term = form.term.value.trim();
-    const category = form.category.value;
+  const termRef = useRef(null);
+  const categoryRef = useRef(null);
+
+  function add() {
+    const term = termRef.current?.value.trim() ?? "";
+    const category = categoryRef.current?.value ?? "domain";
     if (!term) return;
     onAdd({ term, category });
-    form.reset();
+    if (termRef.current) termRef.current.value = "";
+  }
+
+  function onKeyDown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      add();
+    }
   }
 
   return (
-    <form className="manual-evidence-add" onSubmit={submit}>
-      <input name="term" placeholder="Lägg till kompetens manuellt" aria-label="Kompetens" />
-      <select name="category" defaultValue="domain" aria-label="Kategori">
+    <div className="manual-evidence-add">
+      <input
+        ref={termRef}
+        placeholder="Lägg till kompetens manuellt"
+        aria-label="Kompetens"
+        onKeyDown={onKeyDown}
+      />
+      <select ref={categoryRef} defaultValue="domain" aria-label="Kategori">
         {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
           <option key={key} value={key}>
             {label}
           </option>
         ))}
       </select>
-      <button type="submit" className="secondary small">
+      <button type="button" className="secondary small" onClick={add}>
         Lägg till
       </button>
-    </form>
+    </div>
   );
 }

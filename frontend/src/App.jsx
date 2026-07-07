@@ -64,12 +64,8 @@ export default function App() {
   const profileLeaveGuardRef = useRef(null);
 
   function changeTab(next) {
-    if (
-      next !== tab &&
-      tab === "profile" &&
-      profileLeaveGuardRef.current &&
-      !profileLeaveGuardRef.current()
-    ) {
+    if (next !== tab && tab === "profile" && profileLeaveGuardRef.current) {
+      profileLeaveGuardRef.current(() => setTab(next));
       return;
     }
     setTab(next);

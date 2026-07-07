@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { request } from "../api.js";
 import EvidenceRow, { ManualEvidenceAdd } from "./EvidenceEditor.jsx";
 import JobProfileSelector from "./JobProfileSelector.jsx";
+import ModalOverlay from "./ModalOverlay.jsx";
 import {
   activeProfile,
   addEvidence,
@@ -23,6 +24,47 @@ import {
   updateProfileLabel,
 } from "../jobProfiles.js";
 import { getMarketHints } from "../marketHints.js";
+
+function UnsavedChangesDialog({ message, onCancel, onDiscard }) {
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const previous = document.activeElement;
+    dialogRef.current?.querySelector("button")?.focus();
+
+    function onKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCancel();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previous?.focus?.();
+    };
+  }, [onCancel]);
+
+  return (
+    <ModalOverlay
+      onClose={onCancel}
+      className="modal confirm-modal"
+      dialogRef={dialogRef}
+      labelledBy="unsaved-changes-title"
+    >
+      <h2 id="unsaved-changes-title">Osparade ändringar</h2>
+      <p>{message}</p>
+      <div className="modal-actions">
+        <button type="button" className="secondary" onClick={onCancel}>
+          Fortsätt redigera
+        </button>
+        <button type="button" className="danger" onClick={onDiscard}>
+          Kasta ändringar
+        </button>
+      </div>
+    </ModalOverlay>
+  );
+}
 
 export default function ProfilePanel({ token, me, onMeChange, onLogout, profileLeaveGuardRef }) {
   return (
@@ -260,8 +302,33 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
   const [evidenceSuggestions, setEvidenceSuggestions] = useState(null);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [marketHints, setMarketHints] = useState([]);
+  const [unsavedPrompt, setUnsavedPrompt] = useState(null);
 
   const active = activeProfile(jobProfiles);
+
+  function revertEdits() {
+    setResume(savedResume);
+    setJobProfiles(savedJobProfiles);
+    setSaveState("clean");
+  }
+
+  const requestDiscard = useCallback(
+    (message, onProceed) => {
+      if (!open || saveState !== "dirty") {
+        onProceed();
+        return;
+      }
+      setUnsavedPrompt({
+        message,
+        onDiscard: () => {
+          revertEdits();
+          setUnsavedPrompt(null);
+          onProceed();
+        },
+      });
+    },
+    [open, saveState, savedResume, savedJobProfiles]
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -320,38 +387,26 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     };
   }, [open, resume.experience, resume.education, resume.headline, jobProfiles, active.id, token]);
 
-  function revertEdits() {
-    setResume(savedResume);
-    setJobProfiles(savedJobProfiles);
-    setSaveState("clean");
-  }
-
   useEffect(() => {
     if (!profileLeaveGuardRef) return undefined;
-    profileLeaveGuardRef.current = () => {
-      if (!open || saveState !== "dirty") return true;
-      const discard = window.confirm(
-        "Du har osparade ändringar i CV:t. Lämna sidan utan att spara?"
+    profileLeaveGuardRef.current = (proceed) => {
+      requestDiscard(
+        "Du har osparade ändringar i CV:t. Lämna sidan utan att spara?",
+        proceed
       );
-      if (discard) revertEdits();
-      return discard;
     };
     return () => {
       profileLeaveGuardRef.current = null;
     };
-  }, [open, saveState, profileLeaveGuardRef, savedResume, savedJobProfiles]);
+  }, [profileLeaveGuardRef, requestDiscard]);
 
   function toggleEditor() {
     setMessage(null);
     if (open) {
-      if (saveState === "dirty") {
-        const discard = window.confirm(
-          "Du har osparade ändringar i CV:t. Stäng utan att spara?"
-        );
-        if (!discard) return;
-        revertEdits();
-      }
-      setOpen(false);
+      requestDiscard(
+        "Du har osparade ändringar i CV:t. Stäng utan att spara?",
+        () => setOpen(false)
+      );
       return;
     }
     setOpen(true);
@@ -835,6 +890,13 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
             )}
           </div>
         </form>
+      )}
+      {unsavedPrompt && (
+        <UnsavedChangesDialog
+          message={unsavedPrompt.message}
+          onCancel={() => setUnsavedPrompt(null)}
+          onDiscard={unsavedPrompt.onDiscard}
+        />
       )}
     </section>
   );
