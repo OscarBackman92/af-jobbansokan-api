@@ -24,6 +24,7 @@ def landing(request):
         "marketing/landing.html",
         {
             "app_url": "/app/",
+            "home_url": "/",
             "privacy_url": "/integritet/",
             "canonical_url": request.build_absolute_uri("/"),
             "contact_email": settings.CONTACT_EMAIL,

@@ -1,15 +1,59 @@
-/* Public marketing pages — matches app daylight theme */
-:root {
+/* Public marketing — shares tokens and component language with the React app */
+
+:root,
+[data-theme="daylight"] {
   color-scheme: light;
+  --brand: #4f46e5;
+  --brand-2: #7c3aed;
   --bg: #f6f4ef;
   --surface: #ffffff;
-  --text: #1d1f26;
+  --hover: #f1eee7;
+  --ink: #1d1f26;
   --muted: #676a72;
+  --label: #3d4046;
   --border: #e4dfd5;
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
+  --accent-soft: #f4f3ff;
+  --accent-border: #d4d2f5;
   --radius: 10px;
-  --font: "Schibsted Grotesk", "Inter", system-ui, sans-serif;
+  --radius-sm: 8px;
+  --shadow-sm: 0 1px 2px rgba(22, 22, 31, 0.05), 0 1px 6px rgba(22, 22, 31, 0.04);
+  --shadow-md: 0 2px 6px rgba(22, 22, 31, 0.08);
+  --font-display: "Schibsted Grotesk", "Inter", sans-serif;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="command"] {
+  color-scheme: dark;
+  --brand: #8ab4f8;
+  --brand-2: #8ab4f8;
+  --bg: #14161a;
+  --surface: #1d2026;
+  --hover: #252930;
+  --ink: #e8eaed;
+  --muted: #9aa0a9;
+  --label: #c2c6cc;
+  --border: rgba(255, 255, 255, 0.09);
+  --accent-soft: #252930;
+  --accent-border: rgba(255, 255, 255, 0.12);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="signal"] {
+  color-scheme: dark;
+  --brand: #6fcf97;
+  --brand-2: #6fcf97;
+  --bg: #121614;
+  --surface: #1a1f1c;
+  --hover: #222824;
+  --ink: #e4ebe6;
+  --muted: #8a9a90;
+  --label: #b8c4bc;
+  --border: rgba(255, 255, 255, 0.09);
+  --accent-soft: #222824;
+  --accent-border: rgba(255, 255, 255, 0.12);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
 *,
@@ -18,26 +62,32 @@
   box-sizing: border-box;
 }
 
+html {
+  background: var(--bg);
+}
+
 body {
   margin: 0;
-  font-family: var(--font);
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   background: var(--bg);
-  color: var(--text);
+  color: var(--ink);
+  font-size: 15px;
   line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
-  color: var(--accent);
+  color: var(--brand);
 }
 
 a:hover {
-  color: var(--accent-hover);
+  color: var(--brand-2);
 }
 
 .marketing-wrap {
   max-width: 68rem;
   margin: 0 auto;
-  padding: 1.25rem 1.25rem 3rem;
+  padding: 0 1.5rem 4rem;
 }
 
 .marketing-header {
@@ -45,34 +95,41 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.5rem 0 1.5rem;
+  padding: 0.85rem 0.15rem;
+  margin: 0.25rem 0 1.7rem;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 2rem;
 }
 
 .marketing-brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   text-decoration: none;
   color: inherit;
+  min-width: 0;
 }
 
 .marketing-logo {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.55rem;
-  background: var(--accent);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand);
   color: #fff;
   display: grid;
   place-items: center;
   font-weight: 800;
+  font-size: 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--brand) 80%, var(--border));
+  flex-shrink: 0;
 }
 
 .marketing-brand h1 {
   margin: 0;
-  font-size: 1.15rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
 }
 
 .marketing-nav {
@@ -85,64 +142,75 @@ a:hover {
 .marketing-nav a {
   text-decoration: none;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .marketing-nav a:hover {
-  color: var(--text);
+  color: var(--ink);
 }
 
 .btn-primary {
   display: inline-block;
   padding: 0.55rem 1rem;
-  border-radius: var(--radius);
-  background: var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--brand);
   color: #fff !important;
   text-decoration: none;
   font-weight: 600;
-  border: none;
-  cursor: pointer;
+  font-size: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--brand) 80%, var(--border));
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
+  filter: brightness(1.05);
   color: #fff !important;
 }
 
-.marketing-hero {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 2rem;
-  align-items: start;
-  margin-bottom: 3rem;
-}
-
-@media (max-width: 768px) {
-  .marketing-hero {
-    grid-template-columns: 1fr;
-  }
-}
-
-.kicker {
+.section-kicker {
   display: inline-block;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  font-weight: 500;
   color: var(--muted);
   margin-bottom: 0.5rem;
 }
 
-.marketing-hero h2 {
-  margin: 0 0 0.75rem;
-  font-size: clamp(1.85rem, 4vw, 2.75rem);
-  line-height: 1.12;
-  font-weight: 800;
+.marketing-hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 3rem;
+  align-items: center;
+  padding: 2.5rem 0 1rem;
+  margin-bottom: 2rem;
 }
 
-.marketing-hero .lede {
-  font-size: 1.08rem;
+@media (max-width: 880px) {
+  .marketing-hero {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.marketing-hero h2 {
+  margin: 0 0 1rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+}
+
+.grad {
+  color: var(--brand);
+}
+
+.lede {
+  font-size: 1.05rem;
   color: var(--muted);
-  max-width: 38rem;
+  margin: 0 0 1.4rem;
+  max-width: 46ch;
 }
 
 .checklist {
@@ -154,26 +222,31 @@ a:hover {
 .checklist li {
   padding: 0.35rem 0 0.35rem 1.5rem;
   position: relative;
+  color: var(--label);
 }
 
 .checklist li::before {
   content: "✓";
   position: absolute;
   left: 0;
-  color: var(--accent);
+  color: var(--brand);
   font-weight: 700;
 }
 
 .hero-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: calc(var(--radius) + 2px);
-  padding: 1.25rem;
+  border-radius: var(--radius);
+  padding: 1.5rem 1.75rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .hero-card h3 {
   margin: 0 0 0.5rem;
+  font-family: var(--font-display);
   font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .hero-card p {
@@ -182,27 +255,47 @@ a:hover {
   font-size: 0.92rem;
 }
 
-.metric-row {
+.metric-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: 0.55rem;
   margin-top: 1rem;
 }
 
-.metric {
+.metric-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.8rem 0.85rem;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.65rem 0.75rem;
-  background: var(--bg);
+  background: var(--surface);
+  min-height: 76px;
+  position: relative;
 }
 
-.metric strong {
-  display: block;
-  font-size: 1.35rem;
+.metric-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 2px;
+  background: var(--ink);
+  opacity: 0.12;
 }
 
-.metric span {
-  font-size: 0.78rem;
+.metric-tile strong {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.metric-label,
+.metric-detail {
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -212,7 +305,11 @@ a:hover {
 
 .marketing-section h2 {
   margin: 0 0 0.75rem;
+  font-family: var(--font-display);
   font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
 }
 
 .feature-grid {
@@ -225,12 +322,15 @@ a:hover {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1rem;
+  padding: 1rem 1.15rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .feature-card h3 {
   margin: 0 0 0.35rem;
   font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .feature-card p {
@@ -240,18 +340,67 @@ a:hover {
 }
 
 .marketing-footer {
-  border-top: 1px solid var(--border);
-  padding-top: 1.25rem;
+  margin-top: 3rem;
+  padding: 1.35rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
   color: var(--muted);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.footer-kicker {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 0.45rem;
 }
 
 .marketing-footer a {
   color: var(--muted);
 }
 
+.marketing-footer a:hover {
+  color: var(--ink);
+}
+
+.theme-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.theme-picker button {
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.theme-picker button:hover {
+  color: var(--ink);
+}
+
+.theme-picker button.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: transparent;
+}
+
 .privacy-body h3 {
   margin-top: 1.5rem;
+  font-family: var(--font-display);
+  color: var(--ink);
 }
 
 .privacy-body ul {

@@ -108,15 +108,19 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <div className="brand">
+        <a className="brand brand-link" href="/">
           <div className="logo" aria-hidden="true">
             J
           </div>
           <div className="brand-text">
             <h1>Jobbsöket</h1>
           </div>
-        </div>
-        {token && (
+        </a>
+        {!token ? (
+          <nav className="header-guest-nav" aria-label="Huvudnavigering">
+            <a href="/integritet/">Integritet</a>
+          </nav>
+        ) : (
           <nav className="tabs" aria-label="Huvudnavigering">
             {TABS.map((t) => (
               <button

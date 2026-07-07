@@ -7,6 +7,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#f6f4ef" />
+    <script>
+      (function () {
+        var valid = { command: 1, daylight: 1, signal: 1 };
+        var t = localStorage.getItem("theme");
+        if (!valid[t]) {
+          t = window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "command"
+            : "daylight";
+        }
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
     <meta
       name="description"
       content="Jobbsöket — gratis verktyg som samlar dina jobbansökningar, påminnelser och Platsbanken på ett ställe."

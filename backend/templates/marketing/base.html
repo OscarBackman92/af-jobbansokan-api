@@ -4,6 +4,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      (function () {
+        var valid = { command: 1, daylight: 1, signal: 1 };
+        var t = localStorage.getItem("theme");
+        if (!valid[t]) {
+          t = window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "command"
+            : "daylight";
+        }
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
     <title>{% block title %}Jobbsöket — koll på hela ditt jobbsök{% endblock %}</title>
     <meta
       name="description"
@@ -41,12 +53,17 @@
       </header>
       {% block content %}{% endblock %}
       <footer class="marketing-footer">
-        <p>
-          Jobbsöket — din ansökningsdata är din. Exportera som CSV eller radera kontot
-          och allt med det.
-          <a href="{{ privacy_url }}">Integritetspolicy</a>
-        </p>
+        <span class="footer-kicker">Jobbsöket</span>
+        Din ansökningsdata är din: exportera som CSV eller radera kontot och allt
+        med det.{" "}
+        <a href="{{ privacy_url }}">Integritetspolicy</a>
+        <div class="theme-picker" aria-label="Visuellt tema">
+          <button type="button" data-theme="command">Command</button>
+          <button type="button" data-theme="daylight">Daylight</button>
+          <button type="button" data-theme="signal">Signal</button>
+        </div>
       </footer>
     </div>
+    <script src="{% static 'marketing/theme.js' %}"></script>
   </body>
 </html>

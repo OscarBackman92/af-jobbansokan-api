@@ -23,8 +23,11 @@
 <main>
   <section class="marketing-hero">
     <div>
-      <span class="kicker">Gratis jobbsök-tracker</span>
-      <h2>Sluta tappa bort dina ansökningar.</h2>
+      <span class="section-kicker">Gratis jobbsök-tracker</span>
+      <h2>
+        Sluta tappa bort
+        <span class="grad">dina ansökningar.</span>
+      </h2>
       <p class="lede">
         Jobbsöket samlar pipeline, påminnelser och Platsbanken på ett ställe — så du
         vet vad som händer idag och vad du ska göra härnäst.
@@ -46,14 +49,16 @@
         uppföljningar. Jobbsöket är din personliga tavla — inte en rekryteringstjänst.
       </p>
       <a class="btn-primary" href="{{ app_url }}">Logga in eller skapa konto</a>
-      <div class="metric-row" aria-hidden="true">
-        <div class="metric">
+      <div class="metric-grid" aria-hidden="true">
+        <div class="metric-tile">
+          <span class="metric-label">Pipeline</span>
           <strong>7</strong>
-          <span>steg i pipelinen</span>
+          <span class="metric-detail">steg</span>
         </div>
-        <div class="metric">
+        <div class="metric-tile">
+          <span class="metric-label">Data</span>
           <strong>100%</strong>
-          <span>din data</span>
+          <span class="metric-detail">din kontroll</span>
         </div>
       </div>
     </aside>

@@ -7,6 +7,12 @@ import PasswordInput from "./PasswordInput.jsx";
 export default function AuthHero({ onLogin }) {
   return (
     <div className="auth-screen">
+      <a className="auth-screen-brand" href="/">
+        <div className="logo" aria-hidden="true">
+          J
+        </div>
+        <span>Jobbsöket</span>
+      </a>
       <AuthCard onLogin={onLogin} />
       <p className="auth-screen-back">
         <a href="/">Om Jobbsöket</a>
