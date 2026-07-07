@@ -11,10 +11,13 @@ def client():
 
 def test_landing_page_is_public_html(client):
     response = client.get("/")
+    body = response.content.decode()
     assert response.status_code == 200
-    assert "Jobbsöket" in response.content.decode()
-    assert "Kom igång gratis" in response.content.decode()
-    assert 'rel="canonical"' in response.content.decode()
+    assert "Jobbsöket" in body
+    assert "Kom igång gratis" in body
+    assert "Logga in" in body
+    assert "Öppna appen" not in body
+    assert 'rel="canonical"' in body
 
 
 def test_privacy_page_is_public(client):
