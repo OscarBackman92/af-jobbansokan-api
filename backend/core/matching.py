@@ -4,7 +4,6 @@ import re
 from functools import lru_cache
 from types import SimpleNamespace
 
-
 from .skill_canonical import skill_match_terms
 
 
@@ -51,7 +50,9 @@ def match_skills(skills: list[str], posting) -> dict:
 
 def match_evidence(evidence: list[dict], posting) -> dict:
     """Match confirmed evidence against posting text with source attribution."""
-    confirmed = [item for item in evidence if item.get("confirmed") and item.get("term")]
+    confirmed = [
+        item for item in evidence if item.get("confirmed") and item.get("term")
+    ]
     terms = [item["term"] for item in confirmed]
     base = match_skills(terms, posting)
     matched_detail = []

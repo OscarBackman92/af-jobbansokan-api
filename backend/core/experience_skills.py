@@ -172,7 +172,9 @@ def suggest_skills_from_experience(
             if lowered in seen:
                 continue
             seen.add(lowered)
-            suggestions[category].append({"label": canonical_skill_label(label), "source": source})
+            suggestions[category].append(
+                {"label": canonical_skill_label(label), "source": source}
+            )
 
     return suggestions
 

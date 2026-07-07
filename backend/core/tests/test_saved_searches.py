@@ -55,6 +55,8 @@ def test_delete_saved_search(api_client, user):
 def test_rename_saved_search(api_client, user):
     saved = SavedJobSearch.objects.create(owner=user, label="Old", q="dev")
     api_client.force_authenticate(user)
-    response = api_client.patch(f"{URL}{saved.id}/", {"label": "Python distans"}, format="json")
+    response = api_client.patch(
+        f"{URL}{saved.id}/", {"label": "Python distans"}, format="json"
+    )
     assert response.status_code == 200
     assert response.json()["label"] == "Python distans"

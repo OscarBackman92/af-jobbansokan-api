@@ -398,7 +398,10 @@ def test_suggest_skills_endpoint(api_client, user):
     api_client.force_authenticate(user)
     body = api_client.post(
         SUGGEST_URL,
-        {"experience": FINANCE_EXPERIENCE, "skill_groups": {"technical": [], "domain": [], "languages": []}},
+        {
+            "experience": FINANCE_EXPERIENCE,
+            "skill_groups": {"technical": [], "domain": [], "languages": []},
+        },
         format="json",
     ).json()
     labels = [item["label"] for item in body["suggestions"]["technical"]]

@@ -22,7 +22,7 @@ import {
   setActiveProfile,
   updateProfileLabel,
 } from "../jobProfiles.js";
-import { getMarketHints, recordJobMatchGaps } from "../marketHints.js";
+import { getMarketHints } from "../marketHints.js";
 
 export default function ProfilePanel({ token, me, onMeChange, onLogout, profileLeaveGuardRef }) {
   return (

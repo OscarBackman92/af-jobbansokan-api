@@ -1,4 +1,3 @@
-import pytest
 from core.experience_skills import (
     has_skill_suggestions,
     suggest_skills_from_experience,
@@ -25,11 +24,7 @@ attestflöden, säkerställer regelefterlevnad (skatt, moms, redovisning).
 
 def test_suggest_finance_experience_includes_wint_and_domain_terms():
     suggestions = suggest_skills_from_experience(FINANCE_EXPERIENCE)
-    labels = {
-        item["label"].lower()
-        for items in suggestions.values()
-        for item in items
-    }
+    labels = {item["label"].lower() for items in suggestions.values() for item in items}
     assert "wint" in labels
     assert "kontering" in labels
     assert "bokföring" in labels
@@ -70,6 +65,4 @@ def test_suggest_includes_source_per_row():
 
 def test_has_skill_suggestions():
     assert not has_skill_suggestions({"technical": [], "domain": [], "languages": []})
-    assert has_skill_suggestions(
-        suggest_skills_from_experience(FINANCE_EXPERIENCE)
-    )
+    assert has_skill_suggestions(suggest_skills_from_experience(FINANCE_EXPERIENCE))

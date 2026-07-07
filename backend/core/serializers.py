@@ -13,26 +13,25 @@ from rest_framework import serializers
 
 from .ad_url import ad_urls_equivalent, normalize_ad_url
 from .email_delivery import register_user_with_verification
-from .matching import match_application, match_application_evidence
 from .job_profiles import (
     active_profile,
     confirmed_evidence,
     evidence_to_skill_groups,
     normalize_job_profiles,
     profiles_from_skill_groups,
-    profile_skill_terms,
+)
+from .matching import match_application, match_application_evidence
+from .models import (
+    ApplicationEvent,
+    JobApplication,
+    Resume,
+    SavedJobSearch,
 )
 from .skill_groups import (
     EMPTY_SKILL_GROUPS,
     flatten_skill_groups,
     normalize_skill_groups,
     skill_groups_from_flat,
-)
-from .models import (
-    ApplicationEvent,
-    JobApplication,
-    Resume,
-    SavedJobSearch,
 )
 from .tokens import revoke_refresh_tokens
 
@@ -292,7 +291,9 @@ class ResumeSerializer(serializers.ModelSerializer):
         try:
             profiles = normalize_job_profiles(obj.job_profiles, headline=obj.headline)
         except ValueError:
-            profiles = profiles_from_skill_groups(obj.skill_groups, headline=obj.headline)
+            profiles = profiles_from_skill_groups(
+                obj.skill_groups, headline=obj.headline
+            )
         return active_profile(profiles).get("id")
 
     def validate_job_profiles(self, value):
@@ -372,15 +373,21 @@ class ResumeSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         headline = data.get("headline") or ""
         try:
-            profiles = normalize_job_profiles(data.get("job_profiles") or [], headline=headline)
+            profiles = normalize_job_profiles(
+                data.get("job_profiles") or [], headline=headline
+            )
         except ValueError:
-            profiles = profiles_from_skill_groups(data.get("skill_groups") or {}, headline=headline)
+            profiles = profiles_from_skill_groups(
+                data.get("skill_groups") or {}, headline=headline
+            )
         if not profiles or (
             not any(p.get("evidence") for p in profiles)
             and data.get("skill_groups")
             and any(normalize_skill_groups(data.get("skill_groups") or {}).values())
         ):
-            profiles = profiles_from_skill_groups(data.get("skill_groups") or {}, headline=headline)
+            profiles = profiles_from_skill_groups(
+                data.get("skill_groups") or {}, headline=headline
+            )
         active = active_profile(profiles)
         groups = evidence_to_skill_groups(confirmed_evidence(active))
         if not any(groups.values()) and data.get("skills"):

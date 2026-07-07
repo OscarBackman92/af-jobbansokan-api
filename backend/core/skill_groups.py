@@ -57,7 +57,9 @@ def flatten_skill_groups(groups: dict[str, list[str]]) -> list[str]:
 def skill_groups_from_flat(skills: list[str]) -> dict[str, list[str]]:
     """Legacy flat skills → all in technical."""
     return {
-        "technical": [item.strip() for item in skills if isinstance(item, str) and item.strip()],
+        "technical": [
+            item.strip() for item in skills if isinstance(item, str) and item.strip()
+        ],
         "domain": [],
         "languages": [],
     }

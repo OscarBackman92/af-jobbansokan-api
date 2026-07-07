@@ -30,14 +30,6 @@ from rest_framework.views import APIView
 from core.email_health import email_delivery_warnings
 
 from .csv_safety import sanitize_csv_cell
-from .jobtech import (
-    OCCUPATION_FIELDS,
-    REGIONS,
-    JobTechError,
-    municipalities,
-    occupation_groups,
-)
-from .jobtech import search as jobtech_search
 from .experience_skills import (
     merge_skill_suggestions,
     skills_list_to_suggestions,
@@ -51,8 +43,14 @@ from .job_profiles import (
     profile_skill_terms,
     profiles_from_skill_groups,
 )
-from .skill_groups import EMPTY_SKILL_GROUPS, normalize_skill_groups, skill_groups_from_flat
-from .throttles import JobTechThrottle, UploadThrottle
+from .jobtech import (
+    OCCUPATION_FIELDS,
+    REGIONS,
+    JobTechError,
+    municipalities,
+    occupation_groups,
+)
+from .jobtech import search as jobtech_search
 from .matching import match_evidence, match_skills
 from .models import JobApplication, Resume, SavedJobSearch
 from .permissions import IsAuthenticatedUser
@@ -71,6 +69,12 @@ from .serializers import (
     ResumeUploadSerializer,
     SavedJobSearchSerializer,
 )
+from .skill_groups import (
+    EMPTY_SKILL_GROUPS,
+    normalize_skill_groups,
+    skill_groups_from_flat,
+)
+from .throttles import JobTechThrottle, UploadThrottle
 
 
 def _resume_match_context(user) -> dict:
@@ -618,7 +622,9 @@ def job_search(request):
     evidence = match_ctx["cv_evidence"] or None
     if evidence or skills:
         for job in data["results"]:
-            posting = SimpleNamespace(title=job["title"], description=job["description"])
+            posting = SimpleNamespace(
+                title=job["title"], description=job["description"]
+            )
             if evidence:
                 job["match"] = match_evidence(evidence, posting)
             else:

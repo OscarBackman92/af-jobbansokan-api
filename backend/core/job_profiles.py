@@ -45,7 +45,9 @@ def _normalize_source(raw: Any) -> dict:
     index = raw.get("index")
     if source_type in {"experience", "education"}:
         if not isinstance(index, int) or index < 0:
-            raise ValueError("Experience/education evidence requires a non-negative index.")
+            raise ValueError(
+                "Experience/education evidence requires a non-negative index."
+            )
     else:
         index = None
     label = str(raw.get("label") or "").strip()
@@ -165,7 +167,11 @@ def profiles_from_skill_groups(
                     "id": _new_id(),
                     "term": term,
                     "category": category,
-                    "source": {"type": "manual", "index": None, "label": "Manuellt tillagd"},
+                    "source": {
+                        "type": "manual",
+                        "index": None,
+                        "label": "Manuellt tillagd",
+                    },
                     "confirmed": True,
                 }
             )
@@ -238,7 +244,9 @@ def add_evidence_to_profile(
 def remove_evidence_term(profile: dict, term: str) -> dict:
     lowered = term.lower()
     evidence = [
-        item for item in profile.get("evidence", []) if item.get("term", "").lower() != lowered
+        item
+        for item in profile.get("evidence", [])
+        if item.get("term", "").lower() != lowered
     ]
     return {**profile, "evidence": evidence}
 

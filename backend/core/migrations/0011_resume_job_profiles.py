@@ -65,5 +65,7 @@ class Migration(migrations.Migration):
             name="job_profiles",
             field=models.JSONField(blank=True, default=list),
         ),
-        migrations.RunPython(migrate_skill_groups_to_profiles, migrations.RunPython.noop),
+        migrations.RunPython(
+            migrate_skill_groups_to_profiles, migrations.RunPython.noop
+        ),
     ]

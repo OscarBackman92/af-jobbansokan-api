@@ -177,7 +177,9 @@ def _valid_municipality_ids(ids: list[str]) -> list[str]:
         if not municipality_id or municipality_id in seen:
             continue
         for region_id in _REGION_IDS:
-            if any(option["id"] == municipality_id for option in municipalities(region_id)):
+            if any(
+                option["id"] == municipality_id for option in municipalities(region_id)
+            ):
                 valid.append(municipality_id)
                 seen.add(municipality_id)
                 break

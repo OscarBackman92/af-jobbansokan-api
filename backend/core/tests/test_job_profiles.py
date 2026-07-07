@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 from core.job_profiles import (
     active_profile,
@@ -8,7 +10,6 @@ from core.job_profiles import (
     profiles_from_skill_groups,
 )
 from core.matching import match_evidence
-from types import SimpleNamespace
 
 pytestmark = pytest.mark.django_db
 
