@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { request } from "../api.js";
+import PasswordInput from "./PasswordInput.jsx";
 
 // Shown when the user arrives from the reset e-mail link
 // (/?reset_uid=...&reset_token=...). Sets a new password via the
@@ -64,8 +65,7 @@ export default function ResetPassword({ uid, token, onDone }) {
         <p className="muted">Ange ditt nya lösenord nedan.</p>
         <label>
           Nytt lösenord
-          <input
-            type="password"
+          <PasswordInput
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
@@ -74,8 +74,7 @@ export default function ResetPassword({ uid, token, onDone }) {
         </label>
         <label>
           Bekräfta lösenord
-          <input
-            type="password"
+          <PasswordInput
             value={password2}
             onChange={(e) => setPassword2(e.target.value)}
             autoComplete="new-password"

@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { request } from "../api.js";
 import { googleClientId, startGoogleLogin } from "../googleAuth.js";
+import PasswordInput from "./PasswordInput.jsx";
 
 export default function AuthHero({ onLogin }) {
   return (
@@ -149,8 +150,7 @@ function AuthCard({ onLogin }) {
       {mode !== "forgot" && (
         <label>
           Lösenord
-          <input
-            type="password"
+          <PasswordInput
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete={mode === "login" ? "current-password" : "new-password"}
