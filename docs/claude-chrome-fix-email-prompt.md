@@ -14,7 +14,7 @@ Claude ska be dig klistra in nyckeln **direkt i Render/Brevo** — inte i chatte
 Du hjälper mig felsöka och åtgärda att Jobbsöket INTE kan skicka verifieringsmejl i produktion.
 
 ## Känt läge (QA redan körd)
-- URL: https://ansokt.onrender.com
+- URL: https://jobbjungeln.onrender.com
 - GET /health/ → {"status":"ok"} (inga warnings före senaste deploy)
 - POST /dj-rest-auth/registration/ → HTTP 400
 - Fel i UI: "Vi kunde inte skicka verifieringsmejlet just nu. Försök igen om en stund."
@@ -37,11 +37,11 @@ Avsluta med verifiering att registrering fungerar.
 
 # STEG 1 — Bekräfta felet (snabbcheck)
 
-1. Öppna https://ansokt.onrender.com/health/ — rapportera JSON.
+1. Öppna https://jobbjungeln.onrender.com/health/ — rapportera JSON.
    - `email_not_configured` → BREVO_API_KEY saknas helt
    - `email_delivery_unavailable:brevo_api_key_rejected` → nyckeln ogiltig (efter senaste kod-deploy)
    - Bara `ok` → nyckeln finns men utskick kan ändå fallera (ofta avsändare)
-2. Öppna https://ansokt.onrender.com utloggad → försök registrera med engångs-testmejl (be mig fylla i lösenord själv) — bekräfta fortfarande 400?
+2. Öppna https://jobbjungeln.onrender.com utloggad → försök registrera med engångs-testmejl (be mig fylla i lösenord själv) — bekräfta fortfarande 400?
 
 ---
 
@@ -55,7 +55,7 @@ Kontrollera att dessa **finns** (ja/nej — inte visa värdena):
 |----------|--------|-----------|
 | BREVO_API_KEY | | Ska vara satt (v3-nyckel från Brevo) |
 | DEFAULT_FROM_EMAIL | | Måste matcha verifierad avsändare i Brevo |
-| FRONTEND_URL | | t.ex. https://ansokt.onrender.com |
+| FRONTEND_URL | | t.ex. https://jobbjungeln.onrender.com |
 | DJANGO_DEBUG | | Ska vara 0 |
 
 Om BREVO_API_KEY saknas eller är gammal:

@@ -5,7 +5,7 @@ Claude in Chrome med appen öppen på rätt URL.
 
 ## Innan du startar
 
-1. Öppna **https://ansokt.onrender.com** i Chrome (eller din lokala URL).
+1. Öppna **https://jobbjungeln.onrender.com** i Chrome (eller din lokala URL).
 2. Ha ett **testkonto** redo (e-post du kan läsa). Dela **aldrig** lösenord i chatten —
    fyll i lösenord själv när Claude ber dig.
 3. **Mejl** (verifiering, återställning, cron) kan Claude normalt **inte** läsa —
@@ -29,7 +29,7 @@ Du är QA-testare för webbappen Jobbsöket (jobbsöknings-tavla). Jag har appen
 - Vid fel: beskriv exakt vad som hände, vilken sida/flik, och om möjligt konsolfel (F12).
 
 ## Miljö
-- URL: [FYLL I: t.ex. https://ansokt.onrender.com]
+- URL: [FYLL I: t.ex. https://jobbjungeln.onrender.com]
 - Enhet för denna körning: [FYLL I: Dator / DevTools mobil / Riktig telefon]
 - Inloggad: [FYLL I: Ja/Nej — om ja, vilket konto utan lösenord]
 
@@ -151,7 +151,7 @@ Här är mina resultat från test på riktig telefon (Safari/Chrome):
 
 Enhet: [t.ex. iPhone 15 / Samsung S24]
 Webbläsare: [Safari / Chrome]
-URL: https://ansokt.onrender.com
+URL: https://jobbjungeln.onrender.com
 
 Fungerade:
 -

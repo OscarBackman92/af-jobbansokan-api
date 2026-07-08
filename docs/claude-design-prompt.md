@@ -4,7 +4,7 @@ Använd denna prompt med **Claude in Chrome** (appen öppen i fliken) eller i va
 Claude-chatt med skärmdumpar. Målet är en **konkret design- och UX-granskning** —
 inte generisk inspiration, utan prioriterade förbättringar som går att implementera.
 
-**Produktion:** https://ansokt.onrender.com  
+**Produktion:** https://jobbjungeln.onrender.com  
 **Stack:** React + Vite, en CSS-fil (`frontend/src/styles.css`), inget Tailwind/shadcn.
 
 ---
@@ -165,7 +165,7 @@ Börja med DEL 1 vy 1 (Header). Fråga om inloggning om du behöver se Tavlan.
 Om du vill granska **en** vy (snabbare):
 
 ```
-Designgranska endast [Tavlan / Annonser / Profil & CV / Auth] i Jobbsöket på https://ansokt.onrender.com.
+Designgranska endast [Tavlan / Annonser / Profil & CV / Auth] i Jobbsöket på https://jobbjungeln.onrender.com.
 Tema: [command / daylight / signal]. Enhet: [desktop / 390px mobil].
 Leverera: första intryck, 5 problem, 5 konkreta CSS-vänliga fixes med prioritet. Svenska.
 ```

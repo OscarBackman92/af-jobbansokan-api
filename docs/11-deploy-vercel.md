@@ -14,7 +14,7 @@ oförändrat.
 ## 1. Backend på Render (gör detta först)
 
 Följ README:s deploy-avsnitt (Render → New → Blueprint → välj repot).
-När det är klart har du en URL, t.ex. `https://ansokt.onrender.com`.
+När det är klart har du en URL, t.ex. `https://jobbjungeln.onrender.com`.
 Verifiera att `https://<din-backend>/health/` svarar `{"status":"ok"}`.
 
 ## 2. Peka vercel.json mot backend

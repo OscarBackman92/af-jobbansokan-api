@@ -4,7 +4,7 @@ Kopiera **hela prompten** i rutan nedan till ChatGPT (eller Claude).
 Testaren utför stegen i webbläsaren och fyller i rapporten **exakt** enligt mallen —  
 rapporten klistras sedan in i **Cursor** till utvecklingsagenten.
 
-**Produktion:** https://ansokt.onrender.com  
+**Produktion:** https://jobbjungeln.onrender.com  
 **Appnamn:** Jobbsöket — svensk jobbsöknings-tavla med Platsbanken, CV-matchning och GDPR.
 
 ---
@@ -33,7 +33,7 @@ Du är senior QA-testare för webbappen Jobbsöket. Din uppgift är att guida mi
 - Skriv på svenska.
 
 ## Testmiljö (jag fyller i)
-- URL: https://ansokt.onrender.com
+- URL: https://jobbjungeln.onrender.com
 - Datum: [IDAG]
 - Enhet dator: [t.ex. Windows Chrome / Mac Safari]
 - Enhet mobil: [telefon + webbläsare, eller HOPPAT]
@@ -57,18 +57,18 @@ Du är senior QA-testare för webbappen Jobbsöket. Din uppgift är att guida mi
 ## MODUL 0 — Förberedelse & infrastruktur
 
 ### 0.1 Health check
-1. Öppna ny flik: `https://ansokt.onrender.com/health/`
+1. Öppna ny flik: `https://jobbjungeln.onrender.com/health/`
 2. Notera hela JSON-svaret.
 
 **Förväntat:** `{"status":"ok"}` utan `warnings`, eller med tydliga warnings (t.ex. `email_not_configured`).
 
 ### 0.2 security.txt
-1. Öppna `https://ansokt.onrender.com/.well-known/security.txt`
+1. Öppna `https://jobbjungeln.onrender.com/.well-known/security.txt`
 
 **Förväntat:** HTTP 200 med `Contact: mailto:…` ELLER 404 om CONTACT_EMAIL ej satt.
 
 ### 0.3 Swagger (säkerhet)
-1. Utloggad: öppna `https://ansokt.onrender.com/api/docs/`
+1. Utloggad: öppna `https://jobbjungeln.onrender.com/api/docs/`
 
 **Förväntat:** 401 eller 403 (inte öppen API-dokumentation för alla).
 

@@ -19,6 +19,8 @@ from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
 
+from config.frontend_url import resolve_frontend_url
+
 # Paths & Environment
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
@@ -284,7 +286,7 @@ CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "")
 
 # Where the password-reset link should point (the SPA). Falls back to the
 # request origin when unset (works for local dev and single-service Render).
-FRONTEND_URL = os.getenv("FRONTEND_URL", "")
+FRONTEND_URL = resolve_frontend_url()
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),

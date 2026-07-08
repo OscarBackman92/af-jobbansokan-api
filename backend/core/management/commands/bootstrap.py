@@ -30,7 +30,7 @@ class Command(BaseCommand):
         allauth prefixes e-mail subjects with [site.domain]; the default
         example.com looks unprofessional and hurts deliverability.
         """
-        frontend = os.getenv("FRONTEND_URL", "").strip()
+        frontend = settings.FRONTEND_URL.strip()
         if not frontend:
             render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
             if render_host:

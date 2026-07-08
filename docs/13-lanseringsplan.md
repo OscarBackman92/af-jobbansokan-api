@@ -6,7 +6,7 @@ appen redo för riktiga användare" och därefter retention.
 
 ## Lägesbild
 
-Appen är i drift på <https://ansokt.onrender.com> och funktionellt
+Appen är i drift på <https://jobbjungeln.onrender.com> och funktionellt
 komplett: tavla, tidslinje, fri inmatning, live Platsbanken-sök med
 förklarbar CV-matchning, e-postverifiering, operatör-ID, Sentry, rate
 limiting, cron-påminnelser, sparade sökningar, integritetspolicy, dublett-

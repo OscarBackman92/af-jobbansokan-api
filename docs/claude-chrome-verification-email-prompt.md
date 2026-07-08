@@ -1,7 +1,7 @@
 # Claude in Chrome — testprompt: verifieringsmejl
 
 Kopiera prompten nedan till Claude in Chrome. Appen ska vara öppen på
-**https://ansokt.onrender.com** (utloggad om du ska registrera nytt konto).
+**https://jobbjungeln.onrender.com** (utloggad om du ska registrera nytt konto).
 
 **Viktigt:** Claude kan **inte** läsa din Gmail/Outlook. Du måste själv kolla
 inkorgen och antingen klicka länken eller klistra in länktexten i chatten.
@@ -31,7 +31,7 @@ Du är QA-testare för Jobbsöket. Jag vill verifiera att registreringsmejl (e-p
 - Avsluta med en strukturerad rapport på svenska.
 
 ## Miljö
-- URL: https://ansokt.onrender.com
+- URL: https://jobbjungeln.onrender.com
 - Test-e-post (jag fyller i): [FYLL I eller säg "jag anger i formuläret"]
 - Jag är utloggad: [Ja/Nej]
 
@@ -39,7 +39,7 @@ Du är QA-testare för Jobbsöket. Jag vill verifiera att registreringsmejl (e-p
 
 # STEG 0 — E-post konfigurerad på servern?
 
-1. Öppna i ny flik: https://ansokt.onrender.com/health/
+1. Öppna i ny flik: https://jobbjungeln.onrender.com/health/
 2. Rapportera hela JSON-svaret.
 3. Om `"warnings": ["email_not_configured"]` → STOPP, markera BLOCKERAT (BREVO/EMAIL saknas i Render).
 3b. Om `"warnings": ["email_delivery_unavailable:..."]` → STOPP, markera BLOCKERAT (Brevo-nyckel eller API fel — se felsökning i slutet av prompt-dokumentet).
@@ -155,7 +155,7 @@ Börja med STEG 0. Fråga om jag är utloggad och vilken test-e-post jag ska anv
 ```
 Mejlet kom. Ämne: "Bekräfta din e-postadress — Jobbsöket"
 Avsändare: [t.ex. no-reply@...]
-Länk: https://ansokt.onrender.com/?verify_key=XXXX
+Länk: https://jobbjungeln.onrender.com/?verify_key=XXXX
 
 Fortsätt med STEG 3–4 i testplanen.
 ```

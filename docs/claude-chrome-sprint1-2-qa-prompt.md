@@ -1,7 +1,7 @@
 # Claude in Chrome — testprompt: Sprint 1 & 2 (UX)
 
 Kopiera prompten nedan till Claude in Chrome. Appen ska vara öppen på
-**https://ansokt.onrender.com** (inloggad med ett konto som har **CV med
+**https://jobbjungeln.onrender.com** (inloggad med ett konto som har **CV med
 kompetenser** och **minst 2–3 ansökningar** på tavlan i olika statusar).
 
 **Release:** commit `c08249e` eller senare (scroll-fix, CV-flikvarning). Ursprunglig
@@ -35,7 +35,7 @@ Vid paginering i Annonser scrollade "← Föregående" och ny sökning till resu
 - Avsluta med kort rapport på svenska: ✅ / ⚠️ / ❌.
 
 ## Miljö
-- URL: https://ansokt.onrender.com
+- URL: https://jobbjungeln.onrender.com
 - Deploy: c08249e eller senare (bekräfta att sidan laddats om efter deploy)
 
 ---
@@ -104,7 +104,7 @@ Du är QA-testare för Jobbsöket. Jag vill verifiera Sprint 1 & 2 UX-ändringar
 - Avsluta med en strukturerad rapport på svenska.
 
 ## Miljö
-- URL: https://ansokt.onrender.com
+- URL: https://jobbjungeln.onrender.com
 - Inloggad: [FYLL I: Ja/Nej]
 - CV med kompetenser: [FYLL I: Ja/Nej — lista gärna 2–3 skills]
 - Antal ansökningar på tavlan: [FYLL I: ungefärligt antal]
