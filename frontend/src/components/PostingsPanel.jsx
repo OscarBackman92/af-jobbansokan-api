@@ -192,7 +192,9 @@ export default function PostingsPanel() {
       setError(
         err.status === 502
           ? "Kunde inte nå Platsbanken just nu. Försök igen om en stund."
-          : err.message
+          : err.status >= 500
+            ? "Sökningen misslyckades på servern. Prova färre filter eller försök igen."
+            : err.message
       );
       setData(null);
     } finally {

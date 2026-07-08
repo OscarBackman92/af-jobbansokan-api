@@ -98,6 +98,8 @@ def _resume_match_context(user) -> dict:
             )
         else:
             profiles = normalize_job_profiles(profiles or [], headline=resume.headline)
+    if not profiles:
+        return {"cv_skills": [], "cv_evidence": []}
     profile = active_profile(profiles)
     evidence = confirmed_evidence(profile)
     return {

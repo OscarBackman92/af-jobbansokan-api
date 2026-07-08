@@ -11,6 +11,7 @@ the UI asks for a selected field's Platsbanken subcategories.
 from __future__ import annotations
 
 import os
+import re
 from functools import lru_cache
 
 import requests
@@ -77,6 +78,8 @@ OCCUPATION_FIELDS = [
 
 _REGION_IDS = {cid for cid, _ in REGIONS}
 _FIELD_IDS = {cid for cid, _ in OCCUPATION_FIELDS}
+# JobTech concept ids are short opaque tokens from taxonomy/search APIs.
+_CONCEPT_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_]{0,63}$")
 
 
 class JobTechError(Exception):
@@ -170,20 +173,28 @@ def municipalities(region_id: str) -> list[dict[str, str]]:
     return locations
 
 
-def _valid_municipality_ids(ids: list[str]) -> list[str]:
+def _dedupe_concept_ids(ids: list[str]) -> list[str]:
+    """Keep unique, well-formed JobTech concept ids without taxonomy lookups.
+
+    IDs come from our own municipality/group endpoints; re-validating each
+    one against taxonomy on every search was slow enough to time out when
+    many filters were selected.
+    """
     valid: list[str] = []
     seen: set[str] = set()
-    for municipality_id in ids:
-        if not municipality_id or municipality_id in seen:
-            continue
-        for region_id in _REGION_IDS:
-            if any(
-                option["id"] == municipality_id for option in municipalities(region_id)
-            ):
-                valid.append(municipality_id)
-                seen.add(municipality_id)
-                break
+    for concept_id in ids:
+        if (
+            concept_id
+            and concept_id not in seen
+            and _CONCEPT_ID_RE.fullmatch(concept_id)
+        ):
+            valid.append(concept_id)
+            seen.add(concept_id)
     return valid
+
+
+def _valid_municipality_ids(ids: list[str]) -> list[str]:
+    return _dedupe_concept_ids(ids)
 
 
 def _valid_region_ids(ids: list[str]) -> list[str]:
@@ -197,17 +208,7 @@ def _valid_region_ids(ids: list[str]) -> list[str]:
 
 
 def _valid_occupation_group_ids(ids: list[str]) -> list[str]:
-    valid: list[str] = []
-    seen: set[str] = set()
-    for group_id in ids:
-        if not group_id or group_id in seen:
-            continue
-        for field_id in _FIELD_IDS:
-            if any(option["id"] == group_id for option in occupation_groups(field_id)):
-                valid.append(group_id)
-                seen.add(group_id)
-                break
-    return valid
+    return _dedupe_concept_ids(ids)
 
 
 def _valid_occupation_field_ids(ids: list[str]) -> list[str]:
@@ -251,9 +252,10 @@ def search(
 ) -> dict:
     """Query JobTech live and return {"total": int, "results": [job, ...]}.
 
-    Unknown concept IDs are ignored rather than passed upstream (where
-    they would 400). Multiple values for the same filter are OR-ed by
-    JobTech, matching Platsbanken's multi-select behaviour.
+    Malformed concept IDs are ignored. Municipality and occupation-group IDs
+    are forwarded when well-formed — JobTech returns zero hits for unknown
+    ids instead of erroring. Region and occupation-field ids are checked
+    against the built-in taxonomy lists.
     """
     params: list[tuple[str, object]] = [
         ("offset", max(0, offset)),

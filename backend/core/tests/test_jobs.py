@@ -169,27 +169,23 @@ def test_search_maps_hits(api_client, user, mock_jobtech):
     assert mock_jobtech[0]["q"] == "python"
 
 
-def test_search_forwards_known_filters_only(
-    api_client, user, mock_jobtech, monkeypatch
-):
-    monkeypatch.setattr(jobtech, "occupation_groups", lambda field: [])
-    monkeypatch.setattr(jobtech, "municipalities", lambda region: [])
+def test_search_forwards_known_filters_only(api_client, user, mock_jobtech):
     api_client.force_authenticate(user)
     api_client.get(
         SEARCH_URL,
         {
             "region": "CifL_Rzy_Mku",
-            "municipality": "bogus-id",
+            "municipality": "bogus_id_xx",
             "field": "bogus-id",
-            "group": "bogus-id",
+            "group": "bogus_id_yy",
             "remote": "true",
         },
     )
     sent = mock_jobtech[0]
-    assert sent["region"] == "CifL_Rzy_Mku"
-    assert "municipality" not in sent  # unknown id dropped
-    assert "occupation-field" not in sent  # unknown id dropped
-    assert "occupation-group" not in sent  # unknown id dropped
+    assert "region" not in sent  # municipality filter takes precedence
+    assert sent["municipality"] == "bogus_id_xx"
+    assert "occupation-field" not in sent  # unknown field id dropped
+    assert sent["occupation-group"] == "bogus_id_yy"
     assert sent["remote"] == "true"
 
 
@@ -239,6 +235,33 @@ def test_search_forwards_known_municipality(
     sent = mock_jobtech[0]
     assert "region" not in sent
     assert sent["municipality"] == "AvNB_uwa_6n6"
+
+
+def test_search_many_filters_do_not_validate_against_taxonomy(
+    api_client, user, mock_jobtech, monkeypatch
+):
+    """Regression: many municipality/group filters must not fan out to taxonomy."""
+
+    def fail_taxonomy(*args, **kwargs):
+        raise AssertionError("taxonomy should not be called during search")
+
+    monkeypatch.setattr(jobtech, "municipalities", fail_taxonomy)
+    monkeypatch.setattr(jobtech, "occupation_groups", fail_taxonomy)
+
+    municipalities = [f"mun_{index}_xx" for index in range(11)]
+    groups = [f"grp_{index}_yy" for index in range(19)]
+    api_client.force_authenticate(user)
+    response = api_client.get(
+        SEARCH_URL,
+        {
+            "municipality": municipalities,
+            "group": groups,
+        },
+    )
+    assert response.status_code == 200
+    sent = mock_jobtech[0]
+    assert "municipality" in sent
+    assert "occupation-group" in sent
 
 
 def test_search_adds_cv_match(api_client, user, mock_jobtech):
