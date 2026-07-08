@@ -3,23 +3,26 @@
 Steg för säkerhetsåtgärder 1–6. Kodändringar för 4–6 sker i repot;
 1–3 kräver åtgärder i Render och Sentry. GDPR-åtgärder: se punkt 7.
 
-## 1. Betald Postgres i EU (Frankfurt)
+## 1. Postgres i EU (Supabase)
 
-**Vad det betyder:** Databasen försvinner inte efter 30 dagar (gratisnivå) och
-data lagras i EU enligt GDPR.
+**Vad det betyder:** Användardata lagras i EU (GDPR). Supabase hanterar
+backuper och SQL-konsol; Django på Render ansluter via `DATABASE_URL`.
 
-**Ny deploy (render.yaml):** `plan: basic-256mb`, `region: frankfurt` (~$6/mån).
+**Ny deploy:**
 
-**Befintlig deploy på Render (t.ex. Oregon + free):**
+1. Skapa Supabase-projekt i **EU** (t.ex. Frankfurt / `eu-central-1`).
+2. Kopiera **Session pooler** connection string (port **5432**, inte Transaction 6543).
+3. Sätt `DATABASE_URL` på Render-webbtjänsten **ansokt** (cron ärver värdet).
+4. Migrera data från gammal databas om du byter leverantör — se
+   [claude-chrome-supabase-prompt.md](claude-chrome-supabase-prompt.md).
 
-1. Render Dashboard → **ansokt-db** → **Upgrade** → Basic 256 MB.
-2. Region kan **inte** ändras på befintlig databas. För EU:
-   - Skapa ny Postgres i **Frankfurt** (Basic 256 MB).
-   - Exportera data: `pg_dump` från gamla → importera till nya.
-   - Uppdatera `DATABASE_URL` på webbtjänsten och cron.
-   - Ta bort gamla databasen när allt fungerar.
-3. Webbtjänst: uppgradera till **Starter** (~$7/mån) och sätt **region:
-   Frankfurt** (samma region som databasen = snabbare + privat nät).
+**Befintlig deploy med Render Postgres:**
+
+1. Exportera med `pg_dump`, importera till Supabase med `pg_restore`.
+2. Uppdatera `DATABASE_URL` på web + verifiera cron.
+3. Ta bort Render Postgres när allt fungerar (sparar ~$6/mån).
+
+Webbtjänst: **Starter** i **Frankfurt** (samma region som Supabase EU = lägre latency).
 
 ## 2. Sentry Allowed Domains
 

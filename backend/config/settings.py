@@ -102,8 +102,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL:
-    # Hosted environments (e.g. Render) provide a single URL.
+    # Hosted Postgres (Supabase, Render, etc.) — single URL in production.
     DATABASES = {"default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
+    if not DEBUG:
+        DATABASES["default"].setdefault("OPTIONS", {}).setdefault(
+            "sslmode", "require"
+        )
 else:
     DATABASES = {
         "default": {

@@ -177,8 +177,8 @@ host):
 - **One service serves everything**: the `Dockerfile` builds the frontend
   (Node stage), collects static files, and gunicorn + WhiteNoise serve
   the SPA at `/`, hashed assets, the API and the admin
-- **`render.yaml` blueprint**: web service + managed Postgres; secrets
-  are generated, `DATABASE_URL` is wired from the database
+- **`render.yaml` blueprint**: web service + cron jobs on Render; **Supabase**
+  Postgres in production (`DATABASE_URL` set manually in Render dashboard)
 - **Production hardening** activates when `DJANGO_DEBUG=0`: HSTS,
   SSL redirect (behind proxy header), secure cookies, manifest static
   storage, referrer policy
@@ -317,7 +317,7 @@ stores when the web app is stable.
 - [x] Calendar export (ICS) for follow-ups and deadlines (Idag-panel)
 - [x] Playwright E2E smoke tests in CI
 - [x] Google login (code ready — needs OAuth client + env vars)
-- [ ] EU hosting region (Render Frankfurt) + persistent Postgres
+- [ ] EU hosting: Render Frankfurt + Supabase Postgres (EU)
 - [ ] Custom domain, uptime check and verified e-mail sender domain
 - [x] Weekly summary e-mail (applications, follow-ups, saved-search digest)
 - [ ] XLSX export alongside CSV
@@ -330,6 +330,7 @@ stores when the web app is stable.
 | [18-manuell-test-och-cron.md](docs/18-manuell-test-och-cron.md) | **Cron on Render + manual test checklist (desktop & mobile)** |
 | [claude-chrome-testprompt.md](docs/claude-chrome-testprompt.md) | Copy-paste prompt for Claude in Chrome QA testing |
 | [claude-chrome-verification-email-prompt.md](docs/claude-chrome-verification-email-prompt.md) | Claude in Chrome prompt to test signup verification e-mail |
+| [claude-chrome-supabase-prompt.md](docs/claude-chrome-supabase-prompt.md) | Claude in Chrome prompt to set up Supabase + migrate from Render Postgres |
 | [claude-chrome-fix-email-prompt.md](docs/claude-chrome-fix-email-prompt.md) | Claude in Chrome prompt to fix Brevo/Render e-mail (no API keys in chat) |
 | [claude-chrome-sprint1-2-qa-prompt.md](docs/claude-chrome-sprint1-2-qa-prompt.md) | Claude in Chrome QA for Sprint 1 & 2 UX (scroll, CV, board filters, match) |
 | [claude-design-prompt.md](docs/claude-design-prompt.md) | Claude design/UX audit prompt (visual hierarchy, themes, mobile, top 5 fixes) |

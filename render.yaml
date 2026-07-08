@@ -1,10 +1,9 @@
-# Render blueprint: web service (Docker) + managed Postgres + daily reminders.
+# Render blueprint: web service (Docker) + cron jobs.
+# Database: Supabase Postgres (set DATABASE_URL manually in Render dashboard).
 # Deploy: push to GitHub -> render.com -> New + Blueprint -> select repo.
 #
-# Production security defaults (points 1 & 3):
-# - Paid, persistent Postgres in EU (Frankfurt) — region cannot be changed
-#   after creation; existing Oregon DBs need a manual migration + new DB.
-# - Web on Starter (no cold-start spin-down on free tier).
+# Production security defaults:
+# - Web on Starter in EU (Frankfurt).
 # - Admin username is NOT preset — set DJANGO_SUPERUSER_USERNAME in the
 #   Render dashboard to a unique value (not "admin").
 services:
@@ -19,8 +18,10 @@ services:
         generateValue: true
       - key: DJANGO_DEBUG
         value: "0"
-      # The public hostname is trusted automatically via
-      # RENDER_EXTERNAL_HOSTNAME (set by Render) in settings.py.
+      # Supabase → Project Settings → Database → Connection string (Session mode).
+      # Use URI format with ?sslmode=require. See docs/claude-chrome-supabase-prompt.md.
+      - key: DATABASE_URL
+        sync: false
       # Bootstrap on first boot (idempotent; free tier has no shell):
       - key: DJANGO_SUPERUSER_USERNAME
         sync: false
@@ -28,11 +29,6 @@ services:
         sync: false
       - key: DJANGO_SUPERUSER_PASSWORD
         generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: ansokt-db
-          property: connectionString
-      # E-mail. On Render use Brevo HTTP API (SMTP ports are blocked).
       - key: BREVO_API_KEY
         sync: false
       # Legacy SMTP vars (optional fallback on other hosts):
@@ -93,9 +89,10 @@ services:
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings
       - key: DATABASE_URL
-        fromDatabase:
-          name: ansokt-db
-          property: connectionString
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: DATABASE_URL
       - key: DJANGO_SECRET_KEY
         fromService:
           type: web
@@ -175,9 +172,10 @@ services:
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings
       - key: DATABASE_URL
-        fromDatabase:
-          name: ansokt-db
-          property: connectionString
+        fromService:
+          type: web
+          name: ansokt
+          envVarKey: DATABASE_URL
       - key: DJANGO_SECRET_KEY
         fromService:
           type: web
@@ -233,8 +231,3 @@ services:
           type: web
           name: ansokt
           envVarKey: FRONTEND_URL
-
-databases:
-  - name: ansokt-db
-    plan: basic-256mb
-    region: frankfurt
