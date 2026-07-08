@@ -7,9 +7,17 @@ from config.frontend_url import resolve_frontend_url
     ("frontend_url", "render_host", "expected"),
     [
         ("https://ansokt.onrender.com", "", "https://jobbjungeln.onrender.com"),
-        ("https://ansokt.onrender.com", "jobbjungeln.onrender.com", "https://jobbjungeln.onrender.com"),
+        (
+            "https://ansokt.onrender.com",
+            "jobbjungeln.onrender.com",
+            "https://jobbjungeln.onrender.com",
+        ),
         ("", "jobbjungeln.onrender.com", "https://jobbjungeln.onrender.com"),
-        ("https://jobbjungeln.onrender.com", "jobbjungeln.onrender.com", "https://jobbjungeln.onrender.com"),
+        (
+            "https://jobbjungeln.onrender.com",
+            "jobbjungeln.onrender.com",
+            "https://jobbjungeln.onrender.com",
+        ),
         ("https://jobbsoket.se", "jobbjungeln.onrender.com", "https://jobbsoket.se"),
         ("", "", ""),
     ],

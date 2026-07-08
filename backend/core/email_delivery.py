@@ -28,10 +28,13 @@ def _mail_delivery_errors() -> tuple[type[BaseException], ...]:
 
 def send_signup_verification_email(request, user) -> None:
     """Send the signup confirmation mail or raise a DRF validation error."""
-    from allauth.account.utils import send_email_confirmation
+    from allauth.account.internal.flows.email_verification import (
+        send_verification_email_for_user,
+    )
 
     try:
-        send_email_confirmation(request, user, signup=True)
+        if not send_verification_email_for_user(request, user):
+            raise serializers.ValidationError(_VERIFICATION_MAIL_ERROR)
     except _mail_delivery_errors() as exc:
         logger.exception(
             "Signup verification e-mail failed for %s: %s",

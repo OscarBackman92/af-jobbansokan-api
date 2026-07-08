@@ -36,7 +36,7 @@ def test_register_rolls_back_when_verification_mail_fails(api_client, monkeypatc
         raise TimeoutError("SMTP connection timed out")
 
     monkeypatch.setattr(
-        "allauth.account.utils.send_email_confirmation",
+        "allauth.account.internal.flows.email_verification.send_verification_email_for_user",
         fail_send,
     )
 
