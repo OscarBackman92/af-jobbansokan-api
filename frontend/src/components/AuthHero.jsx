@@ -2,21 +2,22 @@ import { useState } from "react";
 
 import { request } from "../api.js";
 import { googleClientId, startGoogleLogin } from "../googleAuth.js";
+import AuthIntro from "./AuthIntro.jsx";
 import PasswordInput from "./PasswordInput.jsx";
 
 export default function AuthHero({ onLogin }) {
   return (
-    <div className="auth-screen">
-      <a className="auth-screen-brand" href="/">
+    <div className="auth-screen auth-screen--split">
+      <a className="auth-screen-brand auth-screen-brand--mobile" href="/">
         <div className="logo" aria-hidden="true">
           J
         </div>
         <span>Jobbsöket</span>
       </a>
-      <AuthCard onLogin={onLogin} />
-      <p className="auth-screen-back">
-        <a href="/">Om Jobbsöket</a>
-      </p>
+      <AuthIntro />
+      <div className="auth-screen-form">
+        <AuthCard onLogin={onLogin} />
+      </div>
     </div>
   );
 }
@@ -109,7 +110,7 @@ function AuthCard({ onLogin }) {
     <form className="card narrow auth-card" onSubmit={submit}>
       <h2>{heading}</h2>
       <p className="muted">
-        {mode === "login" && "Välkommen tillbaka — din tavla väntar."}
+        {mode === "login" && "Logga in för att öppna din tavla."}
         {mode === "register" && "E-post och lösenord — vi skickar en verifieringslänk."}
         {mode === "forgot" &&
           "Ange din e-post så skickar vi en länk för att välja nytt lösenord."}

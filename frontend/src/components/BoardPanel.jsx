@@ -11,6 +11,7 @@ import {
 import ApplicationModal from "./ApplicationModal.jsx";
 import MatchScore from "./MatchScore.jsx";
 import TodayPanel from "./TodayPanel.jsx";
+import WelcomeGuide from "./WelcomeGuide.jsx";
 
 const GOOD_MATCH_PERCENT = 40;
 
@@ -99,6 +100,14 @@ export default function BoardPanel({ token, onNavigate }) {
   const [query, setQuery] = useState("");
   const [quickFilter, setQuickFilter] = useState("all");
   const [stageFilter, setStageFilter] = useState(null);
+  const [showWelcome, setShowWelcome] = useState(
+    () => localStorage.getItem("jobbsoket-welcome-dismissed") !== "1"
+  );
+
+  function dismissWelcome() {
+    localStorage.setItem("jobbsoket-welcome-dismissed", "1");
+    setShowWelcome(false);
+  }
 
   const reload = useCallback(async () => {
     try {
@@ -232,7 +241,8 @@ export default function BoardPanel({ token, onNavigate }) {
           <span className="section-kicker">Din tavla</span>
           <h2>Överblicken</h2>
           <p className="muted">
-            Prioritera nästa drag och se var varje ansökan står.
+            Här ser du pågående ansökningar, vad som behöver följas upp och var
+            varje process befinner sig.
           </p>
         </div>
         <div className="metric-grid" aria-label="Översikt">
@@ -278,6 +288,10 @@ export default function BoardPanel({ token, onNavigate }) {
         </div>
       </section>
 
+      {showWelcome && applications.length === 0 && (
+        <WelcomeGuide onDismiss={dismissWelcome} onNavigate={onNavigate} />
+      )}
+
       <TodayPanel applications={applications} onOpen={setSelected} />
 
       <section className="card">
@@ -286,7 +300,9 @@ export default function BoardPanel({ token, onNavigate }) {
             <h2>Min tavla</h2>
             <p className="muted">
               {applications.length === 0
-                ? "Tomt än så länge — lägg till din första ansökan."
+                ? showWelcome
+                  ? "Lägg till din första ansökan när du är redo."
+                  : "Tomt än så länge — lägg till din första ansökan."
                 : `${applications.length} ansökningar, varav ${
                     applications.length - allClosed.length
                   } pågående. Följ flödet status för status.`}
@@ -303,7 +319,7 @@ export default function BoardPanel({ token, onNavigate }) {
         </div>
         {error && <p className="error">{error}</p>}
 
-        {applications.length === 0 ? (
+        {applications.length === 0 && !showWelcome ? (
           <div className="empty-state">
             <div className="empty-icon" aria-hidden="true" />
             <h3>Din tavla är tom</h3>
@@ -322,6 +338,13 @@ export default function BoardPanel({ token, onNavigate }) {
                 Fyll i CV
               </button>
             </div>
+          </div>
+        ) : applications.length === 0 ? (
+          <div className="empty-actions empty-actions--inline">
+            <button onClick={() => setAdding(true)}>+ Lägg till ansökan</button>
+            <button className="secondary" onClick={() => onNavigate?.("postings")}>
+              Sök annonser
+            </button>
           </div>
         ) : (
           <>

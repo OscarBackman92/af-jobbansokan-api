@@ -16,6 +16,8 @@ def test_landing_page_is_public_html(client):
     assert "Jobbsöket" in body
     assert "Kom igång gratis" in body
     assert "Logga in" in body
+    assert "Så funkar det" in body
+    assert "Tre delar i appen" in body
     assert "Öppna appen" not in body
     assert 'rel="canonical"' in body
 
