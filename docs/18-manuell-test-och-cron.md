@@ -95,7 +95,7 @@ python backend/manage.py send_weekly_summary --dry-run --force
 | Brevo 401 *unrecognised IP* i Render Logs | Brevo → Security → **Authorized IPs** — lägg till Renders utgående IP, eller **inaktivera IP-restriktion** (bättre på Render) |
 | Inga mejl trots “Sent” | Kolla skräppost; verifiera avsändare i Brevo |
 | `Not Monday; skipping` | Förväntat — använd `--force` i shell eller vänta till måndag |
-| Cron finns inte | Deploya blueprint på nytt eller skapa manuellt (B ovan) |
+| Cron finns inte | Deploya blueprint på nytt, eller använd [claude-chrome-render-cron-prompt.md](claude-chrome-render-cron-prompt.md) |
 | Migration saknas | Web deploy kör `migrate` vid start; cron behöver samma DB — deploya web först |
 
 ---

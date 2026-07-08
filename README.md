@@ -330,6 +330,7 @@ stores when the web app is stable.
 | [18-manuell-test-och-cron.md](docs/18-manuell-test-och-cron.md) | **Cron on Render + manual test checklist (desktop & mobile)** |
 | [claude-chrome-testprompt.md](docs/claude-chrome-testprompt.md) | Copy-paste prompt for Claude in Chrome QA testing |
 | [claude-chrome-verification-email-prompt.md](docs/claude-chrome-verification-email-prompt.md) | Claude in Chrome prompt to test signup verification e-mail |
+| [claude-chrome-render-cron-prompt.md](docs/claude-chrome-render-cron-prompt.md) | Claude in Chrome prompt to create Render cron jobs (reminders + weekly summary) |
 | [claude-chrome-supabase-prompt.md](docs/claude-chrome-supabase-prompt.md) | Claude in Chrome prompt to set up Supabase + migrate from Render Postgres |
 | [claude-chrome-fix-email-prompt.md](docs/claude-chrome-fix-email-prompt.md) | Claude in Chrome prompt to fix Brevo/Render e-mail (no API keys in chat) |
 | [claude-chrome-sprint1-2-qa-prompt.md](docs/claude-chrome-sprint1-2-qa-prompt.md) | Claude in Chrome QA for Sprint 1 & 2 UX (scroll, CV, board filters, match) |
