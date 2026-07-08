@@ -30,9 +30,9 @@ Du hjälper mig flytta Jobbsökets produktionsdatabas från Render Postgres till
 
 ## Målbild
 - Supabase-projekt i **EU** (Frankfurt / eu-central-1 eller närmaste EU-region).
-- `DATABASE_URL` på Render-webbtjänsten **ansokt** pekar på Supabase Session pooler (port **5432**).
-- Cron-jobb **ansokt-reminders** och **ansokt-weekly-summary** ärver `DATABASE_URL` från web (inget eget värde behövs om blueprint redan är uppdaterad).
-- All befintlig data migrerad; appen fungerar på https://ansokt.onrender.com/app/
+- `DATABASE_URL` på Render-webbtjänsten **jobbjungeln** pekar på Supabase Session pooler (port **5432**).
+- Cron-jobb **ansokt-reminders**, **ansokt-prune** och **ansokt-weekly-summary** ärver `DATABASE_URL` från web om blueprint länkar dem.
+- All befintlig data migrerad; appen fungerar på https://jobbjungeln.onrender.com/app/
 
 ---
 
@@ -93,15 +93,15 @@ Markera DEL 1 som klar när jag har en fungerande Session pooler URI.
 
 # DEL 4 — Uppdatera Render
 
-1. Render → **ansokt** (web service) → **Environment**
+1. Render → **jobbjungeln** (web service) → **Environment**
    - Sätt **DATABASE_URL** = Supabase Session pooler URI (med `sslmode=require`)
    - Spara → **Manual Deploy** eller vänta på auto-deploy
 
 2. Kontrollera cron-jobb:
-   - **ansokt-reminders** och **ansokt-weekly-summary** → Environment
+   - **ansokt-reminders**, **ansokt-prune** och **ansokt-weekly-summary** → Environment
    - `DATABASE_URL` ska **ärvda** från web (fromService) eller ha samma värde
 
-3. Efter deploy: öppna `https://ansokt.onrender.com/health/` — ska returnera `{"status":"ok",...}`
+3. Efter deploy: öppna `https://jobbjungeln.onrender.com/health/` — ska returnera `{"status":"ok",...}`
 
 ---
 
@@ -109,7 +109,7 @@ Markera DEL 1 som klar när jag har en fungerande Session pooler URI.
 
 Be mig testa (jag rapporterar resultat):
 
-- [ ] `https://ansokt.onrender.com/health/` → status ok
+- [ ] `https://jobbjungeln.onrender.com/health/` → status ok
 - [ ] Logga in på `/app/` med befintligt konto
 - [ ] Tavlan visar tidigare ansökningar (data migrerad)
 - [ ] Skapa en testansökan och ladda om sidan — den finns kvar

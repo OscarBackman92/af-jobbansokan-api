@@ -107,7 +107,7 @@ class Command(BaseCommand):
             f"Enligt vår lagringspolicy raderas kontot och all data om "
             f"{WARNING_DAYS} dagar.\n\n"
             "Vill du behålla kontot? Logga bara in, så avbryts raderingen:\n"
-            f"{spa_app_url() or 'https://ansokt.onrender.com/app/'}\n\n"
+            f"{spa_app_url() or 'https://jobbjungeln.onrender.com/app/'}\n\n"
             "Vill du inte det behöver du inte göra någonting.\n\n"
             "Hälsningar,\nJobbsöket"
         )

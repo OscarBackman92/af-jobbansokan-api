@@ -60,7 +60,7 @@ def sentry_allowed_domains_reminder(**kwargs):
             "Configure Sentry Allowed Domains for the frontend DSN.",
             hint=(
                 "In Sentry → Project Settings → Security → Allowed Domains, "
-                "allow only your production hostname (e.g. ansokt.onrender.com)."
+                "allow only your production hostname (e.g. jobbjungeln.onrender.com)."
             ),
             id="core.W003",
         )

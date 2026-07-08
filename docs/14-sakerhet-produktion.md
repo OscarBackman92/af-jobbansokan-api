@@ -12,7 +12,7 @@ backuper och SQL-konsol; Django på Render ansluter via `DATABASE_URL`.
 
 1. Skapa Supabase-projekt i **EU** (t.ex. Frankfurt / `eu-central-1`).
 2. Kopiera **Session pooler** connection string (port **5432**, inte Transaction 6543).
-3. Sätt `DATABASE_URL` på Render-webbtjänsten **ansokt** (cron ärver värdet).
+3. Sätt `DATABASE_URL` på Render-webbtjänsten **jobbjungeln** (cron ärver värdet om blueprint länkar dem).
 4. Migrera data från gammal databas om du byter leverantör — se
    [claude-chrome-supabase-prompt.md](claude-chrome-supabase-prompt.md).
 
@@ -33,7 +33,7 @@ annars användas för att spamma er Sentry med falska fel.
 
 1. [sentry.io](https://sentry.io) → ert projekt → **Settings** → **Security**
    → **Allowed Domains**.
-2. Lägg till bara er produktionsdomän, t.ex. `ansokt.onrender.com` (och er
+2. Lägg till bara er produktionsdomän, t.ex. `jobbjungeln.onrender.com` (och er
    egna domän när den finns).
 3. Ta bort `*` om det finns.
 
@@ -46,7 +46,7 @@ inloggningen gissad.
 
 **Hur:**
 
-1. Render → **ansokt** → **Environment** → sätt
+1. Render → **jobbjungeln** → **Environment** → sätt
    `DJANGO_SUPERUSER_USERNAME` till något unikt (t.ex. `ansokt-ops-jan`).
 2. Sätt `DJANGO_SUPERUSER_EMAIL` till din e-post.
 3. Lösenord genereras vid första deploy (`generateValue`) eller sätt manuellt.
@@ -127,10 +127,10 @@ fortfarande först vid faktiskt utskick — testa med
 python backend/manage.py check --deploy
 
 # CSP-header (ersätt med er URL)
-curl -sI https://ansokt.onrender.com/ | findstr /i content-security
+curl -sI https://jobbjungeln.onrender.com/ | findstr /i content-security
 
 # Swagger ska ge 403 utan admin-inloggning
-curl -s -o NUL -w "%{http_code}" https://ansokt.onrender.com/api/docs/
+curl -s -o NUL -w "%{http_code}" https://jobbjungeln.onrender.com/api/docs/
 ```
 
 Förväntat: `403` på `/api/docs/` för anonyma anrop i produktion.

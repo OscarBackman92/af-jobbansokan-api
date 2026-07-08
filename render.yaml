@@ -2,13 +2,19 @@
 # Database: Supabase Postgres (set DATABASE_URL manually in Render dashboard).
 # Deploy: push to GitHub -> render.com -> New + Blueprint -> select repo.
 #
+# Production: https://jobbjungeln.onrender.com (Frankfurt / EU).
+# Cron job names still use the ansokt-* prefix from the original deploy.
+#
+# Render runs dockerCommand as argv (no shell). Use one command per cron job —
+# do not combine with && in sh -c.
+#
 # Production security defaults:
 # - Web on Starter in EU (Frankfurt).
 # - Admin username is NOT preset — set DJANGO_SUPERUSER_USERNAME in the
 #   Render dashboard to a unique value (not "admin").
 services:
   - type: web
-    name: ansokt
+    name: jobbjungeln
     runtime: docker
     plan: starter
     region: frankfurt
@@ -51,9 +57,9 @@ services:
       # Public contact for the privacy policy and /.well-known/security.txt.
       - key: CONTACT_EMAIL
         sync: false
-      # Base URL for the reset link; defaults to the request origin if unset.
+      # Base URL for e-mail links and django.contrib.sites (bootstrap).
       - key: FRONTEND_URL
-        sync: false
+        value: https://jobbjungeln.onrender.com
       # Google login (optional — the SPA hides the button when unset).
       # Create an OAuth client in Google Cloud Console with the site's
       # URL as authorized redirect URI (with trailing slash).
@@ -72,15 +78,14 @@ services:
       - key: SENTRY_TRACES_SAMPLE_RATE
         value: "0.1"
 
-  # Daily at 06:00 UTC (~07:00 CET): follow-up reminders + GDPR retention
-  # (warn accounts inactive 24 months, delete 30 days after the warning).
+  # Daily 06:00 UTC (~08:00 CEST summer): follow-up reminders.
   - type: cron
     name: ansokt-reminders
     runtime: docker
     region: frankfurt
     schedule: "0 6 * * *"
     dockerfilePath: ./Dockerfile
-    dockerCommand: sh -c "python backend/manage.py send_reminders && python backend/manage.py prune_inactive_accounts"
+    dockerCommand: python backend/manage.py send_reminders
     envVars:
       - key: DJANGO_DEBUG
         value: "0"
@@ -91,72 +96,155 @@ services:
       - key: DATABASE_URL
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: DATABASE_URL
       - key: DJANGO_SECRET_KEY
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: DJANGO_SECRET_KEY
       - key: EMAIL_HOST
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_HOST
       - key: BREVO_API_KEY
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: BREVO_API_KEY
       - key: EMAIL_PORT
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_PORT
       - key: EMAIL_HOST_USER
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_HOST_USER
       - key: EMAIL_HOST_PASSWORD
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_HOST_PASSWORD
       - key: EMAIL_USE_TLS
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_USE_TLS
       - key: EMAIL_USE_SSL
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_USE_SSL
       - key: EMAIL_TIMEOUT
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_TIMEOUT
       - key: DEFAULT_FROM_EMAIL
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: DEFAULT_FROM_EMAIL
       - key: FRONTEND_URL
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: FRONTEND_URL
       - key: SENTRY_DSN
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: SENTRY_DSN
       - key: SENTRY_ENVIRONMENT
         value: production
 
-  # Monday 07:00 UTC (~08:00 CET): weekly pipeline summary + saved-search digest.
+  # Daily 06:15 UTC: GDPR retention (warn inactive 24 months, delete after 30 days).
+  - type: cron
+    name: ansokt-prune
+    runtime: docker
+    region: frankfurt
+    schedule: "15 6 * * *"
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python backend/manage.py prune_inactive_accounts
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: PYTHONPATH
+        value: /app/backend
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings
+      - key: DATABASE_URL
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: DATABASE_URL
+      - key: DJANGO_SECRET_KEY
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: DJANGO_SECRET_KEY
+      - key: EMAIL_HOST
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: EMAIL_HOST
+      - key: BREVO_API_KEY
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: BREVO_API_KEY
+      - key: EMAIL_PORT
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: EMAIL_PORT
+      - key: EMAIL_HOST_USER
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: EMAIL_HOST_USER
+      - key: EMAIL_HOST_PASSWORD
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: EMAIL_HOST_PASSWORD
+      - key: EMAIL_USE_TLS
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: EMAIL_USE_TLS
+      - key: EMAIL_USE_SSL
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: EMAIL_USE_SSL
+      - key: EMAIL_TIMEOUT
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: EMAIL_TIMEOUT
+      - key: DEFAULT_FROM_EMAIL
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: DEFAULT_FROM_EMAIL
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: FRONTEND_URL
+      - key: SENTRY_DSN
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: SENTRY_DSN
+      - key: SENTRY_ENVIRONMENT
+        value: production
+
+  # Monday 07:00 UTC (~09:00 CEST summer): weekly pipeline summary + saved-search digest.
   - type: cron
     name: ansokt-weekly-summary
     runtime: docker
@@ -174,60 +262,67 @@ services:
       - key: DATABASE_URL
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: DATABASE_URL
       - key: DJANGO_SECRET_KEY
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: DJANGO_SECRET_KEY
       - key: BREVO_API_KEY
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: BREVO_API_KEY
       - key: EMAIL_HOST
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_HOST
       - key: EMAIL_PORT
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_PORT
       - key: EMAIL_HOST_USER
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_HOST_USER
       - key: EMAIL_HOST_PASSWORD
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_HOST_PASSWORD
       - key: EMAIL_USE_TLS
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_USE_TLS
       - key: EMAIL_USE_SSL
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_USE_SSL
       - key: EMAIL_TIMEOUT
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: EMAIL_TIMEOUT
       - key: DEFAULT_FROM_EMAIL
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: DEFAULT_FROM_EMAIL
       - key: FRONTEND_URL
         fromService:
           type: web
-          name: ansokt
+          name: jobbjungeln
           envVarKey: FRONTEND_URL
+      - key: SENTRY_DSN
+        fromService:
+          type: web
+          name: jobbjungeln
+          envVarKey: SENTRY_DSN
+      - key: SENTRY_ENVIRONMENT
+        value: production

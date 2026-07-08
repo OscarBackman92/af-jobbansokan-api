@@ -11,8 +11,9 @@ Jobbsöket (formerly "Ansökt") is that sheet, done right: a kanban board
 over your applications, a timeline per application, search over
 Platsbanken's job ads, and CSV export because the data is yours.
 
-> Render service names and URLs still use the original `ansokt` identifier;
-> renaming deployed services would break the existing deploy.
+> Production: [jobbjungeln.onrender.com](https://jobbjungeln.onrender.com)
+> (Frankfurt). Cron jobs still use the `ansokt-*` service names from the
+> original deploy.
 
 > Pivoted 2026-06-12 from the earlier "verifiable job application events
 > for A-kassa" concept — see [docs/10-pivot-ansokt.md](docs/10-pivot-ansokt.md)
@@ -213,7 +214,7 @@ Postmark, …; the free tiers are enough):
 | `EMAIL_HOST_PASSWORD` | SMTP password / API key |
 | `EMAIL_USE_TLS` | `1` (default) or `0` |
 | `DEFAULT_FROM_EMAIL` | From address, e.g. `Jobbsöket <no-reply@dindomän.se>` |
-| `FRONTEND_URL` | Base URL the reset link points at (e.g. `https://ansokt.onrender.com`). Defaults to the request origin, which is correct for the single-service Render deploy; set it explicitly when the frontend is hosted separately (e.g. Vercel). |
+| `FRONTEND_URL` | Base URL the reset link points at (e.g. `https://jobbjungeln.onrender.com`). Defaults to the request origin, which is correct for the single-service Render deploy; set it explicitly when the frontend is hosted separately (e.g. Vercel). |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. Enables "Fortsätt med Google": create an OAuth client in Google Cloud Console with the site URL (trailing slash) as authorized redirect URI. The login button is hidden while unset. |
 | `CONTACT_EMAIL` | Public contact for privacy questions and vulnerability reports. Shown in the in-app privacy policy and served at `/.well-known/security.txt` (404 while unset). |
 
@@ -301,7 +302,7 @@ and [docs/17-registerforteckning.md](docs/17-registerforteckning.md)
 ## Roadmap
 
 The product is feature-complete for personal use and live at
-<https://ansokt.onrender.com>. The current focus is
+<https://jobbjungeln.onrender.com>. The current focus is
 [docs/15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md)
 and [docs/13-lanseringsplan.md](docs/13-lanseringsplan.md): EU hosting,
 e-mail deliverability, onboarding (Google login), retention, then mobile

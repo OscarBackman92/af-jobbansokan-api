@@ -8,7 +8,7 @@ på anmälan till IMY **inom 72 timmar** från upptäckt.
 
 - Rotera hemligheter: `DJANGO_SECRET_KEY`, `BREVO_API_KEY`,
   `GOOGLE_CLIENT_SECRET`, databaslösenord (Render → Environment).
-- Stäng av tjänsten vid pågående angrepp: Render → ansokt → Suspend.
+- Stäng av tjänsten vid pågående angrepp: Render → jobbjungeln → Suspend.
 - Byt admin-lösenord och kontrollera `django_admin_log` i admin på
   konstiga inloggningar/ändringar.
 - Spara loggar från Render och Sentry innan de roteras bort —
