@@ -28,6 +28,10 @@ export async function latestVerifyKey() {
   return match[1];
 }
 
+export async function fillPassword(page, password) {
+  await page.getByLabel("Lösenord", { exact: true }).fill(password);
+}
+
 export async function login(
   page,
   email = SEEDED_USER.email,
@@ -35,7 +39,7 @@ export async function login(
 ) {
   await page.goto("/");
   await page.getByLabel("E-postadress").fill(email);
-  await page.getByLabel("Lösenord").fill(password);
+  await fillPassword(page, password);
   await page.getByRole("button", { name: "Logga in", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Överblicken" })

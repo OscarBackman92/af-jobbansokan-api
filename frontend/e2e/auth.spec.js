@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { latestVerifyKey } from "./helpers.js";
+import { fillPassword, latestVerifyKey } from "./helpers.js";
 
 test("register, verify e-mail from the mail file, and log in", async ({
   page,
@@ -11,7 +11,7 @@ test("register, verify e-mail from the mail file, and log in", async ({
   await page.goto("/");
   await page.getByRole("button", { name: "Ny här? Skapa ett konto" }).click();
   await page.getByLabel("E-postadress").fill(email);
-  await page.getByLabel("Lösenord").fill(password);
+  await fillPassword(page, password);
   await page.getByRole("button", { name: "Skapa konto", exact: true }).click();
 
   await expect(
@@ -26,7 +26,7 @@ test("register, verify e-mail from the mail file, and log in", async ({
   await page.getByRole("button", { name: "Till inloggningen" }).click();
 
   await page.getByLabel("E-postadress").fill(email);
-  await page.getByLabel("Lösenord").fill(password);
+  await fillPassword(page, password);
   await page.getByRole("button", { name: "Logga in", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Överblicken" })

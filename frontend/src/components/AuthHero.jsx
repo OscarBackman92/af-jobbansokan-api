@@ -126,15 +126,16 @@ function AuthCard({ onLogin }) {
         />
       </label>
       {mode !== "forgot" && (
-        <label>
-          Lösenord
+        <div className="field">
+          <label htmlFor="auth-password">Lösenord</label>
           <PasswordInput
+            id="auth-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete={mode === "login" ? "current-password" : "new-password"}
             required
           />
-        </label>
+        </div>
       )}
       {error && <p className="error">{error}</p>}
       <button disabled={busy}>

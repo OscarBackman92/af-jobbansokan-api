@@ -1,0 +1,2915 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Jobbsöket API",
+        "version": "0.2.0",
+        "description": "API for tracking your own job applications."
+    },
+    "paths": {
+        "/api/schema/": {
+            "get": {
+                "operationId": "api_schema_retrieve",
+                "description": "OpenApi3 schema for this API. Format can be selected via content negotiation.\n\n- YAML: application/vnd.oai.openapi\n- JSON: application/vnd.oai.openapi+json",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "format",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "json",
+                                "yaml"
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "lang",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "af",
+                                "ar",
+                                "ar-dz",
+                                "ast",
+                                "az",
+                                "be",
+                                "bg",
+                                "bn",
+                                "br",
+                                "bs",
+                                "ca",
+                                "ckb",
+                                "cs",
+                                "cy",
+                                "da",
+                                "de",
+                                "dsb",
+                                "el",
+                                "en",
+                                "en-au",
+                                "en-gb",
+                                "eo",
+                                "es",
+                                "es-ar",
+                                "es-co",
+                                "es-mx",
+                                "es-ni",
+                                "es-ve",
+                                "et",
+                                "eu",
+                                "fa",
+                                "fi",
+                                "fr",
+                                "fy",
+                                "ga",
+                                "gd",
+                                "gl",
+                                "he",
+                                "hi",
+                                "hr",
+                                "hsb",
+                                "hu",
+                                "hy",
+                                "ia",
+                                "id",
+                                "ig",
+                                "io",
+                                "is",
+                                "it",
+                                "ja",
+                                "ka",
+                                "kab",
+                                "kk",
+                                "km",
+                                "kn",
+                                "ko",
+                                "ky",
+                                "lb",
+                                "lt",
+                                "lv",
+                                "mk",
+                                "ml",
+                                "mn",
+                                "mr",
+                                "ms",
+                                "my",
+                                "nb",
+                                "ne",
+                                "nl",
+                                "nn",
+                                "os",
+                                "pa",
+                                "pl",
+                                "pt",
+                                "pt-br",
+                                "ro",
+                                "ru",
+                                "sk",
+                                "sl",
+                                "sq",
+                                "sr",
+                                "sr-latn",
+                                "sv",
+                                "sw",
+                                "ta",
+                                "te",
+                                "tg",
+                                "th",
+                                "tk",
+                                "tr",
+                                "tt",
+                                "udm",
+                                "ug",
+                                "uk",
+                                "ur",
+                                "uz",
+                                "vi",
+                                "zh-hans",
+                                "zh-hant"
+                            ]
+                        }
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/vnd.oai.openapi": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            },
+                            "application/yaml": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            },
+                            "application/vnd.oai.openapi+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/applications/": {
+            "get": {
+                "operationId": "api_v1_applications_list",
+                "description": "The user's application tracker rows. Full CRUD on own rows only.\n\nA status change automatically appends a timeline event, so the\nhistory stays complete without extra bookkeeping.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "from",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "description": "Earliest applied_at date."
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Free text over company, title and notes."
+                    },
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filter by status."
+                    },
+                    {
+                        "in": "query",
+                        "name": "to",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "description": "Latest applied_at date."
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedJobApplicationListList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "api_v1_applications_create",
+                "description": "The user's application tracker rows. Full CRUD on own rows only.\n\nA status change automatically appends a timeline event, so the\nhistory stays complete without extra bookkeeping.",
+                "tags": [
+                    "api"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JobApplication"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JobApplication"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JobApplication"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobApplication"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/applications/{id}/": {
+            "get": {
+                "operationId": "api_v1_applications_retrieve",
+                "description": "The user's application tracker rows. Full CRUD on own rows only.\n\nA status change automatically appends a timeline event, so the\nhistory stays complete without extra bookkeeping.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this job application.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobApplication"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "api_v1_applications_update",
+                "description": "The user's application tracker rows. Full CRUD on own rows only.\n\nA status change automatically appends a timeline event, so the\nhistory stays complete without extra bookkeeping.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this job application.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JobApplication"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JobApplication"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JobApplication"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobApplication"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "api_v1_applications_partial_update",
+                "description": "The user's application tracker rows. Full CRUD on own rows only.\n\nA status change automatically appends a timeline event, so the\nhistory stays complete without extra bookkeeping.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this job application.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedJobApplication"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedJobApplication"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedJobApplication"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobApplication"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "api_v1_applications_destroy",
+                "description": "The user's application tracker rows. Full CRUD on own rows only.\n\nA status change automatically appends a timeline event, so the\nhistory stays complete without extra bookkeeping.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this job application.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/applications/{id}/events/": {
+            "post": {
+                "operationId": "api_v1_applications_events_create",
+                "description": "Append a note/event to the application's timeline.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this job application.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApplicationEvent"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApplicationEvent"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApplicationEvent"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApplicationEvent"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/applications/export/": {
+            "get": {
+                "operationId": "api_v1_applications_export_retrieve",
+                "description": "Download the tracker as CSV (filters apply).",
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/applications/tracked-urls/": {
+            "get": {
+                "operationId": "api_v1_applications_tracked_urls_retrieve",
+                "description": "All ad URLs on the user's board — lets the ad search mark\nalready-saved ads without downloading every application row.",
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/": {
+            "get": {
+                "operationId": "api_v1_jobs_retrieve",
+                "description": "Live search of Platsbanken via JobTech, with optional CV matching.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "field",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Occupation-field concept id (repeatable)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "group",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Occupation-group concept id (repeatable)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "match_cv",
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Only jobs that match the user's CV (≥40%)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "municipality",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Municipality concept id (repeatable)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "q",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Free text query."
+                    },
+                    {
+                        "in": "query",
+                        "name": "region",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Region concept id (repeatable)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "remote",
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Remote only."
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/filters/": {
+            "get": {
+                "operationId": "api_v1_jobs_filters_retrieve",
+                "description": "Region and occupation-field options for the ad-search dropdowns.",
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/groups/": {
+            "get": {
+                "operationId": "api_v1_jobs_groups_retrieve",
+                "description": "Occupation-group options for one selected occupation field.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "field",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Occupation-field concept id."
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/municipalities/": {
+            "get": {
+                "operationId": "api_v1_jobs_municipalities_retrieve",
+                "description": "Municipality options for one selected region.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "region",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Region concept id."
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/me/": {
+            "get": {
+                "operationId": "api_v1_me_retrieve",
+                "description": "The authenticated user's own profile.\n\nGET returns contact details. PATCH updates them. DELETE erases the\naccount and everything it owns (GDPR right to erasure).",
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Profile"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "api_v1_me_update",
+                "description": "The authenticated user's own profile.\n\nGET returns contact details. PATCH updates them. DELETE erases the\naccount and everything it owns (GDPR right to erasure).",
+                "tags": [
+                    "api"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Profile"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Profile"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Profile"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Profile"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "api_v1_me_partial_update",
+                "description": "The authenticated user's own profile.\n\nGET returns contact details. PATCH updates them. DELETE erases the\naccount and everything it owns (GDPR right to erasure).",
+                "tags": [
+                    "api"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedProfile"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedProfile"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedProfile"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Profile"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "api_v1_me_destroy",
+                "description": "The authenticated user's own profile.\n\nGET returns contact details. PATCH updates them. DELETE erases the\naccount and everything it owns (GDPR right to erasure).",
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/me/resume/": {
+            "get": {
+                "operationId": "api_v1_me_resume_retrieve",
+                "description": "The authenticated user's structured CV (created empty on first GET).",
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Resume"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "api_v1_me_resume_update",
+                "description": "The authenticated user's structured CV (created empty on first GET).",
+                "tags": [
+                    "api"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Resume"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Resume"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Resume"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Resume"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "api_v1_me_resume_partial_update",
+                "description": "The authenticated user's structured CV (created empty on first GET).",
+                "tags": [
+                    "api"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedResume"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedResume"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedResume"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Resume"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "api_v1_me_resume_destroy",
+                "description": "The authenticated user's structured CV (created empty on first GET).",
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/me/resume/parse/": {
+            "post": {
+                "operationId": "api_v1_me_resume_parse_create",
+                "description": "Parse an uploaded CV (PDF/DOCX/TXT) into a structured draft.\n\nThe file is processed in memory and never stored; nothing is saved\nuntil the user reviews the prefilled form and submits it.",
+                "tags": [
+                    "api"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResumeUpload"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/me/resume/suggest-evidence/": {
+            "post": {
+                "operationId": "api_v1_me_resume_suggest_evidence_create",
+                "description": "Suggest evidence terms keyed by CV source row.",
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/me/resume/suggest-skills/": {
+            "post": {
+                "operationId": "api_v1_me_resume_suggest_skills_create",
+                "description": "Suggest categorized skills extracted from experience rows.",
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/me/saved-searches/": {
+            "get": {
+                "operationId": "api_v1_me_saved_searches_list",
+                "description": "List or save Platsbanken search presets for the current user.",
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SavedJobSearch"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "api_v1_me_saved_searches_create",
+                "description": "List or save Platsbanken search presets for the current user.",
+                "tags": [
+                    "api"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SavedJobSearch"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SavedJobSearch"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SavedJobSearch"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SavedJobSearch"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/me/saved-searches/{id}/": {
+            "get": {
+                "operationId": "api_v1_me_saved_searches_retrieve",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SavedJobSearch"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "api_v1_me_saved_searches_partial_update",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedSavedJobSearch"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedSavedJobSearch"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedSavedJobSearch"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SavedJobSearch"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "api_v1_me_saved_searches_destroy",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "api"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/google/": {
+            "post": {
+                "operationId": "dj_rest_auth_google_create",
+                "description": "Exchange a Google authorization code for our JWT pair.\n\nThe SPA redirects the user to Google's consent screen and posts the\nreturned ``code`` here. Requires GOOGLE_CLIENT_ID/SECRET in the\nenvironment (the button is hidden in the SPA when unset).",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SocialLogin"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SocialLogin"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SocialLogin"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SocialLogin"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/login/": {
+            "post": {
+                "operationId": "dj_rest_auth_login_create",
+                "description": "Check the credentials and return the REST Token\nif the credentials are valid and authenticated.\nCalls Django Auth login method to register User ID\nin Django session framework\n\nAccept the following POST parameters: username, password\nReturn the REST Framework Token Object's key.",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Login"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Login"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Login"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JWT"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/logout/": {
+            "post": {
+                "operationId": "dj_rest_auth_logout_create",
+                "description": "Calls Django logout method and delete the Token object\nassigned to the current User object.\n\nAccepts/Returns nothing.",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Logout"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Logout"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Logout"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RestAuthDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/password/change/": {
+            "post": {
+                "operationId": "dj_rest_auth_password_change_create",
+                "description": "Calls Django Auth SetPasswordForm save method.\n\nAccepts the following POST parameters: new_password1, new_password2\nReturns the success/fail message.",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RevokingPasswordChange"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RevokingPasswordChange"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RevokingPasswordChange"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RestAuthDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/password/reset/": {
+            "post": {
+                "operationId": "dj_rest_auth_password_reset_create",
+                "description": "Calls Django Auth PasswordResetForm save method.\n\nAccepts the following POST parameters: email\nReturns the success/fail message.",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FrontendPasswordReset"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FrontendPasswordReset"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FrontendPasswordReset"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RestAuthDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/password/reset/confirm/": {
+            "post": {
+                "operationId": "dj_rest_auth_password_reset_confirm_create",
+                "description": "Password reset e-mail link is confirmed, therefore\nthis resets the user's password.\n\nAccepts the following POST parameters: token, uid,\n    new_password1, new_password2\nReturns the success/fail message.",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RevokingPasswordResetConfirm"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RevokingPasswordResetConfirm"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RevokingPasswordResetConfirm"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RestAuthDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/registration/": {
+            "post": {
+                "operationId": "dj_rest_auth_registration_create",
+                "description": "Register without issuing JWT — user must verify e-mail first.",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EmailRegister"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EmailRegister"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EmailRegister"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmailRegister"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/registration/account-confirm-email/": {
+            "post": {
+                "operationId": "dj_rest_auth_registration_account_confirm_email_create",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyEmail"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyEmail"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyEmail"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VerifyEmail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/registration/resend-email/": {
+            "post": {
+                "operationId": "dj_rest_auth_registration_resend_email_create",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResendEmailVerification"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResendEmailVerification"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResendEmailVerification"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResendEmailVerification"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/registration/verify-email/": {
+            "post": {
+                "operationId": "dj_rest_auth_registration_verify_email_create",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyEmail"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyEmail"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyEmail"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VerifyEmail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/token/refresh/": {
+            "post": {
+                "operationId": "dj_rest_auth_token_refresh_create",
+                "description": "Takes a refresh type JSON web token and returns an access type JSON web\ntoken if the refresh token is valid.",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRefresh"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRefresh"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRefresh"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenRefresh"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/token/verify/": {
+            "post": {
+                "operationId": "dj_rest_auth_token_verify_create",
+                "description": "Takes a token and indicates if it is valid.  This view provides no\ninformation about a token's fitness for a particular use.",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenVerify"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenVerify"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenVerify"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenVerify"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/dj-rest-auth/user/": {
+            "get": {
+                "operationId": "dj_rest_auth_user_retrieve",
+                "description": "Reads and updates UserModel fields\nAccepts GET, PUT, PATCH methods.\n\nDefault accepted fields: username, first_name, last_name\nDefault display fields: pk, username, email, first_name, last_name\nRead-only fields: pk, email\n\nReturns UserModel fields.",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDetails"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "dj_rest_auth_user_update",
+                "description": "Reads and updates UserModel fields\nAccepts GET, PUT, PATCH methods.\n\nDefault accepted fields: username, first_name, last_name\nDefault display fields: pk, username, email, first_name, last_name\nRead-only fields: pk, email\n\nReturns UserModel fields.",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserDetails"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserDetails"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserDetails"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDetails"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "dj_rest_auth_user_partial_update",
+                "description": "Reads and updates UserModel fields\nAccepts GET, PUT, PATCH methods.\n\nDefault accepted fields: username, first_name, last_name\nDefault display fields: pk, username, email, first_name, last_name\nRead-only fields: pk, email\n\nReturns UserModel fields.",
+                "tags": [
+                    "dj-rest-auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedUserDetails"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedUserDetails"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedUserDetails"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDetails"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/health/": {
+            "get": {
+                "operationId": "health_retrieve",
+                "description": "Public health check endpoint.",
+                "tags": [
+                    "health"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ApplicationEvent": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "occurred_at": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "note": {
+                        "type": "string",
+                        "maxLength": 500
+                    },
+                    "status": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/StatusEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            }
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "id",
+                    "note",
+                    "occurred_at"
+                ]
+            },
+            "BlankEnum": {
+                "enum": [
+                    ""
+                ]
+            },
+            "EmailRegister": {
+                "type": "object",
+                "description": "Registration by e-mail only — no username field in the API.\n\nEnforce e-mail uniqueness here so an abandoned unverified signup\ncannot be silently replaced by a new registration attempt.",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password1": {
+                        "type": "string",
+                        "writeOnly": true
+                    },
+                    "password2": {
+                        "type": "string",
+                        "writeOnly": true
+                    }
+                },
+                "required": [
+                    "email",
+                    "password1",
+                    "password2"
+                ]
+            },
+            "FrontendPasswordReset": {
+                "type": "object",
+                "description": "Send the reset link to the SPA rather than Django's default view.\n\nallauth's reset form takes a custom ``url_generator``; ours points the\ne-mailed link at the SPA carrying uid + token as query params, which\nthe app reads to show the set-new-password form.",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    }
+                },
+                "required": [
+                    "email"
+                ]
+            },
+            "JWT": {
+                "type": "object",
+                "description": "Serializer for JWT authentication.",
+                "properties": {
+                    "access": {
+                        "type": "string"
+                    },
+                    "refresh": {
+                        "type": "string"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/UserDetails"
+                    }
+                },
+                "required": [
+                    "access",
+                    "refresh",
+                    "user"
+                ]
+            },
+            "JobApplication": {
+                "type": "object",
+                "description": "One tracker row.\n\nCreated either from an imported posting (pass `posting`, company and\ntitle are snapshotted from it) or as free text (pass `company` and\n`title` directly).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "posting": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "company": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "title": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "location": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "ad_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "maxLength": 500
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/StatusEnum"
+                    },
+                    "status_label": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "applied_at": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "deadline": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "contact_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "contact_info": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "next_action_at": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "events": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ApplicationEvent"
+                        },
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "events",
+                    "id",
+                    "status_label",
+                    "updated_at"
+                ]
+            },
+            "JobApplicationList": {
+                "type": "object",
+                "description": "Lean row for list responses — no timeline.\n\nThe board renders hundreds of rows; shipping every row's full event\nhistory made the list payload grow with total activity. The detail\nendpoint still includes ``events``.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "posting": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "company": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "location": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "ad_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/StatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "status_label": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "applied_at": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "deadline": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "contact_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "contact_info": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "next_action_at": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "match": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "ad_url",
+                    "applied_at",
+                    "company",
+                    "contact_info",
+                    "contact_name",
+                    "created_at",
+                    "deadline",
+                    "id",
+                    "location",
+                    "match",
+                    "next_action_at",
+                    "notes",
+                    "posting",
+                    "status",
+                    "status_label",
+                    "title",
+                    "updated_at"
+                ]
+            },
+            "Login": {
+                "type": "object",
+                "properties": {
+                    "username": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "password"
+                ]
+            },
+            "Logout": {
+                "type": "object",
+                "properties": {
+                    "refresh": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "refresh"
+                ]
+            },
+            "PaginatedJobApplicationListList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/JobApplicationList"
+                        }
+                    }
+                }
+            },
+            "PatchedJobApplication": {
+                "type": "object",
+                "description": "One tracker row.\n\nCreated either from an imported posting (pass `posting`, company and\ntitle are snapshotted from it) or as free text (pass `company` and\n`title` directly).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "posting": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "company": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "title": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "location": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "ad_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "maxLength": 500
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/StatusEnum"
+                    },
+                    "status_label": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "applied_at": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "deadline": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "contact_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "contact_info": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "next_action_at": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "events": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ApplicationEvent"
+                        },
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                }
+            },
+            "PatchedProfile": {
+                "type": "object",
+                "description": "The authenticated user's own profile.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "username": {
+                        "type": "string",
+                        "readOnly": true,
+                        "title": "Användarnamn",
+                        "description": "Obligatoriskt. 150 tecken eller färre. Endast bokstäver, siffror och @/./+/-/_."
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "E-postadress",
+                        "maxLength": 254
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "title": "Förnamn",
+                        "maxLength": 150
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "title": "Efternamn",
+                        "maxLength": 150
+                    },
+                    "operator_id": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                }
+            },
+            "PatchedResume": {
+                "type": "object",
+                "properties": {
+                    "headline": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "summary": {
+                        "type": "string"
+                    },
+                    "skills": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "readOnly": true
+                    },
+                    "skill_groups": {},
+                    "job_profiles": {},
+                    "active_profile_id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "experience": {},
+                    "education": {},
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                }
+            },
+            "PatchedSavedJobSearch": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "label": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "q": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "regions": {},
+                    "municipalities": {},
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "maxLength": 80
+                        }
+                    },
+                    "groups": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "maxLength": 80
+                        }
+                    },
+                    "remote": {
+                        "type": "boolean"
+                    },
+                    "match_cv": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                }
+            },
+            "PatchedUserDetails": {
+                "type": "object",
+                "description": "User model w/o password",
+                "properties": {
+                    "pk": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "title": "ID"
+                    },
+                    "username": {
+                        "type": "string",
+                        "title": "Användarnamn",
+                        "description": "Obligatoriskt. 150 tecken eller färre. Endast bokstäver, siffror och @/./+/-/_.",
+                        "pattern": "^[\\w.@+-]+$",
+                        "maxLength": 150
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "readOnly": true,
+                        "title": "E-postadress"
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "title": "Förnamn",
+                        "maxLength": 150
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "title": "Efternamn",
+                        "maxLength": 150
+                    }
+                }
+            },
+            "Profile": {
+                "type": "object",
+                "description": "The authenticated user's own profile.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "username": {
+                        "type": "string",
+                        "readOnly": true,
+                        "title": "Användarnamn",
+                        "description": "Obligatoriskt. 150 tecken eller färre. Endast bokstäver, siffror och @/./+/-/_."
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "E-postadress",
+                        "maxLength": 254
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "title": "Förnamn",
+                        "maxLength": 150
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "title": "Efternamn",
+                        "maxLength": 150
+                    },
+                    "operator_id": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "operator_id",
+                    "username"
+                ]
+            },
+            "ResendEmailVerification": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    }
+                },
+                "required": [
+                    "email"
+                ]
+            },
+            "RestAuthDetail": {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "detail"
+                ]
+            },
+            "Resume": {
+                "type": "object",
+                "properties": {
+                    "headline": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "summary": {
+                        "type": "string"
+                    },
+                    "skills": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "readOnly": true
+                    },
+                    "skill_groups": {},
+                    "job_profiles": {},
+                    "active_profile_id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "experience": {},
+                    "education": {},
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "active_profile_id",
+                    "skills",
+                    "updated_at"
+                ]
+            },
+            "ResumeUpload": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "uri"
+                    }
+                },
+                "required": [
+                    "file"
+                ]
+            },
+            "RevokingPasswordChange": {
+                "type": "object",
+                "description": "Password change also signs out every other device.",
+                "properties": {
+                    "new_password1": {
+                        "type": "string",
+                        "maxLength": 128
+                    },
+                    "new_password2": {
+                        "type": "string",
+                        "maxLength": 128
+                    }
+                },
+                "required": [
+                    "new_password1",
+                    "new_password2"
+                ]
+            },
+            "RevokingPasswordResetConfirm": {
+                "type": "object",
+                "description": "Password reset also signs out every other device.",
+                "properties": {
+                    "new_password1": {
+                        "type": "string",
+                        "maxLength": 128
+                    },
+                    "new_password2": {
+                        "type": "string",
+                        "maxLength": 128
+                    },
+                    "uid": {
+                        "type": "string"
+                    },
+                    "token": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "new_password1",
+                    "new_password2",
+                    "token",
+                    "uid"
+                ]
+            },
+            "SavedJobSearch": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "label": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "q": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "regions": {},
+                    "municipalities": {},
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "maxLength": 80
+                        }
+                    },
+                    "groups": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "maxLength": 80
+                        }
+                    },
+                    "remote": {
+                        "type": "boolean"
+                    },
+                    "match_cv": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "id"
+                ]
+            },
+            "SocialLogin": {
+                "type": "object",
+                "properties": {
+                    "access_token": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "id_token": {
+                        "type": "string"
+                    }
+                }
+            },
+            "StatusEnum": {
+                "enum": [
+                    "wishlist",
+                    "applied",
+                    "screening",
+                    "interview",
+                    "forwarded",
+                    "offer",
+                    "accepted",
+                    "rejected",
+                    "no_response",
+                    "withdrawn"
+                ],
+                "type": "string",
+                "description": "* `wishlist` - Sparad\n* `applied` - Ansökt\n* `screening` - Telefonintervju\n* `interview` - Intervju\n* `forwarded` - Skickad vidare\n* `offer` - Erbjudande\n* `accepted` - Accepterat\n* `rejected` - Avslag\n* `no_response` - Inget svar\n* `withdrawn` - Återkallad"
+            },
+            "TokenRefresh": {
+                "type": "object",
+                "properties": {
+                    "access": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "refresh": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "access",
+                    "refresh"
+                ]
+            },
+            "TokenVerify": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "writeOnly": true
+                    }
+                },
+                "required": [
+                    "token"
+                ]
+            },
+            "UserDetails": {
+                "type": "object",
+                "description": "User model w/o password",
+                "properties": {
+                    "pk": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "title": "ID"
+                    },
+                    "username": {
+                        "type": "string",
+                        "title": "Användarnamn",
+                        "description": "Obligatoriskt. 150 tecken eller färre. Endast bokstäver, siffror och @/./+/-/_.",
+                        "pattern": "^[\\w.@+-]+$",
+                        "maxLength": 150
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "readOnly": true,
+                        "title": "E-postadress"
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "title": "Förnamn",
+                        "maxLength": 150
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "title": "Efternamn",
+                        "maxLength": 150
+                    }
+                },
+                "required": [
+                    "email",
+                    "pk",
+                    "username"
+                ]
+            },
+            "VerifyEmail": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "writeOnly": true
+                    }
+                },
+                "required": [
+                    "key"
+                ]
+            }
+        },
+        "securitySchemes": {
+            "jwtAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}

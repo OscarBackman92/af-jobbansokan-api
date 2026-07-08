@@ -7,15 +7,27 @@
 
 import { clearTokens, getAccess, refreshAccess } from "./auth.js";
 
+type ErrorBody = Record<string, unknown> | null;
+
+export type RequestOptions = {
+  method?: string;
+  apiKey?: string;
+  body?: unknown;
+  auth?: boolean;
+};
+
 export class ApiError extends Error {
-  constructor(status, body) {
+  status: number;
+  body: ErrorBody;
+
+  constructor(status: number, body: ErrorBody) {
     super(formatErrors(body) || `HTTP ${status}`);
     this.status = status;
     this.body = body;
   }
 }
 
-function formatErrors(body) {
+function formatErrors(body: ErrorBody): string {
   if (!body || typeof body !== "object") return String(body ?? "");
   return Object.entries(body)
     .map(([field, msgs]) => {
@@ -27,20 +39,31 @@ function formatErrors(body) {
     .join(" — ");
 }
 
-async function send(path, { method, headers, body, isForm, accessToken }) {
+type SendOptions = {
+  method: string;
+  headers: Record<string, string>;
+  body?: unknown;
+  isForm: boolean;
+  accessToken: string | null;
+};
+
+async function send(
+  path: string,
+  { method, headers, body, isForm, accessToken }: SendOptions
+): Promise<Response> {
   if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
   return fetch(path, {
     method,
     headers: { ...headers },
-    body: isForm ? body : body ? JSON.stringify(body) : undefined,
+    body: isForm ? (body as BodyInit) : body ? JSON.stringify(body) : undefined,
   });
 }
 
-export async function request(
-  path,
-  { method = "GET", apiKey, body, auth = true } = {}
-) {
-  const headers = {};
+export async function request<T = unknown>(
+  path: string,
+  { method = "GET", apiKey, body, auth = true }: RequestOptions = {}
+): Promise<T> {
+  const headers: Record<string, string> = {};
   const isForm = body instanceof FormData;
   if (body && !isForm) headers["Content-Type"] = "application/json";
   if (apiKey) headers["Authorization"] = `Api-Key ${apiKey}`;
@@ -65,15 +88,15 @@ export async function request(
     }
   }
 
-  if (response.status === 204) return null;
-  const data = await response.json().catch(() => null);
+  if (response.status === 204) return null as T;
+  const data = (await response.json().catch(() => null)) as ErrorBody;
   if (!response.ok) throw new ApiError(response.status, data);
-  return data;
+  return data as T;
 }
 
 // Authenticated file download (CSV export) — same refresh-on-401 path,
 // but returns a Blob rather than JSON.
-export async function downloadBlob(path) {
+export async function downloadBlob(path: string): Promise<Blob> {
   let response = await fetch(path, {
     headers: { Authorization: `Bearer ${getAccess()}` },
   });

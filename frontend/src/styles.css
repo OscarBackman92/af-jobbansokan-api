@@ -798,6 +798,18 @@ label {
   color: var(--label);
 }
 
+.field {
+  margin: 0.85rem 0;
+}
+
+.field > label {
+  margin: 0;
+}
+
+.field .password-input {
+  margin-top: 0.35rem;
+}
+
 input,
 textarea,
 select {

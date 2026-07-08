@@ -63,24 +63,26 @@ export default function ResetPassword({ uid, token, onDone }) {
       <form className="card narrow" onSubmit={submit}>
         <h2>Välj ett nytt lösenord</h2>
         <p className="muted">Ange ditt nya lösenord nedan.</p>
-        <label>
-          Nytt lösenord
+        <div className="field">
+          <label htmlFor="reset-password">Nytt lösenord</label>
           <PasswordInput
+            id="reset-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
             required
           />
-        </label>
-        <label>
-          Bekräfta lösenord
+        </div>
+        <div className="field">
+          <label htmlFor="reset-password-confirm">Bekräfta lösenord</label>
           <PasswordInput
+            id="reset-password-confirm"
             value={password2}
             onChange={(e) => setPassword2(e.target.value)}
             autoComplete="new-password"
             required
           />
-        </label>
+        </div>
         {error && <p className="error">{error}</p>}
         <button disabled={busy}>{busy ? "Sparar…" : "Spara nytt lösenord"}</button>
         <button
