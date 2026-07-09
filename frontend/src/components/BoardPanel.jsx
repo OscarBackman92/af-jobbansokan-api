@@ -241,8 +241,7 @@ export default function BoardPanel({ token, onNavigate }) {
           <span className="section-kicker">Din tavla</span>
           <h2>Överblicken</h2>
           <p className="muted">
-            Här ser du pågående ansökningar, vad som behöver följas upp och var
-            varje process befinner sig.
+            Pågående ansökningar, vad som behöver svar, och vad du ska göra härnäst.
           </p>
         </div>
         <div className="metric-grid" aria-label="Översikt">
@@ -302,7 +301,7 @@ export default function BoardPanel({ token, onNavigate }) {
               {applications.length === 0
                 ? showWelcome
                   ? "Lägg till din första ansökan när du är redo."
-                  : "Tomt än så länge — lägg till din första ansökan."
+                  : "Inget här ännu — lägg till din första ansökan."
                 : `${applications.length} ansökningar, varav ${
                     applications.length - allClosed.length
                   } pågående. Följ flödet status för status.`}

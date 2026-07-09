@@ -11,8 +11,8 @@ describe("AuthHero", () => {
   it("renders the login form by default", () => {
     render(<AuthHero onLogin={vi.fn()} />);
 
-    expect(screen.getByText(/välkommen/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /ditt jobbsök/i })).toBeInTheDocument();
+    expect(screen.getByText(/hej/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /en tavla för/i })).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: /om jobbsöket/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/e-postadress/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /logga in/i })).toBeInTheDocument();

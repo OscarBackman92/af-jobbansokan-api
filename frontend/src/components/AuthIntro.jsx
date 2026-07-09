@@ -1,29 +1,29 @@
 const HIGHLIGHTS = [
   {
     title: "Tavlan",
-    text: "Pipeline, påminnelser och export — se vad som händer idag.",
+    text: "Se vad som pågår och vad som behöver en ping idag.",
   },
   {
     title: "Annonser",
-    text: "Platsbanken live. Spara jobb på tavlan med ett klick.",
+    text: "Sök Platsbanken och spara jobb du vill söka.",
   },
   {
     title: "Profil & CV",
-    text: "Bevisprofiler och matchning som visar varför en annons passar.",
+    text: "CV och matchning utifrån det du själv markerat som sant.",
   },
 ];
 
 export default function AuthIntro() {
   return (
     <aside className="auth-intro" aria-label="Om Jobbsöket">
-      <span className="section-kicker">Välkommen</span>
+      <span className="section-kicker">Hej</span>
       <h2>
-        Ditt jobbsök,
-        <span className="grad"> samlat och tydligt.</span>
+        En tavla för
+        <span className="grad"> dina jobbansökningar.</span>
       </h2>
       <p className="lede">
-        Jobbsöket är en personlig ansökningstavla — inte en rekryteringstjänst.
-        Du äger datan, exporterar när du vill och raderar kontot utan krångel.
+        Jobbsöket är inte en rekryteringssajt — bara din egen översikt. Du äger
+        uppgifterna och kan exportera eller radera kontot när som helst.
       </p>
       <ul className="auth-intro-list">
         {HIGHLIGHTS.map((item) => (
@@ -34,7 +34,7 @@ export default function AuthIntro() {
         ))}
       </ul>
       <p className="auth-intro-foot muted">
-        <a href="/">Läs mer på startsidan</a>
+        <a href="/">Mer om hur det funkar</a>
       </p>
     </aside>
   );

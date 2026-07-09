@@ -3,11 +3,11 @@ export default function WelcomeGuide({ onDismiss, onNavigate }) {
     <section className="welcome-guide card" aria-labelledby="welcome-guide-heading">
       <div className="welcome-guide-head">
         <div>
-          <span className="section-kicker">Kom igång</span>
-          <h2 id="welcome-guide-heading">Välkommen till Jobbsöket</h2>
+          <span className="section-kicker">Första gången här?</span>
+          <h2 id="welcome-guide-heading">Så här är appen tänkt</h2>
           <p className="muted welcome-guide-lede">
-            Här samlar du ansökningar, påminnelser och Platsbanken — utan Excel-ark
-            och utan att tappa bort var du står i processen.
+            Tavla, Platsbanken och CV — samlat så du slipper jaga i mail och
+            kalkylark.
           </p>
         </div>
         <button
@@ -15,46 +15,45 @@ export default function WelcomeGuide({ onDismiss, onNavigate }) {
           className="secondary small welcome-guide-dismiss"
           onClick={onDismiss}
         >
-          Stäng introduktionen
+          Stäng
         </button>
       </div>
 
       <div className="welcome-guide-grid">
         <article className="welcome-guide-block">
-          <h3>Så är appen uppbyggd</h3>
+          <h3>Tre flikar</h3>
           <ol className="welcome-steps">
             <li>
-              <strong>Tavlan</strong> — alla ansökningar i en pipeline från sparad
-              annons till erbjudande. Sektionen <em>Idag &amp; att göra</em> visar
-              vad som behöver din uppmärksamhet.
+              <strong>Tavlan</strong> — dina ansökningar från “sparad” till “svar”.
+              Kolla <em>Idag &amp; att göra</em> när du vill se vad som är dags.
             </li>
             <li>
-              <strong>Annonser</strong> — sök live i Platsbanken och spara intressanta
-              jobb direkt på tavlan.
+              <strong>Annonser</strong> — sök Platsbanken och spara det som känns
+              värt att söka.
             </li>
             <li>
-              <strong>Profil &amp; CV</strong> — ladda upp CV, bygg bevisprofiler och
-              se hur väl annonser matchar dina kompetenser.
+              <strong>Profil &amp; CV</strong> — CV och vilka kompetenser som ska
+              räknas när vi matchar annonser.
             </li>
           </ol>
         </article>
         <article className="welcome-guide-block">
-          <h3>Dina tre första steg</h3>
+          <h3>Börja så här</h3>
           <ol className="welcome-steps welcome-steps--numbered">
-            <li>Ladda upp CV under Profil &amp; CV.</li>
-            <li>Lägg till en ansökan här eller spara en annons från Platsbanken.</li>
-            <li>Sätt nästa steg och deadline — vi påminner dig när det är dags.</li>
+            <li>Lägg in CV under Profil &amp; CV.</li>
+            <li>Lägg till en ansökan här, eller spara en annons från Platsbanken.</li>
+            <li>Sätt nästa steg och datum — då kan vi påminna dig.</li>
           </ol>
           <div className="welcome-guide-actions">
             <button type="button" onClick={() => onNavigate?.("profile")}>
-              Börja med CV
+              Gå till CV
             </button>
             <button
               type="button"
               className="secondary"
               onClick={() => onNavigate?.("postings")}
             >
-              Sök annonser
+              Sök jobb
             </button>
           </div>
         </article>

@@ -110,8 +110,8 @@ function AuthCard({ onLogin }) {
     <form className="card narrow auth-card" onSubmit={submit}>
       <h2>{heading}</h2>
       <p className="muted">
-        {mode === "login" && "Logga in för att öppna din tavla."}
-        {mode === "register" && "E-post och lösenord — vi skickar en verifieringslänk."}
+        {mode === "login" && "Logga in så öppnas din tavla."}
+        {mode === "register" && "E-post och lösenord räcker. Vi skickar en länk för att verifiera adressen."}
         {mode === "forgot" &&
           "Ange din e-post så skickar vi en länk för att välja nytt lösenord."}
       </p>

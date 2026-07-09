@@ -460,11 +460,11 @@ export default function PostingsPanel() {
     <div className="stack">
       <section className="command-hero command-hero--compact">
         <div className="command-hero-copy">
-          <span className="section-kicker">Platsbanken live</span>
-          <h2>Hitta nästa jobb</h2>
+          <span className="section-kicker">Platsbanken</span>
+          <h2>Sök jobb</h2>
           <p className="muted">
-            Sök i hela Platsbanken, filtrera på ort och yrke — och spara intressanta
-            annonser direkt på din tavla.
+            Hela Platsbanken — filtrera på ort och yrke och spara det du vill
+            söka på tavlan.
           </p>
         </div>
         <div className="metric-inline" aria-label="Söksammanfattning">
