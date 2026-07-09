@@ -17,6 +17,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 from config.frontend_url import resolve_frontend_url
@@ -102,12 +103,17 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database-
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = (os.getenv("DATABASE_URL") or "").strip()
 if DATABASE_URL:
     # Hosted Postgres (Supabase, Render, etc.) — single URL in production.
     DATABASES = {"default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
     if not DEBUG:
         DATABASES["default"].setdefault("OPTIONS", {}).setdefault("sslmode", "require")
+elif not DEBUG:
+    raise ImproperlyConfigured(
+        "DATABASE_URL is required when DJANGO_DEBUG=0. "
+        "Set the Supabase connection string in Render → Environment."
+    )
 else:
     DATABASES = {
         "default": {
