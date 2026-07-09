@@ -34,8 +34,8 @@ export default function JobProfileSelector({
         )}
       </div>
       <p className="muted job-profile-hint">
-        Varje profil är en söklins — bevis kopplas till rader i CV:t. Dubbelklicka
-        fliken för att byta namn.
+        Olika sökprofiler om du söker olika typer av jobb. Dubbelklicka fliken
+        för att byta namn.
       </p>
     </div>
   );

@@ -17,7 +17,7 @@ export default function MatchScore({ match, variant = "compact", showMissing = t
       <div className={`match-score match-score--${tone}`}>
         <div className="match-score-head">
           <span className="match-score-label">
-            {match.count}/{match.total} bevis
+            {match.count} av {match.total}
           </span>
           <span className="match-score-pct">{percent}%</span>
         </div>
@@ -27,7 +27,7 @@ export default function MatchScore({ match, variant = "compact", showMissing = t
           aria-valuenow={match.count}
           aria-valuemin={0}
           aria-valuemax={match.total}
-          aria-label={`Matchar ${match.count} av ${match.total} bevis`}
+          aria-label={`${match.count} av ${match.total} krav i annonsen finns i CV:t`}
         >
           <span style={{ width: `${percent}%` }} />
         </div>
@@ -55,7 +55,7 @@ export default function MatchScore({ match, variant = "compact", showMissing = t
     <div className={`match-score match-score--detail match-score--${tone}`}>
       <div className="match-score-head">
         <span className={`badge ${match.count > 0 ? "applied" : "neutral"}`}>
-          Matchar {match.count}/{match.total} bevis ({percent}%)
+          {match.count} av {match.total} krav ({percent}%)
         </span>
       </div>
       <div
@@ -69,7 +69,7 @@ export default function MatchScore({ match, variant = "compact", showMissing = t
       </div>
       {matchedDetail.length > 0 && (
         <div className="match-score-group">
-          <span className="match-score-group-label">Du har bevis för</span>
+          <span className="match-score-group-label">Finns i CV:t</span>
           <div className="match-score-chips">
             {matchedDetail.map((item) => (
               <span className="badge applied" key={item.term} title={sourceLabel(item.source) || ""}>

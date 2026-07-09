@@ -14,11 +14,10 @@ def test_landing_page_is_public_html(client):
     body = response.content.decode()
     assert response.status_code == 200
     assert "Jobbsöket" in body
-    assert "Kom igång gratis" not in body
-    assert "Skapa konto gratis" in body
+    assert "Skapa konto" in body
     assert "Logga in" in body
-    assert "Så funkar det" in body
-    assert "Tre flikar i appen" in body
+    assert "Kom igång" in body
+    assert "Tre flikar" in body
     assert "Öppna appen" not in body
     assert 'rel="canonical"' in body
 

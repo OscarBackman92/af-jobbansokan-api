@@ -637,7 +637,7 @@ def job_search(request):
             raise ValidationError(
                 {
                     "match_cv": (
-                        "Lägg till bevis i din jobbprofil för att använda detta filter."
+                        "Markera kompetenser i CV:t för att filtrera på matchning."
                     )
                 }
             )

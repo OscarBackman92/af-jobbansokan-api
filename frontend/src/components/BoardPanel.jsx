@@ -238,10 +238,10 @@ export default function BoardPanel({ token, onNavigate }) {
     <div className="stack">
       <section className="command-hero">
         <div className="command-hero-copy">
-          <span className="section-kicker">Din tavla</span>
-          <h2>Överblicken</h2>
+          <span className="section-kicker">Tavlan</span>
+          <h2>Din översikt</h2>
           <p className="muted">
-            Pågående ansökningar, vad som behöver svar, och vad du ska göra härnäst.
+            Vad som pågår, vad som väntar svar, och vad du ska ta tag i härnäst.
           </p>
         </div>
         <div className="metric-grid" aria-label="Översikt">
@@ -300,11 +300,11 @@ export default function BoardPanel({ token, onNavigate }) {
             <p className="muted">
               {applications.length === 0
                 ? showWelcome
-                  ? "Lägg till din första ansökan när du är redo."
-                  : "Inget här ännu — lägg till din första ansökan."
-                : `${applications.length} ansökningar, varav ${
+                  ? "Lägg till en ansökan när du vill."
+                  : "Tomt här — börja med en ansökan."
+                : `${applications.length} totalt, ${
                     applications.length - allClosed.length
-                  } pågående. Följ flödet status för status.`}
+                  } pågående.`}
             </p>
           </div>
           <div className="row-gap">
@@ -321,14 +321,14 @@ export default function BoardPanel({ token, onNavigate }) {
         {applications.length === 0 && !showWelcome ? (
           <div className="empty-state">
             <div className="empty-icon" aria-hidden="true" />
-            <h3>Din tavla är tom</h3>
+            <h3>Inget här än</h3>
             <p className="muted">
-              Lägg till en ansökan manuellt, eller hitta en annons under
-              fliken Annonser och lägg den på tavlan.
+              Lägg till en ansökan själv, eller spara något från Platsbanken under
+              fliken Annonser.
             </p>
             <div className="empty-actions">
               <button onClick={() => setAdding(true)}>
-                + Lägg till din första ansökan
+                + Ny ansökan
               </button>
               <button className="secondary" onClick={() => onNavigate?.("postings")}>
                 Sök annonser

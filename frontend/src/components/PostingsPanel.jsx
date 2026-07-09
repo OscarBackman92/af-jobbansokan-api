@@ -463,8 +463,8 @@ export default function PostingsPanel() {
           <span className="section-kicker">Platsbanken</span>
           <h2>Sök jobb</h2>
           <p className="muted">
-            Hela Platsbanken — filtrera på ort och yrke och spara det du vill
-            söka på tavlan.
+            Platsbanken — filtrera på ort och yrke, spara det du vill söka på
+            tavlan.
           </p>
         </div>
         <div className="metric-inline" aria-label="Söksammanfattning">
@@ -615,7 +615,7 @@ export default function PostingsPanel() {
                     ? "Inga annonser matchade ditt CV i denna sökning."
                     : "Inga annonser matchade din sökning."
                   : query.matchCv
-                    ? `Visar ${results.length} CV-matchande av ${showingFrom}–${showingTo} (totalt ${total.toLocaleString(
+                    ? `Visar ${results.length} som passar CV:t (${showingFrom}–${showingTo} av ${total.toLocaleString(
                         "sv-SE"
                       )})`
                     : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(

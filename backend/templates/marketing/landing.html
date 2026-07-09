@@ -9,7 +9,7 @@
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "inLanguage": "sv",
-  "description": "Gratis tavla för jobbansökningar med Platsbanken-sök, påminnelser och CV-matchning.",
+  "description": "Tavla för jobbansökningar med Platsbanken-sök och påminnelser.",
   "offers": {
     "@type": "Offer",
     "price": "0",
@@ -23,80 +23,71 @@
 <main>
   <section class="marketing-hero">
     <div>
-      <span class="section-kicker">För dig som jobbsöker</span>
+      <span class="section-kicker">Jobbsök i Sverige</span>
       <h2>
-        Slipp tappa bort
-        <span class="grad">var du står i varje ansökan.</span>
+        Håll koll på ansökningarna
+        <span class="grad">utan nytt Excel-ark.</span>
       </h2>
       <p class="lede">
-        Jobbsöket är en egen tavla: vad du skickat, vad som väntar svar, och när
-        det är dags att följa upp. Sök i Platsbanken och spara jobb du faktiskt
-        vill söka.
+        När flera processer rullar samtidigt glömmer man lätt vem man pratat med
+        och när man tänkte höra av sig. Här har du allt på en tavla — plus sök i
+        Platsbanken när du vill fylla på.
       </p>
       <p class="hero-cta">
-        <a class="btn-primary" href="{{ app_url }}">Skapa konto gratis</a>
+        <a class="btn-primary" href="{{ app_url }}">Skapa konto</a>
       </p>
       <p class="hero-note muted">
-        Gratis att använda. Inga annonser. Exportera eller radera dina uppgifter när du vill.
+        Gratis. Inga annonser. Exportera eller radera allt när du vill.
       </p>
     </div>
     <aside class="hero-card">
-      <h3>Kort sagt</h3>
+      <h3>Det här är det</h3>
       <ul class="checklist">
-        <li>Tavla med status från sparad annons till svar</li>
-        <li>Idag-vy och påminnelser när något är dags</li>
-        <li>CV-match som visar varför, inte bara en siffra</li>
-        <li>Sök Platsbanken och spara direkt på tavlan</li>
+        <li>En rad per ansökan — status, datum, kontakt, anteckningar</li>
+        <li>Påminnelse när nästa steg är dags</li>
+        <li>Ser vilka krav i annonsen som finns i CV:t — inte bara en procentsiffra</li>
+        <li>Platsbanken inbyggt — spara jobb du vill söka</li>
       </ul>
-      <a class="btn-primary" href="{{ app_url }}">Logga in eller skapa konto</a>
-      <div class="metric-grid" aria-hidden="true">
-        <div class="metric-tile">
-          <span class="metric-label">Statusar</span>
-          <strong>7</strong>
-          <span class="metric-detail">steg</span>
-        </div>
-        <div class="metric-tile">
-          <span class="metric-label">Data</span>
-          <strong>100%</strong>
-          <span class="metric-detail">din</span>
-        </div>
-      </div>
+      <a class="btn-primary" href="{{ app_url }}">Logga in</a>
+      <p class="hero-note muted" style="margin-top: 1rem; margin-bottom: 0">
+        Inte en rekryteringssajt. Bara din egen översikt.
+      </p>
     </aside>
   </section>
 
   <section class="marketing-section" aria-labelledby="how-heading">
-    <h2 id="how-heading">Så funkar det</h2>
+    <h2 id="how-heading">Kom igång</h2>
     <p class="section-lede">
-      Tre steg. Inget krångel.
+      Så brukar folk börja.
     </p>
     <ol class="steps-list">
       <li class="step-card">
         <span class="step-number" aria-hidden="true">1</span>
         <div>
-          <h3>Skapa konto och lägg in CV</h3>
+          <h3>Lägg in CV</h3>
           <p>
-            Ladda upp CV:t och markera vilka kompetenser som stämmer. Då kan vi
-            visa hur väl en annons matchar dig.
+            Ladda upp eller skriv in. Markera vad som faktiskt stämmer — då blir
+            matchningen mot annonser vettig.
           </p>
         </div>
       </li>
       <li class="step-card">
         <span class="step-number" aria-hidden="true">2</span>
         <div>
-          <h3>Lägg ansökningar på tavlan</h3>
+          <h3>Fyll tavlan</h3>
           <p>
-            Skriv in själv eller spara från Platsbanken. Företag, status, deadline
-            och vem du pratat med — på ett ställe.
+            Skriv in en ansökan själv, eller spara något från Platsbanken. Ett ställe
+            för företag, status och vem du haft kontakt med.
           </p>
         </div>
       </li>
       <li class="step-card">
         <span class="step-number" aria-hidden="true">3</span>
         <div>
-          <h3>Följ upp i tid</h3>
+          <h3>Sätt nästa steg</h3>
           <p>
-            Idag-vyn visar vad som är brådskande. Sätt nästa steg så får du en
-            påminnelse när det är dags att höra av dig.
+            En deadline eller “ring tillbaka på fredag”. Idag-vyn visar vad som
+            väntar, och du kan få en påminnelse på mejl.
           </p>
         </div>
       </li>
@@ -104,77 +95,41 @@
   </section>
 
   <section class="marketing-section" aria-labelledby="app-heading">
-    <h2 id="app-heading">Tre flikar i appen</h2>
+    <h2 id="app-heading">Tre flikar</h2>
     <p class="section-lede">
-      Efter inloggning finns tre ställen att jobba i.
+      Efter inloggning.
     </p>
     <div class="app-areas">
       <article class="app-area-card">
         <h3>Tavlan</h3>
         <p>
-          Dina ansökningar i ordning. Filtrera, exportera till CSV och kolla
-          <strong>Idag &amp; att göra</strong> när du vill se vad som väntar.
+          Dina ansökningar. Filtrera, exportera, och kolla <strong>Idag &amp; att göra</strong>
+          när du undrar vad som är dags.
         </p>
       </article>
       <article class="app-area-card">
         <h3>Annonser</h3>
         <p>
-          Sök Platsbanken på ort och yrke. Hittar du något bra sparar du det på
-          tavlan med ett klick.
+          Sök Platsbanken. Hittar du något intressant sparar du det på tavlan.
         </p>
       </article>
       <article class="app-area-card">
         <h3>Profil &amp; CV</h3>
         <p>
-          Redigera CV, välj vilka kompetenser som gäller, och se hur annonser
-          matchar det du faktiskt skrivit.
-        </p>
-      </article>
-    </div>
-  </section>
-
-  <section class="marketing-section" aria-labelledby="features-heading">
-    <h2 id="features-heading">Det här finns</h2>
-    <div class="feature-grid">
-      <article class="feature-card">
-        <h3>Ansökningstavla</h3>
-        <p>
-          Flytta mellan statusar, filtrera på intervjuer och deadlines, och öppna
-          varje rad med tidslinje och kontaktuppgifter.
-        </p>
-      </article>
-      <article class="feature-card">
-        <h3>Platsbanken</h3>
-        <p>
-          Sök på yrke, ort och ord. Jämför mot CV innan du bestämmer dig för att
-          spara annonsen.
-        </p>
-      </article>
-      <article class="feature-card">
-        <h3>CV-matchning</h3>
-        <p>
-          Du markerar vad som stämmer i CV:t. Matchningen pekar på konkreta rader,
-          inte bara “78 %”.
-        </p>
-      </article>
-      <article class="feature-card">
-        <h3>Din data</h3>
-        <p>
-          Ingen spårning. CV:t lagras inte som fil hos oss. Exportera eller radera
-          kontot när du vill.
+          CV och vilka kompetenser som ska räknas när du jämför med annonser.
         </p>
       </article>
     </div>
   </section>
 
   <section class="marketing-section marketing-cta">
-    <h2>Vill du prova?</h2>
+    <h2>Testa om du vill</h2>
     <p class="lede">
-      Konto tar under en minut. När du loggar in första gången får du en kort
-      guide på tavlan.
+      Konto tar en minut. Första gången du loggar in finns en kort förklaring på
+      tavlan.
     </p>
     <p>
-      <a class="btn-primary" href="{{ app_url }}">Skapa konto gratis</a>
+      <a class="btn-primary" href="{{ app_url }}">Skapa konto</a>
     </p>
   </section>
 </main>

@@ -26,7 +26,7 @@ export default function TodayPanel({ applications, onOpen }) {
           <p className="muted">
             {overdueCount > 0 && `${overdueCount} försenade · `}
             {todayCount > 0 && `${todayCount} idag · `}
-            {items.length} {items.length === 1 ? "åtgärd" : "åtgärder"} totalt
+            {items.length} {items.length === 1 ? "sak" : "saker"} att ta tag i
           </p>
         </div>
         <button

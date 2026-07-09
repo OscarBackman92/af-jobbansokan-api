@@ -105,8 +105,11 @@ export default function App() {
     setTab("board");
   }
 
+  const isGuest =
+    !token && !resetCreds && !verifyKey && !googleCode;
+
   return (
-    <div className="app">
+    <div className={isGuest ? "app app--guest" : "app"}>
       <header className="header">
         <a className="brand brand-link" href="/">
           <div className="logo" aria-hidden="true">
@@ -148,7 +151,7 @@ export default function App() {
         )}
       </header>
 
-      <main className="main" key={tab}>
+      <main className={isGuest ? "main main--guest" : "main"} key={tab}>
         {googleCode && !token && (
           <GoogleSignIn
             code={googleCode}
@@ -204,8 +207,7 @@ export default function App() {
 
       <footer className="footer">
         <span className="footer-kicker">Jobbsöket</span>
-        Din ansökningsdata är din: exportera som CSV eller radera kontot och allt
-        med det.{" "}
+        Din data är din — exportera eller radera kontot när du vill.{" "}
         <a className="footer-link" href="/integritet/">
           Integritetspolicy
         </a>

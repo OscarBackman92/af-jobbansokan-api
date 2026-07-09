@@ -216,8 +216,7 @@ function CvReadView({ resume, jobProfiles }) {
   if (!hasContent) {
     return (
       <p className="muted">
-        Inget CV ännu — ladda upp en fil eller klicka på Redigera för att
-        fylla i.
+        Inget CV inlagt än. Ladda upp en fil eller klicka Redigera.
       </p>
     );
   }
@@ -234,7 +233,7 @@ function CvReadView({ resume, jobProfiles }) {
 
       {evidence.length > 0 && (
         <>
-          <h3>Bevis i profilen</h3>
+          <h3>Kompetenser du markerat</h3>
           {[...bySource.entries()].map(([sourceLabel, items]) => (
             <div className="cv-evidence-group" key={sourceLabel}>
               <p className="muted cv-evidence-source">{items[0]?.source?.label || sourceLabel}</p>
@@ -507,8 +506,8 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
       setMessage({
         tone: "info",
         text:
-          "CV:t är tolkat — granska erfarenhet och lägg till bevis i din jobbprofil. " +
-          "Filen sparas aldrig.",
+          "CV:t är inläst — kolla att erfarenheten stämmer och markera vad som ska räknas. " +
+          "Filen sparas aldrig på servern.",
       });
     } catch (err) {
       setMessage({ tone: "error", text: err.message });
@@ -574,8 +573,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
         <div>
           <h2>Mitt CV</h2>
           <p className="muted">
-            Bygg en jobbprofil med bevis från CV:t — det styr matchning mot
-            annonser och tavlan.
+            Markera vad i CV:t som stämmer — det styr hur annonser matchas.
           </p>
         </div>
         <div className="row-gap">
@@ -653,7 +651,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
           {marketHints.length > 0 && (
             <section className="market-hints" aria-live="polite">
               <h3>Populärt i jobb du tittat på</h3>
-              <p className="muted">Saknades i matchningen — lägg till om det stämmer.</p>
+              <p className="muted">Förekom ofta i annonser du tittat på — lägg till om det stämmer.</p>
               <div className="evidence-suggestions">
                 {marketHints.map((item) => (
                   <span className="evidence-suggestion" key={item.term}>
@@ -676,7 +674,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
 
           {suggestionsLoading && (
             <p className="muted">
-              <span className="spinner" /> Letar bevis i CV:t…
+              <span className="spinner" /> Läser CV:t…
             </p>
           )}
 
