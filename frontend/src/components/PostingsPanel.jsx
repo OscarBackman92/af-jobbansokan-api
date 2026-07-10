@@ -332,7 +332,7 @@ export default function PostingsPanel() {
           title: job.title,
           location: job.location,
           ad_url: job.webpage_url,
-          apply_url: job.application_url || "",
+          apply_url: normalizeAdUrl(job.application_url || ""),
           ad_description: job.description || "",
           source_job_id: job.id || "",
           deadline: job.application_deadline,

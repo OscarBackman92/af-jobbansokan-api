@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   findDuplicateByAdUrl,
+  linkLabel,
   normalizeAdUrl,
   platsbankenJobId,
 } from "./adUrl.js";
@@ -35,6 +36,16 @@ describe("platsbankenJobId", () => {
     expect(platsbankenJobId("https://arbetsformedlingen.se/annons/1001")).toBe(
       "1001"
     );
+  });
+});
+
+describe("linkLabel", () => {
+  it("shows hostname and path without tracking params", () => {
+    expect(
+      linkLabel(
+        "https://tillvaxtverket.se/ledigajobb?rmjob=2046&utm_source=jobtip"
+      )
+    ).toBe("tillvaxtverket.se/ledigajobb");
   });
 });
 

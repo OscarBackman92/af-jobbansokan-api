@@ -58,6 +58,19 @@ export function platsbankenJobId(value) {
   return match ? match[1] : null;
 }
 
+export function linkLabel(value) {
+  const href = externalUrl(value) || value?.trim();
+  if (!href) return "";
+  try {
+    const url = new URL(href);
+    const host = url.hostname.replace(/^www\./, "");
+    const path = url.pathname === "/" ? "" : url.pathname;
+    return `${host}${path}`;
+  } catch {
+    return href;
+  }
+}
+
 export function findDuplicateByAdUrl(applications, adUrl, excludeId = null) {
   const key = normalizeAdUrl(adUrl);
   if (!key) return null;

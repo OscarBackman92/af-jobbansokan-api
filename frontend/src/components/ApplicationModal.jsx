@@ -4,6 +4,7 @@ import {
   externalUrl,
   findDuplicateByAdUrl,
   findSimilarByCompanyTitle,
+  linkLabel,
   normalizeAdUrl,
   platsbankenJobId,
 } from "../adUrl.js";
@@ -152,10 +153,9 @@ export default function ApplicationModal({
 
   useEffect(() => {
     const previous = document.activeElement;
-    const focusable = dialogRef.current?.querySelector(
-      "input, select, textarea, button"
-    );
-    focusable?.focus();
+    dialogRef.current
+      ?.querySelector(".modal-close")
+      ?.focus({ preventScroll: true });
 
     function onKeyDown(event) {
       if (event.key === "Escape") {
@@ -249,60 +249,82 @@ export default function ApplicationModal({
   return (
     <ModalOverlay
       onClose={onClose}
-      className="modal application-modal job-modal"
+      className="modal application-modal"
+      overlayClassName="overlay overlay--application"
       dialogRef={dialogRef}
       labelledBy="application-modal-title"
     >
-      <div className="modal-head">
-        <div className="modal-head-text">
-          <h2 id="application-modal-title">
-            {application ? form.title || "Ansökan" : "Ny ansökan"}
-          </h2>
-          {application && (
-            <p className="muted">
-              {form.company}
-              {form.location && ` — ${form.location}`}
-              {form.deadline && ` · sista ansökningsdag ${form.deadline}`}
-            </p>
-          )}
+      <header className="application-modal-header">
+        <div className="modal-head">
+          <div className="modal-head-text">
+            <h2 id="application-modal-title">
+              {application ? form.title || "Ansökan" : "Ny ansökan"}
+            </h2>
+            {application && (
+              <p className="muted">
+                {form.company}
+                {form.location && ` — ${form.location}`}
+                {form.deadline && ` · sista ansökningsdag ${form.deadline}`}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            className="secondary small modal-close"
+            onClick={onClose}
+            aria-label="Stäng"
+          >
+            ✕
+          </button>
         </div>
-        <button
-          type="button"
-          className="secondary small modal-close"
-          onClick={onClose}
-          aria-label="Stäng"
-        >
-          ✕
-        </button>
-      </div>
 
+        {application && (
+          <div className="application-ad-toolbar">
+            <div className="modal-actions">
+              {applyHref && (
+                <a
+                  className="btn-primary"
+                  href={applyHref}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {form.apply_url ? "Ansök hos arbetsgivaren ↗" : "Öppna annons ↗"}
+                </a>
+              )}
+              {platsbankenHref && platsbankenHref !== applyHref && (
+                <a
+                  className="secondary"
+                  href={platsbankenHref}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Platsbanken ↗
+                </a>
+              )}
+            </div>
+            {(form.apply_url || form.ad_url) && (
+              <p className="muted application-link-labels">
+                {form.apply_url && (
+                  <span>Ansökan: {linkLabel(form.apply_url)}</span>
+                )}
+                {form.apply_url && form.ad_url && platsbankenHref !== applyHref && (
+                  <span aria-hidden="true"> · </span>
+                )}
+                {form.ad_url && platsbankenHref !== applyHref && (
+                  <span>Platsbanken: {linkLabel(form.ad_url)}</span>
+                )}
+              </p>
+            )}
+          </div>
+        )}
+      </header>
+
+      <div className="application-modal-body">
       {application && (
         <section className="application-ad" aria-labelledby="application-ad-heading">
           <h3 id="application-ad-heading">Om jobbet</h3>
-          <div className="modal-actions">
-            {applyHref && (
-              <a
-                className="btn-primary"
-                href={applyHref}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {form.apply_url ? "Ansök hos arbetsgivaren ↗" : "Öppna annons ↗"}
-              </a>
-            )}
-            {platsbankenHref && platsbankenHref !== applyHref && (
-              <a
-                className="secondary"
-                href={platsbankenHref}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Platsbanken ↗
-              </a>
-            )}
-          </div>
-          {adLoading && (
-            <p className="muted" role="status">
+          {adLoading && !previewDescription && (
+            <p className="muted application-ad-status" role="status">
               Hämtar annonstext…
             </p>
           )}
@@ -311,130 +333,202 @@ export default function ApplicationModal({
               Kunde inte hämta annonstexten: {adFetchError}
             </p>
           )}
-          <div className="description">
+          <div className="description application-ad-text">
             {previewDescription ||
               (adLoading
                 ? ""
-                : "Ingen annonstext sparad. Länken ovan öppnar annonsen hos arbetsgivaren eller Platsbanken.")}
+                : "Ingen annonstext sparad ännu.")}
           </div>
+          {!previewDescription && !adLoading && jobId && (
+            <button
+              type="button"
+              className="secondary small"
+              onClick={() =>
+                setForm((prev) => ({ ...prev, ad_description: "" }))
+              }
+            >
+              Hämta annons igen
+            </button>
+          )}
         </section>
       )}
 
       <form className="application-form" onSubmit={save}>
-        <h3>Dina uppgifter</h3>
-        <div className="grid3">
-          <label>
-            Företag
-            <input {...field("company")} required placeholder="Acme AB" />
-          </label>
-          <label>
-            Roll
-            <input {...field("title")} required placeholder="Backendutvecklare" />
-          </label>
-          <label>
-            Ort
-            <input {...field("location")} />
-          </label>
-        </div>
-        <ContactPanel
-          form={form}
-          setForm={setForm}
-          field={field}
-          application={application}
-          onLogCall={logContactCall}
-        />
-        <div className="grid3">
-          <label>
-            Status
-            <select
-              value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value })}
-              style={{ width: "100%" }}
-            >
-              {STATUSES.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Sökt datum
-            <input {...field("applied_at", "date")} />
-          </label>
-          <label>
-            Sista ansökningsdag
-            <input {...field("deadline", "date")} />
-          </label>
-        </div>
-        <label>
-          Nästa steg (datum)
-          <input {...field("next_action_at", "date")} />
-        </label>
-        <label>
-          Länk till ansökan
-          <input
-            {...field("apply_url", "url")}
-            placeholder="Arbetsgivarens ansökningssida"
-          />
-        </label>
-        <label>
-          Platsbanken-referens
-          <input
-            {...field("ad_url", "url")}
-            placeholder="https://arbetsformedlingen.se/platsbanken/annonser/…"
-          />
-        </label>
-        {duplicateByUrl && (
-          <p className="warning" role="status">
-            Den här annonsen finns redan på tavlan som{" "}
-            <button
-              type="button"
-              className="linklike"
-              onClick={() => onOpenExisting?.(duplicateByUrl)}
-            >
-              {duplicateByUrl.title} @ {duplicateByUrl.company}
-            </button>
-            .
-          </p>
+        {application ? (
+          <details className="application-form-toggle">
+            <summary>Dina uppgifter</summary>
+            <ApplicationFields
+              application={application}
+              duplicateByUrl={duplicateByUrl}
+              duplicateBlocked={duplicateBlocked}
+              error={error}
+              field={field}
+              form={form}
+              onLogCall={logContactCall}
+              onOpenExisting={onOpenExisting}
+              onRemove={remove}
+              setForm={setForm}
+              similarByTitle={similarByTitle}
+              showLinkFields
+            />
+          </details>
+        ) : (
+          <>
+            <h3>Dina uppgifter</h3>
+            <ApplicationFields
+              application={application}
+              duplicateByUrl={duplicateByUrl}
+              duplicateBlocked={duplicateBlocked}
+              error={error}
+              field={field}
+              form={form}
+              onLogCall={logContactCall}
+              onOpenExisting={onOpenExisting}
+              onRemove={remove}
+              setForm={setForm}
+              similarByTitle={similarByTitle}
+              showLinkFields
+            />
+          </>
         )}
-        {similarByTitle && (
-          <p className="warning warning--soft" role="status">
-            Du har redan en ansökan med samma företag och roll:{" "}
-            <button
-              type="button"
-              className="linklike"
-              onClick={() => onOpenExisting?.(similarByTitle)}
-            >
-              {similarByTitle.title} @ {similarByTitle.company}
-            </button>
-            . Kontrollera att det inte är samma jobb.
-          </p>
-        )}
-        <label>
-          Anteckningar
-          <textarea {...field("notes")} />
-        </label>
-        {error && <p className="error">{error}</p>}
-        <div className="row-between">
-          <button disabled={duplicateBlocked}>
-            {application ? "Spara" : "Lägg till"}
-          </button>
-          {application && (
-            <button type="button" className="danger small" onClick={remove}>
-              Ta bort
-            </button>
-          )}
-        </div>
       </form>
 
       {application && <Timeline events={events} onAdd={addEvent} />}
+      </div>
     </ModalOverlay>
   );
 }
 
+function ApplicationFields({
+  application,
+  duplicateBlocked,
+  duplicateByUrl,
+  error,
+  field,
+  form,
+  onLogCall,
+  onOpenExisting,
+  onRemove,
+  setForm,
+  similarByTitle,
+  showLinkFields,
+}) {
+  return (
+    <>
+      <div className="grid3">
+        <label>
+          Företag
+          <input {...field("company")} required placeholder="Acme AB" />
+        </label>
+        <label>
+          Roll
+          <input {...field("title")} required placeholder="Backendutvecklare" />
+        </label>
+        <label>
+          Ort
+          <input {...field("location")} />
+        </label>
+      </div>
+      <ContactPanel
+        form={form}
+        setForm={setForm}
+        field={field}
+        application={application}
+        onLogCall={onLogCall}
+      />
+      <div className="grid3">
+        <label>
+          Status
+          <select
+            value={form.status}
+            onChange={(e) => setForm({ ...form, status: e.target.value })}
+            style={{ width: "100%" }}
+          >
+            {STATUSES.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Sökt datum
+          <input {...field("applied_at", "date")} />
+        </label>
+        <label>
+          Sista ansökningsdag
+          <input {...field("deadline", "date")} />
+        </label>
+      </div>
+      <label>
+        Nästa steg (datum)
+        <input {...field("next_action_at", "date")} />
+      </label>
+      {showLinkFields && (
+        <details className="link-details">
+          <summary>Redigera länkar</summary>
+          <label>
+            Länk till ansökan
+            <input
+              {...field("apply_url", "url")}
+              placeholder="Arbetsgivarens ansökningssida"
+            />
+          </label>
+          <label>
+            Platsbanken-referens
+            <input
+              {...field("ad_url", "url")}
+              placeholder="https://arbetsformedlingen.se/platsbanken/annonser/…"
+            />
+          </label>
+        </details>
+      )}
+      {duplicateByUrl && (
+        <p className="warning" role="status">
+          Den här annonsen finns redan på tavlan som{" "}
+          <button
+            type="button"
+            className="linklike"
+            onClick={() => onOpenExisting?.(duplicateByUrl)}
+          >
+            {duplicateByUrl.title} @ {duplicateByUrl.company}
+          </button>
+          .
+        </p>
+      )}
+      {similarByTitle && (
+        <p className="warning warning--soft" role="status">
+          Du har redan en ansökan med samma företag och roll:{" "}
+          <button
+            type="button"
+            className="linklike"
+            onClick={() => onOpenExisting?.(similarByTitle)}
+          >
+            {similarByTitle.title} @ {similarByTitle.company}
+          </button>
+          . Kontrollera att det inte är samma jobb.
+        </p>
+      )}
+      <label>
+        Anteckningar
+        <textarea {...field("notes")} />
+      </label>
+      {error && <p className="error">{error}</p>}
+      <div className="row-between">
+        <button disabled={duplicateBlocked}>
+          {application ? "Spara" : "Lägg till"}
+        </button>
+        {application && (
+          <button type="button" className="danger small" onClick={onRemove}>
+            Ta bort
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
 function parseContactInfo(info) {
-  const trimmed = info?.trim() || "";
   if (!trimmed) return {};
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
     return { email: trimmed };
@@ -537,7 +631,7 @@ function Timeline({ events, onAdd }) {
   }
 
   return (
-    <div>
+    <section className="timeline-section">
       <h3>Tidslinje</h3>
       <form className="timeline-form" onSubmit={submit}>
         <input
@@ -566,6 +660,6 @@ function Timeline({ events, onAdd }) {
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }

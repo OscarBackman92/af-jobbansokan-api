@@ -5,6 +5,7 @@ export default function ModalOverlay({
   onClose,
   children,
   className = "modal",
+  overlayClassName = "overlay",
   dialogRef,
   labelledBy,
 }) {
@@ -17,7 +18,7 @@ export default function ModalOverlay({
   }, []);
 
   return createPortal(
-    <div className="overlay" onClick={onClose} role="presentation">
+    <div className={overlayClassName} onClick={onClose} role="presentation">
       <div
         className={className}
         ref={dialogRef}
