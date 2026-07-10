@@ -11,6 +11,7 @@ from .views import (
     SavedJobSearchDetailView,
     SavedJobSearchListCreateView,
     job_filters,
+    job_detail,
     job_groups,
     job_municipalities,
     job_search,
@@ -47,5 +48,6 @@ urlpatterns = [
     path("jobs/filters/", job_filters, name="job-filters"),
     path("jobs/groups/", job_groups, name="job-groups"),
     path("jobs/municipalities/", job_municipalities, name="job-municipalities"),
+    path("jobs/<str:job_id>/", job_detail, name="job-detail"),
     path("", include(router.urls)),
 ]

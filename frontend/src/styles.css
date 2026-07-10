@@ -3098,6 +3098,41 @@ tbody tr:last-child td {
   min-height: 6rem;
 }
 
+/* ---------- Application detail modal ---------- */
+
+.application-modal {
+  max-width: 820px;
+  gap: 0.85rem;
+}
+
+.application-modal .application-ad h3,
+.application-modal .application-form h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.application-modal .application-ad {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.application-modal .application-ad .description {
+  max-height: 32vh;
+  min-height: 5rem;
+}
+
+.application-modal .application-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
 /* ---------- Footer ---------- */
 
 .footer {

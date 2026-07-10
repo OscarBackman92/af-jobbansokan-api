@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   findDuplicateByAdUrl,
   normalizeAdUrl,
+  platsbankenJobId,
 } from "./adUrl.js";
 
 describe("normalizeAdUrl", () => {
@@ -18,6 +19,22 @@ describe("normalizeAdUrl", () => {
     const https = "https://example.com/jobb/42";
     const http = "http://example.com/jobb/42/";
     expect(normalizeAdUrl(https)).toBe(normalizeAdUrl(http));
+  });
+});
+
+describe("platsbankenJobId", () => {
+  it("extracts id from platsbanken urls", () => {
+    expect(
+      platsbankenJobId(
+        "https://arbetsformedlingen.se/platsbanken/annonser/31258362"
+      )
+    ).toBe("31258362");
+  });
+
+  it("extracts id from legacy annons urls", () => {
+    expect(platsbankenJobId("https://arbetsformedlingen.se/annons/1001")).toBe(
+      "1001"
+    );
   });
 });
 

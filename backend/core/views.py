@@ -47,6 +47,7 @@ from .jobtech import (
     OCCUPATION_FIELDS,
     REGIONS,
     JobTechError,
+    fetch_ad,
     municipalities,
     occupation_groups,
 )
@@ -647,6 +648,22 @@ def job_search(request):
     data["offset"] = offset
     data["limit"] = limit
     return Response(data)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedUser])
+@throttle_classes([JobTechThrottle])
+def job_detail(_request, job_id):
+    """Fetch one Platsbanken ad by JobTech id (for ad text refresh)."""
+    try:
+        job = fetch_ad(job_id)
+    except JobTechError:
+        return Response(
+            {"detail": "Kunde inte hämta annonsen just nu."},
+            status=drf_status.HTTP_502_BAD_GATEWAY,
+        )
+    return Response(job)
 
 
 @extend_schema(responses={200: OpenApiTypes.OBJECT})

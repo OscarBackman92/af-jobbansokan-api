@@ -5,6 +5,7 @@ import {
   findDuplicateByAdUrl,
   findSimilarByCompanyTitle,
   normalizeAdUrl,
+  platsbankenJobId,
 } from "../adUrl.js";
 import { request } from "../api.js";
 import { STATUSES } from "../statuses.js";
@@ -15,6 +16,9 @@ const EMPTY = {
   title: "",
   location: "",
   ad_url: "",
+  apply_url: "",
+  ad_description: "",
+  source_job_id: "",
   status: "applied",
   applied_at: new Date().toISOString().slice(0, 10),
   deadline: "",
@@ -46,10 +50,14 @@ export default function ApplicationModal({
   );
   const [events, setEvents] = useState(application?.events ?? []);
   const [error, setError] = useState(null);
+  const [adLoading, setAdLoading] = useState(false);
+  const [adFetchError, setAdFetchError] = useState(null);
   const dialogRef = useRef(null);
-  const adUrl = externalUrl(form.ad_url);
+  const platsbankenHref = externalUrl(form.ad_url);
+  const applyHref = externalUrl(form.apply_url) || platsbankenHref;
   const applicationId = application?.id ?? null;
-  const hasEmbeddedEvents = Boolean(application?.events);
+  const previewDescription = form.ad_description?.trim();
+  const jobId = form.source_job_id || platsbankenJobId(form.ad_url);
   const duplicateByUrl = useMemo(
     () => findDuplicateByAdUrl(existingApplications, form.ad_url, applicationId),
     [existingApplications, form.ad_url, applicationId]
@@ -73,11 +81,18 @@ export default function ApplicationModal({
 
   // List rows are lean (no timeline); fetch the full row when editing.
   useEffect(() => {
-    if (!applicationId || hasEmbeddedEvents) return undefined;
+    if (!applicationId) return undefined;
     let cancelled = false;
     request(`/api/v1/applications/${applicationId}/`, { token })
       .then((detail) => {
-        if (!cancelled) setEvents(detail.events ?? []);
+        if (cancelled) return;
+        setEvents(detail.events ?? []);
+        setForm((prev) => ({
+          ...prev,
+          ad_description: detail.ad_description || prev.ad_description,
+          apply_url: detail.apply_url || prev.apply_url,
+          source_job_id: detail.source_job_id || prev.source_job_id,
+        }));
       })
       .catch(() => {
         /* timeline stays empty; the form is still usable */
@@ -85,7 +100,55 @@ export default function ApplicationModal({
     return () => {
       cancelled = true;
     };
-  }, [applicationId, hasEmbeddedEvents, token]);
+  }, [applicationId, token]);
+
+  // Older rows may lack a saved ad snapshot — pull it from Platsbanken on open.
+  useEffect(() => {
+    if (!applicationId || previewDescription || !jobId) return undefined;
+    let cancelled = false;
+    setAdLoading(true);
+    setAdFetchError(null);
+    request(`/api/v1/jobs/${jobId}/`, { token })
+      .then(async (job) => {
+        if (cancelled) return;
+        const snapshot = {
+          ad_description: job.description || "",
+          apply_url: job.application_url || "",
+          source_job_id: job.id || "",
+        };
+        setForm((prev) => ({
+          ...prev,
+          ad_description: snapshot.ad_description || prev.ad_description,
+          apply_url: prev.apply_url || snapshot.apply_url,
+          source_job_id: prev.source_job_id || snapshot.source_job_id,
+          ad_url: prev.ad_url || job.webpage_url || "",
+        }));
+        if (snapshot.ad_description || snapshot.apply_url) {
+          const body = {};
+          if (snapshot.ad_description) body.ad_description = snapshot.ad_description;
+          if (snapshot.apply_url) body.apply_url = normalizeAdUrl(snapshot.apply_url);
+          if (snapshot.source_job_id) body.source_job_id = snapshot.source_job_id;
+          try {
+            await request(`/api/v1/applications/${applicationId}/`, {
+              method: "PATCH",
+              token,
+              body,
+            });
+          } catch {
+            /* preview still works; user can save manually */
+          }
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setAdFetchError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setAdLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [applicationId, jobId, previewDescription, token]);
 
   useEffect(() => {
     const previous = document.activeElement;
@@ -119,9 +182,11 @@ export default function ApplicationModal({
     delete body.id;
     delete body.posting;
     delete body.status_label;
+    delete body.match;
     delete body.created_at;
     delete body.updated_at;
     body.ad_url = normalizeAdUrl(body.ad_url);
+    body.apply_url = normalizeAdUrl(body.apply_url);
     // Empty strings are not valid dates.
     if (!body.applied_at) body.applied_at = null;
     if (!body.next_action_at) body.next_action_at = null;
@@ -184,24 +249,79 @@ export default function ApplicationModal({
   return (
     <ModalOverlay
       onClose={onClose}
+      className="modal application-modal job-modal"
       dialogRef={dialogRef}
       labelledBy="application-modal-title"
     >
-      <div className="row-between">
-        <h2 id="application-modal-title">
-          {application ? form.title || "Ansökan" : "Ny ansökan"}
-        </h2>
+      <div className="modal-head">
+        <div className="modal-head-text">
+          <h2 id="application-modal-title">
+            {application ? form.title || "Ansökan" : "Ny ansökan"}
+          </h2>
+          {application && (
+            <p className="muted">
+              {form.company}
+              {form.location && ` — ${form.location}`}
+              {form.deadline && ` · sista ansökningsdag ${form.deadline}`}
+            </p>
+          )}
+        </div>
         <button
           type="button"
-          className="secondary small"
+          className="secondary small modal-close"
           onClick={onClose}
           aria-label="Stäng"
         >
-          Stäng ✕
+          ✕
         </button>
       </div>
 
-      <form onSubmit={save}>
+      {application && (
+        <section className="application-ad" aria-labelledby="application-ad-heading">
+          <h3 id="application-ad-heading">Om jobbet</h3>
+          <div className="modal-actions">
+            {applyHref && (
+              <a
+                className="btn-primary"
+                href={applyHref}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {form.apply_url ? "Ansök hos arbetsgivaren ↗" : "Öppna annons ↗"}
+              </a>
+            )}
+            {platsbankenHref && platsbankenHref !== applyHref && (
+              <a
+                className="secondary"
+                href={platsbankenHref}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Platsbanken ↗
+              </a>
+            )}
+          </div>
+          {adLoading && (
+            <p className="muted" role="status">
+              Hämtar annonstext…
+            </p>
+          )}
+          {adFetchError && (
+            <p className="warning" role="status">
+              Kunde inte hämta annonstexten: {adFetchError}
+            </p>
+          )}
+          <div className="description">
+            {previewDescription ||
+              (adLoading
+                ? ""
+                : "Ingen annonstext sparad. Länken ovan öppnar annonsen hos arbetsgivaren eller Platsbanken.")}
+          </div>
+        </section>
+      )}
+
+      <form className="application-form" onSubmit={save}>
+        <h3>Dina uppgifter</h3>
         <div className="grid3">
           <label>
             Företag
@@ -252,20 +372,18 @@ export default function ApplicationModal({
           <input {...field("next_action_at", "date")} />
         </label>
         <label>
-          Länk till annonsen
-          <div className="input-with-link">
-            <input {...field("ad_url", "url")} placeholder="https://…" />
-            {adUrl && (
-              <a
-                className="secondary small input-link-btn"
-                href={adUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Öppna annons ↗
-              </a>
-            )}
-          </div>
+          Länk till ansökan
+          <input
+            {...field("apply_url", "url")}
+            placeholder="Arbetsgivarens ansökningssida"
+          />
+        </label>
+        <label>
+          Platsbanken-referens
+          <input
+            {...field("ad_url", "url")}
+            placeholder="https://arbetsformedlingen.se/platsbanken/annonser/…"
+          />
         </label>
         {duplicateByUrl && (
           <p className="warning" role="status">

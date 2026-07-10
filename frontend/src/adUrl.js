@@ -48,6 +48,16 @@ export function externalUrl(value) {
   return null;
 }
 
+export function platsbankenJobId(value) {
+  const normalized = normalizeAdUrl(value) || value?.trim();
+  if (!normalized) return null;
+
+  const match =
+    normalized.match(/platsbanken\/annonser\/(\d+)/i) ||
+    normalized.match(/arbetsformedlingen\.se\/annons\/(\d+)/i);
+  return match ? match[1] : null;
+}
+
 export function findDuplicateByAdUrl(applications, adUrl, excludeId = null) {
   const key = normalizeAdUrl(adUrl);
   if (!key) return null;

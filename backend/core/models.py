@@ -88,6 +88,20 @@ class JobApplication(models.Model):
     title = models.CharField(max_length=255)
     location = models.CharField(max_length=255, blank=True)
     ad_url = models.URLField(max_length=500, blank=True)
+    apply_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text="Direct employer apply URL when Platsbanken provides one.",
+    )
+    ad_description = models.TextField(
+        blank=True,
+        help_text="Snapshot of the ad text when saved from Platsbanken.",
+    )
+    source_job_id = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text="JobTech ad id for refreshing the snapshot.",
+    )
     status = models.CharField(
         max_length=50, choices=STATUS_CHOICES, default=STATUS_APPLIED
     )

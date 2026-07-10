@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { normalizeAdUrl } from "../adUrl.js";
+import { externalUrl, normalizeAdUrl } from "../adUrl.js";
 import { request } from "../api.js";
 import { recordJobMatchGaps } from "../marketHints.js";
 import MatchScore from "./MatchScore.jsx";
@@ -332,6 +332,9 @@ export default function PostingsPanel() {
           title: job.title,
           location: job.location,
           ad_url: job.webpage_url,
+          apply_url: job.application_url || "",
+          ad_description: job.description || "",
+          source_job_id: job.id || "",
           deadline: job.application_deadline,
           status: "wishlist",
         },
@@ -807,6 +810,9 @@ function JobCard({ job, tracked, onOpen, onTrack }) {
 
 function JobDetail({ job, tracked, onTrack, onClose }) {
   const dialogRef = useRef(null);
+  const applyHref =
+    externalUrl(job.application_url) || externalUrl(job.webpage_url);
+  const platsbankenHref = externalUrl(job.webpage_url);
 
   useEffect(() => {
     if (job.match?.missing?.length) {
@@ -859,14 +865,26 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
       </div>
 
       <div className="modal-actions">
-        {job.webpage_url && (
+        {applyHref && (
           <a
             className="btn-primary"
-            href={job.webpage_url}
+            href={applyHref}
             target="_blank"
             rel="noreferrer"
           >
-            Ansök på platsannonsen ↗
+            {job.application_url
+              ? "Ansök hos arbetsgivaren ↗"
+              : "Ansök på platsannonsen ↗"}
+          </a>
+        )}
+        {platsbankenHref && platsbankenHref !== applyHref && (
+          <a
+            className="secondary"
+            href={platsbankenHref}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Platsbanken ↗
           </a>
         )}
         <button className="secondary" onClick={onTrack} disabled={tracked}>
@@ -874,8 +892,9 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
         </button>
       </div>
       <p className="muted modal-hint">
-        Ansökan görs hos arbetsgivaren — spara den här så följer du den på din
-        tavla.
+        {job.application_url
+          ? "Ansökan görs hos arbetsgivaren — läs annonsen här och spara på tavlan för uppföljning."
+          : "Ansökan görs hos arbetsgivaren — spara den här så följer du den på din tavla."}
       </p>
 
       {job.match && <MatchScore match={job.match} variant="detail" />}

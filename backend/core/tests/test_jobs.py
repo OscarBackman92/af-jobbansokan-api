@@ -166,7 +166,68 @@ def test_search_maps_hits(api_client, user, mock_jobtech):
     assert job["location"] == "Stockholm"
     assert job["application_deadline"] == "2026-07-10"
     assert job["remote"] is True
+    assert job["application_url"] == ""
     assert mock_jobtech[0]["q"] == "python"
+
+
+def test_hit_to_job_maps_external_application_url():
+    hit = {
+        "id": "31258362",
+        "headline": "Webbspecialist",
+        "employer": {"name": "Tillväxtverket"},
+        "workplace_address": {"municipality": "Stockholm"},
+        "description": {"text": "Du driver webbstrategi."},
+        "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31258362",
+        "application_details": {
+            "url": "https://tillvaxtverket.se/ledigajobb?rmjob=2046",
+            "via_af": False,
+        },
+    }
+    job = jobtech.hit_to_job(hit)
+    assert job["application_url"] == "https://tillvaxtverket.se/ledigajobb?rmjob=2046"
+    assert "platsbanken" in job["webpage_url"]
+
+
+def test_hit_to_job_omits_application_url_when_via_af():
+    hit = {
+        "id": "1",
+        "headline": "Dev",
+        "employer": {"name": "Acme"},
+        "workplace_address": {},
+        "description": {"text": ""},
+        "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/1",
+        "application_details": {
+            "url": "https://arbetsformedlingen.se/apply/1",
+            "via_af": True,
+        },
+    }
+    assert jobtech.hit_to_job(hit)["application_url"] == ""
+
+
+def test_job_detail_endpoint(api_client, user, monkeypatch):
+    payload = {
+        "id": "31258362",
+        "headline": "Webbspecialist",
+        "employer": {"name": "Tillväxtverket"},
+        "workplace_address": {"municipality": "Stockholm"},
+        "description": {"text": "Du driver webbstrategi."},
+        "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31258362",
+        "application_details": {
+            "url": "https://tillvaxtverket.se/ledigajobb?rmjob=2046",
+            "via_af": False,
+        },
+    }
+
+    def fake_get(url, timeout=None):
+        assert url.endswith("/31258362")
+        return FakeResponse(payload)
+
+    monkeypatch.setattr(jobtech.requests, "get", fake_get)
+    api_client.force_authenticate(user)
+    body = api_client.get("/api/v1/jobs/31258362/").json()
+    assert body["title"] == "Webbspecialist"
+    assert body["description"] == "Du driver webbstrategi."
+    assert "tillvaxtverket" in body["application_url"]
 
 
 def test_search_forwards_known_filters_only(api_client, user, mock_jobtech):

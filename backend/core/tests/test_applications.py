@@ -43,6 +43,27 @@ def test_create_from_posting_snapshots_fields(api_client, user, posting):
     assert body["ad_url"] == "https://example.com/annons/1"
 
 
+def test_create_with_platsbanken_snapshot(api_client, user):
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        URL,
+        {
+            "company": "Tillväxtverket",
+            "title": "Webbspecialist",
+            "ad_url": "https://arbetsformedlingen.se/platsbanken/annonser/31258362",
+            "apply_url": "https://tillvaxtverket.se/ledigajobb?rmjob=2046",
+            "ad_description": "Du driver webbstrategi.",
+            "source_job_id": "31258362",
+            "status": "wishlist",
+        },
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["apply_url"] == "https://tillvaxtverket.se/ledigajobb?rmjob=2046"
+    assert body["ad_description"] == "Du driver webbstrategi."
+    assert body["source_job_id"] == "31258362"
+
+
 def test_create_without_posting_requires_company_and_title(api_client, user):
     api_client.force_authenticate(user)
     response = api_client.post(URL, {"status": "applied"})

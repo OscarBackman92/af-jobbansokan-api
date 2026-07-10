@@ -20,6 +20,9 @@ import requests
 JOBTECH_SEARCH_URL = os.getenv(
     "JOBTECH_SEARCH_URL", "https://jobsearch.api.jobtechdev.se/search"
 )
+JOBTECH_AD_URL = os.getenv(
+    "JOBTECH_AD_URL", "https://jobsearch.api.jobtechdev.se/ad"
+)
 JOBTECH_TAXONOMY_CONCEPTS_URL = os.getenv(
     "JOBTECH_TAXONOMY_URL",
     "https://taxonomy.api.jobtechdev.se/v1/taxonomy/main/concepts",
@@ -221,22 +224,52 @@ def _valid_occupation_field_ids(ids: list[str]) -> list[str]:
     return valid
 
 
+def _application_url(hit: dict) -> str:
+    """External apply/read URL when the employer hosts the ad (not via AF)."""
+    details = hit.get("application_details") or {}
+    if details.get("via_af"):
+        return ""
+    url = (details.get("url") or "").strip()
+    if url:
+        return url[:500]
+    email = (details.get("email") or "").strip()
+    if email and "@" in email:
+        return f"mailto:{email}"[:500]
+    return ""
+
+
 def hit_to_job(hit: dict) -> dict:
     """Map a JobTech search hit to the shape the frontend consumes."""
     employer = (hit.get("employer") or {}).get("name") or ""
     workplace = hit.get("workplace_address") or {}
     location = workplace.get("municipality") or workplace.get("region") or ""
+    webpage_url = (hit.get("webpage_url") or "")[:500]
+    application_url = _application_url(hit)
     return {
         "id": str(hit.get("id") or ""),
         "title": hit.get("headline") or "",
         "company_name": employer,
         "location": location,
         "description": (hit.get("description") or {}).get("text") or "",
-        "webpage_url": (hit.get("webpage_url") or "")[:500],
+        "webpage_url": webpage_url,
+        "application_url": application_url,
         "published_at": (hit.get("publication_date") or "")[:10] or None,
         "application_deadline": (hit.get("application_deadline") or "")[:10] or None,
         "remote": bool(hit.get("remote_work")),
     }
+
+
+def fetch_ad(job_id: str) -> dict:
+    """Fetch one Platsbanken ad by JobTech id."""
+    job_id = str(job_id or "").strip()
+    if not job_id or not job_id.isdigit():
+        raise JobTechError("invalid job id")
+    try:
+        response = requests.get(f"{JOBTECH_AD_URL}/{job_id}", timeout=15)
+        response.raise_for_status()
+        return hit_to_job(response.json())
+    except requests.RequestException as exc:
+        raise JobTechError(str(exc)) from exc
 
 
 def search(
