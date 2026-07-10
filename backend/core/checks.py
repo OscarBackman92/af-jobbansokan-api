@@ -1,11 +1,24 @@
 import os
 
 from django.conf import settings
-from django.core.checks import Warning, register
+from django.core.checks import Error, Warning, register
 
 from core.email_config import email_is_configured
 
 _WEAK_ADMIN_USERNAMES = frozenset({"admin", "administrator", "root", "superuser"})
+
+
+@register(deploy=True)
+def database_url_configured(**kwargs):
+    if settings.DEBUG or os.getenv("DATABASE_URL", "").strip():
+        return []
+    return [
+        Error(
+            "DATABASE_URL is required when DJANGO_DEBUG=0.",
+            hint="Set the Supabase connection string in Render → Environment.",
+            id="core.E002",
+        )
+    ]
 
 
 @register(deploy=True)

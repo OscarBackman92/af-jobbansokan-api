@@ -3,6 +3,27 @@
 Steg för säkerhetsåtgärder 1–6. Kodändringar för 4–6 sker i repot;
 1–3 kräver åtgärder i Render och Sentry. GDPR-åtgärder: se punkt 7.
 
+Senaste säkerhetsaudit: [19-sakerhetsaudit-2026-07-10.md](19-sakerhetsaudit-2026-07-10.md).
+
+## 0. Obligatoriska miljövariabler (Render web + cron)
+
+| Variabel | Krävs | Kommentar |
+|----------|-------|-----------|
+| `DATABASE_URL` | **Ja** | Utan den startar inte appen i prod (`DJANGO_DEBUG=0`) |
+| `DJANGO_SECRET_KEY` | Ja | Genereras i blueprint |
+| `DJANGO_DEBUG` | `0` | |
+| `FRONTEND_URL` | Ja | `https://jobbjungeln.onrender.com` eller egen domän |
+| `BREVO_API_KEY` | Ja* | *Mejl fungerar inte utan |
+| `DEFAULT_FROM_EMAIL` | Ja* | Verifierad avsändardomän i Brevo |
+| `CONTACT_EMAIL` | Ja | Integritetspolicy + `/.well-known/security.txt` |
+| `DJANGO_SUPERUSER_USERNAME` | Ja | Unikt — inte `admin` |
+
+Cron-jobb (`ansokt-reminders`, `ansokt-prune`, `ansokt-weekly-summary`) måste
+ärva samma `DATABASE_URL` och `DJANGO_SECRET_KEY` som webbtjänsten.
+
+**Docker:** `collectstatic` körs i startkommandot (runtime), inte vid
+image-build — `DATABASE_URL` behövs bara när containern startar.
+
 ## 1. Postgres i EU (Supabase)
 
 **Vad det betyder:** Användardata lagras i EU (GDPR). Supabase hanterar

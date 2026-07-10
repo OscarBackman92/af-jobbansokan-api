@@ -11,12 +11,16 @@ Personuppgiftsansvarig: den som driver Jobbsöket (kontakt: se
 | Kategorier av registrerade | Registrerade användare (arbetssökande) |
 | Kategorier av uppgifter | E-post, namn, ansökningar (företag, roll, status, datum, kontakter, anteckningar), strukturerat CV (kompetenser, erfarenhet, utbildning) |
 | Rättslig grund | Avtal (art. 6.1 b) |
-| Mottagare/biträden | Render (drift + Postgres, Frankfurt/EU), Brevo (transaktionsmejl, EU) |
+| Mottagare/biträden | Render (applikationsdrift, Frankfurt/EU), Supabase (Postgres, EU), Brevo (transaktionsmejl, EU) |
 | Tredjelandsöverföring | Nej för lagrad data (EU-region). Sentry (felrapportering) kan innebära överföring till USA — konfigurerad utan personuppgifter (`send_default_pii=False`) |
 | Gallring | Vid kontoradering (omedelbart, kaskad) eller efter 24 månaders inaktivitet med 30 dagars varsel (`prune_inactive_accounts`) |
 | Säkerhetsåtgärder | TLS/HSTS, CSP, rate limiting, JWT med rotation + svartlistning, ägarfiltrerade API:er, lösenordshashning (PBKDF2), EU-hosting |
 
-## Behandling 2: Google-inloggning (endast användare som väljer det)
+## Behandling 2: Google-inloggning (valfritt — endast om konfigurerat)
+
+Aktivt endast när `GOOGLE_CLIENT_ID` och `GOOGLE_CLIENT_SECRET` är satta.
+I produktion juli 2026 används mejl + lösenord; OAuth är förberett i kod men
+ej aktiverat.
 
 | | |
 | --- | --- |

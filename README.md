@@ -65,7 +65,7 @@ flowchart LR
 | --- | --- |
 | API | Django 5.2 + Django REST Framework 3.16 |
 | Auth | dj-rest-auth + allauth (e-mail login) + SimpleJWT (15 min access, 7 d refresh, rotation + blacklist); SPA refreshes the access token on 401 |
-| Database | SQLite (dev default) / PostgreSQL 16 (docker compose) |
+| Database | SQLite (local dev) / PostgreSQL via `DATABASE_URL` (prod, required when `DJANGO_DEBUG=0`) |
 | API docs | drf-spectacular (OpenAPI 3 + Swagger UI) |
 | Frontend | React 19 + Vite (in `frontend/`) |
 | Quality | pytest, ruff, black — enforced in GitHub Actions CI |
@@ -77,13 +77,13 @@ Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
 | Endpoint | Method | Notes |
 | --- | --- | --- |
 | `/health/` | GET | Health check (no `/api/v1` prefix) |
-| `/dj-rest-auth/registration/` | POST | Create account by e-mail, returns JWT |
+| `/dj-rest-auth/registration/` | POST | Create account by e-mail; sends verification mail (no JWT until verified) |
 | `/dj-rest-auth/login/` | POST | Log in by e-mail; returns access + refresh token |
 | `/dj-rest-auth/token/refresh/` | POST | Exchange the refresh token for a new access (+ rotated refresh) token |
 | `/api/v1/me/` | GET, PATCH, DELETE | Own profile; DELETE = GDPR erasure |
 | `/api/v1/me/resume/` | GET, PUT, DELETE | Structured CV |
 | `/api/v1/me/resume/parse/` | POST | Parse uploaded CV to a draft — file never stored |
-| `/dj-rest-auth/google/` | POST | Google login (authorization code → JWT); active when `GOOGLE_CLIENT_ID`/`_SECRET` are set |
+| `/dj-rest-auth/google/` | POST | Google login (optional; button hidden when `GOOGLE_CLIENT_ID` unset) |
 | `/api/v1/applications/` | GET, POST | Tracker rows; `?status=&search=&from=&to=&page_size=` (list omits `events`) |
 | `/api/v1/applications/{id}/` | GET, PATCH, DELETE | Edit status, deadline, notes, contacts — fully mutable; includes `events` |
 | `/api/v1/applications/{id}/events/` | POST | Append a timeline event |
@@ -305,8 +305,8 @@ The product is feature-complete for personal use and live at
 <https://jobbjungeln.onrender.com>. The current focus is
 [docs/15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md)
 and [docs/13-lanseringsplan.md](docs/13-lanseringsplan.md): EU hosting,
-e-mail deliverability, onboarding (Google login), retention, then mobile
-stores when the web app is stable.
+e-mail deliverability, retention, then mobile stores when the web app is stable.
+Google login is prepared in code but not enabled in production (July 2026).
 
 - [x] Live JobTech search with region/occupation/remote filters
 - [x] Password reset by e-mail (Brevo HTTP API in production)
@@ -318,7 +318,7 @@ stores when the web app is stable.
 - [x] Calendar export (ICS) for follow-ups and deadlines (Idag-panel)
 - [x] Playwright E2E smoke tests in CI
 - [x] Google login (code ready — needs OAuth client + env vars)
-- [ ] EU hosting: Render Frankfurt + Supabase Postgres (EU)
+- [x] EU hosting: Render Frankfurt + Supabase Postgres (EU)
 - [ ] Custom domain, uptime check and verified e-mail sender domain
 - [x] Weekly summary e-mail (applications, follow-ups, saved-search digest)
 - [ ] XLSX export alongside CSV
@@ -338,6 +338,8 @@ stores when the web app is stable.
 | [claude-design-prompt.md](docs/claude-design-prompt.md) | Claude design/UX audit prompt (visual hierarchy, themes, mobile, top 5 fixes) |
 | [claude-chrome-deploy-qa-prompt.md](docs/claude-chrome-deploy-qa-prompt.md) | Claude in Chrome QA for latest deploy (scroll, sprint 1–2, design fixes) |
 | [chatgpt-manuell-test-prompt.md](docs/chatgpt-manuell-test-prompt.md) | Full manual test suite prompt for ChatGPT → structured report for Cursor |
+| [19-sakerhetsaudit-2026-07-10.md](docs/19-sakerhetsaudit-2026-07-10.md) | **Security audit (July 2026)** |
+| [14-sakerhet-produktion.md](docs/14-sakerhet-produktion.md) | Production security checklist (Render, Sentry, Brevo) |
 | [15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md) | **Master checklist: drift, kvalitet, retention, mobil (pausat)** |
 | [13-lanseringsplan.md](docs/13-lanseringsplan.md) | Launch plan: hosting, go-public checklist, retention |
 | [12-utvecklingsplan.md](docs/12-utvecklingsplan.md) | Earlier development plan (Phases 1–3, mostly done) |

@@ -40,6 +40,17 @@
 
 - Move token storage to httpOnly cookies if the deployment shape allows it.
 - Remove sensitive tokens from URL query parameters (verify/reset links).
-- Avoid account enumeration on registration (same response for existing e-mails).
-- Add `pip-audit` to CI for dependency vulnerabilities.
-- JSON size limits on CV fields.
+- JSON size limits on CV fields in serializers.
+
+## Implemented since initial draft
+
+- Account enumeration on password reset avoided (same 200 for unknown e-mails).
+- `pip-audit` and `npm audit` in CI (`.github/workflows/ci.yml`, audit job).
+- Production requires `DATABASE_URL` when `DEBUG=0` (`settings.py`).
+- Docker: `collectstatic` at container start, not image build (`Dockerfile`).
+
+## Audit log
+
+| Date | Document |
+|------|----------|
+| 2026-07-10 | [19-sakerhetsaudit-2026-07-10.md](19-sakerhetsaudit-2026-07-10.md) |

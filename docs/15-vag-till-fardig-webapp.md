@@ -20,11 +20,9 @@ och [12-utvecklingsplan.md](12-utvecklingsplan.md) (historik).
 | CV-parser (tvåkolumns-PDF) | Klart |
 | Legacy `/api/v1/postings/` + `import_postings` | **Borttaget** — live `/jobs/` är enda annonskällan |
 | Oanvänd `/api/v1/applications/stats/` | **Borttaget** |
-| Produktionsdrift (EU-DB, domän, e-post) | Pågår / manuellt |
-| E2E-röktester (Playwright, 3 flöden + CI) | Klart |
-| Google-inloggning | Kod klar — kräver OAuth-klient i Google Cloud + env-vars |
-| Prestanda (tracked-urls, lätt list-API, JobTech-cache) | Klart |
-| Retention (veckomejl, kalender) | Idag-panel + ICS-export klart; veckomejl ej påbörjat |
+| Produktionsdrift (EU-DB, domän, e-post) | Delvis — jobbjungeln live, Supabase EU; domän/e-post kvar |
+| Retention (veckomejl, kalender) | Veckomejl + ICS-export klart |
+| Google-inloggning | Kod klar — **ej aktiverad i prod** (juli 2026) |
 
 **Tumregel:** ni är ~**90 %** på produktfunktioner men ~**75 %** på
 “redo att dela brett” p.g.a. drift och onboarding.
@@ -37,7 +35,7 @@ Utan detta ska appen inte marknadsföras hårt.
 
 ### Hosting & data
 
-- [ ] **Render Frankfurt** + betald, beständig Postgres (inte free tier).
+- [x] **Render Frankfurt** + Supabase Postgres EU (`DATABASE_URL` på web).
 - [ ] Verifiera att `render.yaml` deployas med `region: frankfurt` och
       `plan: starter` (eller högre).
 - [ ] **Backup-rutin** för Postgres (`pg_dump` schema + regelbunden export).

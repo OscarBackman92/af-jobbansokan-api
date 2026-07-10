@@ -21,6 +21,9 @@ påminnelser.
 
 ### A. Ny deploy via Blueprint (enklast om du kan deploya om)
 
+**Krav:** `DATABASE_URL` måste finnas på webbtjänsten innan första start —
+utan den kraschar migrering vid `DJANGO_DEBUG=0`.
+
 1. Logga in på [render.com](https://render.com).
 2. Gå till ditt **Blueprint** (eller **New → Blueprint** om du sätter upp från scratch).
 3. Välj GitHub-repot `af-jobbansokan-api` och branch `main`.

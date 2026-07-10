@@ -4,7 +4,7 @@
 flowchart LR
     U[User] -- JWT --> SPA[React/Vite SPA]
     SPA -- JSON/CSV --> API[Django/DRF API]
-    API --> DB[(SQLite dev / PostgreSQL prod)]
+    API --> DB[(SQLite dev / Supabase Postgres prod)]
     API -- live search --> JT[JobTech JobSearch API]
 ```
 
@@ -15,8 +15,9 @@ flowchart LR
 - **API:** Django 5.2, Django REST Framework and dj-rest-auth.
 - **Auth:** Email login with JWT access and refresh tokens. The SPA refreshes an
   expired access token once before logging the user out.
-- **Database:** SQLite for local development; PostgreSQL for deployed
-  environments.
+- **Database:** SQLite for local development (`DJANGO_DEBUG=1` without
+  `DATABASE_URL`). Production requires `DATABASE_URL` (Supabase Postgres EU).
+- **Static files:** `collectstatic` runs at container start in Docker deploy.
 - **External data:** JobTech JobSearch API for live Platsbanken results.
 - **Static serving:** The Docker deploy builds the frontend and serves it with
   WhiteNoise from the Django service.
