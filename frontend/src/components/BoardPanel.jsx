@@ -9,6 +9,7 @@ import {
   STATUS_LABELS,
 } from "../statuses.js";
 import ApplicationModal from "./ApplicationModal.jsx";
+import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
 import MatchScore from "./MatchScore.jsx";
 import TodayPanel from "./TodayPanel.jsx";
 import WelcomeGuide from "./WelcomeGuide.jsx";
@@ -428,20 +429,28 @@ export default function BoardPanel({ token, onNavigate }) {
       <MonthlyStats applications={applications} />
 
       {(selected || adding) && (
-        <ApplicationModal
-          token={token}
-          application={selected}
-          existingApplications={applications}
-          onOpenExisting={(app) => {
-            setSelected(app);
-            setAdding(false);
-          }}
+        <ModalErrorBoundary
+          key={selected?.id ?? "new"}
           onClose={() => {
             setSelected(null);
             setAdding(false);
           }}
-          onChanged={reload}
-        />
+        >
+          <ApplicationModal
+            token={token}
+            application={selected}
+            existingApplications={applications}
+            onOpenExisting={(app) => {
+              setSelected(app);
+              setAdding(false);
+            }}
+            onClose={() => {
+              setSelected(null);
+              setAdding(false);
+            }}
+            onChanged={reload}
+          />
+        </ModalErrorBoundary>
       )}
     </div>
   );

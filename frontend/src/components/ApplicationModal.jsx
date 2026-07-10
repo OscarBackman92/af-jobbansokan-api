@@ -529,6 +529,7 @@ function ApplicationFields({
 }
 
 function parseContactInfo(info) {
+  const trimmed = info?.trim() || "";
   if (!trimmed) return {};
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
     return { email: trimmed };

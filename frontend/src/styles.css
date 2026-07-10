@@ -3240,6 +3240,14 @@ tbody tr:last-child td {
   border-top: 1px solid var(--border);
 }
 
+.modal-error h2 {
+  margin: 0 0 0.5rem;
+}
+
+.modal-error .modal-actions {
+  margin-top: 0.5rem;
+}
+
 /* ---------- Footer ---------- */
 
 .footer {
