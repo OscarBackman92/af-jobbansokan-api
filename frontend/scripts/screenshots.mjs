@@ -73,7 +73,7 @@ await page.waitForSelector(".job-search", { timeout: 10000 });
 await wait(800);
 await shot("04-postings");
 
-await clickByText("button", "Tavlan");
+await clickByText("button", "Ansökningar");
 await page.waitForSelector(".empty-state, .command-hero", { timeout: 10000 });
 await clickByText("button", "Lägg till din första ansökan");
 await page.waitForSelector(".modal", { timeout: 10000 });

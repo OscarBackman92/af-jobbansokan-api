@@ -26,7 +26,7 @@ export default class ModalErrorBoundary extends Component {
           >
             <h2 id="modal-error-title">Något gick fel</h2>
             <p className="muted">
-              Ansökningsrutan kunde inte visas. Tavlan fungerar fortfarande — stäng
+              Ansökningsrutan kunde inte visas. Dina ansökningar syns fortfarande — stäng
               och försök igen.
             </p>
             <div className="modal-actions">

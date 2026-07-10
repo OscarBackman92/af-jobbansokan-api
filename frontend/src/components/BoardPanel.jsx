@@ -170,7 +170,7 @@ export default function BoardPanel({ token, onNavigate }) {
           <p className="error">{error}</p>
         ) : (
           <div className="loading-row">
-            <span className="spinner" /> Laddar tavlan…
+            <span className="spinner" /> Laddar ansökningar…
           </div>
         )}
       </section>
@@ -239,7 +239,7 @@ export default function BoardPanel({ token, onNavigate }) {
     <div className="stack">
       <section className="command-hero">
         <div className="command-hero-copy">
-          <span className="section-kicker">Tavlan</span>
+          <span className="section-kicker">Ansökningar</span>
           <h2>Din översikt</h2>
           <p className="muted">
             Vad som pågår, vad som väntar svar, och vad du ska ta tag i härnäst.
@@ -297,7 +297,7 @@ export default function BoardPanel({ token, onNavigate }) {
       <section className="card">
         <div className="row-between">
           <div>
-            <h2>Min tavla</h2>
+            <h2>Mina ansökningar</h2>
             <p className="muted">
               {applications.length === 0
                 ? showWelcome

@@ -70,7 +70,7 @@ class Command(BaseCommand):
             "Detta är en påminnelse från Jobbsöket om ansökningar som behöver "
             "din uppmärksamhet:\n\n"
             + "\n".join(lines)
-            + "\n\nÖppna tavlan för att uppdatera status eller nästa steg.\n"
+            + "\n\nÖppna appen för att uppdatera status eller nästa steg.\n"
         )
         if dry_run:
             self.stdout.write(f"Would send to {user.email}:\n{body}")

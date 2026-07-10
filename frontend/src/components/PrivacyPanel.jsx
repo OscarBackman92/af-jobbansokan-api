@@ -15,7 +15,7 @@ export default function PrivacyPanel({ onClose }) {
 
       <div className="privacy-body">
         <p>
-          Jobbsöket är en personlig ansökningstavla. Du äger din data: allt
+          Jobbsöket är en personlig översikt över dina jobbansökningar. Du äger din data: allt
           kan exporteras som CSV och kontot kan raderas när som helst, med
           all data.
         </p>
@@ -52,7 +52,7 @@ export default function PrivacyPanel({ onClose }) {
           </li>
           <li>
             Veckosammanfattning per mejl på måndagar när du har aktivitet
-            på tavlan eller nya annonser i sparade sökningar.
+            bland dina ansökningar eller nya annonser i sparade sökningar.
           </li>
         </ul>
 

@@ -7,7 +7,7 @@ Personuppgiftsansvarig: den som driver Jobbsöket (kontakt: se
 
 | | |
 | --- | --- |
-| Ändamål | Tillhandahålla ansökningstavlan: konto, tavla, CV-matchning, påminnelser |
+| Ändamål | Tillhandahålla ansökningsöversikten: konto, ansökningar, CV-matchning, påminnelser |
 | Kategorier av registrerade | Registrerade användare (arbetssökande) |
 | Kategorier av uppgifter | E-post, namn, ansökningar (företag, roll, status, datum, kontakter, anteckningar), strukturerat CV (kompetenser, erfarenhet, utbildning) |
 | Rättslig grund | Avtal (art. 6.1 b) |

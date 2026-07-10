@@ -1,6 +1,6 @@
 const HIGHLIGHTS = [
   {
-    title: "Tavlan",
+    title: "Ansökningar",
     text: "Varje ansökan på en rad — och vad som är dags idag.",
   },
   {
@@ -18,7 +18,7 @@ export default function AuthIntro() {
     <aside className="auth-intro" aria-label="Om Jobbsöket">
       <span className="section-kicker">Jobbsöket</span>
       <h2>
-        Din tavla,
+        Dina ansökningar,
         <span className="grad"> inte en jobbsajt.</span>
       </h2>
       <p className="lede">

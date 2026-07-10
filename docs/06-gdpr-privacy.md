@@ -7,7 +7,7 @@ texten för användare finns i appen och på `/integritet/`.
 
 - **Dataminimering** — bara det användaren sparar (ansökningar, strukturerat CV).
   Uppladdade CV-filer lagras inte.
-- **Ändamålsbegränsning** — tjänsten är en personlig tavla, inte rekrytering
+- **Ändamålsbegränsning** — tjänsten är en personlig översikt, inte rekrytering
   eller marknadsföring mot arbetsgivare.
 - **Lagringsbegränsning** — konto kvar tills användaren raderar det; inaktiva
   konton (24 månader) gallras med 30 dagars varsel (`prune_inactive_accounts`).
@@ -19,7 +19,7 @@ texten för användare finns i appen och på `/integritet/`.
 | Data | Varför | Rättslig grund |
 |------|--------|----------------|
 | E-post, namn | Konto och inloggning | Avtal (art. 6.1 b) |
-| Ansökningar (företag, roll, status, datum, kontakter, anteckningar) | Tavla | Avtal |
+| Ansökningar (företag, roll, status, datum, kontakter, anteckningar) | Ansökningar | Avtal |
 | Strukturerat CV (kompetenser användaren markerat, erfarenhet, utbildning) | Matchning mot annonser | Avtal |
 | Sparade Platsbanken-sökningar | Veckodigest och snabb sök | Avtal |
 | Tekniska loggar (IP i Render-loggar) | Drift och missbruksskydd | Berättigat intresse (art. 6.1 f) |
@@ -48,7 +48,7 @@ Fullständig registerförteckning: [17-registerforteckning.md](17-registerfortec
 | Rättighet | Hur |
 |-----------|-----|
 | Tillgång | All data synlig i appen |
-| Portabilitet | Exportera tavla som CSV |
+| Portabilitet | Exportera ansökningar som CSV |
 | Rättelse | Redigera profil, ansökningar, CV i appen |
 | Radering | Radera konto under Profil & CV (omedelbar kaskad) |
 | Invändning / begränsning | Kontakta `CONTACT_EMAIL` |

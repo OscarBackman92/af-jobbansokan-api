@@ -24,7 +24,7 @@ function readVerifyKey() {
 }
 
 const TABS = [
-  { id: "board", label: "Tavlan" },
+  { id: "board", label: "Ansökningar" },
   { id: "postings", label: "Annonser" },
   { id: "profile", label: "Profil & CV" },
 ];

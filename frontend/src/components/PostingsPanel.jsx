@@ -342,7 +342,7 @@ export default function PostingsPanel() {
       if (job.webpage_url) {
         setTracked((prev) => new Set(prev).add(normalizeAdUrl(job.webpage_url)));
       }
-      setMessage(`"${job.title}" sparades på tavlan (Sparad).`);
+      setMessage(`"${job.title}" sparades som Sparad.`);
       window.dispatchEvent(new Event("application-created"));
     } catch (err) {
       setMessage(err.message);
@@ -466,8 +466,7 @@ export default function PostingsPanel() {
           <span className="section-kicker">Platsbanken</span>
           <h2>Sök jobb</h2>
           <p className="muted">
-            Platsbanken — filtrera på ort och yrke, spara det du vill söka på
-            tavlan.
+            Platsbanken — filtrera på ort och yrke, spara ansökningar du vill följa upp.
           </p>
         </div>
         <div className="metric-inline" aria-label="Söksammanfattning">
@@ -479,7 +478,7 @@ export default function PostingsPanel() {
           <div className="metric-tile">
             <span className="metric-label">Sparade</span>
             <strong>{tracked.size}</strong>
-            <span className="metric-detail">på tavlan</span>
+            <span className="metric-detail">sparade</span>
           </div>
         </div>
       </section>
@@ -802,7 +801,7 @@ function JobCard({ job, tracked, onOpen, onTrack }) {
         onClick={onTrack}
         disabled={tracked}
       >
-        {tracked ? "På tavlan ✓" : "+ Spara"}
+        {tracked ? "Sparad ✓" : "+ Spara"}
       </button>
     </div>
   );
@@ -888,13 +887,13 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
           </a>
         )}
         <button className="secondary" onClick={onTrack} disabled={tracked}>
-          {tracked ? "På tavlan ✓" : "+ Spara på tavlan"}
+          {tracked ? "Sparad ✓" : "+ Spara ansökan"}
         </button>
       </div>
       <p className="muted modal-hint">
         {job.application_url
-          ? "Ansökan görs hos arbetsgivaren — läs annonsen här och spara på tavlan för uppföljning."
-          : "Ansökan görs hos arbetsgivaren — spara den här så följer du den på din tavla."}
+          ? "Ansökan görs hos arbetsgivaren — läs annonsen här och spara ansökan för uppföljning."
+          : "Ansökan görs hos arbetsgivaren — spara den här så följer du den i dina ansökningar."}
       </p>
 
       {job.match && <MatchScore match={job.match} variant="detail" />}

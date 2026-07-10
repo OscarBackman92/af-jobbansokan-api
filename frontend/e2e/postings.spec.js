@@ -16,10 +16,10 @@ test("search Platsbanken (mocked) and save an ad to the board", async ({
 
   await card.getByRole("button", { name: "+ Spara" }).click();
   await expect(
-    card.getByRole("button", { name: "På tavlan ✓" })
+    card.getByRole("button", { name: "Sparad ✓" })
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Tavlan", exact: true }).click();
+  await page.getByRole("button", { name: "Ansökningar", exact: true }).click();
   await expect(
     page.locator(".pipeline-row", { hasText: "Backendutvecklare Python" })
   ).toBeVisible();

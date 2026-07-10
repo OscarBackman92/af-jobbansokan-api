@@ -220,7 +220,7 @@ export default function ApplicationModal({
   }
 
   async function remove() {
-    if (!window.confirm("Ta bort den här ansökan från tavlan?")) return;
+    if (!window.confirm("Ta bort den här ansökan permanent?")) return;
     await request(`/api/v1/applications/${application.id}/`, {
       method: "DELETE",
       token,
@@ -485,7 +485,7 @@ function ApplicationFields({
       )}
       {duplicateByUrl && (
         <p className="warning" role="status">
-          Den här annonsen finns redan på tavlan som{" "}
+            Den här annonsen finns redan bland dina ansökningar som{" "}
           <button
             type="button"
             className="linklike"

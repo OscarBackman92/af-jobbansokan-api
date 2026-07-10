@@ -190,7 +190,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             for existing in others.only("ad_url"):
                 if ad_urls_equivalent(existing.ad_url, ad_url):
                     raise serializers.ValidationError(
-                        {"ad_url": "Du har redan sparat den här annonsen på tavlan."}
+                        {"ad_url": "Du har redan sparat den här annonsen bland dina ansökningar."}
                     )
         return attrs
 

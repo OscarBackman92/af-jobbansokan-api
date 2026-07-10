@@ -21,7 +21,7 @@ Platsbanken's job ads, and CSV export because the data is yours.
 
 ## Features
 
-- **The board** — pipeline-tavla över aktiva ansökningar med snabbfilter och
+- **Ansökningar** — översikt över aktiva ansökningar med snabbfilter och
   statusbyte:
   Sparad → Ansökt → Telefonintervju → Intervju → Skickad vidare →
   Erbjudande, with closed ones (Accepterat/Avslag/Inget svar/Återkallad)
