@@ -3,6 +3,38 @@
 from django.conf import settings
 
 
+def _public_csp() -> str:
+    # SPA + marketing: Google Fonts, Sentry; no Alpine/eval.
+    return (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self' https://*.ingest.sentry.io https://*.sentry.io; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "upgrade-insecure-requests"
+    )
+
+
+def _admin_csp() -> str:
+    # django-unfold uses Alpine.js, which needs unsafe-eval on admin pages.
+    return (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "font-src 'self' data:; "
+        "img-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "upgrade-insecure-requests"
+    )
+
+
 class SecurityHeadersMiddleware:
     """Attach Content-Security-Policy and related headers in production."""
 
@@ -14,19 +46,8 @@ class SecurityHeadersMiddleware:
         if settings.DEBUG:
             return response
 
-        # Allow Google Fonts used in index.html; Sentry error reporting.
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "script-src 'self'; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "font-src 'self' https://fonts.gstatic.com; "
-            "img-src 'self' data:; "
-            "connect-src 'self' https://*.ingest.sentry.io https://*.sentry.io; "
-            "frame-ancestors 'none'; "
-            "base-uri 'self'; "
-            "form-action 'self'; "
-            "upgrade-insecure-requests"
-        )
+        csp = _admin_csp() if request.path.startswith("/admin/") else _public_csp()
+        response.headers["Content-Security-Policy"] = csp
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault(

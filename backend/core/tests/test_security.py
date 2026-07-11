@@ -15,6 +15,15 @@ def test_csp_header_in_production(client):
     csp = response.headers.get("Content-Security-Policy", "")
     assert "default-src 'self'" in csp
     assert "frame-ancestors 'none'" in csp
+    assert "unsafe-eval" not in csp
+
+
+@override_settings(DEBUG=False)
+def test_admin_login_csp_allows_alpine(client):
+    response = client.get("/admin/login/")
+    assert response.status_code == 200
+    csp = response.headers.get("Content-Security-Policy", "")
+    assert "script-src 'self' 'unsafe-inline' 'unsafe-eval'" in csp
 
 
 def test_security_headers_middleware_before_whitenoise():

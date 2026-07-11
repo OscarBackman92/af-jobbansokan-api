@@ -149,7 +149,7 @@ USE_TZ = True
 
 # Static files
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # The built frontend (frontend/dist) is served by WhiteNoise; the React app
