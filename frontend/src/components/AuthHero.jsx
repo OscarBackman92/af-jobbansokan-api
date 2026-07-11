@@ -2,18 +2,15 @@ import { useState } from "react";
 
 import { request } from "../api.js";
 import { googleClientId, startGoogleLogin } from "../googleAuth.js";
-import AuthIntro from "./AuthIntro.jsx";
 import PasswordInput from "./PasswordInput.jsx";
 
 export default function AuthHero({ onLogin }) {
   return (
-    <div className="auth-page">
-      <div className="auth-page-inner">
-        <AuthIntro />
-        <div className="auth-page-form">
-          <AuthCard onLogin={onLogin} />
-        </div>
-      </div>
+    <div className="auth-page auth-page--simple">
+      <AuthCard onLogin={onLogin} />
+      <p className="auth-page-back">
+        <a href="/">Mer om Jobbsöket på startsidan</a>
+      </p>
     </div>
   );
 }

@@ -256,21 +256,16 @@ a:focus-visible {
 }
 
 .app--guest {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  background: var(--bg);
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
 }
 
 .app--guest .header {
   margin-bottom: 0;
-  flex-shrink: 0;
 }
 
 .app--guest .footer {
-  margin-top: 0;
-  flex-shrink: 0;
+  margin-top: 2rem;
 }
 
 .main {
@@ -278,12 +273,8 @@ a:focus-visible {
 }
 
 .main--guest {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  justify-content: flex-start;
   width: 100%;
-  padding: clamp(1.25rem, 3vh, 2.5rem) 0 clamp(1rem, 2vh, 1.5rem);
+  padding: clamp(1.5rem, 4vh, 2.75rem) 0 0;
 }
 
 @keyframes page-in {
@@ -468,6 +459,28 @@ a:focus-visible {
 
 .auth-page {
   width: 100%;
+}
+
+.auth-page--simple {
+  width: 100%;
+  max-width: 26rem;
+  margin: 0 auto;
+}
+
+.auth-page-back {
+  margin: 1rem 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.auth-page-back a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.auth-page-back a:hover {
+  color: var(--ink);
+  text-decoration: underline;
 }
 
 .auth-page-inner {
@@ -820,6 +833,10 @@ a:focus-visible {
     0 0 0 1px color-mix(in srgb, var(--accent-border) 35%, transparent);
 }
 
+.auth-page--simple .card.narrow {
+  max-width: none;
+}
+
 .auth-card {
   border-top: 2px solid var(--brand-2);
   box-shadow: var(--shadow-sm);
@@ -908,6 +925,17 @@ a:focus-visible {
 .hero.centered {
   justify-items: center;
   grid-template-columns: 1fr;
+}
+
+.main--guest .hero.centered {
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: 0;
+  width: 100%;
+}
+
+.main--guest .hero.centered .card.narrow {
+  max-width: none;
 }
 
 .hero.centered .card.narrow {
@@ -3464,7 +3492,7 @@ code {
   }
 
   .main--guest {
-    padding: 1rem 0 0.75rem;
+    padding: 1.25rem 0 0;
   }
 
   input,
