@@ -11,9 +11,7 @@
       (function () {
         var valid = { command: 1, daylight: 1, signal: 1 };
         var t = localStorage.getItem("theme");
-        if (!localStorage.getItem("token")) {
-          t = "daylight";
-        } else if (!valid[t]) {
+        if (!valid[t]) {
           t = "daylight";
         }
         document.documentElement.dataset.theme = t;

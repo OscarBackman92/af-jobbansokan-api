@@ -40,9 +40,6 @@ function readTheme() {
   if (stored && THEMES.some((theme) => theme.id === stored)) {
     return stored;
   }
-  if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-    return "daylight";
-  }
   return "daylight";
 }
 
@@ -74,12 +71,9 @@ export default function App() {
   }
 
   useEffect(() => {
-    // Unauthenticated views always use Minimal daylight; logged-in users keep their theme.
-    document.documentElement.dataset.theme = isLoggedOut ? "daylight" : theme;
-    if (!isLoggedOut) {
-      localStorage.setItem("theme", theme);
-    }
-  }, [theme, isLoggedOut]);
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   // Survive page reloads on the same tab; logout resets to the board.
   useEffect(() => {
@@ -216,16 +210,15 @@ export default function App() {
           Integritetspolicy
         </a>
         <div className="theme-picker" aria-label="Visuellt tema">
-          {token &&
-            THEMES.map((t) => (
-              <button
-                key={t.id}
-                className={theme === t.id ? "active" : ""}
-                onClick={() => setTheme(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              className={theme === t.id ? "active" : ""}
+              onClick={() => setTheme(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
       </footer>
     </div>
