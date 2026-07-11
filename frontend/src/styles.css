@@ -269,7 +269,7 @@ a:focus-visible {
 }
 
 .app--guest .footer {
-  margin-top: 2rem;
+  margin-top: 0;
   flex-shrink: 0;
 }
 
@@ -279,7 +279,7 @@ a:focus-visible {
 
 .main--guest {
   display: flex;
-  flex: 0 1 auto;
+  flex: 1;
   flex-direction: column;
   justify-content: flex-start;
   width: 100%;
