@@ -33,7 +33,7 @@ export default function GoogleSignIn({ code, onLogin, onDone }) {
   if (error) {
     return (
       <div className="hero centered">
-        <div className="card narrow">
+        <div className="card narrow auth-card">
           <h2>Google-inloggningen misslyckades</h2>
           <p className="error">{error}</p>
           <button onClick={onDone}>Till inloggningen</button>
@@ -44,7 +44,7 @@ export default function GoogleSignIn({ code, onLogin, onDone }) {
 
   return (
     <div className="hero centered">
-      <div className="card narrow">
+      <div className="card narrow auth-card">
         <h2>Loggar in med Google…</h2>
         <p className="muted">Ett ögonblick medan vi slutför inloggningen.</p>
       </div>

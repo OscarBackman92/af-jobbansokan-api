@@ -43,7 +43,7 @@ export default function VerifyEmail({ verifyKey, onDone }) {
   if (busy) {
     return (
       <div className="hero centered">
-        <div className="card narrow">
+        <div className="card narrow auth-card">
           <h2>Verifierar e-post…</h2>
           <p className="muted">Ett ögonblick medan vi bekräftar din adress.</p>
         </div>
@@ -54,7 +54,7 @@ export default function VerifyEmail({ verifyKey, onDone }) {
   if (done) {
     return (
       <div className="hero centered">
-        <div className="card narrow">
+        <div className="card narrow auth-card">
           <h2>E-post bekräftad!</h2>
           <p className="muted">
             Din adress är verifierad. Logga in med e-post och lösenord.
@@ -67,7 +67,7 @@ export default function VerifyEmail({ verifyKey, onDone }) {
 
   return (
     <div className="hero centered">
-      <div className="card narrow">
+      <div className="card narrow auth-card">
         <h2>Verifieringen misslyckades</h2>
         <p className="error">{error}</p>
         <button onClick={onDone}>Till inloggningen</button>

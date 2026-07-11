@@ -18,6 +18,7 @@ node_modules/
 frontend/dist/
 frontend/.vite/
 frontend/shots/
+portfolio/
 
 # E2E (Playwright)
 frontend/e2e/.mail/

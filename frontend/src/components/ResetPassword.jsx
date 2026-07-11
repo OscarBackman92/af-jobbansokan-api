@@ -47,7 +47,7 @@ export default function ResetPassword({ uid, token, onDone }) {
   if (done) {
     return (
       <div className="hero centered">
-        <div className="card narrow">
+        <div className="card narrow auth-card">
           <h2>Klart!</h2>
           <p className="muted">
             Ditt lösenord är uppdaterat. Logga in med det nya lösenordet.
@@ -60,7 +60,7 @@ export default function ResetPassword({ uid, token, onDone }) {
 
   return (
     <div className="hero centered">
-      <form className="card narrow" onSubmit={submit}>
+      <form className="card narrow auth-card" onSubmit={submit}>
         <h2>Välj ett nytt lösenord</h2>
         <p className="muted">Ange ditt nya lösenord nedan.</p>
         <div className="field">

@@ -3,38 +3,41 @@
 :root,
 [data-theme="daylight"] {
   color-scheme: light;
-  --brand: #4f46e5;
-  --brand-2: #7c3aed;
-  --bg: #f6f4ef;
+  --primary: #0c0c09;
+  --secondary: #312c85;
+  --brand: #0c0c09;
+  --brand-2: #312c85;
+  --bg: #f4f4f1;
   --surface: #ffffff;
-  --hover: #f1eee7;
-  --ink: #1d1f26;
-  --muted: #676a72;
-  --label: #3d4046;
-  --border: #e4dfd5;
-  --accent-soft: #f4f3ff;
-  --accent-border: #d4d2f5;
-  --radius: 10px;
-  --radius-sm: 8px;
-  --shadow-sm: 0 1px 2px rgba(22, 22, 31, 0.05), 0 1px 6px rgba(22, 22, 31, 0.04);
-  --shadow-md: 0 2px 6px rgba(22, 22, 31, 0.08);
-  --font-display: "Schibsted Grotesk", "Inter", sans-serif;
+  --hover: #eaeae6;
+  --ink: #0c0c09;
+  --muted: #4a4a45;
+  --label: #0c0c09;
+  --border: rgba(12, 12, 9, 0.12);
+  --accent-soft: #f4f4f1;
+  --accent-border: rgba(49, 44, 133, 0.22);
+  --radius: 4px;
+  --radius-sm: 4px;
+  --shadow-sm: 0 1px 2px rgba(12, 12, 9, 0.06);
+  --shadow-md: 0 2px 6px rgba(12, 12, 9, 0.08);
+  --font-display: "Inter", system-ui, sans-serif;
+  --font-body: "Open Sans", system-ui, sans-serif;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 [data-theme="command"] {
   color-scheme: dark;
-  --brand: #8ab4f8;
-  --brand-2: #8ab4f8;
-  --bg: #14161a;
-  --surface: #1d2026;
-  --hover: #252930;
-  --ink: #e8eaed;
-  --muted: #9aa0a9;
-  --label: #c2c6cc;
-  --border: rgba(255, 255, 255, 0.09);
-  --accent-soft: #252930;
-  --accent-border: rgba(255, 255, 255, 0.12);
+  --brand: #f4f4f1;
+  --brand-2: #9d97e8;
+  --bg: #0c0c09;
+  --surface: #161614;
+  --hover: #1f1f1c;
+  --ink: #f4f4f1;
+  --muted: #b8b8b0;
+  --label: #e8e8e2;
+  --border: rgba(244, 244, 241, 0.12);
+  --accent-soft: #1f1f1c;
+  --accent-border: rgba(157, 151, 232, 0.28);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
 }
@@ -68,7 +71,7 @@ html {
 
 body {
   margin: 0;
-  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--ink);
   font-size: 15px;
@@ -77,11 +80,16 @@ body {
 }
 
 a {
-  color: var(--brand);
+  color: var(--brand-2);
 }
 
 a:hover {
-  color: var(--brand-2);
+  color: var(--ink);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--brand-2);
+  outline-offset: 2px;
 }
 
 .marketing-wrap {
@@ -112,14 +120,14 @@ a:hover {
 .marketing-logo {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
-  background: var(--brand);
+  border-radius: var(--radius-sm);
+  background: var(--brand-2);
   color: #fff;
   display: grid;
   place-items: center;
   font-weight: 800;
   font-size: 0.95rem;
-  border: 1px solid color-mix(in srgb, var(--brand) 80%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--brand-2) 80%, var(--border));
   flex-shrink: 0;
 }
 
@@ -154,25 +162,38 @@ a:hover {
   display: inline-block;
   padding: 0.55rem 1rem;
   border-radius: var(--radius-sm);
-  background: var(--brand);
+  background: var(--brand-2);
   color: #fff !important;
   text-decoration: none;
   font-weight: 600;
   font-size: 0.9rem;
-  border: 1px solid color-mix(in srgb, var(--brand) 80%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--brand-2) 80%, var(--border));
   box-shadow: var(--shadow-sm);
+  transition: filter 0.15s var(--ease-out), transform 0.12s var(--ease-out);
 }
 
 .btn-primary:hover {
   filter: brightness(1.05);
-  color: #fff !important;
+  color: var(--surface) !important;
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid var(--brand-2);
+  outline-offset: 2px;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
 }
 
 .section-kicker {
   display: inline-block;
+  font-family: "Inconsolata", ui-monospace, monospace;
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-2);
   margin-bottom: 0.5rem;
 }
 
@@ -203,7 +224,7 @@ a:hover {
 }
 
 .grad {
-  color: var(--brand);
+  color: var(--brand-2);
 }
 
 .lede {
@@ -229,7 +250,7 @@ a:hover {
   content: "✓";
   position: absolute;
   left: 0;
-  color: var(--brand);
+  color: var(--brand-2);
   font-weight: 700;
 }
 
@@ -492,7 +513,7 @@ a:hover {
 }
 
 .theme-picker button.active {
-  background: var(--brand);
+  background: var(--brand-2);
   color: #fff;
   border-color: transparent;
 }

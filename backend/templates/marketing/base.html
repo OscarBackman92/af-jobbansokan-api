@@ -9,9 +9,7 @@
         var valid = { command: 1, daylight: 1, signal: 1 };
         var t = localStorage.getItem("theme");
         if (!valid[t]) {
-          t = window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "command"
-            : "daylight";
+          t = "daylight";
         }
         document.documentElement.dataset.theme = t;
       })();
@@ -33,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Schibsted+Grotesk:wght@500;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Inconsolata:wght@400;500&family=Open+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="{% static 'marketing/marketing.css' %}" />
