@@ -7,6 +7,28 @@ import MatchScore from "./MatchScore.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
 import MultiSelectFilter from "./MultiSelectFilter.jsx";
 
+const LAST_MUNICIPALITIES_KEY = "jobbsoket-last-municipalities";
+const LAST_REGION_KEY = "jobbsoket-last-region";
+
+function readLastMunicipalities() {
+  try {
+    const raw = localStorage.getItem(LAST_MUNICIPALITIES_KEY);
+    const rows = raw ? JSON.parse(raw) : [];
+    return Array.isArray(rows) ? rows.filter((row) => row?.id) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberMunicipalities(rows, regionId) {
+  try {
+    localStorage.setItem(LAST_MUNICIPALITIES_KEY, JSON.stringify(rows.slice(0, 12)));
+    if (regionId) localStorage.setItem(LAST_REGION_KEY, regionId);
+  } catch {
+    /* ignore quota */
+  }
+}
+
 const PAGE_SIZE = 25;
 
 const EMPTY_QUERY = {
@@ -29,12 +51,16 @@ function countSummary(count, singular, plural) {
   return count === 1 ? `1 ${singular}` : `${count} ${plural}`;
 }
 
-export default function PostingsPanel() {
+export default function PostingsPanel({ onNavigate }) {
   const [filters, setFilters] = useState({ regions: [], fields: [] });
   const [q, setQ] = useState("");
-  const [browseRegion, setBrowseRegion] = useState("");
+  const [browseRegion, setBrowseRegion] = useState(
+    () => localStorage.getItem(LAST_REGION_KEY) || ""
+  );
   const [browseField, setBrowseField] = useState("");
-  const [selectedMunicipalities, setSelectedMunicipalities] = useState([]);
+  const [selectedMunicipalities, setSelectedMunicipalities] = useState(
+    () => readLastMunicipalities()
+  );
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [municipalityCache, setMunicipalityCache] = useState({});
   const [groupCache, setGroupCache] = useState({});
@@ -248,6 +274,7 @@ export default function PostingsPanel() {
     event.preventDefault();
     requestResultsScroll();
     setOffset(0);
+    rememberMunicipalities(selectedMunicipalities, browseRegion);
     setQuery({
       q,
       municipalities: selectedMunicipalities,
@@ -335,6 +362,7 @@ export default function PostingsPanel() {
           apply_url: normalizeAdUrl(job.application_url || ""),
           ad_description: job.description || "",
           source_job_id: job.id || "",
+          source: "platsbanken",
           deadline: job.application_deadline,
           status: "wishlist",
         },
@@ -595,7 +623,20 @@ export default function PostingsPanel() {
 
         {filtersError && <p className="error">{filtersError}</p>}
         {message && <p className="notice">{message}</p>}
-        {error && <p className="error">{error}</p>}
+        {error && (
+          <div className="error-block" role="alert">
+            <p className="error">{error}</p>
+            {/kompetens/i.test(error) && (
+              <button
+                type="button"
+                className="secondary small"
+                onClick={() => onNavigate?.("profile")}
+              >
+                Öppna Profil &amp; CV
+              </button>
+            )}
+          </div>
+        )}
 
         <section
           ref={resultsSectionRef}

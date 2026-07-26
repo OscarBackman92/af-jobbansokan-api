@@ -1,3 +1,5 @@
+import { foldDiacritics } from "./text.js";
+
 const TRACKING_PARAMS = new Set([
   "utm_source",
   "utm_medium",
@@ -89,16 +91,16 @@ export function findSimilarByCompanyTitle(
   title,
   excludeId = null
 ) {
-  const companyKey = company?.trim().toLowerCase();
-  const titleKey = title?.trim().toLowerCase();
+  const companyKey = foldDiacritics(company?.trim());
+  const titleKey = foldDiacritics(title?.trim());
   if (!companyKey || !titleKey) return null;
 
   return (
     applications.find(
       (app) =>
         app.id !== excludeId &&
-        app.company?.trim().toLowerCase() === companyKey &&
-        app.title?.trim().toLowerCase() === titleKey
+        foldDiacritics(app.company?.trim()) === companyKey &&
+        foldDiacritics(app.title?.trim()) === titleKey
     ) ?? null
   );
 }

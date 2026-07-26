@@ -346,6 +346,8 @@ def test_search_match_cv_requires_resume(api_client, user, mock_jobtech):
     api_client.force_authenticate(user)
     response = api_client.get(SEARCH_URL, {"match_cv": "true"})
     assert response.status_code == 400
+    assert "kompetenser" in response.json()["detail"].lower()
+    assert "match_cv" not in response.json()
 
 
 def test_search_handles_upstream_failure(api_client, user, monkeypatch):

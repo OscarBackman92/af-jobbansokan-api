@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import Max, Q
+from django.db.models import Exists, Max, OuterRef, Q
 from django.http import Http404, HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -53,7 +53,7 @@ from .jobtech import (
 )
 from .jobtech import search as jobtech_search
 from .matching import match_evidence, match_skills
-from .models import JobApplication, Resume, SavedJobSearch
+from .models import ApplicationEvent, JobApplication, Resume, SavedJobSearch
 from .permissions import IsAuthenticatedUser
 from .resume import (
     MAX_UPLOAD_SIZE,
@@ -397,8 +397,21 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
             "-updated_at"
         )
         if self.action == "list":
+            funnel_statuses = [
+                JobApplication.STATUS_SCREENING,
+                JobApplication.STATUS_INTERVIEW,
+                JobApplication.STATUS_FORWARDED,
+                JobApplication.STATUS_OFFER,
+                JobApplication.STATUS_ACCEPTED,
+            ]
             qs = qs.select_related("posting").annotate(
-                _last_event_at=Max("events__occurred_at")
+                _last_event_at=Max("events__occurred_at"),
+                reached_interview=Exists(
+                    ApplicationEvent.objects.filter(
+                        application_id=OuterRef("pk"),
+                        status__in=funnel_statuses,
+                    )
+                ),
             )
         else:
             qs = qs.prefetch_related("events")
@@ -650,8 +663,9 @@ def job_search(request):
         if not skills:
             raise ValidationError(
                 {
-                    "match_cv": (
-                        "Markera kompetenser i CV:t för att filtrera på matchning."
+                    "detail": (
+                        "Markera kompetenser i CV:t under Profil & CV för att "
+                        "filtrera på matchning."
                     )
                 }
             )

@@ -8,13 +8,14 @@ test("create an application, move status, timeline logs the change", async ({
   await login(page);
 
   await page.getByRole("button", { name: "+ Ny ansökan" }).click();
-  await page.getByLabel("Företag").fill("Testföretaget AB");
-  await page.getByLabel("Roll").fill("QA-ingenjör");
+  await page.getByLabel(/^Företag/).fill("Testföretaget AB");
+  await page.getByLabel(/^Roll/).fill("QA-ingenjör");
   await page.getByRole("button", { name: "Lägg till", exact: true }).click();
 
   const row = page.locator(".pipeline-row", { hasText: "QA-ingenjör" });
   await expect(row).toBeVisible();
 
+  page.once("dialog", (dialog) => dialog.accept());
   await row.locator("select").selectOption("interview");
   await expect(
     page

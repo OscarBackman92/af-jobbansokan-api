@@ -9,10 +9,15 @@
     <meta name="theme-color" content="#f4f4f1" />
     <script>
       (function () {
-        var valid = { command: 1, daylight: 1, signal: 1 };
+        var valid = { system: 1, command: 1, daylight: 1, signal: 1 };
         var t = localStorage.getItem("theme");
         if (!valid[t]) {
           t = "daylight";
+        }
+        if (t === "system") {
+          t = window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "command"
+            : "daylight";
         }
         document.documentElement.dataset.theme = t;
       })();
@@ -22,12 +27,6 @@
       content="Jobbsöket — gratis verktyg som samlar dina jobbansökningar, påminnelser och Platsbanken på ett ställe."
     />
     <title>Jobbsöket — koll på hela ditt jobbsök</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Inconsolata:wght@400;500&family=Open+Sans:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <div id="root"></div>

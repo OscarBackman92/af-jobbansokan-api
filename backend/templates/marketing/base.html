@@ -6,10 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script>
       (function () {
-        var valid = { command: 1, daylight: 1, signal: 1 };
+        var valid = { system: 1, command: 1, daylight: 1, signal: 1 };
         var t = localStorage.getItem("theme");
         if (!valid[t]) {
           t = "daylight";
+        }
+        if (t === "system") {
+          t = window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "command"
+            : "daylight";
         }
         document.documentElement.dataset.theme = t;
       })();
@@ -28,12 +33,7 @@
       content="{% block og_description %}Håll koll på ansökningar utan Excel. Platsbanken, påminnelser och export när du vill.{% endblock %}"
     />
     <meta property="og:url" content="{% block og_url %}{{ canonical_url }}{% endblock %}" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Inconsolata:wght@400;500&family=Open+Sans:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="stylesheet" href="{% static 'marketing/fonts.css' %}" />
     <link rel="stylesheet" href="{% static 'marketing/marketing.css' %}" />
     {% block head_extra %}{% endblock %}
   </head>
@@ -55,6 +55,7 @@
         Din data är din — exportera eller radera när du vill.{" "}
         <a href="{{ privacy_url }}">Integritetspolicy</a>
         <div class="theme-picker" aria-label="Visuellt tema">
+          <button type="button" data-theme="system">System</button>
           <button type="button" data-theme="command">Command</button>
           <button type="button" data-theme="daylight">Daylight</button>
           <button type="button" data-theme="signal">Signal</button>

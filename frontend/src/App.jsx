@@ -30,10 +30,20 @@ const TABS = [
 ];
 
 const THEMES = [
+  { id: "system", label: "System" },
   { id: "command", label: "Command" },
   { id: "daylight", label: "Daylight" },
   { id: "signal", label: "Signal" },
 ];
+
+function resolveTheme(id) {
+  if (id === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "command"
+      : "daylight";
+  }
+  return id;
+}
 
 function readTheme() {
   const stored = localStorage.getItem("theme");
@@ -44,8 +54,24 @@ function readTheme() {
 }
 
 function readTab() {
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl = params.get("tab");
+  if (fromUrl && TABS.some((t) => t.id === fromUrl)) {
+    return fromUrl;
+  }
   const stored = localStorage.getItem("tab");
   return TABS.some((t) => t.id === stored) ? stored : "board";
+}
+
+function syncTabToUrl(tab) {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("tab") === tab) return;
+  params.set("tab", tab);
+  const qs = params.toString();
+  const url = qs
+    ? `${window.location.pathname}?${qs}`
+    : window.location.pathname;
+  window.history.pushState(null, "", url);
 }
 
 export default function App() {
@@ -64,21 +90,39 @@ export default function App() {
 
   function changeTab(next) {
     if (next !== tab && tab === "profile" && profileLeaveGuardRef.current) {
-      profileLeaveGuardRef.current(() => setTab(next));
+      profileLeaveGuardRef.current(() => {
+        setTab(next);
+        syncTabToUrl(next);
+      });
       return;
     }
     setTab(next);
+    syncTabToUrl(next);
   }
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.theme = resolveTheme(theme);
     localStorage.setItem("theme", theme);
+
+    if (theme !== "system") return;
+
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => {
+      document.documentElement.dataset.theme = resolveTheme("system");
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
   }, [theme]);
 
-  // Survive page reloads on the same tab; logout resets to the board.
   useEffect(() => {
     localStorage.setItem("tab", tab);
   }, [tab]);
+
+  useEffect(() => {
+    const onPopState = () => setTab(readTab());
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -104,6 +148,7 @@ export default function App() {
     setToken(null);
     setMe(null);
     setTab("board");
+    syncTabToUrl("board");
   }
 
   return (
@@ -190,7 +235,7 @@ export default function App() {
           <BoardPanel token={token} onNavigate={changeTab} />
         )}
         {!resetCreds && !verifyKey && token && tab === "postings" && (
-          <PostingsPanel />
+          <PostingsPanel onNavigate={changeTab} />
         )}
         {!resetCreds && !verifyKey && token && tab === "profile" && (
           <ProfilePanel

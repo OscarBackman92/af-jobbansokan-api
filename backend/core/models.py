@@ -72,6 +72,19 @@ class JobApplication(models.Model):
         STATUS_OFFER,
     ]
 
+    SOURCE_LINKEDIN = "linkedin"
+    SOURCE_PLATSBANKEN = "platsbanken"
+    SOURCE_COMPANY = "company"
+    SOURCE_RECRUITER = "recruiter"
+    SOURCE_OTHER = "other"
+    SOURCE_CHOICES = [
+        (SOURCE_LINKEDIN, "LinkedIn"),
+        (SOURCE_PLATSBANKEN, "Platsbanken"),
+        (SOURCE_COMPANY, "Företagets sida"),
+        (SOURCE_RECRUITER, "Rekryterare"),
+        (SOURCE_OTHER, "Annat"),
+    ]
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -102,6 +115,7 @@ class JobApplication(models.Model):
         blank=True,
         help_text="JobTech ad id for refreshing the snapshot.",
     )
+    source = models.CharField(max_length=32, blank=True, choices=SOURCE_CHOICES)
     status = models.CharField(
         max_length=50, choices=STATUS_CHOICES, default=STATUS_APPLIED
     )

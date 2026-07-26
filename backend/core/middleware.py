@@ -4,12 +4,12 @@ from django.conf import settings
 
 
 def _public_csp() -> str:
-    # SPA + marketing: Google Fonts, Sentry; no Alpine/eval.
+    # SPA + marketing: self-hosted fonts, Sentry; no Alpine/eval.
     return (
         "default-src 'self'; "
         "script-src 'self'; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "font-src 'self' https://fonts.gstatic.com; "
+        "style-src 'self' 'unsafe-inline'; "
+        "font-src 'self'; "
         "img-src 'self' data:; "
         "connect-src 'self' https://*.ingest.sentry.io https://*.sentry.io; "
         "frame-ancestors 'none'; "

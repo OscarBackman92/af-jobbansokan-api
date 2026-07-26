@@ -249,7 +249,9 @@ def format_weekly_summary_email(
     if frontend_url:
         lines.append(f"Öppna appen: {frontend_url.rstrip('/')}")
     else:
-        lines.append("Öppna Jobbsöket i webbläsaren för att uppdatera dina ansökningar.")
+        lines.append(
+            "Öppna Jobbsöket i webbläsaren för att uppdatera dina ansökningar."
+        )
     lines.append("")
 
     subject = "Jobbsöket — din veckosammanfattning"

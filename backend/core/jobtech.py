@@ -20,9 +20,7 @@ import requests
 JOBTECH_SEARCH_URL = os.getenv(
     "JOBTECH_SEARCH_URL", "https://jobsearch.api.jobtechdev.se/search"
 )
-JOBTECH_AD_URL = os.getenv(
-    "JOBTECH_AD_URL", "https://jobsearch.api.jobtechdev.se/ad"
-)
+JOBTECH_AD_URL = os.getenv("JOBTECH_AD_URL", "https://jobsearch.api.jobtechdev.se/ad")
 JOBTECH_TAXONOMY_CONCEPTS_URL = os.getenv(
     "JOBTECH_TAXONOMY_URL",
     "https://taxonomy.api.jobtechdev.se/v1/taxonomy/main/concepts",

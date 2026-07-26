@@ -1,8 +1,8 @@
 from datetime import date, timedelta
 
 import pytest
-from django.utils import timezone
 from core.models import JobApplication
+from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
 

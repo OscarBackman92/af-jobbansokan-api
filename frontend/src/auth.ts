@@ -3,24 +3,39 @@ import type { AuthTokens } from "./types/app.js";
 // Token storage + refresh. The access token lives ~15 min; the refresh
 // token (7 days, rotating) is used to mint a new one transparently when
 // a request gets a 401, so the user is not silently logged out mid-edit.
+// Stored in sessionStorage (tab-scoped); httpOnly cookies remain a follow-up.
 
 const ACCESS_KEY = "token"; // kept as "token" for backwards compatibility
 const REFRESH_KEY = "refresh";
 
+function migrateFromLocalStorage(key: string): string | null {
+  const fromSession = sessionStorage.getItem(key);
+  if (fromSession) return fromSession;
+  const fromLocal = localStorage.getItem(key);
+  if (fromLocal) {
+    sessionStorage.setItem(key, fromLocal);
+    localStorage.removeItem(key);
+    return fromLocal;
+  }
+  return null;
+}
+
 export function getAccess(): string | null {
-  return localStorage.getItem(ACCESS_KEY);
+  return migrateFromLocalStorage(ACCESS_KEY);
 }
 
 export function getRefresh(): string | null {
-  return localStorage.getItem(REFRESH_KEY);
+  return migrateFromLocalStorage(REFRESH_KEY);
 }
 
 export function setTokens({ access, refresh }: Partial<AuthTokens>): void {
-  if (access) localStorage.setItem(ACCESS_KEY, access);
-  if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
+  if (access) sessionStorage.setItem(ACCESS_KEY, access);
+  if (refresh) sessionStorage.setItem(REFRESH_KEY, refresh);
 }
 
 export function clearTokens(): void {
+  sessionStorage.removeItem(ACCESS_KEY);
+  sessionStorage.removeItem(REFRESH_KEY);
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
 }

@@ -13,6 +13,7 @@ import {
   STATUSES,
   STATUS_LABELS,
 } from "../statuses.js";
+import { foldDiacritics } from "../text.js";
 import ApplicationModal from "./ApplicationModal.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
 import MatchScore from "./MatchScore.jsx";
@@ -20,6 +21,14 @@ import TodayPanel from "./TodayPanel.jsx";
 import WelcomeGuide from "./WelcomeGuide.jsx";
 
 const GOOD_MATCH_PERCENT = 40;
+const STAGE_VISIBLE = 25;
+const FUNNEL_STATUSES = [
+  "screening",
+  "interview",
+  "forwarded",
+  "offer",
+  "accepted",
+];
 
 const QUICK_FILTERS = [
   { id: "all", label: "Alla" },
@@ -32,23 +41,27 @@ const QUICK_FILTERS = [
 ];
 
 function matchesSearch(application, query) {
-  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const terms = foldDiacritics(query)
+    .split(/\s+/)
+    .filter(Boolean);
   if (!terms.length) return true;
-  const haystack = [
-    application.company,
-    application.title,
-    application.location,
-    application.notes,
-    application.contact_name,
-    application.contact_info,
-  ]
-    .join(" ")
-    .toLowerCase();
+  const haystack = foldDiacritics(
+    [
+      application.company,
+      application.title,
+      application.location,
+      application.notes,
+      application.contact_name,
+      application.contact_info,
+      application.source,
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
   return terms.every((term) => haystack.includes(term));
 }
 
-function matchesQuickFilter(application, filter) {
-  if (filter === "all") return true;
+function matchesOneQuickFilter(application, filter) {
   if (filter === "good_match") return isGoodMatch(application);
   if (filter === "followups") return isFollowUp(application);
   if (filter === "deadline") return hasDeadlineSoon(application);
@@ -62,10 +75,20 @@ function matchesQuickFilter(application, filter) {
   return true;
 }
 
+/** Empty filter list = show all. Multiple chips combine with AND. */
+function matchesQuickFilters(application, filters) {
+  if (!filters.length) return true;
+  return filters.every((filter) => matchesOneQuickFilter(application, filter));
+}
+
 function isGoodMatch(application) {
   const match = application.match;
   if (!match?.total) return false;
   return (match.count / match.total) * 100 >= GOOD_MATCH_PERCENT;
+}
+
+function hasCvSkills(applications) {
+  return applications.some((a) => a.match?.total > 0);
 }
 
 function matchesStageFilter(application, stageFilter) {
@@ -86,8 +109,9 @@ export default function BoardPanel({ token, onNavigate }) {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState(null);
   const [query, setQuery] = useState("");
-  const [quickFilter, setQuickFilter] = useState("all");
+  const [quickFilters, setQuickFilters] = useState([]);
   const [stageFilter, setStageFilter] = useState(null);
+  const [undo, setUndo] = useState(null);
   const [showWelcome, setShowWelcome] = useState(
     () => localStorage.getItem("jobbsoket-welcome-dismissed") !== "1"
   );
@@ -122,14 +146,53 @@ export default function BoardPanel({ token, onNavigate }) {
     return () => window.removeEventListener("application-created", handler);
   }, [reload]);
 
+  useEffect(() => {
+    if (!undo) return undefined;
+    const timer = window.setTimeout(() => setUndo(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [undo]);
+
   async function moveTo(applicationId, status) {
+    const current = applications?.find((a) => a.id === applicationId);
+    const previousStatus = current?.status;
+    if (!previousStatus || previousStatus === status) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const when = window.prompt(
+      `Datum för statusbyte till ${STATUS_LABELS[status] || status} (ÅÅÅÅ-MM-DD). Avbryt för att behålla nuvarande status.`,
+      today
+    );
+    if (when === null) return;
+    const status_changed_at = when.trim() || today;
+
     try {
       setError(null);
       await request(`/api/v1/applications/${applicationId}/`, {
         method: "PATCH",
         token,
-        body: { status },
+        body: { status, status_changed_at },
       });
+      setUndo({
+        id: applicationId,
+        previousStatus,
+        title: current.title,
+      });
+      reload();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function undoStatusChange() {
+    if (!undo) return;
+    try {
+      setError(null);
+      await request(`/api/v1/applications/${undo.id}/`, {
+        method: "PATCH",
+        token,
+        body: { status: undo.previousStatus },
+      });
+      setUndo(null);
       reload();
     } catch (err) {
       setError(err.message);
@@ -168,27 +231,44 @@ export default function BoardPanel({ token, onNavigate }) {
   const filteredApplications = applications.filter(
     (a) =>
       matchesSearch(a, query) &&
-      matchesQuickFilter(a, quickFilter) &&
+      matchesQuickFilters(a, quickFilters) &&
       matchesStageFilter(a, stageFilter)
   );
   const closed = filteredApplications
     .filter(isClosed)
     .sort(compareApplicationsByApplied);
   const hasActiveFilters =
-    query.trim() || quickFilter !== "all" || stageFilter !== null;
+    query.trim() || quickFilters.length > 0 || stageFilter !== null;
   const followUps = applications
     .filter(isFollowUp)
     .sort(compareApplicationsByApplied);
+  const cvReady = hasCvSkills(applications);
+  const goodMatchEmpty =
+    quickFilters.includes("good_match") &&
+    !cvReady &&
+    filteredApplications.length === 0;
 
   function resetFilters() {
     setQuery("");
-    setQuickFilter("all");
+    setQuickFilters([]);
     setStageFilter(null);
+  }
+
+  function toggleQuickFilter(filterId) {
+    if (filterId === "all") {
+      setQuickFilters([]);
+      return;
+    }
+    setQuickFilters((current) =>
+      current.includes(filterId)
+        ? current.filter((id) => id !== filterId)
+        : [...current, filterId]
+    );
   }
 
   function applyMetricFilter(filterId) {
     setStageFilter(null);
-    setQuickFilter(filterId);
+    setQuickFilters(filterId === "all" ? [] : [filterId]);
   }
 
   function toggleStageFilter(status) {
@@ -199,7 +279,7 @@ export default function BoardPanel({ token, onNavigate }) {
   // Empty stages are hidden: they carry no action, and the section
   // headers already tell the user where each application stands.
   const activeGroups =
-    quickFilter === "closed" || stageFilter === "closed"
+    quickFilters.includes("closed") || stageFilter === "closed"
       ? []
       : ACTIVE_STATUSES.filter((status) => !stageFilter || stageFilter === status)
           .map((status) => ({
@@ -338,22 +418,42 @@ export default function BoardPanel({ token, onNavigate }) {
         ) : (
           <>
             <div className="board-tools">
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Sök företag, roll, ort, kontakt eller anteckning"
-              />
-              <div className="quick-filters" aria-label="Snabbfilter">
-                {QUICK_FILTERS.map((filter) => (
+              <div className="board-search">
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Sök företag, roll, ort, kontakt eller anteckning"
+                  aria-label="Sök ansökningar"
+                />
+                {query && (
                   <button
                     type="button"
-                    key={filter.id}
-                    className={quickFilter === filter.id ? "active" : ""}
-                    onClick={() => setQuickFilter(filter.id)}
+                    className="board-search-clear"
+                    onClick={() => setQuery("")}
+                    aria-label="Rensa sökning"
                   >
-                    {filter.label}
+                    ✕
                   </button>
-                ))}
+                )}
+              </div>
+              <div className="quick-filters" aria-label="Snabbfilter">
+                {QUICK_FILTERS.map((filter) => {
+                  const active =
+                    filter.id === "all"
+                      ? quickFilters.length === 0
+                      : quickFilters.includes(filter.id);
+                  return (
+                    <button
+                      type="button"
+                      key={filter.id}
+                      className={active ? "active" : ""}
+                      aria-pressed={active}
+                      onClick={() => toggleQuickFilter(filter.id)}
+                    >
+                      {filter.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -376,12 +476,29 @@ export default function BoardPanel({ token, onNavigate }) {
             {filteredApplications.length === 0 ? (
               <div className="empty-state compact">
                 <h3>Inga träffar</h3>
-                <p className="muted">
-                  Prova ett annat sökord eller byt snabbfilter.
-                </p>
-                <button className="secondary" onClick={resetFilters}>
-                  Rensa filter
-                </button>
+                {goodMatchEmpty ? (
+                  <>
+                    <p className="muted">
+                      Markera kompetenser under Profil &amp; CV för att filtrera
+                      på matchning.
+                    </p>
+                    <button
+                      className="secondary"
+                      onClick={() => onNavigate?.("profile")}
+                    >
+                      Öppna Profil &amp; CV
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="muted">
+                      Prova ett annat sökord eller byt snabbfilter.
+                    </p>
+                    <button className="secondary" onClick={resetFilters}>
+                      Rensa filter
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
               <div className="pipeline">
@@ -417,6 +534,24 @@ export default function BoardPanel({ token, onNavigate }) {
 
       <MonthlyStats applications={applications} />
 
+      {undo && (
+        <div className="undo-toast" role="status">
+          <span>
+            Status ändrad för {undo.title}.{" "}
+            <button type="button" className="linklike" onClick={undoStatusChange}>
+              Ångra
+            </button>
+          </span>
+          <button
+            type="button"
+            className="secondary small"
+            onClick={() => setUndo(null)}
+            aria-label="Stäng"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {(selected || adding) && (
         <ModalErrorBoundary
           key={selected?.id ?? "new"}
@@ -480,7 +615,13 @@ function PipelineStage({
   onOpen,
   onMove,
 }) {
+  const [expanded, setExpanded] = useState(false);
   const isActive = activeFilter === status;
+  const visible = expanded
+    ? applications
+    : applications.slice(0, STAGE_VISIBLE);
+  const hiddenCount = applications.length - visible.length;
+
   return (
     <section className={`pipeline-stage pipeline-stage--${status}`}>
       <div
@@ -506,7 +647,7 @@ function PipelineStage({
         </button>
       </div>
       <div className="pipeline-rows">
-        {applications.map((application) => (
+        {visible.map((application) => (
           <ApplicationRow
             key={application.id}
             application={application}
@@ -515,6 +656,15 @@ function PipelineStage({
           />
         ))}
       </div>
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          className="secondary small pipeline-show-more"
+          onClick={() => setExpanded(true)}
+        >
+          Visa alla {applications.length}
+        </button>
+      )}
     </section>
   );
 }
@@ -620,10 +770,8 @@ function MonthlyStats({ applications }) {
   }
   const max = Math.max(1, ...months.map((m) => m.count));
 
-  const inProcess = applications.filter((a) =>
-    ["screening", "interview", "forwarded", "offer", "accepted"].includes(
-      a.status
-    )
+  const inProcess = applications.filter(
+    (a) => a.reached_interview || FUNNEL_STATUSES.includes(a.status)
   ).length;
 
   return (

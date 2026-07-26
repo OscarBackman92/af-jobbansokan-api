@@ -60,6 +60,7 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     match = serializers.SerializerMethodField()
     last_activity_at = serializers.SerializerMethodField()
+    reached_interview = serializers.BooleanField(read_only=True, default=False)
 
     class Meta:
         model = JobApplication
@@ -72,6 +73,7 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
             "ad_url",
             "apply_url",
             "source_job_id",
+            "source",
             "status",
             "status_label",
             "applied_at",
@@ -81,6 +83,7 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
             "notes",
             "next_action_at",
             "last_activity_at",
+            "reached_interview",
             "match",
             "created_at",
             "updated_at",
@@ -133,6 +136,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             "apply_url",
             "ad_description",
             "source_job_id",
+            "source",
             "status",
             "status_label",
             "applied_at",
@@ -205,7 +209,12 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             for existing in others.only("ad_url"):
                 if ad_urls_equivalent(existing.ad_url, ad_url):
                     raise serializers.ValidationError(
-                        {"ad_url": "Du har redan sparat den här annonsen bland dina ansökningar."}
+                        {
+                            "ad_url": (
+                                "Du har redan sparat den här annonsen "
+                                "bland dina ansökningar."
+                            )
+                        }
                     )
         return attrs
 

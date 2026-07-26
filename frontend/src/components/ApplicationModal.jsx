@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   externalUrl,
@@ -21,6 +21,7 @@ const EMPTY = {
   ad_description: "",
   source_job_id: "",
   status: "applied",
+  source: "",
   applied_at: new Date().toISOString().slice(0, 10),
   deadline: "",
   contact_name: "",
@@ -49,6 +50,7 @@ export default function ApplicationModal({
         }
       : EMPTY
   );
+  const initialFormRef = useRef(JSON.stringify(form));
   const [events, setEvents] = useState(application?.events ?? []);
   const [error, setError] = useState(null);
   const [adLoading, setAdLoading] = useState(false);
@@ -78,7 +80,19 @@ export default function ApplicationModal({
     form.title,
     applicationId,
   ]);
-  const duplicateBlocked = Boolean(duplicateByUrl);
+  const duplicateBlocked = Boolean(
+    duplicateByUrl || (similarByTitle && !application)
+  );
+
+  const requestClose = useCallback(() => {
+    if (
+      JSON.stringify(form) !== initialFormRef.current &&
+      !window.confirm("Du har osparade ändringar. Stäng utan att spara?")
+    ) {
+      return;
+    }
+    onClose();
+  }, [form, onClose]);
 
   // List rows are lean (no timeline); fetch the full row when editing.
   useEffect(() => {
@@ -88,12 +102,16 @@ export default function ApplicationModal({
       .then((detail) => {
         if (cancelled) return;
         setEvents(detail.events ?? []);
-        setForm((prev) => ({
-          ...prev,
-          ad_description: detail.ad_description || prev.ad_description,
-          apply_url: detail.apply_url || prev.apply_url,
-          source_job_id: detail.source_job_id || prev.source_job_id,
-        }));
+        setForm((prev) => {
+          const next = {
+            ...prev,
+            ad_description: detail.ad_description || prev.ad_description,
+            apply_url: detail.apply_url || prev.apply_url,
+            source_job_id: detail.source_job_id || prev.source_job_id,
+          };
+          initialFormRef.current = JSON.stringify(next);
+          return next;
+        });
       })
       .catch(() => {
         /* timeline stays empty; the form is still usable */
@@ -117,13 +135,17 @@ export default function ApplicationModal({
           apply_url: job.application_url || "",
           source_job_id: job.id || "",
         };
-        setForm((prev) => ({
-          ...prev,
-          ad_description: snapshot.ad_description || prev.ad_description,
-          apply_url: prev.apply_url || snapshot.apply_url,
-          source_job_id: prev.source_job_id || snapshot.source_job_id,
-          ad_url: prev.ad_url || job.webpage_url || "",
-        }));
+        setForm((prev) => {
+          const next = {
+            ...prev,
+            ad_description: snapshot.ad_description || prev.ad_description,
+            apply_url: prev.apply_url || snapshot.apply_url,
+            source_job_id: prev.source_job_id || snapshot.source_job_id,
+            ad_url: prev.ad_url || job.webpage_url || "",
+          };
+          initialFormRef.current = JSON.stringify(next);
+          return next;
+        });
         if (snapshot.ad_description || snapshot.apply_url) {
           const body = {};
           if (snapshot.ad_description) body.ad_description = snapshot.ad_description;
@@ -160,7 +182,7 @@ export default function ApplicationModal({
     function onKeyDown(event) {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        requestClose();
       }
     }
     document.addEventListener("keydown", onKeyDown);
@@ -168,9 +190,10 @@ export default function ApplicationModal({
       document.removeEventListener("keydown", onKeyDown);
       previous?.focus?.();
     };
-  }, [onClose]);
+  }, [requestClose]);
 
   const field = (name, type = "text") => ({
+    id: `app-field-${name}`,
     type,
     value: form[name],
     onChange: (e) => setForm({ ...form, [name]: e.target.value }),
@@ -183,6 +206,8 @@ export default function ApplicationModal({
     delete body.posting;
     delete body.status_label;
     delete body.match;
+    delete body.last_activity_at;
+    delete body.reached_interview;
     delete body.created_at;
     delete body.updated_at;
     body.ad_url = normalizeAdUrl(body.ad_url);
@@ -248,7 +273,7 @@ export default function ApplicationModal({
 
   return (
     <ModalOverlay
-      onClose={onClose}
+      onClose={requestClose}
       className="modal application-modal"
       overlayClassName="overlay overlay--application"
       dialogRef={dialogRef}
@@ -271,7 +296,7 @@ export default function ApplicationModal({
           <button
             type="button"
             className="secondary small modal-close"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Stäng"
           >
             ✕
@@ -367,6 +392,7 @@ export default function ApplicationModal({
               onLogCall={logContactCall}
               onOpenExisting={onOpenExisting}
               onRemove={remove}
+              requestClose={requestClose}
               setForm={setForm}
               similarByTitle={similarByTitle}
               showLinkFields
@@ -385,6 +411,7 @@ export default function ApplicationModal({
               onLogCall={logContactCall}
               onOpenExisting={onOpenExisting}
               onRemove={remove}
+              requestClose={requestClose}
               setForm={setForm}
               similarByTitle={similarByTitle}
               showLinkFields
@@ -409,24 +436,25 @@ function ApplicationFields({
   onLogCall,
   onOpenExisting,
   onRemove,
+  requestClose,
   setForm,
   similarByTitle,
   showLinkFields,
 }) {
   return (
     <>
-      <div className="grid3">
-        <label>
-          Företag
-          <input {...field("company")} required placeholder="Acme AB" />
-        </label>
-        <label>
-          Roll
+      <label htmlFor="app-field-company">
+        Företag *
+        <input {...field("company")} required placeholder="Acme AB" />
+      </label>
+      <div className="grid2">
+        <label htmlFor="app-field-title">
+          Roll *
           <input {...field("title")} required placeholder="Backendutvecklare" />
         </label>
-        <label>
+        <label htmlFor="app-field-location">
           Ort
-          <input {...field("location")} />
+          <input {...field("location")} placeholder="Stockholm" />
         </label>
       </div>
       <ContactPanel
@@ -437,9 +465,10 @@ function ApplicationFields({
         onLogCall={onLogCall}
       />
       <div className="grid3">
-        <label>
+        <label htmlFor="app-field-status">
           Status
           <select
+            id="app-field-status"
             value={form.status}
             onChange={(e) => setForm({ ...form, status: e.target.value })}
             style={{ width: "100%" }}
@@ -451,30 +480,48 @@ function ApplicationFields({
             ))}
           </select>
         </label>
-        <label>
+        <label htmlFor="app-field-source">
+          Källa
+          <select
+            id="app-field-source"
+            value={form.source}
+            onChange={(e) => setForm({ ...form, source: e.target.value })}
+            style={{ width: "100%" }}
+          >
+            <option value="">—</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="platsbanken">Platsbanken</option>
+            <option value="company">Företagets sida</option>
+            <option value="recruiter">Rekryterare</option>
+            <option value="other">Annat</option>
+          </select>
+        </label>
+        <label htmlFor="app-field-applied_at">
           Sökt datum
           <input {...field("applied_at", "date")} />
         </label>
-        <label>
+      </div>
+      <div className="grid2">
+        <label htmlFor="app-field-deadline">
           Sista ansökningsdag
           <input {...field("deadline", "date")} />
         </label>
+        <label htmlFor="app-field-next_action_at">
+          Nästa steg (datum)
+          <input {...field("next_action_at", "date")} />
+        </label>
       </div>
-      <label>
-        Nästa steg (datum)
-        <input {...field("next_action_at", "date")} />
-      </label>
       {showLinkFields && (
         <details className="link-details">
           <summary>Redigera länkar</summary>
-          <label>
+          <label htmlFor="app-field-apply_url">
             Länk till ansökan
             <input
               {...field("apply_url", "url")}
               placeholder="Arbetsgivarens ansökningssida"
             />
           </label>
-          <label>
+          <label htmlFor="app-field-ad_url">
             Platsbanken-referens
             <input
               {...field("ad_url", "url")}
@@ -497,7 +544,10 @@ function ApplicationFields({
         </p>
       )}
       {similarByTitle && (
-        <p className="warning warning--soft" role="status">
+        <p
+          className={application ? "warning warning--soft" : "warning"}
+          role="status"
+        >
           Du har redan en ansökan med samma företag och roll:{" "}
           <button
             type="button"
@@ -506,18 +556,26 @@ function ApplicationFields({
           >
             {similarByTitle.title} @ {similarByTitle.company}
           </button>
-          . Kontrollera att det inte är samma jobb.
+          .
+          {application
+            ? " Kontrollera att det inte är samma jobb."
+            : " Öppna den befintliga ansökan istället."}
         </p>
       )}
-      <label>
+      <label htmlFor="app-field-notes">
         Anteckningar
         <textarea {...field("notes")} />
       </label>
       {error && <p className="error">{error}</p>}
       <div className="row-between">
-        <button disabled={duplicateBlocked}>
-          {application ? "Spara" : "Lägg till"}
-        </button>
+        <div className="row">
+          <button disabled={duplicateBlocked}>
+            {application ? "Spara" : "Lägg till"}
+          </button>
+          <button type="button" className="secondary" onClick={requestClose}>
+            Avbryt
+          </button>
+        </div>
         {application && (
           <button type="button" className="danger small" onClick={onRemove}>
             Ta bort
@@ -565,11 +623,11 @@ function ContactPanel({ form, setForm, field, application, onLogCall }) {
         )}
       </div>
       <div className="grid2">
-        <label>
+        <label htmlFor="app-field-contact_name">
           Kontaktperson
           <input {...field("contact_name")} placeholder="Rekryterare, chef…" />
         </label>
-        <label>
+        <label htmlFor="app-field-contact_info">
           Kontaktuppgift
           <input {...field("contact_info")} placeholder="E-post eller telefon" />
         </label>
