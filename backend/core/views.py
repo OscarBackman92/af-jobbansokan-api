@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import Q
+from django.db.models import Max, Q
 from django.http import Http404, HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -397,7 +397,9 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
             "-updated_at"
         )
         if self.action == "list":
-            qs = qs.select_related("posting")
+            qs = qs.select_related("posting").annotate(
+                _last_event_at=Max("events__occurred_at")
+            )
         else:
             qs = qs.prefetch_related("events")
         params = self.request.query_params
@@ -426,9 +428,20 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
         previous = serializer.instance.status
         application = serializer.save()
         if previous != application.status:
+            occurred_at = (
+                parse_date(str(self.request.data.get("status_changed_at") or ""))
+                or timezone.localdate()
+            )
+            # Moving into "Ansökt" without a date leaves the stats chart
+            # empty — stamp applied_at from the status change when missing.
+            if (
+                application.status == JobApplication.STATUS_APPLIED
+                and not application.applied_at
+            ):
+                application.applied_at = occurred_at
+                application.save(update_fields=["applied_at", "updated_at"])
             application.events.create(
-                occurred_at=self.request.data.get("status_changed_at")
-                or application.updated_at.date(),
+                occurred_at=occurred_at,
                 note=(
                     f"Status: {dict(JobApplication.STATUS_CHOICES)[previous]}"
                     f" → {application.get_status_display()}"

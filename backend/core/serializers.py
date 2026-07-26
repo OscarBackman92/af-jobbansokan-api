@@ -59,6 +59,7 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
 
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     match = serializers.SerializerMethodField()
+    last_activity_at = serializers.SerializerMethodField()
 
     class Meta:
         model = JobApplication
@@ -79,11 +80,25 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
             "contact_info",
             "notes",
             "next_action_at",
+            "last_activity_at",
             "match",
             "created_at",
             "updated_at",
         ]
         read_only_fields = fields
+
+    def get_last_activity_at(self, obj):
+        """Latest timeline date, else applied_at, else created date.
+
+        Used by the board to measure employer silence without shipping
+        every event on the list payload.
+        """
+        last_event = getattr(obj, "_last_event_at", None)
+        if last_event:
+            return last_event
+        if obj.applied_at:
+            return obj.applied_at
+        return timezone.localtime(obj.created_at).date()
 
     def get_match(self, obj):
         evidence = self.context.get("cv_evidence")

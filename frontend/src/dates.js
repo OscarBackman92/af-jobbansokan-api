@@ -2,6 +2,12 @@ import { CLOSED_STATUSES } from "./statuses.js";
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Days without employer contact before an applied/screening row needs follow-up. */
+export const SILENCE_FOLLOW_UP_DAYS = 7;
+
+/** Statuses where we are waiting on the employer, not chasing a deadline. */
+export const AWAITING_RESPONSE_STATUSES = ["applied", "screening"];
+
 /** Whole days from today (local midnight) until the given ISO date. */
 export function daysUntil(dateString) {
   if (!dateString) return null;
@@ -12,6 +18,61 @@ export function daysUntil(dateString) {
 
 export function isClosed(application) {
   return CLOSED_STATUSES.includes(application.status);
+}
+
+/** Best available date for "last signal" without shipping the full timeline. */
+export function lastActivityDate(application) {
+  if (application.last_activity_at) return application.last_activity_at;
+  if (application.applied_at) return application.applied_at;
+  if (application.created_at) return application.created_at.slice(0, 10);
+  return null;
+}
+
+/**
+ * Needs follow-up: overdue next-step, or applied/screening with silence.
+ * Deadlines on wishlist rows are NOT follow-ups — use hasDeadlineSoon.
+ */
+export function isFollowUp(application) {
+  if (isClosed(application)) return false;
+
+  const nextIn = daysUntil(application.next_action_at);
+  if (nextIn !== null && nextIn <= 0) return true;
+
+  if (!AWAITING_RESPONSE_STATUSES.includes(application.status)) return false;
+  const activity = lastActivityDate(application);
+  const until = daysUntil(activity);
+  if (until === null) return false;
+  return -until >= SILENCE_FOLLOW_UP_DAYS;
+}
+
+/**
+ * Upcoming (or today) application deadline on a saved row.
+ * Overdue deadlines are still actionable in Idag, but the KPI "inom 7 dagar"
+ * only counts the upcoming window.
+ */
+export function hasDeadlineSoon(application, { includeOverdue = true } = {}) {
+  if (isClosed(application)) return false;
+  if (application.status !== "wishlist") return false;
+  const deadlineIn = daysUntil(application.deadline);
+  if (deadlineIn === null) return false;
+  if (deadlineIn > 7) return false;
+  if (!includeOverdue && deadlineIn < 0) return false;
+  return true;
+}
+
+/**
+ * Sort key for board sections: newest applied_at first, undated last,
+ * then newest updated_at as tiebreaker.
+ */
+export function compareApplicationsByApplied(a, b) {
+  const aDate = a.applied_at || "";
+  const bDate = b.applied_at || "";
+  if (aDate !== bDate) {
+    if (!aDate) return 1;
+    if (!bDate) return -1;
+    return bDate.localeCompare(aDate);
+  }
+  return (b.updated_at || "").localeCompare(a.updated_at || "");
 }
 
 /**
@@ -26,8 +87,10 @@ export function buildTodayActions(applications) {
 
     const nextIn = daysUntil(application.next_action_at);
     const deadlineIn = daysUntil(application.deadline);
+    let listedScheduledFollowUp = false;
 
     if (nextIn !== null && nextIn <= 0) {
+      listedScheduledFollowUp = true;
       items.push({
         application,
         kind: "followup",
@@ -48,6 +111,26 @@ export function buildTodayActions(applications) {
         label: `Nästa steg om ${nextIn} ${nextIn === 1 ? "dag" : "dagar"}`,
         calendarSummary: `Nästa steg: ${application.title} @ ${application.company}`,
       });
+    }
+
+    // Employer silence — only when there is no scheduled next-step already listed.
+    if (
+      !listedScheduledFollowUp &&
+      AWAITING_RESPONSE_STATUSES.includes(application.status)
+    ) {
+      const activity = lastActivityDate(application);
+      const until = daysUntil(activity);
+      if (until !== null && -until >= SILENCE_FOLLOW_UP_DAYS) {
+        const silentDays = -until;
+        items.push({
+          application,
+          kind: "followup",
+          date: activity,
+          sortKey: -silentDays,
+          label: `Inget svar på ${silentDays} dagar`,
+          calendarSummary: `Följ upp: ${application.title} @ ${application.company}`,
+        });
+      }
     }
 
     if (

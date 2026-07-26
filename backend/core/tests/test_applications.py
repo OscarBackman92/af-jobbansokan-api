@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 import pytest
+from django.utils import timezone
 from core.models import JobApplication
 
 pytestmark = pytest.mark.django_db
@@ -231,6 +232,51 @@ def test_status_update_appends_timeline_event(api_client, user):
     assert len(events) == 1
     assert events[0].status == "interview"
     assert "Intervju" in events[0].note
+
+
+def test_status_to_applied_sets_applied_at(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user, company="Acme", title="Dev", status="wishlist"
+    )
+    assert application.applied_at is None
+
+    api_client.force_authenticate(user)
+    response = api_client.patch(f"{URL}{application.id}/", {"status": "applied"})
+    assert response.status_code == 200
+
+    application.refresh_from_db()
+    assert application.status == "applied"
+    assert application.applied_at == timezone.localdate()
+    assert application.events.count() == 1
+
+
+def test_status_to_applied_keeps_existing_applied_at(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user,
+        company="Acme",
+        title="Dev",
+        status="wishlist",
+        applied_at=date(2026, 6, 1),
+    )
+    api_client.force_authenticate(user)
+    api_client.patch(f"{URL}{application.id}/", {"status": "applied"})
+    application.refresh_from_db()
+    assert str(application.applied_at) == "2026-06-01"
+
+
+def test_list_includes_last_activity_at(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user,
+        company="Acme",
+        title="Dev",
+        status="applied",
+        applied_at=date(2026, 6, 1),
+    )
+    application.events.create(occurred_at=date(2026, 6, 10), note="Ping")
+
+    api_client.force_authenticate(user)
+    row = api_client.get(URL).json()["results"][0]
+    assert row["last_activity_at"] == "2026-06-10"
 
 
 def test_row_is_editable(api_client, user):

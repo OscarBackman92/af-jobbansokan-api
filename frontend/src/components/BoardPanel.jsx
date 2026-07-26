@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { downloadBlob, request } from "../api.js";
-import { daysUntil } from "../dates.js";
+import {
+  compareApplicationsByApplied,
+  daysUntil,
+  hasDeadlineSoon,
+  isClosed,
+  isFollowUp,
+} from "../dates.js";
 import {
   ACTIVE_STATUSES,
-  CLOSED_STATUSES,
   STATUSES,
   STATUS_LABELS,
 } from "../statuses.js";
@@ -25,24 +30,6 @@ const QUICK_FILTERS = [
   { id: "offers", label: "Erbjudanden" },
   { id: "closed", label: "Avslutade" },
 ];
-
-function isClosed(application) {
-  return CLOSED_STATUSES.includes(application.status);
-}
-
-function isFollowUp(application) {
-  if (isClosed(application)) return false;
-  const nextIn = daysUntil(application.next_action_at);
-  if (nextIn !== null && nextIn <= 0) return true;
-  const deadlineIn = daysUntil(application.deadline);
-  return deadlineIn !== null && deadlineIn <= 7 && application.status === "wishlist";
-}
-
-function hasDeadlineSoon(application) {
-  if (isClosed(application)) return false;
-  const deadlineIn = daysUntil(application.deadline);
-  return deadlineIn !== null && deadlineIn <= 7;
-}
 
 function matchesSearch(application, query) {
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -184,16 +171,14 @@ export default function BoardPanel({ token, onNavigate }) {
       matchesQuickFilter(a, quickFilter) &&
       matchesStageFilter(a, stageFilter)
   );
-  const closed = filteredApplications.filter(isClosed);
+  const closed = filteredApplications
+    .filter(isClosed)
+    .sort(compareApplicationsByApplied);
   const hasActiveFilters =
     query.trim() || quickFilter !== "all" || stageFilter !== null;
   const followUps = applications
     .filter(isFollowUp)
-    .sort(
-      (a, b) =>
-        new Date(a.next_action_at || a.deadline) -
-        new Date(b.next_action_at || b.deadline)
-    );
+    .sort(compareApplicationsByApplied);
 
   function resetFilters() {
     setQuery("");
@@ -220,14 +205,18 @@ export default function BoardPanel({ token, onNavigate }) {
           .map((status) => ({
             id: status,
             label: STATUS_LABELS[status],
-            applications: activeFiltered.filter((a) => a.status === status),
+            applications: activeFiltered
+              .filter((a) => a.status === status)
+              .sort(compareApplicationsByApplied),
           }))
           .filter(
             (group) =>
               stageFilter === group.id || group.applications.length > 0
           );
   const activeCount = applications.length - allClosed.length;
-  const deadlineSoonCount = applications.filter(hasDeadlineSoon).length;
+  const deadlineSoonCount = applications.filter((a) =>
+    hasDeadlineSoon(a, { includeOverdue: true })
+  ).length;
   const interviewTrackCount = applications.filter((a) =>
     ["screening", "interview", "forwarded"].includes(a.status)
   ).length;
@@ -531,7 +520,8 @@ function PipelineStage({
 }
 
 function DeadlineBadge({ application }) {
-  if (CLOSED_STATUSES.includes(application.status)) return null;
+  // Deadlines only matter while the row is still Sparad.
+  if (application.status !== "wishlist") return null;
   const days = daysUntil(application.deadline);
   if (days === null || days > 14) return null;
   const tone = days <= 3 ? "rejected" : "interview";
@@ -557,7 +547,9 @@ function ApplicationRow({ application, onOpen, onMove }) {
   const showStatusBadge = isClosed(application);
   const deadlineIn = daysUntil(application.deadline);
   const showDeadlineBadge =
-    !isClosed(application) && deadlineIn !== null && deadlineIn <= 14;
+    application.status === "wishlist" &&
+    deadlineIn !== null &&
+    deadlineIn <= 14;
   const hasBadges =
     showStatusBadge || showDeadlineBadge || application.next_action_at;
 
