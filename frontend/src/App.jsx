@@ -258,7 +258,9 @@ export default function App() {
           {THEMES.map((t) => (
             <button
               key={t.id}
+              type="button"
               className={theme === t.id ? "active" : ""}
+              aria-pressed={theme === t.id}
               onClick={() => setTheme(t.id)}
             >
               {t.label}

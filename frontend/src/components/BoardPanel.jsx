@@ -8,6 +8,7 @@ import {
   isClosed,
   isFollowUp,
 } from "../dates.js";
+import { localISODate } from "../localDate.js";
 import {
   ACTIVE_STATUSES,
   STATUSES,
@@ -16,6 +17,7 @@ import {
 import { foldDiacritics } from "../text.js";
 import ApplicationModal from "./ApplicationModal.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
+import ModalOverlay from "./ModalOverlay.jsx";
 import MatchScore from "./MatchScore.jsx";
 import TodayPanel from "./TodayPanel.jsx";
 import WelcomeGuide from "./WelcomeGuide.jsx";
@@ -112,6 +114,8 @@ export default function BoardPanel({ token, onNavigate }) {
   const [quickFilters, setQuickFilters] = useState([]);
   const [stageFilter, setStageFilter] = useState(null);
   const [undo, setUndo] = useState(null);
+  const [pendingMove, setPendingMove] = useState(null);
+  const [pendingDate, setPendingDate] = useState(() => localISODate());
   const [showWelcome, setShowWelcome] = useState(
     () => localStorage.getItem("jobbsoket-welcome-dismissed") !== "1"
   );
@@ -152,31 +156,34 @@ export default function BoardPanel({ token, onNavigate }) {
     return () => window.clearTimeout(timer);
   }, [undo]);
 
-  async function moveTo(applicationId, status) {
+  function requestMove(applicationId, status) {
     const current = applications?.find((a) => a.id === applicationId);
     const previousStatus = current?.status;
     if (!previousStatus || previousStatus === status) return;
+    // Capture ids up front so a list re-render cannot retarget the change.
+    setPendingDate(localISODate());
+    setPendingMove({
+      id: applicationId,
+      previousStatus,
+      nextStatus: status,
+      title: current.title,
+      company: current.company,
+    });
+  }
 
-    const today = new Date().toISOString().slice(0, 10);
-    const when = window.prompt(
-      `Datum för statusbyte till ${STATUS_LABELS[status] || status} (ÅÅÅÅ-MM-DD). Avbryt för att behålla nuvarande status.`,
-      today
-    );
-    if (when === null) return;
-    const status_changed_at = when.trim() || today;
-
+  async function confirmPendingMove() {
+    if (!pendingMove) return;
+    const { id, previousStatus, nextStatus, title } = pendingMove;
+    const status_changed_at = pendingDate.trim() || localISODate();
+    setPendingMove(null);
     try {
       setError(null);
-      await request(`/api/v1/applications/${applicationId}/`, {
+      await request(`/api/v1/applications/${id}/`, {
         method: "PATCH",
         token,
-        body: { status, status_changed_at },
+        body: { status: nextStatus, status_changed_at },
       });
-      setUndo({
-        id: applicationId,
-        previousStatus,
-        title: current.title,
-      });
+      setUndo({ id, previousStatus, title });
       reload();
     } catch (err) {
       setError(err.message);
@@ -511,7 +518,7 @@ export default function BoardPanel({ token, onNavigate }) {
                     activeFilter={stageFilter}
                     onFilterToggle={toggleStageFilter}
                     onOpen={setSelected}
-                    onMove={moveTo}
+                    onMove={requestMove}
                   />
                 ))}
 
@@ -523,7 +530,7 @@ export default function BoardPanel({ token, onNavigate }) {
                     activeFilter={stageFilter}
                     onFilterToggle={toggleStageFilter}
                     onOpen={setSelected}
-                    onMove={moveTo}
+                    onMove={requestMove}
                   />
                 )}
               </div>
@@ -533,6 +540,54 @@ export default function BoardPanel({ token, onNavigate }) {
       </section>
 
       <MonthlyStats applications={applications} />
+
+      {pendingMove && (
+        <ModalOverlay
+          onClose={() => setPendingMove(null)}
+          className="modal status-change-modal"
+          labelledBy="status-change-title"
+        >
+          <div className="modal-head">
+            <div className="modal-head-text">
+              <h2 id="status-change-title">Byt status</h2>
+              <p className="muted">
+                {pendingMove.title} @ {pendingMove.company}
+                {" → "}
+                {STATUS_LABELS[pendingMove.nextStatus] || pendingMove.nextStatus}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="secondary small modal-close"
+              onClick={() => setPendingMove(null)}
+              aria-label="Stäng"
+            >
+              ✕
+            </button>
+          </div>
+          <label htmlFor="status-change-date">
+            Datum för statusbytet
+            <input
+              id="status-change-date"
+              type="date"
+              value={pendingDate}
+              onChange={(e) => setPendingDate(e.target.value)}
+            />
+          </label>
+          <div className="row-gap" style={{ marginTop: "1rem" }}>
+            <button type="button" onClick={confirmPendingMove}>
+              Bekräfta
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setPendingMove(null)}
+            >
+              Avbryt
+            </button>
+          </div>
+        </ModalOverlay>
+      )}
 
       {undo && (
         <div className="undo-toast" role="status">

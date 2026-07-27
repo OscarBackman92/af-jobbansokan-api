@@ -29,12 +29,27 @@ export class ApiError extends Error {
 
 function formatErrors(body: ErrorBody): string {
   if (!body || typeof body !== "object") return String(body ?? "");
+  const labels: Record<string, string> = {
+    apply_url: "Ansökningslänk",
+    ad_url: "Annonslänk",
+    company: "Företag",
+    title: "Roll",
+    applied_at: "Sökt datum",
+    deadline: "Sista ansökningsdag",
+    next_action_at: "Nästa steg",
+    status: "Status",
+    source: "Källa",
+    match_cv: "CV-matchning",
+    posting: "Annons",
+    detail: "",
+    non_field_errors: "",
+  };
   return Object.entries(body)
     .map(([field, msgs]) => {
       const text = Array.isArray(msgs) ? msgs.join(" ") : String(msgs);
-      return field === "detail" || field === "non_field_errors"
-        ? text
-        : `${field}: ${text}`;
+      if (field === "detail" || field === "non_field_errors") return text;
+      const label = labels[field] || field;
+      return `${label}: ${text}`;
     })
     .join(" — ");
 }

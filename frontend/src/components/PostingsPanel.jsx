@@ -39,6 +39,12 @@ const EMPTY_QUERY = {
   matchCv: false,
 };
 
+function initialQuery() {
+  const municipalities = readLastMunicipalities();
+  if (!municipalities.length) return EMPTY_QUERY;
+  return { ...EMPTY_QUERY, municipalities };
+}
+
 function appendIdParams(params, key, items) {
   for (const item of items) {
     const id = typeof item === "string" ? item : item?.id;
@@ -69,7 +75,7 @@ export default function PostingsPanel({ onNavigate }) {
   const [filtersError, setFiltersError] = useState(null);
   const [remote, setRemote] = useState(false);
   const [matchCvOnly, setMatchCvOnly] = useState(false);
-  const [query, setQuery] = useState(EMPTY_QUERY);
+  const [query, setQuery] = useState(initialQuery);
   const [offset, setOffset] = useState(0);
   const resultsSectionRef = useRef(null);
   const pendingScrollRef = useRef(false);
@@ -352,6 +358,7 @@ export default function PostingsPanel({ onNavigate }) {
   async function track(job) {
     setMessage(null);
     try {
+      const applyUrl = externalUrl(job.application_url || "") || "";
       await request("/api/v1/applications/", {
         method: "POST",
         body: {
@@ -359,7 +366,7 @@ export default function PostingsPanel({ onNavigate }) {
           title: job.title,
           location: job.location,
           ad_url: job.webpage_url,
-          apply_url: normalizeAdUrl(job.application_url || ""),
+          apply_url: applyUrl,
           ad_description: job.description || "",
           source_job_id: job.id || "",
           source: "platsbanken",

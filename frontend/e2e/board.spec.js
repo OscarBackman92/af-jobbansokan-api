@@ -15,13 +15,13 @@ test("create an application, move status, timeline logs the change", async ({
   const row = page.locator(".pipeline-row", { hasText: "QA-ingenjör" });
   await expect(row).toBeVisible();
 
-  page.once("dialog", (dialog) => dialog.accept());
   await row.locator("select").selectOption("interview");
+  await expect(page.getByRole("heading", { name: "Byt status" })).toBeVisible();
+  await page.getByRole("button", { name: "Bekräfta" }).click();
   await expect(
-    page
-      .locator(".pipeline-stage--interview .pipeline-row", {
-        hasText: "QA-ingenjör",
-      })
+    page.locator(".pipeline-stage--interview .pipeline-row", {
+      hasText: "QA-ingenjör",
+    })
   ).toBeVisible();
 
   await page

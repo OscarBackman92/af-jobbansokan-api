@@ -123,6 +123,10 @@ class JobApplicationSerializer(serializers.ModelSerializer):
 
     events = ApplicationEventSerializer(many=True, read_only=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
+    # CharField so Platsbanken junk URLs can be blanked instead of 400.
+    apply_url = serializers.CharField(
+        required=False, allow_blank=True, max_length=500
+    )
 
     class Meta:
         model = JobApplication
@@ -158,6 +162,20 @@ class JobApplicationSerializer(serializers.ModelSerializer):
     def validate_applied_at(self, value):
         if value and value > timezone.localdate():
             raise serializers.ValidationError("applied_at cannot be in the future.")
+        return value
+
+    def validate_apply_url(self, value):
+        # Platsbanken sometimes returns mailto:/relative/junk — blank those
+        # instead of blocking the whole save.
+        if not value:
+            return ""
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        from django.core.validators import URLValidator
+
+        try:
+            URLValidator()(value)
+        except DjangoValidationError:
+            return ""
         return value
 
     def validate(self, attrs):

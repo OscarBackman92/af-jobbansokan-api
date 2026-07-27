@@ -9,6 +9,7 @@ import {
   platsbankenJobId,
 } from "../adUrl.js";
 import { request } from "../api.js";
+import { localISODate } from "../localDate.js";
 import { STATUSES } from "../statuses.js";
 import ModalOverlay from "./ModalOverlay.jsx";
 
@@ -22,7 +23,7 @@ const EMPTY = {
   source_job_id: "",
   status: "applied",
   source: "",
-  applied_at: new Date().toISOString().slice(0, 10),
+  applied_at: localISODate(),
   deadline: "",
   contact_name: "",
   contact_info: "",
@@ -94,6 +95,9 @@ export default function ApplicationModal({
     onClose();
   }, [form, onClose]);
 
+  const requestCloseRef = useRef(requestClose);
+  requestCloseRef.current = requestClose;
+
   // List rows are lean (no timeline); fetch the full row when editing.
   useEffect(() => {
     if (!applicationId) return undefined;
@@ -149,7 +153,8 @@ export default function ApplicationModal({
         if (snapshot.ad_description || snapshot.apply_url) {
           const body = {};
           if (snapshot.ad_description) body.ad_description = snapshot.ad_description;
-          if (snapshot.apply_url) body.apply_url = normalizeAdUrl(snapshot.apply_url);
+          const apply = externalUrl(snapshot.apply_url);
+          if (apply) body.apply_url = apply;
           if (snapshot.source_job_id) body.source_job_id = snapshot.source_job_id;
           try {
             await request(`/api/v1/applications/${applicationId}/`, {
@@ -173,16 +178,19 @@ export default function ApplicationModal({
     };
   }, [applicationId, jobId, previewDescription, token]);
 
+  // Focus once on open — never re-run on form keystrokes (that stole focus).
   useEffect(() => {
     const previous = document.activeElement;
-    dialogRef.current
-      ?.querySelector(".modal-close")
-      ?.focus({ preventScroll: true });
+    const root = dialogRef.current;
+    const prefer =
+      root?.querySelector("#app-field-company") ||
+      root?.querySelector(".modal-close");
+    prefer?.focus({ preventScroll: true });
 
     function onKeyDown(event) {
       if (event.key === "Escape") {
         event.preventDefault();
-        requestClose();
+        requestCloseRef.current();
       }
     }
     document.addEventListener("keydown", onKeyDown);
@@ -190,13 +198,13 @@ export default function ApplicationModal({
       document.removeEventListener("keydown", onKeyDown);
       previous?.focus?.();
     };
-  }, [requestClose]);
+  }, []);
 
   const field = (name, type = "text") => ({
     id: `app-field-${name}`,
     type,
     value: form[name],
-    onChange: (e) => setForm({ ...form, [name]: e.target.value }),
+    onChange: (e) => setForm((prev) => ({ ...prev, [name]: e.target.value })),
   });
 
   function payload() {
@@ -211,7 +219,7 @@ export default function ApplicationModal({
     delete body.created_at;
     delete body.updated_at;
     body.ad_url = normalizeAdUrl(body.ad_url);
-    body.apply_url = normalizeAdUrl(body.apply_url);
+    body.apply_url = externalUrl(body.apply_url) || "";
     // Empty strings are not valid dates.
     if (!body.applied_at) body.applied_at = null;
     if (!body.next_action_at) body.next_action_at = null;
@@ -380,7 +388,7 @@ export default function ApplicationModal({
 
       <form className="application-form" onSubmit={save}>
         {application ? (
-          <details className="application-form-toggle">
+          <details className="application-form-toggle" open>
             <summary>Dina uppgifter</summary>
             <ApplicationFields
               application={application}
@@ -470,7 +478,9 @@ function ApplicationFields({
           <select
             id="app-field-status"
             value={form.status}
-            onChange={(e) => setForm({ ...form, status: e.target.value })}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, status: e.target.value }))
+            }
             style={{ width: "100%" }}
           >
             {STATUSES.map((s) => (
@@ -485,7 +495,9 @@ function ApplicationFields({
           <select
             id="app-field-source"
             value={form.source}
-            onChange={(e) => setForm({ ...form, source: e.target.value })}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, source: e.target.value }))
+            }
             style={{ width: "100%" }}
           >
             <option value="">—</option>
