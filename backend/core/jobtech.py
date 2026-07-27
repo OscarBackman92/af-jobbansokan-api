@@ -138,6 +138,7 @@ def expand_swedish_q(q: str) -> str:
             parts.append("(" + " OR ".join(variants) + ")")
     return " ".join(parts)
 
+
 _FIELD_IDS = {cid for cid, _ in OCCUPATION_FIELDS}
 # JobTech concept ids are short opaque tokens from taxonomy/search APIs.
 _CONCEPT_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_]{0,63}$")
