@@ -7,6 +7,7 @@ import MatchScore from "./MatchScore.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
 import MultiSelectFilter from "./MultiSelectFilter.jsx";
 
+const LAST_SEARCH_KEY = "jobbsoket-last-job-search";
 const LAST_MUNICIPALITIES_KEY = "jobbsoket-last-municipalities";
 const LAST_REGION_KEY = "jobbsoket-last-region";
 
@@ -29,6 +30,42 @@ function rememberMunicipalities(rows, regionId) {
   }
 }
 
+function readLastSearch() {
+  try {
+    const raw = sessionStorage.getItem(LAST_SEARCH_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object") return null;
+    return {
+      q: typeof data.q === "string" ? data.q : "",
+      municipalities: Array.isArray(data.municipalities)
+        ? data.municipalities.filter((row) => row?.id)
+        : [],
+      groups: Array.isArray(data.groups) ? data.groups.filter((row) => row?.id) : [],
+      remote: !!data.remote,
+      matchCv: !!data.matchCv,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function rememberSearch(search) {
+  try {
+    sessionStorage.setItem(LAST_SEARCH_KEY, JSON.stringify(search));
+  } catch {
+    /* ignore quota */
+  }
+}
+
+function clearRememberedSearch() {
+  try {
+    sessionStorage.removeItem(LAST_SEARCH_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 const PAGE_SIZE = 25;
 
 const EMPTY_QUERY = {
@@ -40,6 +77,8 @@ const EMPTY_QUERY = {
 };
 
 function initialQuery() {
+  const saved = readLastSearch();
+  if (saved) return saved;
   const municipalities = readLastMunicipalities();
   if (!municipalities.length) return EMPTY_QUERY;
   return { ...EMPTY_QUERY, municipalities };
@@ -58,23 +97,28 @@ function countSummary(count, singular, plural) {
 }
 
 export default function PostingsPanel({ onNavigate }) {
+  const savedSearch = useRef(readLastSearch()).current;
   const [filters, setFilters] = useState({ regions: [], fields: [] });
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(() => savedSearch?.q ?? "");
   const [browseRegion, setBrowseRegion] = useState(
     () => localStorage.getItem(LAST_REGION_KEY) || ""
   );
   const [browseField, setBrowseField] = useState("");
   const [selectedMunicipalities, setSelectedMunicipalities] = useState(
-    () => readLastMunicipalities()
+    () => savedSearch?.municipalities ?? readLastMunicipalities()
   );
-  const [selectedGroups, setSelectedGroups] = useState([]);
+  const [selectedGroups, setSelectedGroups] = useState(
+    () => savedSearch?.groups ?? []
+  );
   const [municipalityCache, setMunicipalityCache] = useState({});
   const [groupCache, setGroupCache] = useState({});
   const [municipalitiesLoading, setMunicipalitiesLoading] = useState(false);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [filtersError, setFiltersError] = useState(null);
-  const [remote, setRemote] = useState(false);
-  const [matchCvOnly, setMatchCvOnly] = useState(false);
+  const [remote, setRemote] = useState(() => savedSearch?.remote ?? false);
+  const [matchCvOnly, setMatchCvOnly] = useState(
+    () => savedSearch?.matchCv ?? false
+  );
   const [query, setQuery] = useState(initialQuery);
   const [offset, setOffset] = useState(0);
   const resultsSectionRef = useRef(null);
@@ -281,13 +325,15 @@ export default function PostingsPanel({ onNavigate }) {
     requestResultsScroll();
     setOffset(0);
     rememberMunicipalities(selectedMunicipalities, browseRegion);
-    setQuery({
+    const next = {
       q,
       municipalities: selectedMunicipalities,
       groups: selectedGroups,
       remote,
       matchCv: matchCvOnly,
-    });
+    };
+    rememberSearch(next);
+    setQuery(next);
   }
 
   function clearFilters() {
@@ -296,9 +342,26 @@ export default function PostingsPanel({ onNavigate }) {
     setSelectedGroups([]);
     setRemote(false);
     setMatchCvOnly(false);
+    clearRememberedSearch();
+    try {
+      localStorage.removeItem(LAST_MUNICIPALITIES_KEY);
+    } catch {
+      /* ignore */
+    }
     requestResultsScroll();
     setOffset(0);
     setQuery(EMPTY_QUERY);
+  }
+
+  function clearSearchText() {
+    setQ("");
+    if (!query.q) return;
+    const next = { ...query, q: "" };
+    rememberSearch(next);
+    rememberMunicipalities(next.municipalities, browseRegion);
+    requestResultsScroll();
+    setOffset(0);
+    setQuery(next);
   }
 
   function toggleMunicipality(option) {
@@ -429,6 +492,13 @@ export default function PostingsPanel({ onNavigate }) {
       remote: !!saved.remote,
       matchCv: !!saved.match_cv,
     });
+    rememberSearch({
+      q: saved.q || "",
+      municipalities: (saved.municipalities ?? []).map((id) => ({ id, label: id })),
+      groups: (saved.groups ?? []).map((id) => ({ id, label: id })),
+      remote: !!saved.remote,
+      matchCv: !!saved.match_cv,
+    });
   }
 
   async function removeSavedSearch(id) {
@@ -520,13 +590,25 @@ export default function PostingsPanel({ onNavigate }) {
 
       <section className="card">
         <form className="job-search job-search--advanced" onSubmit={submit}>
-          <input
-            className="job-search-q"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Sök yrke, företag, kompetens…"
-            aria-label="Sökord"
-          />
+          <div className="job-search-q-wrap">
+            <input
+              className="job-search-q"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Sök från början av ord: yrke, företag, ort…"
+              aria-label="Sökord"
+            />
+            {q && (
+              <button
+                type="button"
+                className="job-search-q-clear"
+                onClick={clearSearchText}
+                aria-label="Rensa sökord"
+              >
+                ✕
+              </button>
+            )}
+          </div>
 
           <MultiSelectFilter
             triggerLabel="Ort"

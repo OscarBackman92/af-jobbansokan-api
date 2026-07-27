@@ -170,6 +170,16 @@ def test_search_maps_hits(api_client, user, mock_jobtech):
     assert mock_jobtech[0]["q"] == "python"
 
 
+def test_expand_swedish_q_widens_place_names():
+    expanded = jobtech.expand_swedish_q("jonkoping")
+    assert "jonkoping" in expanded
+    assert "jönköping" in expanded.lower() or "jönkoping" in expanded.lower()
+    assert "OR" in expanded
+    # Skills must not explode into diacritic OR-clauses.
+    assert jobtech.expand_swedish_q("python") == "python"
+    assert jobtech.expand_swedish_q("ekonom") == "ekonom"
+
+
 def test_hit_to_job_maps_external_application_url():
     hit = {
         "id": "31258362",

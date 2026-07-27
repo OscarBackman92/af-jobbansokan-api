@@ -194,7 +194,7 @@ export default function App() {
         )}
       </header>
 
-      <main className={isGuest ? "main main--guest" : "main"} key={tab}>
+      <main className={isGuest ? "main main--guest" : "main"}>
         {googleCode && !token && (
           <GoogleSignIn
             code={googleCode}
@@ -231,20 +231,33 @@ export default function App() {
         {!resetCreds && !verifyKey && !googleCode && !token && (
           <AuthHero onLogin={login} />
         )}
-        {!resetCreds && !verifyKey && token && tab === "board" && (
-          <BoardPanel token={token} onNavigate={changeTab} />
-        )}
-        {!resetCreds && !verifyKey && token && tab === "postings" && (
-          <PostingsPanel onNavigate={changeTab} />
-        )}
-        {!resetCreds && !verifyKey && token && tab === "profile" && (
-          <ProfilePanel
-            token={token}
-            me={me}
-            onMeChange={setMe}
-            onLogout={logout}
-            profileLeaveGuardRef={profileLeaveGuardRef}
-          />
+        {!resetCreds && !verifyKey && token && (
+          <>
+            <div
+              className={tab === "board" ? undefined : "tab-panel-hidden"}
+              aria-hidden={tab !== "board"}
+            >
+              <BoardPanel token={token} onNavigate={changeTab} />
+            </div>
+            <div
+              className={tab === "postings" ? undefined : "tab-panel-hidden"}
+              aria-hidden={tab !== "postings"}
+            >
+              <PostingsPanel onNavigate={changeTab} />
+            </div>
+            <div
+              className={tab === "profile" ? undefined : "tab-panel-hidden"}
+              aria-hidden={tab !== "profile"}
+            >
+              <ProfilePanel
+                token={token}
+                me={me}
+                onMeChange={setMe}
+                onLogout={logout}
+                profileLeaveGuardRef={profileLeaveGuardRef}
+              />
+            </div>
+          </>
         )}
       </main>
 

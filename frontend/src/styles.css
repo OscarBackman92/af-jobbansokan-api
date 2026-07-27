@@ -255,6 +255,10 @@ a:focus-visible {
   position: relative;
 }
 
+.tab-panel-hidden {
+  display: none !important;
+}
+
 .app--guest {
   background: var(--bg);
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
@@ -2140,6 +2144,36 @@ tbody tr:last-child td {
 .job-search select {
   margin-top: 0;
   width: 100%;
+}
+
+.job-search-q-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.job-search-q-wrap .job-search-q {
+  padding-right: 2.4rem;
+}
+
+.job-search-q-clear {
+  position: absolute;
+  right: 0.35rem;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  box-shadow: none;
+  padding: 0.35rem 0.55rem;
+  min-height: auto;
+}
+
+.job-search-q-clear:hover {
+  color: var(--ink);
+  background: transparent;
+  transform: none;
+  filter: none;
+  box-shadow: none;
 }
 
 .job-search select:disabled {

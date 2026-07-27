@@ -78,6 +78,66 @@ OCCUPATION_FIELDS = [
 ]
 
 _REGION_IDS = {cid for cid, _ in REGIONS}
+
+
+_PLACE_EXPAND_RE = re.compile(
+    r"(koping|oping|falla|borg|holm|stad|sund|vik|hamn|ange|mo)$",
+    re.IGNORECASE,
+)
+
+
+def _swedish_ascii_variants(word: str, *, limit: int = 8) -> list[str]:
+    """Expand ASCII vowels to ä/ö/å so ``jonkoping`` also matches ``jönköping``.
+
+    Only expands place-like tokens — plain skills like ``python`` stay intact.
+    Words that already contain Swedish letters are left alone.
+    """
+    if not word or any(ch in word for ch in "äöåÄÖÅ"):
+        return [word]
+    if not _PLACE_EXPAND_RE.search(word):
+        return [word]
+    variants: list[str] = [word]
+    seen = {word}
+    i = 0
+    while i < len(variants) and len(variants) < limit:
+        current = variants[i]
+        i += 1
+        for idx, ch in enumerate(current):
+            replacements: tuple[str, ...] = ()
+            if ch == "o":
+                replacements = ("ö",)
+            elif ch == "O":
+                replacements = ("Ö",)
+            elif ch == "a":
+                replacements = ("ä", "å")
+            elif ch == "A":
+                replacements = ("Ä", "Å")
+            for repl in replacements:
+                nxt = current[:idx] + repl + current[idx + 1 :]
+                if nxt not in seen:
+                    seen.add(nxt)
+                    variants.append(nxt)
+                    if len(variants) >= limit:
+                        break
+            if len(variants) >= limit:
+                break
+    return variants
+
+
+def expand_swedish_q(q: str) -> str:
+    """Widen a free-text query with Swedish diacritic OR-variants per word."""
+    stripped = q.strip()
+    if not stripped:
+        return stripped
+    parts: list[str] = []
+    for word in stripped.split():
+        variants = _swedish_ascii_variants(word)
+        if len(variants) == 1:
+            parts.append(variants[0])
+        else:
+            parts.append("(" + " OR ".join(variants) + ")")
+    return " ".join(parts)
+
 _FIELD_IDS = {cid for cid, _ in OCCUPATION_FIELDS}
 # JobTech concept ids are short opaque tokens from taxonomy/search APIs.
 _CONCEPT_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_]{0,63}$")
@@ -294,7 +354,7 @@ def search(
         ("sort", "pubdate-desc"),
     ]
     if q.strip():
-        params.append(("q", q.strip()))
+        params.append(("q", expand_swedish_q(q)))
 
     valid_municipalities = _valid_municipality_ids(list(municipalities or []))
     valid_regions = _valid_region_ids(list(regions or []))
