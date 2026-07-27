@@ -97,27 +97,26 @@ function countSummary(count, singular, plural) {
 }
 
 export default function PostingsPanel({ onNavigate }) {
-  const savedSearch = useRef(readLastSearch()).current;
   const [filters, setFilters] = useState({ regions: [], fields: [] });
-  const [q, setQ] = useState(() => savedSearch?.q ?? "");
+  const [q, setQ] = useState(() => readLastSearch()?.q ?? "");
   const [browseRegion, setBrowseRegion] = useState(
     () => localStorage.getItem(LAST_REGION_KEY) || ""
   );
   const [browseField, setBrowseField] = useState("");
   const [selectedMunicipalities, setSelectedMunicipalities] = useState(
-    () => savedSearch?.municipalities ?? readLastMunicipalities()
+    () => readLastSearch()?.municipalities ?? readLastMunicipalities()
   );
   const [selectedGroups, setSelectedGroups] = useState(
-    () => savedSearch?.groups ?? []
+    () => readLastSearch()?.groups ?? []
   );
   const [municipalityCache, setMunicipalityCache] = useState({});
   const [groupCache, setGroupCache] = useState({});
   const [municipalitiesLoading, setMunicipalitiesLoading] = useState(false);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [filtersError, setFiltersError] = useState(null);
-  const [remote, setRemote] = useState(() => savedSearch?.remote ?? false);
+  const [remote, setRemote] = useState(() => readLastSearch()?.remote ?? false);
   const [matchCvOnly, setMatchCvOnly] = useState(
-    () => savedSearch?.matchCv ?? false
+    () => readLastSearch()?.matchCv ?? false
   );
   const [query, setQuery] = useState(initialQuery);
   const [offset, setOffset] = useState(0);

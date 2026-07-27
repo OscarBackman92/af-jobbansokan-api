@@ -124,9 +124,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
     events = ApplicationEventSerializer(many=True, read_only=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     # CharField so Platsbanken junk URLs can be blanked instead of 400.
-    apply_url = serializers.CharField(
-        required=False, allow_blank=True, max_length=500
-    )
+    apply_url = serializers.CharField(required=False, allow_blank=True, max_length=500)
 
     class Meta:
         model = JobApplication

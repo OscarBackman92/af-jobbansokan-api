@@ -96,7 +96,9 @@ export default function ApplicationModal({
   }, [form, onClose]);
 
   const requestCloseRef = useRef(requestClose);
-  requestCloseRef.current = requestClose;
+  useEffect(() => {
+    requestCloseRef.current = requestClose;
+  }, [requestClose]);
 
   // List rows are lean (no timeline); fetch the full row when editing.
   useEffect(() => {
