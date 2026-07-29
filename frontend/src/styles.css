@@ -2724,16 +2724,40 @@ tbody tr:last-child td {
 .today-panel {
   border-left: 3px solid var(--cyan);
   background: var(--cyan-bg);
+  display: grid;
+  gap: 1rem;
 }
 
 .today-panel-head h2 {
   margin-bottom: 0.15rem;
 }
 
+.today-group {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.today-group-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.today-group-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.today-group-head .muted {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+}
+
 .today-list {
   list-style: none;
   padding: 0;
-  margin: 0.75rem 0 0;
+  margin: 0;
   display: grid;
   gap: 0.5rem;
 }

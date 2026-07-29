@@ -4,6 +4,7 @@ import {
   buildTodayActions,
   compareApplicationsByApplied,
   daysUntil,
+  groupTodayActions,
   hasDeadlineSoon,
   isFollowUp,
   SILENCE_FOLLOW_UP_DAYS,
@@ -139,6 +140,27 @@ describe("buildTodayActions", () => {
     expect(items[0].application.id).toBe(1);
     expect(items[0].kind).toBe("followup");
     expect(items[1].kind).toBe("deadline");
+    expect(items[1].calendarSummary).toMatch(/^Ansök:/);
+  });
+
+  it("lists overdue wishlist deadlines before upcoming ones", () => {
+    const items = buildTodayActions([
+      {
+        id: 10,
+        status: "wishlist",
+        title: "Soon",
+        company: "B",
+        deadline: daysFromNow(3),
+      },
+      {
+        id: 11,
+        status: "wishlist",
+        title: "Late",
+        company: "C",
+        deadline: daysAgo(2),
+      },
+    ]);
+    expect(items.map((item) => item.application.id)).toEqual([11, 10]);
   });
 
   it("lists silence-based follow-ups for applied rows", () => {
@@ -167,5 +189,31 @@ describe("buildTodayActions", () => {
       },
     ]);
     expect(items).toHaveLength(0);
+  });
+});
+
+describe("groupTodayActions", () => {
+  it("keeps wishlist deadlines out of the follow-up group", () => {
+    const items = buildTodayActions([
+      {
+        id: 1,
+        status: "applied",
+        title: "Quiet",
+        company: "A",
+        applied_at: daysAgo(14),
+      },
+      {
+        id: 2,
+        status: "wishlist",
+        title: "Save",
+        company: "B",
+        deadline: daysFromNow(2),
+      },
+    ]);
+    const { followUps, applyBeforeDeadline } = groupTodayActions(items);
+    expect(followUps).toHaveLength(1);
+    expect(followUps[0].kind).toBe("followup");
+    expect(applyBeforeDeadline).toHaveLength(1);
+    expect(applyBeforeDeadline[0].kind).toBe("deadline");
   });
 });

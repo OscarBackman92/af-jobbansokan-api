@@ -142,7 +142,8 @@ export function buildTodayActions(applications) {
         application,
         kind: "deadline",
         date: application.deadline,
-        sortKey: deadlineIn + (nextIn !== null && nextIn <= 0 ? 50 : 200),
+        // Overdue first within the apply-before-deadline group.
+        sortKey: deadlineIn,
         label:
           deadlineIn < 0
             ? `Deadline passerad (${application.deadline})`
@@ -151,7 +152,7 @@ export function buildTodayActions(applications) {
               : `Sista ansökningsdag om ${deadlineIn} ${
                   deadlineIn === 1 ? "dag" : "dagar"
                 }`,
-        calendarSummary: `Deadline: ${application.title} @ ${application.company}`,
+        calendarSummary: `Ansök: ${application.title} @ ${application.company}`,
       });
     }
   }
@@ -160,4 +161,15 @@ export function buildTodayActions(applications) {
     if (a.sortKey !== b.sortKey) return a.sortKey - b.sortKey;
     return a.date.localeCompare(b.date);
   });
+}
+
+/** Split Idag items into follow-up vs apply-before-deadline groups. */
+export function groupTodayActions(items) {
+  const followUps = [];
+  const applyBeforeDeadline = [];
+  for (const item of items) {
+    if (item.kind === "deadline") applyBeforeDeadline.push(item);
+    else followUps.push(item);
+  }
+  return { followUps, applyBeforeDeadline };
 }

@@ -72,10 +72,10 @@ export function todayActionToIcsEvent(item) {
   };
 }
 
-export function downloadTodayActionsIcs(items) {
+export function downloadTodayActionsIcs(items, filename = "jobbsoket-idag.ics") {
   if (!items.length) return;
   const content = buildIcsCalendar(items.map(todayActionToIcsEvent));
-  downloadIcs("jobbsoket-idag.ics", content);
+  downloadIcs(filename, content);
 }
 
 export function downloadSingleActionIcs(item) {
