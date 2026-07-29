@@ -2959,9 +2959,14 @@ tbody tr:last-child td {
 
 .evidence-row-head {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.evidence-chips--marked {
+  margin: 0.45rem 0 0.75rem;
 }
 
 .evidence-row-title {

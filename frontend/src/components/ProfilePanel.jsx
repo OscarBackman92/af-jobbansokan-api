@@ -10,10 +10,10 @@ import {
   addProfile,
   anyProfileHasEvidence,
   applyEvidenceToProfiles,
+  CATEGORY_LABELS,
   confirmedEvidence,
   educationSourceLabel,
   evidenceForSource,
-  evidenceByLabel,
   experienceSourceLabel,
   groupEvidenceBySource,
   normalizeJobProfiles,
@@ -399,6 +399,7 @@ function ResumeCard({
           token,
           body: {
             headline: resume.headline,
+            summary: resume.summary,
             experience: resume.experience,
             education: resume.education,
             job_profiles: jobProfiles,
@@ -417,7 +418,7 @@ function ResumeCard({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [open, resume.experience, resume.education, resume.headline, jobProfiles, active.id, token]);
+  }, [open, resume.experience, resume.education, resume.headline, resume.summary, jobProfiles, active.id, token]);
 
   useEffect(() => {
     if (profileFocus !== "skills" || loading) return undefined;
@@ -491,6 +492,52 @@ function ResumeCard({
 
   function dismissSuggestion(sourceKey, term) {
     setEvidenceSuggestions((current) => removeSuggestion(current, sourceKey, term));
+  }
+
+  function sourceFromSuggestionKey(sourceKey) {
+    if (sourceKey.startsWith("experience:")) {
+      const index = Number(sourceKey.split(":")[1]);
+      const row = resume.experience[index] || {};
+      return {
+        type: "experience",
+        index,
+        label: experienceSourceLabel(index, row),
+      };
+    }
+    if (sourceKey.startsWith("education:")) {
+      const index = Number(sourceKey.split(":")[1]);
+      const row = resume.education[index] || {};
+      return {
+        type: "education",
+        index,
+        label: educationSourceLabel(index, row),
+      };
+    }
+    return {
+      type: "manual",
+      index: null,
+      label: "CV: kompetenssektion",
+    };
+  }
+
+  function suggestionGroupLabel(sourceKey) {
+    if (sourceKey === "cv_section") return "Rubrik, sammanfattning & CV";
+    if (sourceKey.startsWith("experience:")) {
+      const index = Number(sourceKey.split(":")[1]);
+      return experienceSourceLabel(index, resume.experience[index] || {});
+    }
+    if (sourceKey.startsWith("education:")) {
+      const index = Number(sourceKey.split(":")[1]);
+      return educationSourceLabel(index, resume.education[index] || {});
+    }
+    return sourceKey;
+  }
+
+  function addAllSuggestions(sourceKey, items) {
+    const source = sourceFromSuggestionKey(sourceKey);
+    for (const item of items) {
+      addEvidenceItem(source, item);
+    }
   }
 
   function setRow(listName, index, key, value) {
@@ -609,6 +656,10 @@ function ResumeCard({
   }
 
   const cvHasContent = hasCvContent(resume, jobProfiles);
+  const markedEvidence = confirmedEvidence(active);
+  const suggestionEntries = Object.entries(evidenceSuggestions || {}).filter(
+    ([, items]) => items?.length
+  );
 
   return (
     <section className="card">
@@ -731,23 +782,81 @@ function ResumeCard({
           <div id="cv-skills" ref={skillsSectionRef} className="cv-skills-section">
             <h3>Kompetenser</h3>
             <p className="muted">
-              Markera vad som stämmer — det styr matchning mot annonser.
+              {markedEvidence.length
+                ? `${markedEvidence.length} markerade · styr matchning mot annonser.`
+                : "Markera vad som stämmer — det styr matchning mot annonser."}
             </p>
 
-            {!suggestionsLoading && (
-              <EvidenceRow
-                title="CV: kompetenssektion"
-                evidence={evidenceByLabel(active, "CV: kompetenssektion")}
-                suggestions={evidenceSuggestions?.cv_section ?? []}
-                onAddSuggestion={(item) =>
-                  addEvidenceItem(
-                    { type: "manual", index: null, label: "CV: kompetenssektion" },
-                    item
-                  )
-                }
-                onDismissSuggestion={(term) => dismissSuggestion("cv_section", term)}
-                onRemoveEvidence={removeEvidenceItem}
-              />
+            {markedEvidence.length > 0 && (
+              <div className="evidence-chips evidence-chips--marked">
+                {markedEvidence.map((item) => (
+                  <span className="evidence-chip" key={item.id}>
+                    <span>{item.term}</span>
+                    <span className="evidence-chip-category">
+                      {CATEGORY_LABELS[item.category] || item.category}
+                    </span>
+                    <button
+                      type="button"
+                      className="evidence-chip-remove"
+                      onClick={() => removeEvidenceItem(item.term)}
+                      aria-label={`Ta bort ${item.term}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {!suggestionsLoading &&
+              suggestionEntries.map(([sourceKey, items]) => (
+                <div className="evidence-row" key={sourceKey}>
+                  <div className="evidence-row-head">
+                    <span className="evidence-row-title">
+                      {suggestionGroupLabel(sourceKey)}
+                    </span>
+                    <button
+                      type="button"
+                      className="linklike small"
+                      onClick={() => addAllSuggestions(sourceKey, items)}
+                    >
+                      Markera alla från denna roll
+                    </button>
+                  </div>
+                  <div className="evidence-suggestions">
+                    {items.map((item) => (
+                      <span
+                        className="evidence-suggestion"
+                        key={`${item.term}-${item.category}`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            addEvidenceItem(sourceFromSuggestionKey(sourceKey), item)
+                          }
+                          title={`Lägg till ${item.term}`}
+                        >
+                          + {item.term}
+                        </button>
+                        <button
+                          type="button"
+                          className="evidence-suggestion-dismiss"
+                          onClick={() => dismissSuggestion(sourceKey, item.term)}
+                          aria-label={`Ignorera ${item.term}`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+            {!suggestionsLoading && suggestionEntries.length === 0 && (
+              <p className="muted">
+                Inga förslag just nu — skriv mer i erfarenhetsraderna eller lägg till
+                manuellt.
+              </p>
             )}
 
             <ManualEvidenceAdd

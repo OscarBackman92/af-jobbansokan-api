@@ -310,6 +310,8 @@ class ResumeSuggestEvidenceView(APIView):
                     experience,
                     education,
                     profile_evidence=profile.get("evidence", []),
+                    headline=str(request.data.get("headline") or ""),
+                    summary=str(request.data.get("summary") or ""),
                 )
             }
         )
@@ -532,11 +534,15 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
         return response
 
 
+GOOD_MATCH_PERCENT = 20
+GOOD_MATCH_MIN_TERMS = 2
+# When filtering by CV, scan this many upstream ads then paginate locally.
+MATCH_CV_SCAN_LIMIT = 400
+MATCH_CV_BATCH_SIZE = 50
+
+
 def _truthy(value):
     return str(value).lower() in ("1", "true", "yes", "on")
-
-
-GOOD_MATCH_PERCENT = 40
 
 
 def _parse_id_list(params, *keys):
@@ -553,15 +559,82 @@ def _parse_id_list(params, *keys):
     return ids
 
 
+def _passes_cv_match(
+    match: dict,
+    *,
+    min_percent: int = GOOD_MATCH_PERCENT,
+    min_terms: int = GOOD_MATCH_MIN_TERMS,
+) -> bool:
+    """Score-based gate: enough share OR enough absolute hits (never require all)."""
+    total = int(match.get("total") or 0)
+    count = int(match.get("count") or 0)
+    if total <= 0 or count <= 0:
+        return False
+    percent = (count / total) * 100
+    return percent >= min_percent or count >= min_terms
+
+
 def _filter_jobs_by_cv_match(results, *, min_percent=GOOD_MATCH_PERCENT):
-    filtered = []
-    for job in results:
-        match = job.get("match")
-        if not match or not match.get("total"):
-            continue
-        if (match["count"] / match["total"]) * 100 >= min_percent:
-            filtered.append(job)
-    return filtered
+    return [
+        job
+        for job in results
+        if job.get("match") and _passes_cv_match(job["match"], min_percent=min_percent)
+    ]
+
+
+def _attach_cv_match(jobs: list[dict], *, evidence, skills) -> None:
+    for job in jobs:
+        posting = SimpleNamespace(title=job["title"], description=job["description"])
+        if evidence:
+            job["match"] = match_evidence(evidence, posting)
+        else:
+            job["match"] = match_skills(skills, posting)
+
+
+def _search_jobs_matching_cv(
+    *,
+    evidence,
+    skills,
+    search_kwargs: dict,
+    offset: int,
+    limit: int,
+) -> dict:
+    """Scan JobTech results, filter by CV score, then paginate the matches.
+
+    Platsbanken has no CV index we can query, so we over-fetch a bounded
+    window, score locally, and return a filtered ``total``.
+    """
+    matched: list[dict] = []
+    scanned = 0
+    upstream_total = 0
+    while scanned < MATCH_CV_SCAN_LIMIT:
+        batch = min(MATCH_CV_BATCH_SIZE, MATCH_CV_SCAN_LIMIT - scanned)
+        data = _cached_jobtech_search(**{**search_kwargs, "offset": scanned, "limit": batch})
+        upstream_total = int(data.get("total") or 0)
+        results = list(data.get("results") or [])
+        if not results:
+            break
+        _attach_cv_match(results, evidence=evidence, skills=skills)
+        matched.extend(_filter_jobs_by_cv_match(results))
+        scanned += len(results)
+        if scanned >= upstream_total or len(results) < batch:
+            break
+
+    matched.sort(
+        key=lambda job: -int((job.get("match") or {}).get("count") or 0)
+    )
+    page = matched[max(0, offset) : max(0, offset) + max(1, limit)]
+    return {
+        "results": page,
+        "total": len(matched),
+        "offset": offset,
+        "limit": limit,
+        "match_cv_filtered": True,
+        "match_cv_scanned": scanned,
+        "match_cv_upstream_total": upstream_total,
+        "match_cv_threshold_percent": GOOD_MATCH_PERCENT,
+        "match_cv_min_terms": GOOD_MATCH_MIN_TERMS,
+    }
 
 
 JOBTECH_CACHE_TTL = 180  # seconds
@@ -610,7 +683,10 @@ def _cached_jobtech_search(**kwargs):
         OpenApiParameter(
             "match_cv",
             OpenApiTypes.BOOL,
-            description="Only jobs that match the user's CV (≥40%).",
+            description=(
+                "Only jobs that match the user's CV "
+                f"(≥{GOOD_MATCH_PERCENT}% or ≥{GOOD_MATCH_MIN_TERMS} terms)."
+            ),
         ),
         OpenApiParameter("offset", OpenApiTypes.INT),
         OpenApiParameter("limit", OpenApiTypes.INT),
@@ -629,37 +705,21 @@ def job_search(request):
     except ValueError as exc:
         raise ValidationError({"detail": "offset/limit must be integers."}) from exc
 
-    try:
-        data = _cached_jobtech_search(
-            q=params.get("q", ""),
-            regions=_parse_id_list(params, "region", "regions"),
-            municipalities=_parse_id_list(params, "municipality", "municipalities"),
-            fields=_parse_id_list(params, "field", "fields"),
-            groups=_parse_id_list(params, "group", "groups"),
-            remote=_truthy(params.get("remote", "")),
-            offset=offset,
-            limit=limit,
-        )
-    except JobTechError:
-        return Response(
-            {"detail": "Kunde inte nå Platsbanken just nu. Försök igen strax."},
-            status=drf_status.HTTP_502_BAD_GATEWAY,
-        )
+    search_kwargs = {
+        "q": params.get("q", ""),
+        "regions": _parse_id_list(params, "region", "regions"),
+        "municipalities": _parse_id_list(params, "municipality", "municipalities"),
+        "fields": _parse_id_list(params, "field", "fields"),
+        "groups": _parse_id_list(params, "group", "groups"),
+        "remote": _truthy(params.get("remote", "")),
+    }
 
     match_ctx = _resume_match_context(request.user)
     skills = match_ctx["cv_skills"] or None
     evidence = match_ctx["cv_evidence"] or None
-    if evidence or skills:
-        for job in data["results"]:
-            posting = SimpleNamespace(
-                title=job["title"], description=job["description"]
-            )
-            if evidence:
-                job["match"] = match_evidence(evidence, posting)
-            else:
-                job["match"] = match_skills(skills, posting)
+    want_match_cv = _truthy(params.get("match_cv", ""))
 
-    if _truthy(params.get("match_cv", "")):
+    if want_match_cv:
         if not skills:
             raise ValidationError(
                 {
@@ -669,8 +729,31 @@ def job_search(request):
                     )
                 }
             )
-        data["results"] = _filter_jobs_by_cv_match(data["results"])
-        data["match_cv_filtered"] = True
+        try:
+            data = _search_jobs_matching_cv(
+                evidence=evidence,
+                skills=skills,
+                search_kwargs=search_kwargs,
+                offset=offset,
+                limit=limit,
+            )
+        except JobTechError:
+            return Response(
+                {"detail": "Kunde inte nå Platsbanken just nu. Försök igen strax."},
+                status=drf_status.HTTP_502_BAD_GATEWAY,
+            )
+        return Response(data)
+
+    try:
+        data = _cached_jobtech_search(**search_kwargs, offset=offset, limit=limit)
+    except JobTechError:
+        return Response(
+            {"detail": "Kunde inte nå Platsbanken just nu. Försök igen strax."},
+            status=drf_status.HTTP_502_BAD_GATEWAY,
+        )
+
+    if evidence or skills:
+        _attach_cv_match(data["results"], evidence=evidence, skills=skills)
 
     data["offset"] = offset
     data["limit"] = limit

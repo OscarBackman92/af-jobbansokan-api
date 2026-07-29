@@ -347,8 +347,21 @@ def test_search_match_cv_filter(api_client, user, mock_jobtech):
     api_client.force_authenticate(user)
     body = api_client.get(SEARCH_URL, {"q": "python", "match_cv": "true"}).json()
     assert body["match_cv_filtered"] is True
+    assert body["total"] == 1
     assert len(body["results"]) == 1
     assert body["results"][0]["match"]["matched"] == ["Python"]
+    assert body["match_cv_scanned"] >= 1
+
+
+def test_passes_cv_match_uses_threshold_not_all_terms():
+    from core.views import _passes_cv_match
+
+    # 3 of 24 ≈ 12.5% — still passes via min_terms=2
+    assert _passes_cv_match({"count": 3, "total": 24}) is True
+    assert _passes_cv_match({"count": 1, "total": 24}) is False
+    # 1 of 1 = 100% — passes via percent
+    assert _passes_cv_match({"count": 1, "total": 1}) is True
+    assert _passes_cv_match({"count": 0, "total": 10}) is False
 
 
 def test_search_match_cv_requires_resume(api_client, user, mock_jobtech):

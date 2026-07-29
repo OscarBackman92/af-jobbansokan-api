@@ -22,7 +22,7 @@ import MatchScore from "./MatchScore.jsx";
 import TodayPanel from "./TodayPanel.jsx";
 import WelcomeGuide from "./WelcomeGuide.jsx";
 
-const GOOD_MATCH_PERCENT = 40;
+const GOOD_MATCH_PERCENT = 20;
 const STAGE_VISIBLE = 25;
 const FUNNEL_STATUSES = [
   "screening",
@@ -254,6 +254,10 @@ export default function BoardPanel({ token, onNavigate }) {
   const goodMatchEmpty =
     quickFilters.includes("good_match") &&
     !cvReady &&
+    filteredApplications.length === 0;
+  const goodMatchNoHits =
+    quickFilters.includes("good_match") &&
+    cvReady &&
     filteredApplications.length === 0;
 
   function resetFilters() {
@@ -509,6 +513,26 @@ export default function BoardPanel({ token, onNavigate }) {
                     >
                       Öppna Profil &amp; CV
                     </button>
+                  </>
+                ) : goodMatchNoHits ? (
+                  <>
+                    <p className="muted">
+                      Ingen av dina ansökningar nådde tröskeln för CV-match
+                      (minst {GOOD_MATCH_PERCENT}% eller två kompetenser). Prova
+                      färre eller mer precisa markeringar, eller byt sökprofil.
+                    </p>
+                    <div className="empty-actions empty-actions--inline">
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => onNavigate?.("profile", { focus: "skills" })}
+                      >
+                        Justera kompetenser
+                      </button>
+                      <button type="button" className="secondary" onClick={resetFilters}>
+                        Rensa filter
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>

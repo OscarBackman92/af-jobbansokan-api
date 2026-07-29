@@ -25,6 +25,27 @@ def test_suggest_evidence_by_experience_row():
     assert "kontering" in terms
 
 
+def test_suggest_extracts_tools_from_order_admin_row():
+    experience = [
+        {
+            "title": "Orderadministratör",
+            "company": "AVOKI",
+            "description": (
+                "SuperOffice, Visma Business, Nettailer, CRM och ERP. "
+                "Artikelregister, lagerjusteringar och inventering."
+            ),
+        }
+    ]
+    by_source = suggest_evidence_by_source(experience, [])
+    terms = {item["term"].lower() for item in by_source["experience:0"]}
+    assert "superoffice" in terms
+    assert "visma" in terms or "visma business" in terms
+    assert "nettailer" in terms
+    assert "crm" in terms
+    assert "erp" in terms
+    assert "artikelregister" in terms
+
+
 def test_suggest_skips_existing_profile_evidence():
     by_source = suggest_evidence_by_source(
         FINANCE_EXPERIENCE,

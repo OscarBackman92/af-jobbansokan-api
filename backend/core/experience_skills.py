@@ -12,7 +12,10 @@ TOOL_TERMS: list[tuple[str, str]] = [
     ("Power BI", "technical"),
     ("SharePoint", "technical"),
     ("Salesforce", "technical"),
+    ("SuperOffice", "technical"),
+    ("Nettailer", "technical"),
     ("Fortnox", "technical"),
+    ("Visma Business", "technical"),
     ("Visma", "technical"),
     ("Wint", "technical"),
     ("SAP", "technical"),
@@ -38,9 +41,23 @@ TOOL_TERMS: list[tuple[str, str]] = [
     ("Django", "technical"),
     ("Excel", "technical"),
     ("SQL", "technical"),
+    ("CRM", "technical"),
+    ("ERP", "technical"),
 ]
 
 DOMAIN_TERMS: list[tuple[str, str]] = [
+    ("Business Operations", "domain"),
+    ("ekonomiassistent", "domain"),
+    ("redovisningsassistent", "domain"),
+    ("orderadministratör", "domain"),
+    ("orderadministration", "domain"),
+    ("IT-support", "domain"),
+    ("service desk", "domain"),
+    ("helpdesk", "domain"),
+    ("artikelregister", "domain"),
+    ("lagerjusteringar", "domain"),
+    ("lagerjustering", "domain"),
+    ("inventering", "domain"),
     ("projektledning", "domain"),
     ("projektledare", "domain"),
     ("processutveckling", "domain"),
@@ -269,6 +286,8 @@ def suggest_evidence_by_source(
     *,
     profile_evidence: list[dict] | None = None,
     parsed_skills: list[str] | None = None,
+    headline: str = "",
+    summary: str = "",
 ) -> dict[str, list[dict]]:
     """Suggest evidence keyed by source id (experience:0, education:1, cv_section)."""
     existing_lower = {
@@ -279,13 +298,9 @@ def suggest_evidence_by_source(
     by_source: dict[str, list[dict]] = {}
     seen = set(existing_lower)
 
-    for index, row in enumerate(experience or []):
-        if not isinstance(row, dict):
-            continue
-        text = _experience_text(row)
-        if len(text) < 15:
-            continue
-        key = f"experience:{index}"
+    def add_from_text(key: str, text: str, *, min_len: int = 3) -> None:
+        if len(text.strip()) < min_len:
+            return
         items: list[dict] = []
         for label, category in _find_terms(text):
             term = canonical_skill_label(label)
@@ -297,26 +312,27 @@ def suggest_evidence_by_source(
         if items:
             by_source[key] = items
 
+    overview = "\n".join(
+        part.strip()
+        for part in (str(headline or ""), str(summary or ""))
+        if part and str(part).strip()
+    )
+    add_from_text("cv_section", overview, min_len=3)
+
+    for index, row in enumerate(experience or []):
+        if not isinstance(row, dict):
+            continue
+        text = _experience_text(row)
+        add_from_text(f"experience:{index}", text, min_len=3)
+
     for index, row in enumerate(education or []):
         if not isinstance(row, dict):
             continue
         text = _education_text(row)
-        if len(text) < 8:
-            continue
-        key = f"education:{index}"
-        items = []
-        for label, category in _find_terms(text):
-            term = canonical_skill_label(label)
-            lowered = term.lower()
-            if lowered in seen or lowered in GENERIC_SKIP:
-                continue
-            seen.add(lowered)
-            items.append({"term": term, "category": category})
-        if items:
-            by_source[key] = items
+        add_from_text(f"education:{index}", text, min_len=3)
 
     if parsed_skills:
-        items = []
+        items = list(by_source.get("cv_section") or [])
         for raw in parsed_skills:
             if not isinstance(raw, str):
                 continue

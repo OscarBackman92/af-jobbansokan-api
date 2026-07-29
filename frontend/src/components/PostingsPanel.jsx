@@ -812,12 +812,16 @@ export default function PostingsPanel({ onNavigate }) {
                 ? `Laddar sida ${Math.floor(offset / PAGE_SIZE) + 1}…`
                 : total === 0
                   ? query.matchCv
-                    ? "Inga annonser matchade ditt CV i denna sökning."
+                    ? `0 av ${(data?.match_cv_scanned ?? 0).toLocaleString("sv-SE") || "genomsökta"} annonser matchade dina kompetenser. Prova färre markeringar eller byt sökprofil.`
                     : "Inga annonser matchade din sökning."
                   : query.matchCv
-                    ? `Visar ${results.length} som passar CV:t (${showingFrom}–${showingTo} av ${total.toLocaleString(
+                    ? `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
                         "sv-SE"
-                      )})`
+                      )} som passar CV:t${
+                        data?.match_cv_scanned
+                          ? ` (av ${Number(data.match_cv_scanned).toLocaleString("sv-SE")} genomsökta)`
+                          : ""
+                      }`
                     : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
                         "sv-SE"
                       )} annonser`}
@@ -827,6 +831,25 @@ export default function PostingsPanel({ onNavigate }) {
                 </button>
               )}
             </p>
+          )}
+
+          {!error && !loading && total === 0 && query.matchCv && (
+            <div className="empty-actions empty-actions--inline">
+              <button
+                type="button"
+                className="secondary small"
+                onClick={() => onNavigate?.("profile", { focus: "skills" })}
+              >
+                Justera kompetenser
+              </button>
+              <button
+                type="button"
+                className="secondary small"
+                onClick={clearMatchCvFilter}
+              >
+                Stäng CV-filter
+              </button>
+            </div>
           )}
 
           <div
