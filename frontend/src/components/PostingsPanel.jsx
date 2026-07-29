@@ -162,6 +162,7 @@ export default function PostingsPanel({ onNavigate }) {
   const [saveLabel, setSaveLabel] = useState("");
   const [renameTarget, setRenameTarget] = useState(null);
   const [renameLabel, setRenameLabel] = useState("");
+  const [activeSavedId, setActiveSavedId] = useState(null);
 
   function buildSearchLabel(search) {
     if (search.label?.trim()) return search.label.trim();
@@ -366,6 +367,7 @@ export default function PostingsPanel({ onNavigate }) {
       matchCv: matchCvOnly,
     };
     rememberSearch(next);
+    setActiveSavedId(null);
     setQuery(next);
   }
 
@@ -383,6 +385,7 @@ export default function PostingsPanel({ onNavigate }) {
     }
     requestResultsScroll();
     resetToFirstPage();
+    setActiveSavedId(null);
     setQuery(EMPTY_QUERY);
   }
 
@@ -392,6 +395,7 @@ export default function PostingsPanel({ onNavigate }) {
     rememberSearch(next);
     requestResultsScroll();
     resetToFirstPage();
+    setActiveSavedId(null);
     setQuery(next);
   }
 
@@ -403,6 +407,7 @@ export default function PostingsPanel({ onNavigate }) {
     rememberMunicipalities(next.municipalities, browseRegion);
     requestResultsScroll();
     resetToFirstPage();
+    setActiveSavedId(null);
     setQuery(next);
   }
 
@@ -528,6 +533,7 @@ export default function PostingsPanel({ onNavigate }) {
     requestResultsScroll();
     syncPageToUrl(0);
     setOffset(0);
+    setActiveSavedId(saved.id);
     setQuery({
       q: saved.q || "",
       municipalities: (saved.municipalities ?? []).map((id) => ({ id, label: id })),
@@ -724,8 +730,19 @@ export default function PostingsPanel({ onNavigate }) {
           {savedSearches.length > 0 && (
             <div className="saved-search-list" aria-label="Sparade sökningar">
               {savedSearches.map((saved) => (
-                <span className="saved-search-chip" key={saved.id}>
-                  <button type="button" onClick={() => applySavedSearch(saved)}>
+                <span
+                  className={
+                    activeSavedId === saved.id
+                      ? "saved-search-chip saved-search-chip--active"
+                      : "saved-search-chip"
+                  }
+                  key={saved.id}
+                >
+                  <button
+                    type="button"
+                    aria-pressed={activeSavedId === saved.id}
+                    onClick={() => applySavedSearch(saved)}
+                  >
                     {buildSearchLabel(saved)}
                   </button>
                   <button
@@ -761,7 +778,7 @@ export default function PostingsPanel({ onNavigate }) {
                   <button
                     type="button"
                     className="secondary small"
-                    onClick={() => onNavigate?.("profile")}
+                    onClick={() => onNavigate?.("profile", { focus: "skills" })}
                   >
                     Öppna Profil &amp; CV
                   </button>

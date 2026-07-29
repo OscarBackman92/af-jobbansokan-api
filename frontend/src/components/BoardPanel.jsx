@@ -394,10 +394,10 @@ export default function BoardPanel({ token, onNavigate }) {
             </p>
           </div>
           <div className="row-gap">
-            <button className="secondary small" onClick={exportCsv}>
+            <button type="button" className="secondary small" onClick={exportCsv}>
               Exportera CSV
             </button>
-            <button className="small" onClick={() => setAdding(true)}>
+            <button type="button" className="small" onClick={() => setAdding(true)}>
               + Ny ansökan
             </button>
           </div>
@@ -505,7 +505,7 @@ export default function BoardPanel({ token, onNavigate }) {
                     </p>
                     <button
                       className="secondary"
-                      onClick={() => onNavigate?.("profile")}
+                      onClick={() => onNavigate?.("profile", { focus: "skills" })}
                     >
                       Öppna Profil &amp; CV
                     </button>
@@ -826,7 +826,7 @@ const MONTH_NAMES = [
 function MonthlyStats({ applications }) {
   if (applications.length === 0) return null;
 
-  // Applications per month, last six months.
+  // Applications per month, last six months (rows with applied_at only).
   const months = [];
   const now = new Date();
   for (let i = 5; i >= 0; i--) {
@@ -843,6 +843,7 @@ function MonthlyStats({ applications }) {
     if (month) month.count += 1;
   }
   const max = Math.max(1, ...months.map((m) => m.count));
+  const datedSum = months.reduce((sum, m) => sum + m.count, 0);
 
   const inProcess = applications.filter(
     (a) => a.reached_interview || FUNNEL_STATUSES.includes(a.status)
@@ -852,10 +853,17 @@ function MonthlyStats({ applications }) {
     <section className="card">
       <h2>Statistik</h2>
       <p className="muted">
-        {applications.length} ansökningar totalt · {inProcess} har lett till
-        samtal, intervju eller längre.
+        Ansökningar per månad (sökt datum) · {datedSum} med datum senaste 6 mån
+        av {applications.length} totalt · {inProcess} har lett till samtal,
+        intervju eller längre.
       </p>
-      <div className="chart">
+      <div
+        className="chart"
+        role="img"
+        aria-label={`Ansökningar per månad: ${months
+          .map((m) => `${m.label} ${m.count}`)
+          .join(", ")}`}
+      >
         {months.map((m, i) => (
           <div
             className={
@@ -864,10 +872,14 @@ function MonthlyStats({ applications }) {
             key={m.key}
             title={`${m.count} st`}
           >
-            <span className="chart-count">{m.count || ""}</span>
+            <span className="chart-count">{m.count}</span>
             <div
-              className="chart-bar"
-              style={{ height: `${(m.count / max) * 96 + 6}px` }}
+              className={
+                m.count === 0 ? "chart-bar chart-bar--empty" : "chart-bar"
+              }
+              style={{
+                height: `${m.count === 0 ? 8 : (m.count / max) * 96 + 8}px`,
+              }}
             />
             <span className="chart-label">{m.label}</span>
           </div>

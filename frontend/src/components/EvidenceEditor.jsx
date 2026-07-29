@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 import { CATEGORY_LABELS } from "../jobProfiles.js";
 
@@ -68,11 +68,17 @@ export default function EvidenceRow({
 export function ManualEvidenceAdd({ onAdd }) {
   const termRef = useRef(null);
   const categoryRef = useRef(null);
+  const [error, setError] = useState(null);
 
   function add() {
     const term = termRef.current?.value.trim() ?? "";
     const category = categoryRef.current?.value ?? "domain";
-    if (!term) return;
+    if (!term) {
+      setError("Skriv en kompetens innan du lägger till.");
+      termRef.current?.focus();
+      return;
+    }
+    setError(null);
     onAdd({ term, category });
     if (termRef.current) termRef.current.value = "";
   }
@@ -90,6 +96,10 @@ export function ManualEvidenceAdd({ onAdd }) {
         ref={termRef}
         placeholder="Lägg till kompetens manuellt"
         aria-label="Kompetens"
+        aria-invalid={Boolean(error)}
+        onChange={() => {
+          if (error) setError(null);
+        }}
         onKeyDown={onKeyDown}
       />
       <select ref={categoryRef} defaultValue="domain" aria-label="Kategori">
@@ -102,6 +112,7 @@ export function ManualEvidenceAdd({ onAdd }) {
       <button type="button" className="secondary small" onClick={add}>
         Lägg till
       </button>
+      {error && <p className="error manual-evidence-error">{error}</p>}
     </div>
   );
 }

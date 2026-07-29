@@ -84,22 +84,25 @@ export default function App() {
   const [verifyKey, setVerifyKey] = useState(() => readVerifyKey());
   const [googleCode, setGoogleCode] = useState(() => readGoogleCallback());
   const [theme, setTheme] = useState(() => readTheme());
+  const [profileFocus, setProfileFocus] = useState(null);
   const profileLeaveGuardRef = useRef(null);
 
   const isLoggedOut = !token;
   const isGuest =
     isLoggedOut && !resetCreds && !verifyKey && !googleCode;
 
-  function changeTab(next) {
+  function changeTab(next, options = {}) {
+    const focus = options?.focus ?? null;
+    const apply = () => {
+      setTab(next);
+      syncTabToUrl(next);
+      setProfileFocus(next === "profile" ? focus : null);
+    };
     if (next !== tab && tab === "profile" && profileLeaveGuardRef.current) {
-      profileLeaveGuardRef.current(() => {
-        setTab(next);
-        syncTabToUrl(next);
-      });
+      profileLeaveGuardRef.current(apply);
       return;
     }
-    setTab(next);
-    syncTabToUrl(next);
+    apply();
   }
 
   useEffect(() => {
@@ -173,6 +176,7 @@ export default function App() {
             {TABS.map((t) => (
               <button
                 key={t.id}
+                type="button"
                 className={tab === t.id ? "tab active" : "tab"}
                 onClick={() => changeTab(t.id)}
                 aria-current={tab === t.id ? "page" : undefined}
@@ -186,6 +190,7 @@ export default function App() {
           <div className="header-actions">
             {me?.email && <span className="account-email">{me.email}</span>}
             <button
+              type="button"
               className="secondary small"
               onClick={logout}
               title="Logga ut"
@@ -257,6 +262,8 @@ export default function App() {
                 onMeChange={setMe}
                 onLogout={logout}
                 profileLeaveGuardRef={profileLeaveGuardRef}
+                profileFocus={profileFocus}
+                onProfileFocusHandled={() => setProfileFocus(null)}
               />
             </div>
           </>

@@ -4,13 +4,13 @@ import {
   externalUrl,
   findDuplicateByAdUrl,
   findSimilarByCompanyTitle,
-  linkLabel,
   normalizeAdUrl,
   platsbankenJobId,
 } from "../adUrl.js";
 import { request } from "../api.js";
 import { localISODate } from "../localDate.js";
 import { STATUSES } from "../statuses.js";
+import ConfirmDialog from "./ConfirmDialog.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
 
 const EMPTY = {
@@ -85,11 +85,11 @@ export default function ApplicationModal({
     duplicateByUrl || (similarByTitle && !application)
   );
 
+  const [discardPrompt, setDiscardPrompt] = useState(false);
+
   const requestClose = useCallback(() => {
-    if (
-      JSON.stringify(form) !== initialFormRef.current &&
-      !window.confirm("Du har osparade ändringar. Stäng utan att spara?")
-    ) {
+    if (JSON.stringify(form) !== initialFormRef.current) {
+      setDiscardPrompt(true);
       return;
     }
     onClose();
@@ -184,9 +184,10 @@ export default function ApplicationModal({
   useEffect(() => {
     const previous = document.activeElement;
     const root = dialogRef.current;
-    const prefer =
-      root?.querySelector("#app-field-company") ||
-      root?.querySelector(".modal-close");
+    const prefer = application
+      ? root?.querySelector(".modal-close")
+      : root?.querySelector("#app-field-company") ||
+        root?.querySelector(".modal-close");
     prefer?.focus({ preventScroll: true });
 
     function onKeyDown(event) {
@@ -200,7 +201,7 @@ export default function ApplicationModal({
       document.removeEventListener("keydown", onKeyDown);
       previous?.focus?.();
     };
-  }, []);
+  }, [application]);
 
   const field = (name, type = "text") => ({
     id: `app-field-${name}`,
@@ -282,6 +283,7 @@ export default function ApplicationModal({
   }
 
   return (
+    <>
     <ModalOverlay
       onClose={requestClose}
       className="modal application-modal"
@@ -337,19 +339,6 @@ export default function ApplicationModal({
                 </a>
               )}
             </div>
-            {(form.apply_url || form.ad_url) && (
-              <p className="muted application-link-labels">
-                {form.apply_url && (
-                  <span>Ansökan: {linkLabel(form.apply_url)}</span>
-                )}
-                {form.apply_url && form.ad_url && platsbankenHref !== applyHref && (
-                  <span aria-hidden="true"> · </span>
-                )}
-                {form.ad_url && platsbankenHref !== applyHref && (
-                  <span>Platsbanken: {linkLabel(form.ad_url)}</span>
-                )}
-              </p>
-            )}
           </div>
         )}
       </header>
@@ -433,6 +422,17 @@ export default function ApplicationModal({
       {application && <Timeline events={events} onAdd={addEvent} />}
       </div>
     </ModalOverlay>
+      {discardPrompt && (
+        <ConfirmDialog
+          message="Du har osparade ändringar. Stäng utan att spara?"
+          onCancel={() => setDiscardPrompt(false)}
+          onConfirm={() => {
+            setDiscardPrompt(false);
+            onClose();
+          }}
+        />
+      )}
+    </>
   );
 }
 
@@ -582,8 +582,8 @@ function ApplicationFields({
       </label>
       {error && <p className="error">{error}</p>}
       <div className="row">
-        <button disabled={duplicateBlocked}>
-          {application ? "Spara" : "Lägg till"}
+        <button type="submit" disabled={duplicateBlocked}>
+          Spara
         </button>
         <button type="button" className="secondary" onClick={requestClose}>
           Avbryt
@@ -694,7 +694,10 @@ function Timeline({ events, onAdd }) {
 
   async function submit(event) {
     event.preventDefault();
-    if (!note.trim()) return;
+    if (!note.trim()) {
+      setError("Skriv en kort anteckning innan du loggar.");
+      return;
+    }
     setError(null);
     try {
       await onAdd(note.trim(), date);
@@ -708,17 +711,31 @@ function Timeline({ events, onAdd }) {
     <section className="timeline-section">
       <h3>Tidslinje</h3>
       <form className="timeline-form" onSubmit={submit}>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-        <input
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="t.ex. Telefonintervju med rekryteraren"
-        />
-        <button className="small">Logga</button>
+        <label className="timeline-field">
+          <span className="sr-only">Datum</span>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            aria-label="Datum"
+          />
+        </label>
+        <label className="timeline-field timeline-field--note">
+          <span className="sr-only">Anteckning</span>
+          <input
+            value={note}
+            onChange={(e) => {
+              setNote(e.target.value);
+              if (error) setError(null);
+            }}
+            placeholder="t.ex. Telefonintervju med rekryteraren"
+            aria-label="Anteckning"
+            aria-invalid={Boolean(error && !note.trim())}
+          />
+        </label>
+        <button type="submit" className="small">
+          Logga
+        </button>
       </form>
       {error && <p className="error">{error}</p>}
       {events.length === 0 ? (

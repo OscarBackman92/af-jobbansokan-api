@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { request } from "../api.js";
+import ConfirmDialog from "./ConfirmDialog.jsx";
 import EvidenceRow, { ManualEvidenceAdd } from "./EvidenceEditor.jsx";
 import JobProfileSelector from "./JobProfileSelector.jsx";
-import ModalOverlay from "./ModalOverlay.jsx";
 import {
   activeProfile,
   addEvidence,
@@ -11,7 +11,6 @@ import {
   anyProfileHasEvidence,
   applyEvidenceToProfiles,
   confirmedEvidence,
-  countSuggestions,
   educationSourceLabel,
   evidenceForSource,
   evidenceByLabel,
@@ -25,48 +24,15 @@ import {
 } from "../jobProfiles.js";
 import { getMarketHints } from "../marketHints.js";
 
-function UnsavedChangesDialog({ message, onCancel, onDiscard }) {
-  const dialogRef = useRef(null);
-
-  useEffect(() => {
-    const previous = document.activeElement;
-    dialogRef.current?.querySelector("button")?.focus();
-
-    function onKeyDown(event) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onCancel();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      previous?.focus?.();
-    };
-  }, [onCancel]);
-
-  return (
-    <ModalOverlay
-      onClose={onCancel}
-      className="modal confirm-modal"
-      dialogRef={dialogRef}
-      labelledBy="unsaved-changes-title"
-    >
-      <h2 id="unsaved-changes-title">Osparade ändringar</h2>
-      <p>{message}</p>
-      <div className="modal-actions">
-        <button type="button" className="secondary" onClick={onCancel}>
-          Fortsätt redigera
-        </button>
-        <button type="button" className="danger" onClick={onDiscard}>
-          Kasta ändringar
-        </button>
-      </div>
-    </ModalOverlay>
-  );
-}
-
-export default function ProfilePanel({ token, me, onMeChange, onLogout, profileLeaveGuardRef }) {
+export default function ProfilePanel({
+  token,
+  me,
+  onMeChange,
+  onLogout,
+  profileLeaveGuardRef,
+  profileFocus = null,
+  onProfileFocusHandled,
+}) {
   return (
     <div className="stack">
       <ProfileCard
@@ -75,7 +41,12 @@ export default function ProfilePanel({ token, me, onMeChange, onLogout, profileL
         onMeChange={onMeChange}
         onLogout={onLogout}
       />
-      <ResumeCard token={token} profileLeaveGuardRef={profileLeaveGuardRef} />
+      <ResumeCard
+        token={token}
+        profileLeaveGuardRef={profileLeaveGuardRef}
+        profileFocus={profileFocus}
+        onProfileFocusHandled={onProfileFocusHandled}
+      />
     </div>
   );
 }
@@ -84,6 +55,8 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ email: "", first_name: "", last_name: "" });
   const [message, setMessage] = useState(null);
+  const [discardPrompt, setDiscardPrompt] = useState(null);
+  const initialFormRef = useRef("");
 
   if (!me) {
     return (
@@ -96,13 +69,23 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
   }
 
   function startEdit() {
-    setForm({
+    const next = {
       email: me.email,
       first_name: me.first_name,
       last_name: me.last_name,
-    });
+    };
+    setForm(next);
+    initialFormRef.current = JSON.stringify(next);
     setMessage(null);
     setEditing(true);
+  }
+
+  function requestCancelEdit() {
+    if (JSON.stringify(form) !== initialFormRef.current) {
+      setDiscardPrompt(true);
+      return;
+    }
+    setEditing(false);
   }
 
   async function save(event) {
@@ -152,8 +135,9 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
         </div>
         <div className="row-gap">
           <button
+            type="button"
             className="secondary small"
-            onClick={editing ? () => setEditing(false) : startEdit}
+            onClick={editing ? requestCancelEdit : startEdit}
           >
             {editing ? "Avbryt" : "Redigera"}
           </button>
@@ -177,12 +161,8 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
             </label>
           </div>
           <div className="row">
-            <button>Spara</button>
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => setEditing(false)}
-            >
+            <button type="submit">Spara</button>
+            <button type="button" className="secondary" onClick={requestCancelEdit}>
               Avbryt
             </button>
           </div>
@@ -196,6 +176,16 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
             </button>
           </div>
         </form>
+      )}
+      {discardPrompt && (
+        <ConfirmDialog
+          message="Du har osparade ändringar. Stäng utan att spara?"
+          onCancel={() => setDiscardPrompt(null)}
+          onConfirm={() => {
+            setDiscardPrompt(null);
+            setEditing(false);
+          }}
+        />
       )}
     </section>
   );
@@ -220,7 +210,7 @@ function hasCvContent(resume, jobProfiles) {
   );
 }
 
-function CvReadView({ resume, jobProfiles }) {
+function CvReadView({ resume, jobProfiles, onEditSkills }) {
   const profiles = normalizeJobProfiles(jobProfiles, resume.headline);
   const profile = activeProfile(profiles);
   const evidence = confirmedEvidence(profile);
@@ -244,12 +234,14 @@ function CvReadView({ resume, jobProfiles }) {
       {resume.headline && <p className="cv-headline">{resume.headline}</p>}
       {resume.summary && <p className="muted">{resume.summary}</p>}
 
-      {evidence.length > 0 && (
+      {evidence.length > 0 ? (
         <>
           <h3>Kompetenser du markerat</h3>
           {[...bySource.entries()].map(([sourceLabel, items]) => (
             <div className="cv-evidence-group" key={sourceLabel}>
-              <p className="muted cv-evidence-source">{items[0]?.source?.label || sourceLabel}</p>
+              <p className="muted cv-evidence-source">
+                {items[0]?.source?.label || sourceLabel}
+              </p>
               <div className="cv-skills">
                 {items.map((item) => (
                   <span className="badge badge--skill-domain" key={item.id}>
@@ -260,6 +252,19 @@ function CvReadView({ resume, jobProfiles }) {
             </div>
           ))}
         </>
+      ) : (
+        <div className="cv-skills-cta" id="cv-skills">
+          <h3>Kompetenser</h3>
+          <p className="muted">
+            Markera vad i CV:t som stämmer — det styr hur annonser matchas.
+            Förslagen och bevis-chipsen finns i redigeringsläget.
+          </p>
+          {onEditSkills && (
+            <button type="button" className="secondary small" onClick={onEditSkills}>
+              Redigera för att markera kompetenser
+            </button>
+          )}
+        </div>
       )}
 
       {resume.experience.length > 0 && (
@@ -300,7 +305,12 @@ function CvReadView({ resume, jobProfiles }) {
   );
 }
 
-function ResumeCard({ token, profileLeaveGuardRef }) {
+function ResumeCard({
+  token,
+  profileLeaveGuardRef,
+  profileFocus = null,
+  onProfileFocusHandled,
+}) {
   const [resume, setResume] = useState(EMPTY_RESUME);
   const [jobProfiles, setJobProfiles] = useState(() => normalizeJobProfiles([]));
   const [savedResume, setSavedResume] = useState(EMPTY_RESUME);
@@ -315,6 +325,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [marketHints, setMarketHints] = useState([]);
   const [unsavedPrompt, setUnsavedPrompt] = useState(null);
+  const skillsSectionRef = useRef(null);
 
   const active = activeProfile(jobProfiles);
 
@@ -322,6 +333,15 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
     setResume(savedResume);
     setJobProfiles(savedJobProfiles);
     setSaveState("clean");
+  }
+
+  function scrollToSkills() {
+    requestAnimationFrame(() => {
+      skillsSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   }
 
   const requestDiscard = useCallback(
@@ -398,6 +418,16 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
       clearTimeout(timer);
     };
   }, [open, resume.experience, resume.education, resume.headline, jobProfiles, active.id, token]);
+
+  useEffect(() => {
+    if (profileFocus !== "skills" || loading) return undefined;
+    setOpen(true);
+    const timer = setTimeout(() => {
+      scrollToSkills();
+      onProfileFocusHandled?.();
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [profileFocus, loading, onProfileFocusHandled]);
 
   useEffect(() => {
     if (!profileLeaveGuardRef) return undefined;
@@ -599,7 +629,7 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
               hidden
             />
           </label>
-          <button className="secondary small" onClick={toggleEditor}>
+          <button type="button" className="secondary small" onClick={toggleEditor}>
             {open ? "Stäng" : "Redigera"}
           </button>
         </div>
@@ -623,7 +653,14 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
         </div>
       )}
       {!loading && !open && (
-        <CvReadView resume={resume} jobProfiles={jobProfiles} />
+        <CvReadView
+          resume={resume}
+          jobProfiles={jobProfiles}
+          onEditSkills={() => {
+            setOpen(true);
+            scrollToSkills();
+          }}
+        />
       )}
       {!loading && open && (
         <form onSubmit={save}>
@@ -691,27 +728,37 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
             </p>
           )}
 
-          {!suggestionsLoading && countSuggestions(evidenceSuggestions) > 0 && (
-            <EvidenceRow
-              title="CV: kompetenssektion"
-              evidence={evidenceByLabel(active, "CV: kompetenssektion")}
-              suggestions={evidenceSuggestions?.cv_section ?? []}
-              onAddSuggestion={(item) =>
+          <div id="cv-skills" ref={skillsSectionRef} className="cv-skills-section">
+            <h3>Kompetenser</h3>
+            <p className="muted">
+              Markera vad som stämmer — det styr matchning mot annonser.
+            </p>
+
+            {!suggestionsLoading && (
+              <EvidenceRow
+                title="CV: kompetenssektion"
+                evidence={evidenceByLabel(active, "CV: kompetenssektion")}
+                suggestions={evidenceSuggestions?.cv_section ?? []}
+                onAddSuggestion={(item) =>
+                  addEvidenceItem(
+                    { type: "manual", index: null, label: "CV: kompetenssektion" },
+                    item
+                  )
+                }
+                onDismissSuggestion={(term) => dismissSuggestion("cv_section", term)}
+                onRemoveEvidence={removeEvidenceItem}
+              />
+            )}
+
+            <ManualEvidenceAdd
+              onAdd={(item) =>
                 addEvidenceItem(
-                  { type: "manual", index: null, label: "CV: kompetenssektion" },
+                  { type: "manual", index: null, label: "Manuellt tillagd" },
                   item
                 )
               }
-              onDismissSuggestion={(term) => dismissSuggestion("cv_section", term)}
-              onRemoveEvidence={removeEvidenceItem}
             />
-          )}
-
-          <ManualEvidenceAdd
-            onAdd={(item) =>
-              addEvidenceItem({ type: "manual", index: null, label: "Manuellt tillagd" }, item)
-            }
-          />
+          </div>
 
           <h3>Erfarenhet</h3>
           {resume.experience.map((row, i) => (
@@ -903,10 +950,10 @@ function ResumeCard({ token, profileLeaveGuardRef }) {
         </form>
       )}
       {unsavedPrompt && (
-        <UnsavedChangesDialog
+        <ConfirmDialog
           message={unsavedPrompt.message}
           onCancel={() => setUnsavedPrompt(null)}
-          onDiscard={unsavedPrompt.onDiscard}
+          onConfirm={unsavedPrompt.onDiscard}
         />
       )}
     </section>
