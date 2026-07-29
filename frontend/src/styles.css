@@ -1523,6 +1523,17 @@ tbody tr:last-child td {
   border-color: transparent;
 }
 
+.quick-filters button:focus-visible {
+  outline: 2px solid var(--brand-2);
+  outline-offset: 2px;
+  box-shadow: var(--ring);
+}
+
+.quick-filters button.active:focus-visible {
+  outline-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
 .filter-summary {
   display: flex;
   align-items: center;
@@ -1532,7 +1543,23 @@ tbody tr:last-child td {
 
 .pager {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+}
+
+.pager-status {
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-width: 7rem;
+  text-align: center;
+}
+
+.error-block .error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 /* ---------- Pipeline board ---------- */

@@ -65,9 +65,11 @@ function readTab() {
 
 function syncTabToUrl(tab) {
   const params = new URLSearchParams(window.location.search);
-  if (params.get("tab") === tab) return;
+  const before = params.toString();
   params.set("tab", tab);
+  if (tab !== "postings") params.delete("page");
   const qs = params.toString();
+  if (qs === before) return;
   const url = qs
     ? `${window.location.pathname}?${qs}`
     : window.location.pathname;

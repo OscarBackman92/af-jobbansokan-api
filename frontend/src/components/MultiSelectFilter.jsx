@@ -35,6 +35,15 @@ function computePanelStyle(triggerEl) {
   };
 }
 
+function focusablesIn(root) {
+  if (!root) return [];
+  return [
+    ...root.querySelectorAll(
+      'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+    ),
+  ].filter((el) => !el.hasAttribute("disabled") && el.offsetParent !== null);
+}
+
 /**
  * Platsbanken-style two-column multi-select (browse left, checkboxes right).
  */
@@ -51,6 +60,7 @@ export default function MultiSelectFilter({
   onToggleSecondary,
   onSelectAllSecondary,
   onClearSecondary,
+  onClearAll,
   secondaryLoading = false,
   secondaryEmptyText = "Välj kategori till vänster",
 }) {
@@ -58,12 +68,21 @@ export default function MultiSelectFilter({
   const [panelStyle, setPanelStyle] = useState(null);
   const panelRef = useRef(null);
   const triggerRef = useRef(null);
+  const primaryListRef = useRef(null);
+  const closeReasonRef = useRef(null);
   const listboxId = useId();
+  const panelId = useId();
   const selectedSet = new Set(selectedIds);
   const secondaryIds = secondaryOptions.map((option) => option.id);
   const allSelected =
     secondaryIds.length > 0 && secondaryIds.every((id) => selectedSet.has(id));
   const someSelected = secondaryIds.some((id) => selectedSet.has(id));
+  const hasAnySelected = selectedIds.length > 0;
+
+  function closePanel(reason = "dismiss") {
+    closeReasonRef.current = reason;
+    setOpen(false);
+  }
 
   useLayoutEffect(() => {
     if (!open || !triggerRef.current) {
@@ -78,15 +97,14 @@ export default function MultiSelectFilter({
 
     updatePosition();
     window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
     return () => {
       window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
     };
   }, [open, primaryOptions.length, secondaryOptions.length]);
 
   useEffect(() => {
     if (!open) return undefined;
+
     function onPointerDown(event) {
       if (
         panelRef.current?.contains(event.target) ||
@@ -94,34 +112,140 @@ export default function MultiSelectFilter({
       ) {
         return;
       }
-      setOpen(false);
+      closePanel("outside");
     }
+
     function onKeyDown(event) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        closePanel("escape");
+        return;
+      }
+
+      const panel = panelRef.current;
+      if (!panel) return;
+
+      if (event.key === "Tab") {
+        const nodes = focusablesIn(panel);
+        if (!nodes.length) return;
+        const first = nodes[0];
+        const last = nodes[nodes.length - 1];
+        const active = document.activeElement;
+        if (event.shiftKey && active === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        } else if (!panel.contains(active)) {
+          event.preventDefault();
+          first.focus();
+        }
+        return;
+      }
+
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+
+      const primaryButtons = [
+        ...(primaryListRef.current?.querySelectorAll(
+          "button.multi-select-primary-item"
+        ) ?? []),
+      ];
+      const secondaryInputs = [
+        ...(panel.querySelectorAll(".multi-select-secondary input[type='checkbox']") ??
+          []),
+      ];
+      const active = document.activeElement;
+
+      if (primaryButtons.includes(active)) {
+        event.preventDefault();
+        const index = primaryButtons.indexOf(active);
+        const next =
+          event.key === "ArrowDown"
+            ? Math.min(index + 1, primaryButtons.length - 1)
+            : Math.max(index - 1, 0);
+        primaryButtons[next]?.focus();
+        return;
+      }
+
+      if (secondaryInputs.includes(active)) {
+        event.preventDefault();
+        const index = secondaryInputs.indexOf(active);
+        const next =
+          event.key === "ArrowDown"
+            ? Math.min(index + 1, secondaryInputs.length - 1)
+            : Math.max(index - 1, 0);
+        secondaryInputs[next]?.focus();
+      }
     }
+
+    function onScroll(event) {
+      if (panelRef.current?.contains(event.target)) return;
+      closePanel("scroll");
+    }
+
     document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("scroll", onScroll, true);
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      const frame = requestAnimationFrame(() => {
+        const nodes = focusablesIn(panelRef.current);
+        nodes[0]?.focus();
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+
+    if (closeReasonRef.current) {
+      closeReasonRef.current = null;
+      triggerRef.current?.focus();
+    }
+    return undefined;
   }, [open]);
 
   const panel = open && panelStyle && (
     <div
+      id={panelId}
       className="multi-select-panel multi-select-panel--floating"
       style={panelStyle}
       ref={panelRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${triggerLabel}-filter`}
     >
       <div className="multi-select-column">
         <div className="multi-select-column-head">
-          <span>{primaryTitle}</span>
+          <span id={`${panelId}-primary`}>{primaryTitle}</span>
+          {hasAnySelected && onClearAll && (
+            <button
+              type="button"
+              className="linklike multi-select-clear"
+              onClick={onClearAll}
+            >
+              Rensa alla
+            </button>
+          )}
         </div>
-        <ul className="multi-select-primary" role="listbox">
+        <ul
+          className="multi-select-primary"
+          role="listbox"
+          aria-labelledby={`${panelId}-primary`}
+          ref={primaryListRef}
+        >
           {primaryOptions.map((option) => (
-            <li key={option.id}>
+            <li key={option.id} role="none">
               <button
                 type="button"
+                role="option"
+                aria-selected={option.id === activePrimaryId}
                 className={
                   option.id === activePrimaryId
                     ? "multi-select-primary-item multi-select-primary-item--active"
@@ -139,7 +263,7 @@ export default function MultiSelectFilter({
 
       <div className="multi-select-column">
         <div className="multi-select-column-head">
-          <span>{secondaryTitle}</span>
+          <span id={`${panelId}-secondary`}>{secondaryTitle}</span>
           {someSelected && (
             <button
               type="button"
@@ -157,7 +281,12 @@ export default function MultiSelectFilter({
         ) : secondaryOptions.length === 0 ? (
           <p className="muted multi-select-empty">Inga val hittades</p>
         ) : (
-          <ul className="multi-select-secondary" id={listboxId} role="listbox">
+          <ul
+            className="multi-select-secondary"
+            id={listboxId}
+            role="group"
+            aria-labelledby={`${panelId}-secondary`}
+          >
             <li>
               <label className="multi-select-check">
                 <input
@@ -200,8 +329,20 @@ export default function MultiSelectFilter({
           selectedIds.length ? " multi-select-trigger--active" : ""
         }`}
         aria-expanded={open}
-        aria-haspopup="listbox"
+        aria-haspopup="dialog"
+        aria-controls={open ? panelId : undefined}
         onClick={() => setOpen((value) => !value)}
+        onKeyDown={(event) => {
+          if (
+            !open &&
+            (event.key === "ArrowDown" ||
+              event.key === "Enter" ||
+              event.key === " ")
+          ) {
+            event.preventDefault();
+            setOpen(true);
+          }
+        }}
       >
         <span>{triggerLabel}</span>
         {summary && <span className="multi-select-summary">{summary}</span>}

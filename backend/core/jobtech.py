@@ -86,18 +86,26 @@ _PLACE_EXPAND_RE = re.compile(
 )
 
 
-def _swedish_ascii_variants(word: str, *, limit: int = 8) -> list[str]:
+def _fold_swedish_ascii(word: str) -> str:
+    """Fold Swedish letters to ASCII (jönköping → jonkoping)."""
+    table = str.maketrans("äöåÄÖÅ", "aoaAOA")
+    return word.translate(table)
+
+
+def _swedish_ascii_variants(word: str, *, limit: int = 16) -> list[str]:
     """Expand ASCII vowels to ä/ö/å so ``jonkoping`` also matches ``jönköping``.
 
     Only expands place-like tokens — plain skills like ``python`` stay intact.
-    Words that already contain Swedish letters are left alone.
+    Words that already contain Swedish letters are folded to ASCII first so
+    both spellings share the same variant set.
     """
-    if not word or any(ch in word for ch in "äöåÄÖÅ"):
+    if not word:
         return [word]
-    if not _PLACE_EXPAND_RE.search(word):
+    ascii_word = _fold_swedish_ascii(word)
+    if not _PLACE_EXPAND_RE.search(ascii_word):
         return [word]
-    variants: list[str] = [word]
-    seen = {word}
+    variants: list[str] = [ascii_word]
+    seen = {ascii_word.lower()}
     i = 0
     while i < len(variants) and len(variants) < limit:
         current = variants[i]
@@ -114,18 +122,35 @@ def _swedish_ascii_variants(word: str, *, limit: int = 8) -> list[str]:
                 replacements = ("Ä", "Å")
             for repl in replacements:
                 nxt = current[:idx] + repl + current[idx + 1 :]
-                if nxt not in seen:
-                    seen.add(nxt)
+                key = nxt.lower()
+                if key not in seen:
+                    seen.add(key)
                     variants.append(nxt)
                     if len(variants) >= limit:
                         break
             if len(variants) >= limit:
                 break
+    # Keep the user's original spelling first when it differs.
+    if word not in variants:
+        variants.insert(0, word)
     return variants
 
 
+def _preferred_swedish_form(variants: list[str]) -> str:
+    """Pick the spelling JobTech is most likely to index (most diacritics)."""
+    return max(
+        variants,
+        key=lambda w: (sum(ch in "äöåÄÖÅ" for ch in w), len(w)),
+    )
+
+
 def expand_swedish_q(q: str) -> str:
-    """Widen a free-text query with Swedish diacritic OR-variants per word."""
+    """Fold place-like free-text toward Swedish spellings JobTech indexes.
+
+    JobTech's ``q`` matching is sensitive to å/ä/ö. ASCII place names like
+    ``jonkoping`` are rewritten to the preferred Swedish form (``jönköping``)
+    instead of Lucene OR-clauses, which the upstream search often ignores.
+    """
     stripped = q.strip()
     if not stripped:
         return stripped
@@ -135,7 +160,7 @@ def expand_swedish_q(q: str) -> str:
         if len(variants) == 1:
             parts.append(variants[0])
         else:
-            parts.append("(" + " OR ".join(variants) + ")")
+            parts.append(_preferred_swedish_form(variants))
     return " ".join(parts)
 
 

@@ -171,11 +171,10 @@ def test_search_maps_hits(api_client, user, mock_jobtech):
 
 
 def test_expand_swedish_q_widens_place_names():
-    expanded = jobtech.expand_swedish_q("jonkoping")
-    assert "jonkoping" in expanded
-    assert "jönköping" in expanded.lower() or "jönkoping" in expanded.lower()
-    assert "OR" in expanded
-    # Skills must not explode into diacritic OR-clauses.
+    assert jobtech.expand_swedish_q("jonkoping").lower() == "jönköping"
+    assert jobtech.expand_swedish_q("jönköping").lower() == "jönköping"
+    assert jobtech.expand_swedish_q("jarfalla").lower() == "järfälla"
+    # Skills must not be rewritten into place-name guesses.
     assert jobtech.expand_swedish_q("python") == "python"
     assert jobtech.expand_swedish_q("ekonom") == "ekonom"
 

@@ -84,6 +84,34 @@ function initialQuery() {
   return { ...EMPTY_QUERY, municipalities };
 }
 
+function readOffsetFromUrl() {
+  const page = Number.parseInt(
+    new URLSearchParams(window.location.search).get("page") || "1",
+    10
+  );
+  if (!Number.isFinite(page) || page < 1) return 0;
+  return (page - 1) * PAGE_SIZE;
+}
+
+function syncPageToUrl(nextOffset) {
+  const params = new URLSearchParams(window.location.search);
+  const page = Math.floor(nextOffset / PAGE_SIZE) + 1;
+  const current = params.get("page");
+  if (page <= 1) {
+    if (!current) return;
+    params.delete("page");
+  } else if (current === String(page)) {
+    return;
+  } else {
+    params.set("page", String(page));
+  }
+  const qs = params.toString();
+  const url = qs
+    ? `${window.location.pathname}?${qs}`
+    : window.location.pathname;
+  window.history.replaceState(null, "", url);
+}
+
 function appendIdParams(params, key, items) {
   for (const item of items) {
     const id = typeof item === "string" ? item : item?.id;
@@ -119,7 +147,7 @@ export default function PostingsPanel({ onNavigate }) {
     () => readLastSearch()?.matchCv ?? false
   );
   const [query, setQuery] = useState(initialQuery);
-  const [offset, setOffset] = useState(0);
+  const [offset, setOffset] = useState(() => readOffsetFromUrl());
   const resultsSectionRef = useRef(null);
   const pendingScrollRef = useRef(false);
 
@@ -316,13 +344,19 @@ export default function PostingsPanel({ onNavigate }) {
       document.activeElement.blur();
     }
     requestResultsScroll();
+    syncPageToUrl(nextOffset);
     setOffset(nextOffset);
+  }
+
+  function resetToFirstPage() {
+    syncPageToUrl(0);
+    setOffset(0);
   }
 
   function submit(event) {
     event.preventDefault();
     requestResultsScroll();
-    setOffset(0);
+    resetToFirstPage();
     rememberMunicipalities(selectedMunicipalities, browseRegion);
     const next = {
       q,
@@ -348,8 +382,17 @@ export default function PostingsPanel({ onNavigate }) {
       /* ignore */
     }
     requestResultsScroll();
-    setOffset(0);
+    resetToFirstPage();
     setQuery(EMPTY_QUERY);
+  }
+
+  function clearMatchCvFilter() {
+    setMatchCvOnly(false);
+    const next = { ...query, matchCv: false };
+    rememberSearch(next);
+    requestResultsScroll();
+    resetToFirstPage();
+    setQuery(next);
   }
 
   function clearSearchText() {
@@ -359,7 +402,7 @@ export default function PostingsPanel({ onNavigate }) {
     rememberSearch(next);
     rememberMunicipalities(next.municipalities, browseRegion);
     requestResultsScroll();
-    setOffset(0);
+    resetToFirstPage();
     setQuery(next);
   }
 
@@ -483,6 +526,7 @@ export default function PostingsPanel({ onNavigate }) {
     );
     setSelectedGroups((saved.groups ?? []).map((id) => ({ id, label: id })));
     requestResultsScroll();
+    syncPageToUrl(0);
     setOffset(0);
     setQuery({
       q: saved.q || "",
@@ -531,17 +575,12 @@ export default function PostingsPanel({ onNavigate }) {
   }
 
   const total = data?.total ?? 0;
-  const results = (data?.results ?? []).slice().sort((a, b) => {
-    const aTracked = a.webpage_url && tracked.has(normalizeAdUrl(a.webpage_url));
-    const bTracked = b.webpage_url && tracked.has(normalizeAdUrl(b.webpage_url));
-    if (aTracked !== bTracked) return aTracked ? 1 : -1;
-    const aMatch = a.match?.count ?? -1;
-    const bMatch = b.match?.count ?? -1;
-    if (bMatch !== aMatch) return bMatch - aMatch;
-    return 0;
-  });
+  // Keep JobTech order (pubdate-desc) so pages stay stable; do not re-sort.
+  const results = data?.results ?? [];
   const showingFrom = total === 0 ? 0 : offset + 1;
   const showingTo = Math.min(offset + PAGE_SIZE, total);
+  const pageNumber = Math.floor(offset / PAGE_SIZE) + 1;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const locationSummary = countSummary(
     selectedMunicipalities.length,
     "ort",
@@ -622,6 +661,7 @@ export default function PostingsPanel({ onNavigate }) {
             onToggleSecondary={toggleMunicipality}
             onSelectAllSecondary={selectAllMunicipalities}
             onClearSecondary={() => clearVisibleMunicipalities(municipalityOptions)}
+            onClearAll={() => setSelectedMunicipalities([])}
             secondaryLoading={municipalitiesLoading && !municipalityCache[browseRegion]}
           />
 
@@ -638,6 +678,7 @@ export default function PostingsPanel({ onNavigate }) {
             onToggleSecondary={toggleGroup}
             onSelectAllSecondary={selectAllGroups}
             onClearSecondary={() => clearVisibleGroups(groupOptions)}
+            onClearAll={() => setSelectedGroups([])}
             secondaryLoading={groupsLoading && !groupCache[browseField]}
             secondaryEmptyText="Välj yrkesområde till vänster"
           />
@@ -714,15 +755,26 @@ export default function PostingsPanel({ onNavigate }) {
         {error && (
           <div className="error-block" role="alert">
             <p className="error">{error}</p>
-            {/kompetens/i.test(error) && (
-              <button
-                type="button"
-                className="secondary small"
-                onClick={() => onNavigate?.("profile")}
-              >
-                Öppna Profil &amp; CV
-              </button>
-            )}
+            <div className="error-actions">
+              {/kompetens/i.test(error) && (
+                <>
+                  <button
+                    type="button"
+                    className="secondary small"
+                    onClick={() => onNavigate?.("profile")}
+                  >
+                    Öppna Profil &amp; CV
+                  </button>
+                  <button
+                    type="button"
+                    className="linklike"
+                    onClick={clearMatchCvFilter}
+                  >
+                    Rensa filter
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
 
@@ -779,15 +831,20 @@ export default function PostingsPanel({ onNavigate }) {
         </section>
 
         {total > PAGE_SIZE && (
-          <div className="pager">
+          <div className="pager" aria-label="Paginering">
             <button
+              type="button"
               className="secondary small"
               disabled={offset === 0 || loading}
               onClick={() => goToPage(Math.max(0, offset - PAGE_SIZE))}
             >
               ← Föregående
             </button>
+            <span className="pager-status" aria-live="polite">
+              Sida {pageNumber} av {pageCount.toLocaleString("sv-SE")}
+            </span>
             <button
+              type="button"
               className="secondary small"
               disabled={offset + PAGE_SIZE >= total || loading}
               onClick={() => goToPage(offset + PAGE_SIZE)}
