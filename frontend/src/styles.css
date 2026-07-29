@@ -1611,7 +1611,7 @@ tbody tr:last-child td {
   justify-content: space-between;
   gap: 0.8rem;
   width: 100%;
-  padding: 0;
+  padding: 0.2rem 0.35rem;
   margin: 0;
   border: 0;
   background: transparent;
@@ -1625,6 +1625,7 @@ tbody tr:last-child td {
 
 .pipeline-stage-filter:hover {
   color: var(--ink);
+  background: color-mix(in srgb, var(--accent, #2563eb) 8%, transparent);
   transform: none;
   filter: none;
 }
@@ -1634,13 +1635,35 @@ tbody tr:last-child td {
   outline-offset: 2px;
 }
 
+.pipeline-stage-filter-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.pipeline-stage-filter-hint {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--muted);
+  opacity: 0.85;
+}
+
+.pipeline-stage-filter:hover .pipeline-stage-filter-hint,
+.pipeline-stage-head--active .pipeline-stage-filter-hint {
+  color: var(--ink);
+  opacity: 1;
+}
+
 .pipeline-stage-head--active .pipeline-stage-filter {
   color: var(--ink);
 }
 
 .pipeline-stage-head--active {
-  padding: 0.15rem 0.35rem;
-  margin: -0.15rem -0.35rem 0.5rem;
+  padding: 0;
+  margin: 0 0 0.5rem;
   border-radius: 10px;
   background: color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
 }
@@ -1654,7 +1677,7 @@ tbody tr:last-child td {
   text-transform: uppercase;
 }
 
-.pipeline-stage-head span {
+.pipeline-stage-count {
   min-width: 1.7rem;
   height: 1.7rem;
   border-radius: 999px;
@@ -1759,8 +1782,8 @@ tbody tr:last-child td {
   background: var(--surface-2);
 }
 
-[data-theme="command"] .pipeline-stage-head span,
-[data-theme="signal"] .pipeline-stage-head span {
+[data-theme="command"] .pipeline-stage-count,
+[data-theme="signal"] .pipeline-stage-count {
   background: var(--surface);
 }
 
@@ -2392,6 +2415,11 @@ tbody tr:last-child td {
   border: 1px solid var(--red-border);
   border-radius: var(--radius-sm);
   background: var(--red-bg);
+}
+
+.danger-zone--compact {
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
 }
 
 .danger-zone h3 {

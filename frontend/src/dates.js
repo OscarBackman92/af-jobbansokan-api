@@ -47,10 +47,10 @@ export function isFollowUp(application) {
 
 /**
  * Upcoming (or today) application deadline on a saved row.
- * Overdue deadlines are still actionable in Idag, but the KPI "inom 7 dagar"
- * only counts the upcoming window.
+ * Overdue deadlines remain actionable in Idag via buildTodayActions; the
+ * board KPI/chip "inom 7 dagar" excludes them by default.
  */
-export function hasDeadlineSoon(application, { includeOverdue = true } = {}) {
+export function hasDeadlineSoon(application, { includeOverdue = false } = {}) {
   if (isClosed(application)) return false;
   if (application.status !== "wishlist") return false;
   const deadlineIn = daysUntil(application.deadline);

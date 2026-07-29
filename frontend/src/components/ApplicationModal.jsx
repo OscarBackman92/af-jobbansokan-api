@@ -581,21 +581,22 @@ function ApplicationFields({
         <textarea {...field("notes")} />
       </label>
       {error && <p className="error">{error}</p>}
-      <div className="row-between">
-        <div className="row">
-          <button disabled={duplicateBlocked}>
-            {application ? "Spara" : "Lägg till"}
-          </button>
-          <button type="button" className="secondary" onClick={requestClose}>
-            Avbryt
+      <div className="row">
+        <button disabled={duplicateBlocked}>
+          {application ? "Spara" : "Lägg till"}
+        </button>
+        <button type="button" className="secondary" onClick={requestClose}>
+          Avbryt
+        </button>
+      </div>
+      {application && (
+        <div className="danger-zone danger-zone--compact">
+          <p className="muted">Permanent borttagning av ansökan.</p>
+          <button type="button" className="danger small" onClick={onRemove}>
+            Ta bort ansökan
           </button>
         </div>
-        {application && (
-          <button type="button" className="danger small" onClick={onRemove}>
-            Ta bort
-          </button>
-        )}
-      </div>
+      )}
     </>
   );
 }

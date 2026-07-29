@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { downloadBlob, request } from "../api.js";
 import {
@@ -119,6 +119,7 @@ export default function BoardPanel({ token, onNavigate }) {
   const [showWelcome, setShowWelcome] = useState(
     () => localStorage.getItem("jobbsoket-welcome-dismissed") !== "1"
   );
+  const listSectionRef = useRef(null);
 
   function dismissWelcome() {
     localStorage.setItem("jobbsoket-welcome-dismissed", "1");
@@ -262,6 +263,7 @@ export default function BoardPanel({ token, onNavigate }) {
   }
 
   function toggleQuickFilter(filterId) {
+    setStageFilter(null);
     if (filterId === "all") {
       setQuickFilters([]);
       return;
@@ -276,9 +278,16 @@ export default function BoardPanel({ token, onNavigate }) {
   function applyMetricFilter(filterId) {
     setStageFilter(null);
     setQuickFilters(filterId === "all" ? [] : [filterId]);
+    requestAnimationFrame(() => {
+      listSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   }
 
   function toggleStageFilter(status) {
+    setQuickFilters([]);
     setStageFilter((current) => (current === status ? null : status));
   }
 
@@ -302,7 +311,7 @@ export default function BoardPanel({ token, onNavigate }) {
           );
   const activeCount = applications.length - allClosed.length;
   const deadlineSoonCount = applications.filter((a) =>
-    hasDeadlineSoon(a, { includeOverdue: true })
+    hasDeadlineSoon(a)
   ).length;
   const interviewTrackCount = applications.filter((a) =>
     ["screening", "interview", "forwarded"].includes(a.status)
@@ -370,7 +379,7 @@ export default function BoardPanel({ token, onNavigate }) {
 
       <TodayPanel applications={applications} onOpen={setSelected} />
 
-      <section className="card">
+      <section className="card" ref={listSectionRef}>
         <div className="row-between">
           <div>
             <h2>Mina ansökningar</h2>
@@ -466,15 +475,20 @@ export default function BoardPanel({ token, onNavigate }) {
 
             {hasActiveFilters && (
               <p className="muted filter-summary">
-                Visar {filteredApplications.length} av {applications.length}
-                {stageFilter && (
-                  <>
-                    {" "}
-                    · status: <strong>{stageFilterLabel(stageFilter)}</strong>
-                  </>
-                )}
-                .
-                <button className="linklike" onClick={resetFilters}>
+                <span>
+                  Visar {filteredApplications.length} av {applications.length}
+                  {stageFilter && (
+                    <>
+                      {" "}
+                      · status: <strong>{stageFilterLabel(stageFilter)}</strong>
+                    </>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className="linklike"
+                  onClick={resetFilters}
+                >
                   Rensa filter
                 </button>
               </p>
@@ -675,7 +689,7 @@ function PipelineStage({
   const visible = expanded
     ? applications
     : applications.slice(0, STAGE_VISIBLE);
-  const hiddenCount = applications.length - visible.length;
+  const canToggleExpand = applications.length > STAGE_VISIBLE;
 
   return (
     <section className={`pipeline-stage pipeline-stage--${status}`}>
@@ -697,8 +711,13 @@ function PipelineStage({
               : `Visa bara ${label}`
           }
         >
-          <h3>{label}</h3>
-          <span>{applications.length}</span>
+          <span className="pipeline-stage-filter-label">
+            <h3>{label}</h3>
+            <span className="pipeline-stage-filter-hint" aria-hidden="true">
+              {isActive ? "Filtrerad" : "Filtrera"}
+            </span>
+          </span>
+          <span className="pipeline-stage-count">{applications.length}</span>
         </button>
       </div>
       <div className="pipeline-rows">
@@ -711,13 +730,13 @@ function PipelineStage({
           />
         ))}
       </div>
-      {hiddenCount > 0 && (
+      {canToggleExpand && (
         <button
           type="button"
           className="secondary small pipeline-show-more"
-          onClick={() => setExpanded(true)}
+          onClick={() => setExpanded((value) => !value)}
         >
-          Visa alla {applications.length}
+          {expanded ? "Visa mindre" : `Visa alla ${applications.length}`}
         </button>
       )}
     </section>

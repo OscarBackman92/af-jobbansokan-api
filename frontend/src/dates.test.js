@@ -88,12 +88,9 @@ describe("hasDeadlineSoon", () => {
     ).toBe(false);
   });
 
-  it("can exclude overdue from the upcoming window", () => {
+  it("excludes overdue from the upcoming window by default", () => {
     expect(
-      hasDeadlineSoon(
-        { status: "wishlist", deadline: daysAgo(2) },
-        { includeOverdue: false }
-      )
+      hasDeadlineSoon({ status: "wishlist", deadline: daysAgo(2) })
     ).toBe(false);
     expect(
       hasDeadlineSoon(

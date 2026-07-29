@@ -176,8 +176,21 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
               <input type="email" {...field("email")} />
             </label>
           </div>
-          <div className="row-between">
+          <div className="row">
             <button>Spara</button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setEditing(false)}
+            >
+              Avbryt
+            </button>
+          </div>
+          <div className="danger-zone danger-zone--compact">
+            <h3>Radera konto</h3>
+            <p className="muted">
+              Tar bort kontot och all data permanent. Går inte att ångra.
+            </p>
             <button type="button" className="danger small" onClick={deleteAccount}>
               Radera konto permanent
             </button>
