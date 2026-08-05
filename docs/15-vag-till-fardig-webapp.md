@@ -37,7 +37,7 @@ Utan detta ska appen inte marknadsföras hårt.
 
 - [x] **Render Frankfurt** + Supabase Postgres EU (`DATABASE_URL` på web).
 - [ ] Verifiera att `render.yaml` deployas med `region: frankfurt` och
-      `plan: starter` (eller högre).
+      `plan: free` (uppgradera vid behov).
 - [ ] **Backup-rutin** för Postgres (`pg_dump` schema + regelbunden export).
 - [ ] Dokumentera återställningssteg (se [14-sakerhet-produktion.md](14-sakerhet-produktion.md)).
 
@@ -136,7 +136,8 @@ Prioritera efter Fas 1–2.
 - [ ] JobStream-API för kontinuerligt uppdaterade annonser.
 - [ ] Postgres fulltextsök om lokal annonsdata återinförs.
 - [ ] Strukturerad loggning, mätvärden, larm (utöver Sentry).
-- [ ] Bakgrundsjobb (Render cron räcker tills volymen växer).
+- [ ] Bakgrundsjobb / schemaläggning om volymen växer (idag: management-kommandon
+      körs manuellt — inga Render cron-jobb).
 
 ### Fler annonskällor (researchad juni 2026)
 
@@ -191,8 +192,8 @@ Kör manuellt (eller automatisera som E2E):
 2. Ladda upp CV (PDF) → kontrollera att fält fylls rimligt.
 3. Sök Platsbanken → spara annons → se på tavlan.
 4. Byt status → kontrollera tidslinje.
-5. Sätt `next_action_at` i går → vänta på påminnelse-cron (eller kör
-   `send_reminders` manuellt).
+5. Sätt `next_action_at` i går → kör `send_reminders` manuellt om du testar
+   påminnelsemejl (inga schemalagda cron-jobb i produktion).
 6. Exportera CSV → öppna i Excel utan formelinjektion.
 7. Radera konto → all data borta.
 

@@ -18,7 +18,7 @@ INTERVIEW_STATUSES = {
 
 @dataclass(frozen=True)
 class WeekBounds:
-    """Calendar weeks around the Monday the cron runs."""
+    """Calendar weeks around the Monday the weekly summary is sent."""
 
     last_start: date
     last_end: date

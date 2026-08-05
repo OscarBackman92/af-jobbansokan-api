@@ -1,7 +1,8 @@
 """Delete accounts inactive for 24 months, with a 30-day e-mail warning.
 
-Implements the retention rule in the privacy policy. Run daily (cron).
-Users are warned once; logging in clears the warning and the clock.
+Implements the retention rule in the privacy policy. Run manually when needed
+(no production schedule). Users are warned once; logging in clears the warning
+and the clock.
 """
 
 from datetime import timedelta

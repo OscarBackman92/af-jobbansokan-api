@@ -12,8 +12,7 @@ over your applications, a timeline per application, search over
 Platsbanken's job ads, and CSV export because the data is yours.
 
 > Production: [jobbjungeln.onrender.com](https://jobbjungeln.onrender.com)
-> (Frankfurt). Cron jobs still use the `ansokt-*` service names from the
-> original deploy.
+> (Frankfurt). Web service on Render Free plan.
 
 > Pivoted 2026-06-12 from the earlier "verifiable job application events
 > for A-kassa" concept — see [docs/10-pivot-ansokt.md](docs/10-pivot-ansokt.md)
@@ -178,8 +177,11 @@ host):
 - **One service serves everything**: the `Dockerfile` builds the frontend
   (Node stage), collects static files, and gunicorn + WhiteNoise serve
   the SPA at `/`, hashed assets, the API and the admin
-- **`render.yaml` blueprint**: web service + cron jobs on Render; **Supabase**
-  Postgres in production (`DATABASE_URL` set manually in Render dashboard)
+- **`render.yaml` blueprint**: web service on Render (Free plan); **Supabase**
+  Postgres in production (`DATABASE_URL` set manually in Render dashboard).
+  Management commands (`send_reminders`, `prune_inactive_accounts`,
+  `send_weekly_summary`) remain and are run **manually** when needed — no
+  scheduled cron jobs in production
 - **Production hardening** activates when `DJANGO_DEBUG=0`: HSTS,
   SSL redirect (behind proxy header), secure cookies, manifest static
   storage, referrer policy
@@ -193,6 +195,15 @@ Quick start: push to GitHub → render.com → **New → Blueprint** → select
 the repo → **Apply**. Prefer to host the frontend on Vercel's CDN with
 preview deploys? See [docs/11-deploy-vercel.md](docs/11-deploy-vercel.md)
 for the split (frontend on Vercel, backend on Render).
+
+### Free plan limits (Render)
+
+The web service runs on Render **Free** (512 MB RAM / 0.1 CPU):
+
+- Sleeps after **15 minutes** of inactivity; first request after sleep has
+  ~**1 minute** cold start
+- **No** persistent disk, **no** shell/SSH, **no** horizontal scaling
+- **750** free instance hours per month per workspace
 
 ### E-mail & password reset
 
@@ -285,11 +296,12 @@ infra/                 # docker-compose for local PostgreSQL
   in the privacy policy, removed with the account
 - No analytics, no third-party cookies; the JWT (access + refresh) lives
   in localStorage
-- Retention: accounts inactive for 24 months are deleted by the daily
-  cron (`prune_inactive_accounts`) after a 30-day warning e-mail;
-  logging in resets the clock
-- Monday weekly summary e-mail with pipeline overview and new hits from
-  saved Platsbanken searches (`send_weekly_summary`)
+- Retention: accounts inactive for 24 months can be deleted with
+  `prune_inactive_accounts` (run manually when needed) after a 30-day
+  warning e-mail; logging in resets the clock
+- Weekly summary e-mail with pipeline overview and new hits from saved
+  Platsbanken searches (`send_weekly_summary` — run manually when needed;
+  no production schedule)
 - Password change/reset revokes all outstanding refresh tokens
 - Vulnerability reports: `/.well-known/security.txt` (served when
   `CONTACT_EMAIL` is set)
@@ -311,7 +323,7 @@ Google login is prepared in code but not enabled in production (July 2026).
 - [x] Live JobTech search with region/occupation/remote filters
 - [x] Password reset by e-mail (Brevo HTTP API in production)
 - [x] Mandatory e-mail verification + operator IDs
-- [x] Reminders for `next_action_at` (daily cron e-mail)
+- [x] Reminders for `next_action_at` (`send_reminders` — run manually when needed)
 - [x] Saved JobTech searches
 - [x] Duplicate detection for tracked ads
 - [x] Privacy policy page
@@ -328,10 +340,9 @@ Google login is prepared in code but not enabled in production (July 2026).
 
 | Document | Contents |
 | --- | --- |
-| [18-manuell-test-och-cron.md](docs/18-manuell-test-och-cron.md) | **Cron on Render + manual test checklist (desktop & mobile)** |
+| [18-manuell-test.md](docs/18-manuell-test.md) | **Manual test checklist (desktop & mobile)** |
 | [claude-chrome-testprompt.md](docs/claude-chrome-testprompt.md) | Copy-paste prompt for Claude in Chrome QA testing |
 | [claude-chrome-verification-email-prompt.md](docs/claude-chrome-verification-email-prompt.md) | Claude in Chrome prompt to test signup verification e-mail |
-| [claude-chrome-render-cron-prompt.md](docs/claude-chrome-render-cron-prompt.md) | Claude in Chrome prompt to create Render cron jobs (reminders + weekly summary) |
 | [claude-chrome-supabase-prompt.md](docs/claude-chrome-supabase-prompt.md) | Claude in Chrome prompt to set up Supabase + migrate from Render Postgres |
 | [claude-chrome-fix-email-prompt.md](docs/claude-chrome-fix-email-prompt.md) | Claude in Chrome prompt to fix Brevo/Render e-mail (no API keys in chat) |
 | [claude-chrome-sprint1-2-qa-prompt.md](docs/claude-chrome-sprint1-2-qa-prompt.md) | Claude in Chrome QA for Sprint 1 & 2 UX (scroll, CV, board filters, match) |
