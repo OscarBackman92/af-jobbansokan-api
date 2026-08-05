@@ -13,7 +13,7 @@ def test_landing_page_is_public_html(client):
     response = client.get("/")
     body = response.content.decode()
     assert response.status_code == 200
-    assert "Jobbsöket" in body
+    assert "Jobbdjungeln" in body
     assert "Skapa konto" in body
     assert "Logga in" in body
     assert "Kom igång" in body
@@ -51,7 +51,7 @@ def test_auth_query_redirects_to_spa(client):
 
 
 def test_spa_app_url_helper(settings):
-    settings.FRONTEND_URL = "https://jobbsoket.example.com"
+    settings.FRONTEND_URL = "https://jobbdjungeln.example.com"
     from core.spa_urls import spa_app_url
 
-    assert spa_app_url() == "https://jobbsoket.example.com/app/"
+    assert spa_app_url() == "https://jobbdjungeln.example.com/app/"

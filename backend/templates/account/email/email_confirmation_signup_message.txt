@@ -1,6 +1,6 @@
 Hej!
 
-Tack för att du skapade ett konto på Jobbsöket. Klicka på länken nedan för
+Tack för att du skapade ett konto på Jobbdjungeln. Klicka på länken nedan för
 att bekräfta din e-postadress — sedan kan du logga in:
 
 {{ activate_url }}
@@ -8,4 +8,4 @@ att bekräfta din e-postadress — sedan kan du logga in:
 Om du inte skapade kontot kan du strunta i det här mejlet.
 
 Hälsningar,
-Jobbsöket
+Jobbdjungeln

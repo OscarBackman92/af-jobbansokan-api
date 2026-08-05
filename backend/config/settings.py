@@ -224,7 +224,7 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Jobbsöket API",
+    "TITLE": "Jobbdjungeln API",
     "DESCRIPTION": "API for tracking your own job applications.",
     "VERSION": "0.2.0",
 }
@@ -232,8 +232,8 @@ SPECTACULAR_SETTINGS = {
 # Admin theme (django-unfold)
 
 UNFOLD = {
-    "SITE_TITLE": "Jobbsöket",
-    "SITE_HEADER": "Jobbsöket",
+    "SITE_TITLE": "Jobbdjungeln",
+    "SITE_HEADER": "Jobbdjungeln",
     "SITE_SUBHEADER": "Koll på hela ditt jobbsök",
 }
 
@@ -282,7 +282,7 @@ elif os.getenv("EMAIL_HOST"):
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Jobbsöket <no-reply@ansokt.app>")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Jobbdjungeln <no-reply@ansokt.app>")
 
 # Public contact address for privacy questions and vulnerability reports.
 # Shown in the privacy policy and served at /.well-known/security.txt.

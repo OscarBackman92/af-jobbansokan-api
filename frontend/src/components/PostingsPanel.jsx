@@ -7,9 +7,9 @@ import MatchScore from "./MatchScore.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
 import MultiSelectFilter from "./MultiSelectFilter.jsx";
 
-const LAST_SEARCH_KEY = "jobbsoket-last-job-search";
-const LAST_MUNICIPALITIES_KEY = "jobbsoket-last-municipalities";
-const LAST_REGION_KEY = "jobbsoket-last-region";
+const LAST_SEARCH_KEY = "jobbdjungeln-last-job-search";
+const LAST_MUNICIPALITIES_KEY = "jobbdjungeln-last-municipalities";
+const LAST_REGION_KEY = "jobbdjungeln-last-region";
 
 function readLastMunicipalities() {
   try {

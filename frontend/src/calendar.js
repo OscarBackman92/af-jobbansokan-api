@@ -32,7 +32,7 @@ export function buildIcsCalendar(events) {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Jobbsoket//Job Tracker//SV",
+    "PRODID:-//Jobbdjungeln//Job Tracker//SV",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
   ];
@@ -65,14 +65,14 @@ export function todayActionToIcsEvent(item) {
     .join("\n");
 
   return {
-    uid: `jobbsoket-${app.id}-${item.kind}-${item.date}@jobbsoket`,
+    uid: `jobbdjungeln-${app.id}-${item.kind}-${item.date}@jobbdjungeln`,
     date: item.date,
     summary: item.calendarSummary,
     description,
   };
 }
 
-export function downloadTodayActionsIcs(items, filename = "jobbsoket-idag.ics") {
+export function downloadTodayActionsIcs(items, filename = "jobbdjungeln-idag.ics") {
   if (!items.length) return;
   const content = buildIcsCalendar(items.map(todayActionToIcsEvent));
   downloadIcs(filename, content);
@@ -84,5 +84,5 @@ export function downloadSingleActionIcs(item) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .slice(0, 24);
-  downloadIcs(`jobbsoket-${slug || "paminnelse"}.ics`, content);
+  downloadIcs(`jobbdjungeln-${slug || "paminnelse"}.ics`, content);
 }

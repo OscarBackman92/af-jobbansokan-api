@@ -164,7 +164,7 @@ export default function App() {
             J
           </div>
           <div className="brand-text">
-            <h1>Jobbsöket</h1>
+            <h1>Jobbdjungeln</h1>
           </div>
         </a>
         {!token ? (
@@ -271,7 +271,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <span className="footer-kicker">Jobbsöket</span>
+        <span className="footer-kicker">Jobbdjungeln</span>
         Din data är din — exportera eller radera kontot när du vill.{" "}
         <a className="footer-link" href="/integritet/">
           Integritetspolicy

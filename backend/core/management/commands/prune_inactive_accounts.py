@@ -103,20 +103,20 @@ class Command(BaseCommand):
 
         body = (
             "Hej!\n\n"
-            "Ditt konto på Jobbsöket har varit inaktivt i 24 månader. "
+            "Ditt konto på Jobbdjungeln har varit inaktivt i 24 månader. "
             f"Enligt vår lagringspolicy raderas kontot och all data om "
             f"{WARNING_DAYS} dagar.\n\n"
             "Vill du behålla kontot? Logga bara in, så avbryts raderingen:\n"
             f"{spa_app_url() or 'https://jobbjungeln.onrender.com/app/'}\n\n"
             "Vill du inte det behöver du inte göra någonting.\n\n"
-            "Hälsningar,\nJobbsöket"
+            "Hälsningar,\nJobbdjungeln"
         )
         if dry_run:
             self.stdout.write(f"Would warn: {user.email}")
             return 1
 
         send_mail(
-            subject="Jobbsöket — ditt konto raderas om 30 dagar",
+            subject="Jobbdjungeln — ditt konto raderas om 30 dagar",
             message=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],

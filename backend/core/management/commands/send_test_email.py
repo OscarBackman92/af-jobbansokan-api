@@ -39,13 +39,13 @@ class Command(BaseCommand):
                 )
 
         body = (
-            "Det här är ett testmejl från Jobbsöket.\n\n"
+            "Det här är ett testmejl från Jobbdjungeln.\n\n"
             "Om du ser detta fungerar utskicket. Verifieringsmejl och "
             "lösenordsåterställning ska också fungera.\n"
         )
         try:
             send_mail(
-                subject="Jobbsöket — testmejl",
+                subject="Jobbdjungeln — testmejl",
                 message=body,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[recipient],

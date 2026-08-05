@@ -45,7 +45,7 @@ class Command(BaseCommand):
 
         site, created = Site.objects.update_or_create(
             pk=settings.SITE_ID,
-            defaults={"domain": domain, "name": "Jobbsöket"},
+            defaults={"domain": domain, "name": "Jobbdjungeln"},
         )
         if created:
             self.stdout.write(
