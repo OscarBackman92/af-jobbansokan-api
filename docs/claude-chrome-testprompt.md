@@ -1,165 +1,78 @@
 # Claude in Chrome — testprompt för Jobbsöket
 
-Kopiera hela prompten i rutan **“Kopiera prompten”** nedan och klistra in i
-Claude in Chrome med appen öppen på rätt URL.
+För **full** genomgång av hela sajten (alla flikar, månadsfilter, CV-match,
+utvärdering + rapportmall), använd:
+
+→ **[claude-chrome-full-qa-prompt.md](claude-chrome-full-qa-prompt.md)**
+
+Den filen är den rekommenderade prompten. Texten nedan är en kortare smoke-variant
+om du bara vill snabbkolla dator + mobil.
 
 ## Innan du startar
 
 1. Öppna **https://jobbjungeln.onrender.com** i Chrome (eller din lokala URL).
-2. Ha ett **testkonto** redo (e-post du kan läsa). Dela **aldrig** lösenord i chatten —
-   fyll i lösenord själv när Claude ber dig.
-3. **Mejl** (verifiering, återställning, cron) kan Claude normalt **inte** läsa —
-   markera dessa som *“kräver manuell kontroll”* i rapporten.
-4. **Riktig telefon:** Claude in Chrome styr bara Chrome på datorn. För telefon
-   använder du antingen **Del 2** (DevTools mobilsimulering) eller **Del 3**
-   (du testar själv på mobilen och klistrar in resultatet).
+2. Ha ett **testkonto** redo. Dela **aldrig** lösenord i chatten.
+3. **Mejl** och **Google OAuth** → markera MANUELLT om Claude inte kan slutföra.
+4. **Render Free** kan sova (~30–60 s kallstart) — vänta innan FAIL.
+5. Schemalagda cron-jobb finns **inte** i produktion; påminnelser/gallring är manuella.
 
 ---
 
-## Kopiera prompten
+## Kopiera prompten (kort smoke)
 
 ```
-Du är QA-testare för webbappen Jobbsöket (jobbsöknings-tavla). Jag har appen öppen i den här fliken. Utför strukturerad testning och avsluta med en tydlig rapport på svenska.
+Du är QA-testare för webbappen Jobbsöket. Jag har appen öppen i den här fliken.
+Gör en snabb men strukturerad smoke-test på svenska. Avsluta med kort rapport.
 
 ## Regler
-- Fråga mig innan du raderar kontot eller skickar riktiga mejl till okända adresser.
-- Be mig fylla i lösenord och e-postverifiering själv — läs inte upp eller gissa lösenord.
-- Om du inte kan slutföra ett steg (t.ex. mejl, Google OAuth, Render-cron), markera det som BLOCKERAT eller MANUELLT — förklara varför.
-- Ta korta noteringar om vad du ser (texter, knappar, felmeddelanden).
-- Vid fel: beskriv exakt vad som hände, vilken sida/flik, och om möjligt konsolfel (F12).
+- Fråga innan du raderar konto/CV eller skapar många .ics.
+- Be mig fylla i lösenord själv.
+- BLOCKERAT/MANUELLT om mejl, OAuth eller kallstart stoppar dig.
+- Testdata med prefix “QA-”.
 
 ## Miljö
-- URL: [FYLL I: t.ex. https://jobbjungeln.onrender.com]
-- Enhet för denna körning: [FYLL I: Dator / DevTools mobil / Riktig telefon]
-- Inloggad: [FYLL I: Ja/Nej — om ja, vilket konto utan lösenord]
+- URL: [FYLL I]
+- Inloggad: [Ja/Nej]
+- Enhet: [Dator / DevTools mobil]
 
----
+Efter varje punkt: ✅ / ⚠️ / ❌ / ⏭️ / 🔒 MANUELLT
 
-# DEL 1 — DATORTEST (Chrome, full bredd)
+### 1. Skal
+- [ ] Laddar (hantera kallstart)
+- [ ] Jobbsöket syns; flikar Ansökningar | Annonser | Profil & CV
+- [ ] Footer: tema + Integritetspolicy
 
-Gå igenom i ordning. Efter varje avsnitt: ✅ OK, ⚠️ DELVIS, ❌ FAIL, eller ⏭️ HOPPAT.
+### 2. Auth (om ej inloggad)
+- [ ] Logga in / skapa konto (mejl MANUELLT)
+- [ ] Logga ut / in igen
 
-### 1. Startsida & varumärke
-- [ ] Sidan laddar utan vit skärm/lång spinner
-- [ ] Rubrik/tagline “Jobbsöket” syns
-- [ ] Flikar: **Tavlan**, **Annonser**, **Profil & CV** (3 st)
-- [ ] “Idag & att göra” är en **sektion på Tavlan**, inte en egen flik
-- [ ] Footer med integritetslänk
+### 3. Ansökningar
+- [ ] KPI-rutor + Idag-panel om data finns
+- [ ] Skapa QA-ansökan, byt status, öppna modal/tidslinje
+- [ ] Sök, snabbfilter, månadsfilter (Ansökt/Sparad)
+- [ ] Statistikstaplar klickbara
+- [ ] CSV-export endast om jag godkänner
 
-### 2. Konto (hoppa över om redan inloggad och jag säger det)
-- [ ] Registreringsformulär fungerar (be mig fylla i e-post/lösenord)
-- [ ] Efter registrering: tydligt meddelande om verifieringsmejl → MANUELLT
-- [ ] Inloggning med verifierat konto → Tavlan
-- [ ] “Fortsätt med Google” — finns knappen? Om ja, testa endast om jag godkänner
-- [ ] Utloggning fungerar
-
-### 3. Tavlan
-- [ ] Metric-rutor / översikt visas
-- [ ] “+ Lägg till” eller motsvarande — skapa testansökan (Företag: “QA Test AB”, Roll: “Testare”)
-- [ ] Ny rad syns i pipeline
-- [ ] Byt status (t.ex. Ansökt → Intervju) — rad flyttas
-- [ ] Öppna ansökan — modal med detaljer och tidslinje
-- [ ] Sökfält filtrerar
-- [ ] Snabbfilter (Följ upp, Deadline, etc.) fungerar
-- [ ] “Idag & att göra”-panel på **Tavlan** om nästa steg är idag/igår (sätt datum om behövs)
-- [ ] CSV-export laddar ner fil
-
-### 4. Annonser (Platsbanken)
-- [ ] Fliken Annonser laddar filter
-- [ ] Sökning ger träffar (t.ex. “utvecklare”)
-- [ ] “Spara på tavlan” på en annons
-- [ ] Sparad sökning (om UI finns)
-- [ ] Match-indikator om CV finns
+### 4. Annonser
+- [ ] Sök Platsbanken, spara en annons
+- [ ] Passar mitt CV (om kompetenser finns)
+- [ ] Spara sökning (valfritt)
 
 ### 5. Profil & CV
-- [ ] Profil visar e-post/namn
-- [ ] Redigera profil → spara → bekräftelse
-- [ ] CV: öppna redigerare → ändra rubrik → Spara
-- [ ] Efter spara: redigeraren STÄNGER och “sparat”-meddelande syns
-- [ ] “Osparade ändringar” vid redigering utan spara
-- [ ] Ladda upp CV (PDF/TXT) — formulär förifylls (valfritt)
+- [ ] Redigera profil lätt
+- [ ] Markera kompetenser, spara CV
+- [ ] Radera konto/CV: rör ej
 
-### 6. Persistens & integritet
-- [ ] Gå till Profil → ladda om sidan (F5) → fortfarande Profil-flik
-- [ ] Footer → Integritetspolicy öppnas, text läsbar
-- [ ] Öppna /.well-known/security.txt i ny flik — 200 med Contact eller 404
+### 6. Mobil (DevTools ~390px)
+- [ ] Flikar, modal, ingen kritisk horisontell scroll
 
-### 7. Mejl & cron (markera MANUELLT)
-- [ ] Verifieringsmejl
-- [ ] Lösenordsåterställning
-- [ ] Daglig påminnelse (next_action_at igår + Render cron)
-- [ ] Veckosammanfattning (måndag eller --force)
+## Rapport
+1. Sammanfattning (3–5 meningar)
+2. Tabell: område | status | kommentar
+3. Problem P0–P3
+4. Klar för användning? Ja/Ja med reservation/Nej
 
----
-
-# DEL 2 — MOBILSIMULERING (samma flik, Chrome DevTools)
-
-Om du kan: öppna DevTools → Toggle device toolbar → välj iPhone 14 eller Pixel 7, bredd ~390px. Upprepa kort:
-
-- [ ] Navbar/flikar går att trycka utan överlapp
-- [ ] Tavla: skapa eller öppna ansökan
-- [ ] Annonser: scroll + spara annons
-- [ ] Profil/CV: spara utan att knapp döljs av tangentbord (simulera om möjligt)
-- [ ] Ingen horisontell scroll som klipper viktigt innehåll
-- [ ] Text läsbar utan zoom
-
-Rapportera enhet: “Simulerad mobil (DevTools)”.
-
----
-
-# DEL 3 — RIKIG TELEFON (endast om jag skrivit resultat nedan)
-
-Jag testar själv på telefon. När jag klistrar in mina anteckningar, sammanfatta dem i rapporten under “Riktig telefon”.
-
-[Mina mobilanteckningar — lämna tom om ej testat:]
--
-
----
-
-# SLUTRAPPORT (obligatorisk struktur)
-
-## Sammanfattning
-- Datum:
-- URL:
-- Dator: ✅/⚠️/❌ + en rad
-- Mobil (simulerad): ✅/⚠️/❌/⏭️ + en rad
-- Riktig telefon: ✅/⚠️/❌/⏭️ + en rad
-
-## Godkända tester
-| # | Område | Resultat | Kommentar |
-
-## Problem (prioriterat)
-| Prio | Område | Steg | Förväntat | Faktiskt | Förslag |
-
-## Manuellt kvar (mejl, cron, OAuth)
-- Punktlista
-
-## Rekommendation
-- Klar för användare? Ja/Nej + motivering
-
-Börja med DEL 1. Fråga mig om inloggning behövs innan du fortsätter.
-```
-
----
-
-## Efter dator-test: prompt för riktig telefon
-
-När du testat på mobilen själv, klistra in detta **efter** rapporten ovan (ny chatt eller samma):
-
-```
-Här är mina resultat från test på riktig telefon (Safari/Chrome):
-
-Enhet: [t.ex. iPhone 15 / Samsung S24]
-Webbläsare: [Safari / Chrome]
-URL: https://jobbjungeln.onrender.com
-
-Fungerade:
--
-
-Problem:
--
-
-Lägg in detta i QA-rapporten under “Riktig telefon” och uppdatera slutsatsen.
+Börja nu. Fråga om inloggning behövs.
 ```
 
 ---
@@ -168,9 +81,7 @@ Lägg in detta i QA-rapporten under “Riktig telefon” och uppdatera slutsatse
 
 | Situation | Gör så här |
 |-----------|------------|
-| Claude fastnar på inloggning | Logga in själv, skriv “Jag är inloggad, fortsätt från steg 3” |
-| Kallstart på Render | Vänta 30–60 s vid första laddning |
-| Vill inte skapa skräp | Använd befintligt konto; hoppa registrering |
-| Spara rapporten | Kopiera slutrapporten till issue, Notion eller `docs/test-rapport-YYYY-MM-DD.md` |
-
-Se även [18-manuell-test-och-cron.md](18-manuell-test-och-cron.md) för cron och mejl.
+| Vill ha allt | Använd [full QA-prompten](claude-chrome-full-qa-prompt.md) |
+| Claude fastnar på login | Logga in själv → “Fortsätt från Ansökningar” |
+| Kallstart | Vänta 30–60 s, ladda om |
+| Mejl / manuella jobb | Se [14-sakerhet-produktion.md](14-sakerhet-produktion.md) |

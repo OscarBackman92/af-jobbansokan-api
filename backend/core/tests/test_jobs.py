@@ -456,3 +456,15 @@ def test_match_is_case_insensitive_and_phrase_whitespace_flexible():
 def test_match_standalone_short_skill_is_found():
     result = match_skills(["Go", "R"], _job("Data", "Vi använder Go och R för analys."))
     assert set(result["matched"]) == {"Go", "R"}
+
+
+def test_dedupe_jobs_by_id_keeps_first():
+    rows = [
+        {"id": "1", "title": "A"},
+        {"id": "1", "title": "dup"},
+        {"id": "2", "title": "B"},
+        {"id": None, "title": "x"},
+        {"title": "no-id"},
+    ]
+    unique = views._dedupe_jobs_by_id(rows)
+    assert [row.get("title") for row in unique] == ["A", "B", "x", "no-id"]

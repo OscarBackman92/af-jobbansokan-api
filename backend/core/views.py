@@ -582,6 +582,23 @@ def _filter_jobs_by_cv_match(results, *, min_percent=GOOD_MATCH_PERCENT):
     ]
 
 
+def _dedupe_jobs_by_id(results: list) -> list:
+    """Drop duplicate JobTech ads that share the same id (keeps first)."""
+    seen: set[str] = set()
+    unique: list = []
+    for job in results or []:
+        job_id = job.get("id") if isinstance(job, dict) else None
+        if job_id is None:
+            unique.append(job)
+            continue
+        key = str(job_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(job)
+    return unique
+
+
 def _attach_cv_match(jobs: list[dict], *, evidence, skills) -> None:
     for job in jobs:
         posting = SimpleNamespace(title=job["title"], description=job["description"])
@@ -609,7 +626,9 @@ def _search_jobs_matching_cv(
     upstream_total = 0
     while scanned < MATCH_CV_SCAN_LIMIT:
         batch = min(MATCH_CV_BATCH_SIZE, MATCH_CV_SCAN_LIMIT - scanned)
-        data = _cached_jobtech_search(**{**search_kwargs, "offset": scanned, "limit": batch})
+        data = _cached_jobtech_search(
+            **{**search_kwargs, "offset": scanned, "limit": batch}
+        )
         upstream_total = int(data.get("total") or 0)
         results = list(data.get("results") or [])
         if not results:
@@ -620,9 +639,8 @@ def _search_jobs_matching_cv(
         if scanned >= upstream_total or len(results) < batch:
             break
 
-    matched.sort(
-        key=lambda job: -int((job.get("match") or {}).get("count") or 0)
-    )
+    matched = _dedupe_jobs_by_id(matched)
+    matched.sort(key=lambda job: -int((job.get("match") or {}).get("count") or 0))
     page = matched[max(0, offset) : max(0, offset) + max(1, limit)]
     return {
         "results": page,
@@ -751,6 +769,8 @@ def job_search(request):
             {"detail": "Kunde inte nå Platsbanken just nu. Försök igen strax."},
             status=drf_status.HTTP_502_BAD_GATEWAY,
         )
+
+    data["results"] = _dedupe_jobs_by_id(data.get("results") or [])
 
     if evidence or skills:
         _attach_cv_match(data["results"], evidence=evidence, skills=skills)
