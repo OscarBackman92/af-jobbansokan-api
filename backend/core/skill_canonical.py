@@ -40,9 +40,18 @@ _CANONICAL_GROUPS: list[tuple[str, list[str]]] = [
     ("Agile", ["agile", "agilt arbetssätt"]),
     ("Scrum", ["scrum"]),
     ("Projektledning", ["projektledning", "projektledare"]),
-    ("Ekonomiassistent", ["ekonomiassistent", "redovisningsassistent", "accounts payable"]),
-    ("IT-support", ["it-support", "it support", "helpdesk", "help desk", "service desk"]),
-    ("Orderadministration", ["orderadministration", "orderadministratör", "orderadministrator"]),
+    (
+        "Ekonomiassistent",
+        ["ekonomiassistent", "redovisningsassistent", "accounts payable"],
+    ),
+    (
+        "IT-support",
+        ["it-support", "it support", "helpdesk", "help desk", "service desk"],
+    ),
+    (
+        "Orderadministration",
+        ["orderadministration", "orderadministratör", "orderadministrator"],
+    ),
     ("Inköp", ["inköp", "inkop"]),
     ("Upphandling", ["upphandling", "upphandlare"]),
     ("Bokföring", ["bokföring", "bokforing", "bokförare"]),

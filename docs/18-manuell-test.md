@@ -1,84 +1,13 @@
-# Manuell testguide + cron-jobb på Render
+# Manuell testguide
 
-Steg-för-steg för att sätta upp bakgrundsjobben i produktion och verifiera
-alla funktioner på dator och telefon. Produktions-URL i exemplen:
-**https://jobbjungeln.onrender.com** — byt om du har egen domän.
+Steg-för-steg för att verifiera alla funktioner på dator och telefon.
+Produktions-URL i exemplen: **https://jobbjungeln.onrender.com** — byt om
+du har egen domän.
 
----
-
-## Del 1 — Cron-jobb på Render
-
-Appen har **tre** cron-jobb i `render.yaml`:
-
-| Cron | Schema (UTC) | Kommando | Syfte |
-|------|----------------|----------|--------|
-| `ansokt-reminders` | Varje dag 06:00 | `send_reminders` | Dagliga påminnelser |
-| `ansokt-prune` | Varje dag 06:15 | `prune_inactive_accounts` | GDPR-gallring (varning + radering) |
-| `ansokt-weekly-summary` | Måndagar 07:00 | `send_weekly_summary` | Veckosammanfattning + digest för sparade sökningar |
-
-Render kör **ett kommando per cron** (ingen `sh -c` / `&&`). Prune körs 15 minuter efter
-påminnelser.
-
-### A. Ny deploy via Blueprint (enklast om du kan deploya om)
-
-**Krav:** `DATABASE_URL` måste finnas på webbtjänsten innan första start —
-utan den kraschar migrering vid `DJANGO_DEBUG=0`.
-
-1. Logga in på [render.com](https://render.com).
-2. Gå till ditt **Blueprint** (eller **New → Blueprint** om du sätter upp från scratch).
-3. Välj GitHub-repot `af-jobbansokan-api` och branch `main`.
-4. Render läser `render.yaml` och skapar/uppdaterar tjänster.
-5. Efter deploy: **Dashboard → Cron Jobs** — kontrollera att alla tre jobben finns:
-   - `ansokt-reminders`
-   - `ansokt-prune`
-   - `ansokt-weekly-summary`
-6. Öppna varje cron → **Environment** — verifiera att dessa finns (ärvs från web):
-   - `BREVO_API_KEY` eller `EMAIL_HOST` (mejl måste fungera)
-   - `DEFAULT_FROM_EMAIL`
-   - `FRONTEND_URL` (t.ex. `https://jobbjungeln.onrender.com`)
-   - `DATABASE_URL`, `DJANGO_SECRET_KEY`
-
-### B. Lägg till veckocron manuellt (om du inte vill deploya om hela blueprint)
-
-Om `ansokt-reminders` redan finns men `ansokt-weekly-summary` saknas:
-
-1. **Dashboard → Cron Jobs → New Cron Job**.
-2. **Name:** `ansokt-weekly-summary`
-3. **Region:** Frankfurt
-4. **Schedule:** `0 7 * * 1` (måndagar 07:00 UTC ≈ 08:00 svensk sommartid)
-5. **Command:**
-   ```bash
-   python backend/manage.py send_weekly_summary
-   ```
-6. **Dockerfile path:** `./Dockerfile` (samma som webbtjänsten)
-7. **Environment** — kopiera samma variabler som `ansokt-reminders`:
-   - `DJANGO_DEBUG=0`
-   - `PYTHONPATH=/app/backend`
-   - `DJANGO_SETTINGS_MODULE=config.settings`
-   - `DATABASE_URL` (samma som web)
-   - `DJANGO_SECRET_KEY` (samma som web)
-   - `BREVO_API_KEY`, `DEFAULT_FROM_EMAIL`, `FRONTEND_URL`
-8. Spara och kör **Trigger Run** en gång för att testa (se nedan).
-
-### C. Testa cron utan att vänta till måndag
-
-**På Render (rekommenderat efter setup):**
-
-1. Öppna cron-jobbet `ansokt-weekly-summary`.
-2. Klicka **Trigger Run** / **Run now**.
-3. Öppna **Logs** — du ska se antingen:
-   - `Not Monday; skipping` → normalt om det inte är måndag. Kör då via Shell (steg D).
-   - `Sent 1, skipped …` eller `Would send to …` om du kör med dry-run via shell.
-
-**Via Render Shell** (om du har betald web-plan med shell):
-
-```bash
-cd /app
-python backend/manage.py send_weekly_summary --dry-run --force
-python backend/manage.py send_weekly_summary --force
-```
-
-`--force` kör även när det inte är måndag och ignorerar “redan skickat denna vecka”.
+Management-kommandona `send_reminders`, `prune_inactive_accounts` och
+`send_weekly_summary` finns kvar och kan köras **manuellt** när du behöver
+testa mejl eller gallring. De är **inte** schemalagda i produktion (inga
+Render cron-jobb).
 
 **Lokalt** (mot dev-databas + locmem-mail):
 
@@ -86,29 +15,17 @@ python backend/manage.py send_weekly_summary --force
 cd c:\Users\janos\af-jobbansokan-api
 $env:PYTHONPATH="backend"
 $env:DJANGO_DEBUG="1"
+python backend/manage.py send_reminders --dry-run
 python backend/manage.py send_weekly_summary --dry-run --force
+python backend/manage.py prune_inactive_accounts --dry-run
 ```
 
-### D. Testa dagliga påminnelser
-
-1. I appen: skapa en ansökan med **Nästa steg** = igår eller idag.
-2. På Render: öppna `ansokt-reminders` → **Trigger Run** (eller vänta till 06:00 UTC).
-3. Kontrollera inkorgen — ämne: *"Jobbsöket — dags att följa upp"*.
-
-### E. Felsökning cron
-
-| Symptom | Åtgärd |
-|---------|--------|
-| `E-post är inte konfigurerad` | Sätt `BREVO_API_KEY` på web **och** cron; deploya om cron efter ändring |
-| Brevo 401 *unrecognised IP* i Render Logs | Brevo → Security → **Authorized IPs** — lägg till Renders utgående IP, eller **inaktivera IP-restriktion** (bättre på Render) |
-| Inga mejl trots “Sent” | Kolla skräppost; verifiera avsändare i Brevo |
-| `Not Monday; skipping` | Förväntat — använd `--force` i shell eller vänta till måndag |
-| Cron finns inte | Deploya blueprint på nytt, eller använd [claude-chrome-render-cron-prompt.md](claude-chrome-render-cron-prompt.md) |
-| Migration saknas | Web deploy kör `migrate` vid start; cron behöver samma DB — deploya web först |
+`--force` på veckosammanfattningen kör även när det inte är måndag och
+ignorerar “redan skickat denna vecka”.
 
 ---
 
-## Del 2 — Manuell test på dator
+## Del 1 — Manuell test på dator
 
 Använd **Chrome** eller **Edge**. Ha DevTools (F12) öppet vid inloggning om något strular.
 
@@ -176,15 +93,15 @@ Använd **Chrome** eller **Edge**. Ha DevTools (F12) öppet vid inloggning om n�
 |------|----------------|---------------------|
 | Verifiering | Registrering | Jobbsöket + verify |
 | Återställ lösenord | Glömt lösenord | reset |
-| Daglig påminnelse | `next_action_at` ≤ idag + cron | *dags att följa upp* |
-| Veckosammanfattning | Måndag + aktivitet på tavlan / sparad sökning | *din veckosammanfattning* |
-| Inaktivitet (24 mån) | Sällsynt — cron gallring | *raderas om 30 dagar* |
+| Daglig påminnelse | `next_action_at` ≤ idag + kör `send_reminders` manuellt om du testar e-post | *dags att följa upp* |
+| Veckosammanfattning | Kör `send_weekly_summary --force` manuellt om du testar e-post | *din veckosammanfattning* |
+| Inaktivitet (24 mån) | Sällsynt — kör `prune_inactive_accounts` manuellt om du testar | *raderas om 30 dagar* |
 
 För veckomejl: ha minst en ansökan med aktivitet förra veckan eller `next_action_at` denna vecka, eller sparad sökning med nya annonser — annars skickas inget mejl.
 
 ---
 
-## Del 3 — Manuell test på telefon
+## Del 2 — Manuell test på telefon
 
 Samma URL som på dator. Testa i **Safari** (iPhone) och **Chrome** (Android).
 
@@ -221,12 +138,9 @@ Samma URL som på dator. Testa i **Safari** (iPhone) och **Chrome** (Android).
 
 ---
 
-## Del 4 — Snabb checklista (skriv ut)
+## Del 3 — Snabb checklista (skriv ut)
 
 ```
-[ ] Cron ansokt-reminders finns och har BREVO/EMAIL + FRONTEND_URL
-[ ] Cron ansokt-prune finns (GDPR) + Trigger Run testad
-[ ] Cron ansokt-weekly-summary finns + Trigger Run testad
 [ ] Registrering + verifieringsmejl
 [ ] Inloggning + utloggning
 [ ] Lägg till / flytta ansökan på tavlan
@@ -236,8 +150,8 @@ Samma URL som på dator. Testa i **Safari** (iPhone) och **Chrome** (Android).
 [ ] CSV-export
 [ ] Integritetspolicy i footer
 [ ] Mobil: samma flöden utan layoutproblem
-[ ] Påminnelsemejl (sätt nästa steg igår → kör cron)
-[ ] Veckomejl (--force i shell eller vänta till måndag)
+[ ] (Valfritt) Påminnelsemejl — kör send_reminders manuellt om du testar e-post
+[ ] (Valfritt) Veckomejl — kör send_weekly_summary --force manuellt om du testar e-post
 ```
 
 ---

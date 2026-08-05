@@ -201,7 +201,7 @@ class OperatorProfile(models.Model):
     operator_id = models.CharField(max_length=16, unique=True)
     # Set when the inactivity warning mail is sent; cleared on activity.
     deletion_warned_at = models.DateTimeField(null=True, blank=True)
-    # Idempotency for the Monday weekly summary cron.
+    # Idempotency for the Monday weekly summary (send_weekly_summary).
     weekly_summary_sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

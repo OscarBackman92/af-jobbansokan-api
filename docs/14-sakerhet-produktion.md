@@ -5,7 +5,7 @@ Steg för säkerhetsåtgärder 1–6. Kodändringar för 4–6 sker i repot;
 
 Senaste säkerhetsaudit: [19-sakerhetsaudit-2026-07-10.md](19-sakerhetsaudit-2026-07-10.md).
 
-## 0. Obligatoriska miljövariabler (Render web + cron)
+## 0. Obligatoriska miljövariabler (Render web)
 
 | Variabel | Krävs | Kommentar |
 |----------|-------|-----------|
@@ -18,8 +18,13 @@ Senaste säkerhetsaudit: [19-sakerhetsaudit-2026-07-10.md](19-sakerhetsaudit-202
 | `CONTACT_EMAIL` | Ja | Integritetspolicy + `/.well-known/security.txt` |
 | `DJANGO_SUPERUSER_USERNAME` | Ja | Unikt — inte `admin` |
 
-Cron-jobb (`ansokt-reminders`, `ansokt-prune`, `ansokt-weekly-summary`) måste
-ärva samma `DATABASE_URL` och `DJANGO_SECRET_KEY` som webbtjänsten.
+Management-kommandona `send_reminders`, `prune_inactive_accounts` och
+`send_weekly_summary` finns kvar och körs **manuellt** vid behov — inga
+schemalagda cron-jobb i produktion.
+
+**Free plan:** webbtjänsten sover efter 15 min inaktivitet (~1 min kallstart),
+512 MB / 0.1 CPU, ingen persistent disk, ingen shell/SSH, ingen horisontell
+skalning. Se README → Deployment.
 
 **Docker:** `collectstatic` körs i startkommandot (runtime), inte vid
 image-build — `DATABASE_URL` behövs bara när containern startar.
@@ -33,17 +38,18 @@ backuper och SQL-konsol; Django på Render ansluter via `DATABASE_URL`.
 
 1. Skapa Supabase-projekt i **EU** (t.ex. Frankfurt / `eu-central-1`).
 2. Kopiera **Session pooler** connection string (port **5432**, inte Transaction 6543).
-3. Sätt `DATABASE_URL` på Render-webbtjänsten **jobbjungeln** (cron ärver värdet om blueprint länkar dem).
+3. Sätt `DATABASE_URL` på Render-webbtjänsten **jobbjungeln**.
 4. Migrera data från gammal databas om du byter leverantör — se
    [claude-chrome-supabase-prompt.md](claude-chrome-supabase-prompt.md).
 
 **Befintlig deploy med Render Postgres:**
 
 1. Exportera med `pg_dump`, importera till Supabase med `pg_restore`.
-2. Uppdatera `DATABASE_URL` på web + verifiera cron.
+2. Uppdatera `DATABASE_URL` på web.
 3. Ta bort Render Postgres när allt fungerar (sparar ~$6/mån).
 
-Webbtjänst: **Starter** i **Frankfurt** (samma region som Supabase EU = lägre latency).
+Webbtjänst: **Free** i **Frankfurt** (samma region som Supabase EU = lägre latency).
+Uppgradera till betald plan vid publik lansering om kallstart/uptime blir blockerare.
 
 ## 2. Sentry Allowed Domains
 
@@ -71,8 +77,8 @@ inloggningen gissad.
    `DJANGO_SUPERUSER_USERNAME` till något unikt (t.ex. `ansokt-ops-jan`).
 2. Sätt `DJANGO_SUPERUSER_EMAIL` till din e-post.
 3. Lösenord genereras vid första deploy (`generateValue`) eller sätt manuellt.
-4. Om superuser redan skapats med `admin`: skapa ny superuser i Render Shell
-   eller lokalt mot prod-DB, radera `admin`.
+4. Om superuser redan skapats med `admin`: skapa ny superuser lokalt mot
+   prod-DB (Free-plan har ingen Render Shell), radera `admin`.
 
 Deploy-check `core.W002` varnar om användarnamn är `admin`, `root`, m.fl.
 
@@ -128,7 +134,7 @@ Om registrering ger *"Vi kunde inte skicka verifieringsmejlet"* men
 *unrecognised IP address*.
 
 **Orsak:** Brevo → Security → **Authorized IPs** blockerar Renders
-utgående IP (ändras vid omdeploy på free/starter).
+utgående IP (ändras vid omdeploy på free).
 
 **Åtgärd (välj en):**
 
@@ -139,7 +145,8 @@ utgående IP (ändras vid omdeploy på free/starter).
 
 Efter kod-deploy flaggar `/health/` ogiltig Brevo-nyckel; IP-block syns
 fortfarande först vid faktiskt utskick — testa med
-`python backend/manage.py send_test_email dig@epost.se` i Render Shell.
+`python backend/manage.py send_test_email dig@epost.se` lokalt mot prod-DB
+(Free-plan har ingen Render Shell).
 
 ## Verifiera efter deploy
 

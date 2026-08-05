@@ -60,9 +60,8 @@ Kontrollera att dessa **finns** (ja/nej — inte visa värdena):
 
 Om BREVO_API_KEY saknas eller är gammal:
 1. Be mig gå till Brevo → SMTP & API → API Keys → skapa ny **v3 Transactional**-nyckel
-2. Be mig klistra in den **endast** i Render Environment (jag gör det — du ser inte nyckeln)
-3. Upprepa för **cron-jobb**: ansokt-reminders och ansokt-weekly-summary (samma nyckel)
-4. **Manual Deploy** på web service
+2. Be mig klistra in den **endast** i Render Environment på webbtjänsten (jag gör det — du ser inte nyckeln)
+3. **Manual Deploy** på web service
 
 ---
 
@@ -132,7 +131,7 @@ Felsökningsmatris:
 # SLUTRAPPORT
 
 ## Åtgärder utförda (checklista)
-- [ ] BREVO_API_KEY uppdaterad i Render (web + cron) — utan att exponera i chat
+- [ ] BREVO_API_KEY uppdaterad i Render (web) — utan att exponera i chat
 - [ ] DEFAULT_FROM_EMAIL matchar verifierad Brevo-avsändare
 - [ ] Manual deploy körd
 - [ ] send_test_email eller registrering lyckades
@@ -149,8 +148,8 @@ Felsökningsmatris:
 Ja / Nej / Delvis — motivering i en mening.
 
 ## Efter lyckad fix — gör detta hållbart
-1. **Brevo Authorized IPs:** Antingen lägg till Renders IP varje gång den ändras, eller **inaktivera IP-restriktion** i Brevo (rekommenderat för Render free/starter — IP är inte statisk).
-2. **Cron:** `ansokt-reminders` och `ansokt-weekly-summary` använder samma Brevo-nyckel och samma utgående IP — ska fungera nu; bekräfta vid nästa cron-körning.
+1. **Brevo Authorized IPs:** Antingen lägg till Renders IP varje gång den ändras, eller **inaktivera IP-restriktion** i Brevo (rekommenderat för Render free — IP är inte statisk).
+2. **Påminnelser / veckosammanfattning:** kör `send_reminders` / `send_weekly_summary` manuellt om du testar e-post (inga schemalagda cron-jobb i produktion).
 3. **Deploy** senaste kod med förbättrad `/health/` så ogiltig Brevo-nyckel flaggas (ersätter falskt friskintyg).
 
 Börja med STEG 1. Påminn mig om säkerhetsreglerna om jag råkar klistra in en API-nyckel.
@@ -171,4 +170,4 @@ Svar från Claude ska vara:
 ## Relaterat
 
 - [claude-chrome-verification-email-prompt.md](claude-chrome-verification-email-prompt.md) — testa om mejl fungerar
-- [18-manuell-test-och-cron.md](18-manuell-test-och-cron.md) — cron och manuell test
+- [18-manuell-test.md](18-manuell-test.md) — manuell test

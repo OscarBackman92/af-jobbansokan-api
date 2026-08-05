@@ -50,7 +50,8 @@ Fokus: gör appen trygg att släppa till riktiga användare.
 - [x] Integritetspolicy-sida + kort datahanteringssammanfattning (länkas i footern).
 - [x] Health-endpoint varnar om `EMAIL_HOST` saknas i produktion.
 - [x] Deploy-checks (`core.E001`, `core.W001`) vid `manage.py check --deploy`.
-- [x] Render Cron för dagliga påminnelser (`send_reminders`, 06:00 UTC).
+- [x] Management-kommando `send_reminders` för dagliga påminnelser (körs manuellt;
+      inga schemalagda cron-jobb i produktion).
 
 ### B. Kvalitet
 - [x] Inför Vitest + React Testing Library i `frontend/`.
@@ -108,7 +109,8 @@ Fokus: gör matchningen till en verklig konkurrensfördel.
 - [ ] Veckosammanfattning: skickade ansökningar, uppföljningar, bokade intervjuer.
 
 ### Skala (vid behov)
-- [ ] Bakgrundsjobb för påminnelser och digests (Render cron eller Celery/RQ).
+- [ ] Bakgrundsjobb för påminnelser och digests vid behov (management-kommandon
+      körs manuellt idag; Celery/RQ eller schemaläggning om volymen växer).
 - [ ] Kortlivad cache för JobTech-sökningar.
 - [ ] Postgres fulltextsök om lokal annonsdata växer.
 - [ ] Strukturerad loggning, mätvärden och larm.

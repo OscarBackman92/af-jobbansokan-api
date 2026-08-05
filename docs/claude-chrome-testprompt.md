@@ -8,7 +8,7 @@ Claude in Chrome med appen öppen på rätt URL.
 1. Öppna **https://jobbjungeln.onrender.com** i Chrome (eller din lokala URL).
 2. Ha ett **testkonto** redo (e-post du kan läsa). Dela **aldrig** lösenord i chatten —
    fyll i lösenord själv när Claude ber dig.
-3. **Mejl** (verifiering, återställning, cron) kan Claude normalt **inte** läsa —
+3. **Mejl** (verifiering, återställning, påminnelser) kan Claude normalt **inte** läsa —
    markera dessa som *“kräver manuell kontroll”* i rapporten.
 4. **Riktig telefon:** Claude in Chrome styr bara Chrome på datorn. För telefon
    använder du antingen **Del 2** (DevTools mobilsimulering) eller **Del 3**
@@ -24,7 +24,7 @@ Du är QA-testare för webbappen Jobbsöket (jobbsöknings-tavla). Jag har appen
 ## Regler
 - Fråga mig innan du raderar kontot eller skickar riktiga mejl till okända adresser.
 - Be mig fylla i lösenord och e-postverifiering själv — läs inte upp eller gissa lösenord.
-- Om du inte kan slutföra ett steg (t.ex. mejl, Google OAuth, Render-cron), markera det som BLOCKERAT eller MANUELLT — förklara varför.
+- Om du inte kan slutföra ett steg (t.ex. mejl, Google OAuth), markera det som BLOCKERAT eller MANUELLT — förklara varför.
 - Ta korta noteringar om vad du ser (texter, knappar, felmeddelanden).
 - Vid fel: beskriv exakt vad som hände, vilken sida/flik, och om möjligt konsolfel (F12).
 
@@ -84,11 +84,11 @@ Gå igenom i ordning. Efter varje avsnitt: ✅ OK, ⚠️ DELVIS, ❌ FAIL, elle
 - [ ] Footer → Integritetspolicy öppnas, text läsbar
 - [ ] Öppna /.well-known/security.txt i ny flik — 200 med Contact eller 404
 
-### 7. Mejl & cron (markera MANUELLT)
+### 7. Mejl (markera MANUELLT)
 - [ ] Verifieringsmejl
 - [ ] Lösenordsåterställning
-- [ ] Daglig påminnelse (next_action_at igår + Render cron)
-- [ ] Veckosammanfattning (måndag eller --force)
+- [ ] Daglig påminnelse (next_action_at igår + kör `send_reminders` manuellt om du testar e-post)
+- [ ] Veckosammanfattning (kör `send_weekly_summary --force` manuellt om du testar e-post)
 
 ---
 
@@ -131,7 +131,7 @@ Jag testar själv på telefon. När jag klistrar in mina anteckningar, sammanfat
 ## Problem (prioriterat)
 | Prio | Område | Steg | Förväntat | Faktiskt | Förslag |
 
-## Manuellt kvar (mejl, cron, OAuth)
+## Manuellt kvar (mejl, OAuth)
 - Punktlista
 
 ## Rekommendation
@@ -173,4 +173,4 @@ Lägg in detta i QA-rapporten under “Riktig telefon” och uppdatera slutsatse
 | Vill inte skapa skräp | Använd befintligt konto; hoppa registrering |
 | Spara rapporten | Kopiera slutrapporten till issue, Notion eller `docs/test-rapport-YYYY-MM-DD.md` |
 
-Se även [18-manuell-test-och-cron.md](18-manuell-test-och-cron.md) för cron och mejl.
+Se även [18-manuell-test.md](18-manuell-test.md) för manuell test och mejl.

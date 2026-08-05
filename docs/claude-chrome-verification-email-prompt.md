@@ -173,4 +173,4 @@ Fortsätt med STEG 3–4 i testplanen.
 | 201 men inget mejl | Skräppost, eller avsändare ej verifierad |
 | Mejl men trasig länk | `FRONTEND_URL` fel i Render |
 
-Se [18-manuell-test-och-cron.md](18-manuell-test-och-cron.md) och Brevo-dashboard → Transactional → Logs.
+Se [18-manuell-test.md](18-manuell-test.md) och Brevo-dashboard → Transactional → Logs.

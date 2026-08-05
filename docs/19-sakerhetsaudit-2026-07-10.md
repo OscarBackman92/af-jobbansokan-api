@@ -73,7 +73,7 @@ GDPR-steg utanför repot.
 ### Ingen åtgärd krävs nu
 
 - Admin på `/admin/` — skyddas av unikt användarnamn + lösenord (check `core.W002`).
-- Cron-jobb ärver `DATABASE_URL` från web om blueprint/manuell env är korrekt.
+- Inga cron-jobb i produktion; management-kommandon körs manuellt vid behov.
 - Uppladdade CV-filer persisteras inte (`ResumeParseView`, modellkommentar).
 
 ---
@@ -122,7 +122,7 @@ Biträdesavtal (DPA): Render, Brevo, Sentry, Google — se
 | [14-sakerhet-produktion.md](14-sakerhet-produktion.md) | Produktionschecklista |
 | [16-incidentrutin.md](16-incidentrutin.md) | Personuppgiftsincident |
 | [17-registerforteckning.md](17-registerforteckning.md) | Art. 30-register |
-| [18-manuell-test-och-cron.md](18-manuell-test-och-cron.md) | Test + cron |
+| [18-manuell-test.md](18-manuell-test.md) | Manuell test |
 
 **Nästa granskning:** vid större auth-ändring, ny tredjepartsintegration,
 eller före betald/marknadsförd lansering med egen domän.

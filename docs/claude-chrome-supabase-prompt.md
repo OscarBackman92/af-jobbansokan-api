@@ -31,7 +31,7 @@ Du hjälper mig flytta Jobbsökets produktionsdatabas från Render Postgres till
 ## Målbild
 - Supabase-projekt i **EU** (Frankfurt / eu-central-1 eller närmaste EU-region).
 - `DATABASE_URL` på Render-webbtjänsten **jobbjungeln** pekar på Supabase Session pooler (port **5432**).
-- Cron-jobb **ansokt-reminders**, **ansokt-prune** och **ansokt-weekly-summary** ärver `DATABASE_URL` från web om blueprint länkar dem.
+- Inga cron-jobb i produktion — management-kommandon (`send_reminders`, `prune_inactive_accounts`, `send_weekly_summary`) körs manuellt vid behov.
 - All befintlig data migrerad; appen fungerar på https://jobbjungeln.onrender.com/app/
 
 ---
@@ -97,11 +97,7 @@ Markera DEL 1 som klar när jag har en fungerande Session pooler URI.
    - Sätt **DATABASE_URL** = Supabase Session pooler URI (med `sslmode=require`)
    - Spara → **Manual Deploy** eller vänta på auto-deploy
 
-2. Kontrollera cron-jobb:
-   - **ansokt-reminders**, **ansokt-prune** och **ansokt-weekly-summary** → Environment
-   - `DATABASE_URL` ska **ärvda** från web (fromService) eller ha samma värde
-
-3. Efter deploy: öppna `https://jobbjungeln.onrender.com/health/` — ska returnera `{"status":"ok",...}`
+2. Efter deploy: öppna `https://jobbjungeln.onrender.com/health/` — ska returnera `{"status":"ok",...}`
 
 ---
 
@@ -113,7 +109,7 @@ Be mig testa (jag rapporterar resultat):
 - [ ] Logga in på `/app/` med befintligt konto
 - [ ] Tavlan visar tidigare ansökningar (data migrerad)
 - [ ] Skapa en testansökan och ladda om sidan — den finns kvar
-- [ ] (Valfritt) Render → cron → **Trigger Run** på reminders — inget databasfel i loggen
+- [ ] (Valfritt) Kör `send_reminders --dry-run` lokalt mot prod-DB om du testar DB-anslutning — inget databasfel
 
 ---
 

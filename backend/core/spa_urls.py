@@ -21,7 +21,7 @@ def spa_public_origin(request: HttpRequest | None = None) -> str:
 
 
 def spa_app_url(*, request: HttpRequest | None = None, query: str = "") -> str:
-    """Absolute URL to the SPA entry (e-mail links, cron copy)."""
+    """Absolute URL to the SPA entry (e-mail links, reminder copy)."""
     url = f"{spa_public_origin(request)}{spa_path_prefix()}"
     if query:
         url = f"{url}?{query.lstrip('?')}"

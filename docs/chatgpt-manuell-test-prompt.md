@@ -14,7 +14,7 @@ rapporten klistras sedan in i **Cursor** till utvecklingsagenten.
 1. Öppna appen i Chrome (dator) — hårdladda en gång (Ctrl+Shift+R).
 2. Ha en **test-e-post** du kan läsa (Gmail med +alias fungerar).
 3. **Lösenord** fyller testaren i själv — ChatGPT ska aldrig be om eller upprepa lösenord.
-4. För mejl- och cron-steg: markera **MANUELLT** om testaren måste verifiera inkorgen eller Render.
+4. För mejl-steg: markera **MANUELLT** om testaren måste verifiera inkorgen eller köra management-kommandon manuellt.
 5. Ha gärna **DevTools** (F12) tillgängligt vid API-fel.
 
 ---
@@ -48,7 +48,7 @@ Du är senior QA-testare för webbappen Jobbsöket. Din uppgift är att guida mi
 - ⚠️ DELVIS — fungerar men med brister
 - ❌ FAIL — trasigt eller blockerande
 - ⏭️ HOPPAT — ej testat (ange varför)
-- 📧 MANUELLT — jag verifierade utanför appen (mejl, cron, telefon)
+- 📧 MANUELLT — jag verifierade utanför appen (mejl, management-kommando, telefon)
 
 ---
 
@@ -358,19 +358,19 @@ Testa var för sig (rensa mellan om behövs):
 
 ---
 
-## MODUL 8 — E-post & cron (📧 MANUELLT / Render)
+## MODUL 8 — E-post (📧 MANUELLT)
 
 ### 8.1 Daglig påminnelse
 1. Sätt nästa steg = igår på aktiv ansökan.
-2. Trigger `ansokt-reminders` på Render ELLER vänta till 06:00 UTC.
+2. Kör `send_reminders` manuellt om du testar e-post (inga schemalagda cron-jobb).
 3. Mejl: "Jobbsöket — dags att följa upp"?
 
 ### 8.2 Veckosammanfattning
-1. Trigger `ansokt-weekly-summary` med --force ELLER vänta måndag 07:00 UTC.
+1. Kör `send_weekly_summary --force` manuellt om du testar e-post.
 2. Mejl med pipeline-sammanfattning?
 
-### 8.3 Render cron finns
-- Dashboard: `ansokt-reminders` + `ansokt-weekly-summary` finns?
+### 8.3 Management-kommandon (ej schemalagda)
+- Kommandona `send_reminders`, `prune_inactive_accounts`, `send_weekly_summary` finns kvar och körs manuellt vid behov.
 
 ---
 
@@ -411,7 +411,7 @@ När alla moduler är klara, skriv rapporten EXAKT i detta format:
 | 5 Profil/CV | | | |
 | 6 Design/a11y | | | |
 | 7 Mobil | | | |
-| 8 E-post/cron | | | |
+| 8 E-post | | | |
 | 9 Säkerhet | | | |
 
 ### Blockerare (måste fixas före release)
@@ -430,13 +430,13 @@ När alla moduler är klara, skriv rapporten EXAKT i detta format:
 |-------|---------|----------|----------|
 | t.ex. 4.3 | Paginering klick 2 | ❌ | scrollY 4057 efter Nästa |
 
-### Mejl & cron (MANUELLT)
+### Mejl (MANUELLT)
 | Flöde | Resultat | Anteckning |
 |-------|----------|------------|
 | Verifiering | | |
 | Lösenordsåterställning | | |
-| Daglig påminnelse | | |
-| Veckosammanfattning | | |
+| Daglig påminnelse (kör kommando manuellt) | | |
+| Veckosammanfattning (kör kommando manuellt) | | |
 
 ### Godkännande
 - **Redo för produktion:** Ja / Nej / Ja med reservation
@@ -472,7 +472,7 @@ Här är manuell testrapport från ChatGPT — åtgärda blockerare och priorite
 
 | Dokument | Syfte |
 |----------|--------|
-| [18-manuell-test-och-cron.md](18-manuell-test-och-cron.md) | Cron-setup + kort checklista |
+| [18-manuell-test.md](18-manuell-test.md) | Manuell testguide + checklista |
 | [claude-chrome-deploy-qa-prompt.md](claude-chrome-deploy-qa-prompt.md) | Snabb deploy-QA i Chrome |
 | [claude-chrome-testprompt.md](claude-chrome-testprompt.md) | Claude in Chrome bred QA |
 | [design-audit-2026-07-03.md](design-audit-2026-07-03.md) | Designgranskning juli 2026 |
