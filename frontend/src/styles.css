@@ -1486,6 +1486,27 @@ tbody tr:last-child td {
   box-shadow: none;
 }
 
+.month-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.month-filter-field {
+  display: flex;
+  flex: 1 1 14rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.month-filter-field select {
+  width: 100%;
+  margin-top: 0;
+}
+
 .quick-filters {
   display: flex;
   flex-wrap: nowrap;
@@ -3160,6 +3181,43 @@ tbody tr:last-child td {
   gap: 0.3rem;
   flex: 1;
   min-width: 36px;
+}
+
+button.chart-col {
+  appearance: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0.2rem 0.15rem;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+button.chart-col:hover {
+  background: var(--hover);
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+
+button.chart-col:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.chart-col--active .chart-bar {
+  background: var(--brand);
+  border-color: transparent;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 28%, transparent);
+}
+
+.chart-col--active .chart-count,
+.chart-col--active .chart-label {
+  color: var(--brand);
+  font-weight: 700;
 }
 
 .chart-bar {

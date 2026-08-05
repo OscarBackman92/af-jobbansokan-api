@@ -2,11 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildTodayActions,
+  collectMonthOptions,
   compareApplicationsByApplied,
   daysUntil,
+  encodeMonthFilter,
+  formatMonthLabel,
   groupTodayActions,
   hasDeadlineSoon,
   isFollowUp,
+  matchesMonthFilter,
+  parseMonthFilter,
   SILENCE_FOLLOW_UP_DAYS,
 } from "./dates.js";
 
@@ -111,6 +116,49 @@ describe("compareApplicationsByApplied", () => {
     ];
     const sorted = [...rows].sort(compareApplicationsByApplied);
     expect(sorted.map((r) => r.id)).toEqual([3, 1, 2]);
+  });
+});
+
+describe("month filter helpers", () => {
+  it("encodes and parses applied/saved month filters", () => {
+    expect(encodeMonthFilter("applied", "2026-03")).toBe("applied:2026-03");
+    expect(encodeMonthFilter("saved", "2026-01")).toBe("saved:2026-01");
+    expect(encodeMonthFilter("applied", "")).toBe("");
+    expect(parseMonthFilter("applied:2026-03")).toEqual({
+      field: "applied",
+      monthKey: "2026-03",
+    });
+    expect(parseMonthFilter("nope")).toBeNull();
+  });
+
+  it("formats Swedish month labels", () => {
+    expect(formatMonthLabel("2026-03")).toBe("mars 2026");
+    expect(formatMonthLabel("2025-12")).toBe("december 2025");
+  });
+
+  it("matches applied and saved months independently", () => {
+    const row = {
+      applied_at: "2026-03-12",
+      created_at: "2026-01-05T10:00:00Z",
+    };
+    expect(matchesMonthFilter(row, "")).toBe(true);
+    expect(matchesMonthFilter(row, "applied:2026-03")).toBe(true);
+    expect(matchesMonthFilter(row, "applied:2026-02")).toBe(false);
+    expect(matchesMonthFilter(row, "saved:2026-01")).toBe(true);
+    expect(matchesMonthFilter(row, "saved:2026-03")).toBe(false);
+  });
+
+  it("collects unique months newest first", () => {
+    const options = collectMonthOptions(
+      [
+        { applied_at: "2026-01-02", created_at: "2025-12-01T00:00:00Z" },
+        { applied_at: "2026-03-10", created_at: "2026-02-01T00:00:00Z" },
+        { applied_at: null, created_at: "2026-02-15T00:00:00Z" },
+      ],
+      "applied"
+    );
+    expect(options.map((o) => o.key)).toEqual(["2026-03", "2026-01"]);
+    expect(options[0].label).toBe("mars 2026");
   });
 });
 

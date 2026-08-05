@@ -75,6 +75,82 @@ export function compareApplicationsByApplied(a, b) {
   return (b.updated_at || "").localeCompare(a.updated_at || "");
 }
 
+/** Swedish month names for AF-style month filters (index 0 = januari). */
+export const MONTH_LABELS_SV = [
+  "januari",
+  "februari",
+  "mars",
+  "april",
+  "maj",
+  "juni",
+  "juli",
+  "augusti",
+  "september",
+  "oktober",
+  "november",
+  "december",
+];
+
+/** YYYY-MM from a date or datetime string; empty if missing/invalid. */
+export function monthKeyFromIso(value) {
+  if (!value) return "";
+  const key = String(value).slice(0, 7);
+  return /^\d{4}-\d{2}$/.test(key) ? key : "";
+}
+
+/** Month key for applied_at (ansökt) or created_at (sparad). */
+export function applicationMonthKey(application, field) {
+  if (field === "applied") return monthKeyFromIso(application.applied_at);
+  if (field === "saved") return monthKeyFromIso(application.created_at);
+  return "";
+}
+
+/** Encode board month filter as `field:YYYY-MM`, or "" for no filter. */
+export function encodeMonthFilter(field, monthKey) {
+  if (!field || !monthKey) return "";
+  if (field !== "applied" && field !== "saved") return "";
+  if (!/^\d{4}-\d{2}$/.test(monthKey)) return "";
+  return `${field}:${monthKey}`;
+}
+
+/** Parse `field:YYYY-MM` into `{ field, monthKey }` or null. */
+export function parseMonthFilter(value) {
+  if (!value) return null;
+  const match = String(value).match(/^(applied|saved):(\d{4}-\d{2})$/);
+  if (!match) return null;
+  return { field: match[1], monthKey: match[2] };
+}
+
+export function formatMonthLabel(monthKey) {
+  const match = String(monthKey || "").match(/^(\d{4})-(\d{2})$/);
+  if (!match) return monthKey || "";
+  const monthIndex = Number(match[2]) - 1;
+  if (monthIndex < 0 || monthIndex > 11) return monthKey;
+  return `${MONTH_LABELS_SV[monthIndex]} ${match[1]}`;
+}
+
+/**
+ * Unique months present on applications for a field, newest first.
+ * Returns `{ key, label }[]`.
+ */
+export function collectMonthOptions(applications, field) {
+  const keys = new Set();
+  for (const application of applications || []) {
+    const key = applicationMonthKey(application, field);
+    if (key) keys.add(key);
+  }
+  return [...keys]
+    .sort((a, b) => b.localeCompare(a))
+    .map((key) => ({ key, label: formatMonthLabel(key) }));
+}
+
+/** True when no month filter, or the row's month matches. */
+export function matchesMonthFilter(application, monthFilter) {
+  const parsed = parseMonthFilter(monthFilter);
+  if (!parsed) return true;
+  return applicationMonthKey(application, parsed.field) === parsed.monthKey;
+}
+
 /**
  * Actionable items for the "Idag" panel — follow-ups, deadlines, upcoming steps.
  * Sorted: overdue first, then today, then soonest date.

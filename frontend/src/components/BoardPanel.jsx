@@ -2,11 +2,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { downloadBlob, request } from "../api.js";
 import {
+  collectMonthOptions,
   compareApplicationsByApplied,
   daysUntil,
+  encodeMonthFilter,
+  formatMonthLabel,
   hasDeadlineSoon,
   isClosed,
   isFollowUp,
+  matchesMonthFilter,
+  parseMonthFilter,
 } from "../dates.js";
 import { localISODate } from "../localDate.js";
 import {
@@ -105,6 +110,13 @@ function stageFilterLabel(stageFilter) {
   return STATUS_LABELS[stageFilter] || stageFilter;
 }
 
+function monthFilterLabel(monthFilter) {
+  const parsed = parseMonthFilter(monthFilter);
+  if (!parsed) return "";
+  const kind = parsed.field === "saved" ? "Sparad" : "Ansökt";
+  return `${kind}: ${formatMonthLabel(parsed.monthKey)}`;
+}
+
 export default function BoardPanel({ token, onNavigate }) {
   const [applications, setApplications] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -113,6 +125,7 @@ export default function BoardPanel({ token, onNavigate }) {
   const [query, setQuery] = useState("");
   const [quickFilters, setQuickFilters] = useState([]);
   const [stageFilter, setStageFilter] = useState(null);
+  const [monthFilter, setMonthFilter] = useState("");
   const [undo, setUndo] = useState(null);
   const [pendingMove, setPendingMove] = useState(null);
   const [pendingDate, setPendingDate] = useState(() => localISODate());
@@ -240,13 +253,17 @@ export default function BoardPanel({ token, onNavigate }) {
     (a) =>
       matchesSearch(a, query) &&
       matchesQuickFilters(a, quickFilters) &&
-      matchesStageFilter(a, stageFilter)
+      matchesStageFilter(a, stageFilter) &&
+      matchesMonthFilter(a, monthFilter)
   );
   const closed = filteredApplications
     .filter(isClosed)
     .sort(compareApplicationsByApplied);
   const hasActiveFilters =
-    query.trim() || quickFilters.length > 0 || stageFilter !== null;
+    query.trim() ||
+    quickFilters.length > 0 ||
+    stageFilter !== null ||
+    Boolean(monthFilter);
   const followUps = applications
     .filter(isFollowUp)
     .sort(compareApplicationsByApplied);
@@ -259,11 +276,24 @@ export default function BoardPanel({ token, onNavigate }) {
     quickFilters.includes("good_match") &&
     cvReady &&
     filteredApplications.length === 0;
+  const appliedMonthOptions = collectMonthOptions(applications, "applied");
+  const savedMonthOptions = collectMonthOptions(applications, "saved");
 
   function resetFilters() {
     setQuery("");
     setQuickFilters([]);
     setStageFilter(null);
+    setMonthFilter("");
+  }
+
+  function applyMonthFilter(nextFilter) {
+    setMonthFilter((current) => (current === nextFilter ? "" : nextFilter));
+    requestAnimationFrame(() => {
+      listSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   }
 
   function toggleQuickFilter(filterId) {
@@ -456,6 +486,42 @@ export default function BoardPanel({ token, onNavigate }) {
                   </button>
                 )}
               </div>
+              <div className="month-filters">
+                <label className="month-filter-field">
+                  <span className="sr-only">Filtrera på månad</span>
+                  <select
+                    value={monthFilter}
+                    onChange={(e) => setMonthFilter(e.target.value)}
+                    aria-label="Filtrera på ansöknings- eller sparad månad"
+                  >
+                    <option value="">Alla månader</option>
+                    {appliedMonthOptions.length > 0 && (
+                      <optgroup label="Ansökningsmånad">
+                        {appliedMonthOptions.map((option) => (
+                          <option
+                            key={`applied:${option.key}`}
+                            value={encodeMonthFilter("applied", option.key)}
+                          >
+                            Ansökt: {option.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {savedMonthOptions.length > 0 && (
+                      <optgroup label="Sparad månad">
+                        {savedMonthOptions.map((option) => (
+                          <option
+                            key={`saved:${option.key}`}
+                            value={encodeMonthFilter("saved", option.key)}
+                          >
+                            Sparad: {option.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                </label>
+              </div>
               <div className="quick-filters" aria-label="Snabbfilter">
                 {QUICK_FILTERS.map((filter) => {
                   const active =
@@ -485,6 +551,12 @@ export default function BoardPanel({ token, onNavigate }) {
                     <>
                       {" "}
                       · status: <strong>{stageFilterLabel(stageFilter)}</strong>
+                    </>
+                  )}
+                  {monthFilter && (
+                    <>
+                      {" "}
+                      · månad: <strong>{monthFilterLabel(monthFilter)}</strong>
                     </>
                   )}
                 </span>
@@ -577,7 +649,13 @@ export default function BoardPanel({ token, onNavigate }) {
         )}
       </section>
 
-      <MonthlyStats applications={applications} />
+      <MonthlyStats
+        applications={applications}
+        activeMonthFilter={monthFilter}
+        onSelectAppliedMonth={(monthKey) =>
+          applyMonthFilter(encodeMonthFilter("applied", monthKey))
+        }
+      />
 
       {pendingMove && (
         <ModalOverlay
@@ -847,7 +925,7 @@ const MONTH_NAMES = [
   "jul", "aug", "sep", "okt", "nov", "dec",
 ];
 
-function MonthlyStats({ applications }) {
+function MonthlyStats({ applications, activeMonthFilter, onSelectAppliedMonth }) {
   if (applications.length === 0) return null;
 
   // Applications per month, last six months (rows with applied_at only).
@@ -868,6 +946,9 @@ function MonthlyStats({ applications }) {
   }
   const max = Math.max(1, ...months.map((m) => m.count));
   const datedSum = months.reduce((sum, m) => sum + m.count, 0);
+  const parsedActive = parseMonthFilter(activeMonthFilter);
+  const activeAppliedKey =
+    parsedActive?.field === "applied" ? parsedActive.monthKey : "";
 
   const inProcess = applications.filter(
     (a) => a.reached_interview || FUNNEL_STATUSES.includes(a.status)
@@ -879,35 +960,49 @@ function MonthlyStats({ applications }) {
       <p className="muted">
         Ansökningar per månad (sökt datum) · {datedSum} med datum senaste 6 mån
         av {applications.length} totalt · {inProcess} har lett till samtal,
-        intervju eller längre.
+        intervju eller längre. Klicka en månad för att filtrera listan.
       </p>
       <div
         className="chart"
-        role="img"
+        role="group"
         aria-label={`Ansökningar per månad: ${months
           .map((m) => `${m.label} ${m.count}`)
           .join(", ")}`}
       >
-        {months.map((m, i) => (
-          <div
-            className={
-              i === months.length - 1 ? "chart-col chart-col--current" : "chart-col"
-            }
-            key={m.key}
-            title={`${m.count} st`}
-          >
-            <span className="chart-count">{m.count}</span>
-            <div
-              className={
-                m.count === 0 ? "chart-bar chart-bar--empty" : "chart-bar"
-              }
-              style={{
-                height: `${m.count === 0 ? 8 : (m.count / max) * 96 + 8}px`,
-              }}
-            />
-            <span className="chart-label">{m.label}</span>
-          </div>
-        ))}
+        {months.map((m, i) => {
+          const isCurrent = i === months.length - 1;
+          const isActive = activeAppliedKey === m.key;
+          const className = [
+            "chart-col",
+            isCurrent ? "chart-col--current" : "",
+            isActive ? "chart-col--active" : "",
+            onSelectAppliedMonth ? "chart-col--clickable" : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+          return (
+            <button
+              type="button"
+              className={className}
+              key={m.key}
+              title={`${m.count} st · filtrera på ${formatMonthLabel(m.key)}`}
+              aria-pressed={isActive}
+              aria-label={`Filtrera på ansökningar i ${formatMonthLabel(m.key)} (${m.count} st)`}
+              onClick={() => onSelectAppliedMonth?.(m.key)}
+            >
+              <span className="chart-count">{m.count}</span>
+              <div
+                className={
+                  m.count === 0 ? "chart-bar chart-bar--empty" : "chart-bar"
+                }
+                style={{
+                  height: `${m.count === 0 ? 8 : (m.count / max) * 96 + 8}px`,
+                }}
+              />
+              <span className="chart-label">{m.label}</span>
+            </button>
+          );
+        })}
       </div>
     </section>
   );
