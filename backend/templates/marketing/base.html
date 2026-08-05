@@ -19,7 +19,7 @@
         document.documentElement.dataset.theme = t;
       })();
     </script>
-    <title>{% block title %}Jobbsöket — översikt över dina jobbansökningar{% endblock %}</title>
+    <title>{% block title %}Jobbdjungeln — översikt över dina jobbansökningar{% endblock %}</title>
     <meta
       name="description"
       content="{% block meta_description %}Håll koll på jobbansökningar utan Excel. Platsbanken, påminnelser och export när du vill.{% endblock %}"
@@ -27,7 +27,7 @@
     <link rel="canonical" href="{% block canonical %}{{ canonical_url }}{% endblock %}" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="sv_SE" />
-    <meta property="og:title" content="{% block og_title %}Jobbsöket — översikt över dina jobbansökningar{% endblock %}" />
+    <meta property="og:title" content="{% block og_title %}Jobbdjungeln — översikt över dina jobbansökningar{% endblock %}" />
     <meta
       property="og:description"
       content="{% block og_description %}Håll koll på ansökningar utan Excel. Platsbanken, påminnelser och export när du vill.{% endblock %}"
@@ -42,7 +42,7 @@
       <header class="marketing-header">
         <a class="marketing-brand" href="{{ home_url|default:'/' }}">
           <span class="marketing-logo" aria-hidden="true">J</span>
-          <h1>Jobbsöket</h1>
+          <h1>Jobbdjungeln</h1>
         </a>
         <nav class="marketing-nav" aria-label="Huvudnavigering">
           <a href="{{ privacy_url }}">Integritet</a>
@@ -51,7 +51,7 @@
       </header>
       {% block content %}{% endblock %}
       <footer class="marketing-footer">
-        <span class="footer-kicker">Jobbsöket</span>
+        <span class="footer-kicker">Jobbdjungeln</span>
         Din data är din — exportera eller radera när du vill.{" "}
         <a href="{{ privacy_url }}">Integritetspolicy</a>
         <div class="theme-picker" aria-label="Visuellt tema">

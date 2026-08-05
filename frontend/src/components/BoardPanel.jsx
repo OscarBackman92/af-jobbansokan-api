@@ -130,12 +130,12 @@ export default function BoardPanel({ token, onNavigate }) {
   const [pendingMove, setPendingMove] = useState(null);
   const [pendingDate, setPendingDate] = useState(() => localISODate());
   const [showWelcome, setShowWelcome] = useState(
-    () => localStorage.getItem("jobbsoket-welcome-dismissed") !== "1"
+    () => localStorage.getItem("jobbdjungeln-welcome-dismissed") !== "1"
   );
   const listSectionRef = useRef(null);
 
   function dismissWelcome() {
-    localStorage.setItem("jobbsoket-welcome-dismissed", "1");
+    localStorage.setItem("jobbdjungeln-welcome-dismissed", "1");
     setShowWelcome(false);
   }
 

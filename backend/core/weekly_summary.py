@@ -178,7 +178,7 @@ def format_weekly_summary_email(
         "Hej!",
         "",
         (
-            f"Din veckosammanfattning från Jobbsöket "
+            f"Din veckosammanfattning från Jobbdjungeln "
             f"({_fmt_date(b.last_start)}–{_fmt_date(b.last_end)}):"
         ),
         "",
@@ -250,9 +250,9 @@ def format_weekly_summary_email(
         lines.append(f"Öppna appen: {frontend_url.rstrip('/')}")
     else:
         lines.append(
-            "Öppna Jobbsöket i webbläsaren för att uppdatera dina ansökningar."
+            "Öppna Jobbdjungeln i webbläsaren för att uppdatera dina ansökningar."
         )
     lines.append("")
 
-    subject = "Jobbsöket — din veckosammanfattning"
+    subject = "Jobbdjungeln — din veckosammanfattning"
     return subject, "\n".join(lines)

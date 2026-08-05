@@ -32,11 +32,11 @@ def test_creates_superuser_idempotently(monkeypatch):
     assert User.objects.filter(username="admin", is_superuser=True).count() == 1
 
 
-def test_updates_site_from_frontend_url(monkeypatch):
+def test_updates_site_from_frontend_url(monkeypatch, settings):
     from django.contrib.sites.models import Site
 
-    monkeypatch.setenv("FRONTEND_URL", "https://jobbjungeln.onrender.com")
+    settings.FRONTEND_URL = "https://jobbjungeln.onrender.com"
     _run()
     site = Site.objects.get(pk=1)
     assert site.domain == "jobbjungeln.onrender.com"
-    assert site.name == "Jobbsöket"
+    assert site.name == "Jobbdjungeln"

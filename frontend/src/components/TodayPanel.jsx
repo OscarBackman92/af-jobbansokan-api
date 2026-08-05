@@ -123,7 +123,7 @@ export default function TodayPanel({ applications, onOpen }) {
         items={followUps}
         onOpen={onOpen}
         calendarLabel="Lägg uppföljningar i kalender"
-        calendarFilename="jobbsoket-uppfoljning.ics"
+        calendarFilename="jobbdjungeln-uppfoljning.ics"
       />
       <ActionGroup
         title={`Sök innan sista dag (${applyBeforeDeadline.length})`}
@@ -131,7 +131,7 @@ export default function TodayPanel({ applications, onOpen }) {
         items={applyBeforeDeadline}
         onOpen={onOpen}
         calendarLabel="Lägg deadlines i kalender"
-        calendarFilename="jobbsoket-deadlines.ics"
+        calendarFilename="jobbdjungeln-deadlines.ics"
       />
     </section>
   );

@@ -15,14 +15,14 @@ export default function PrivacyPanel({ onClose }) {
 
       <div className="privacy-body">
         <p>
-          Jobbsöket är en personlig översikt över dina jobbansökningar. Du äger din data: allt
+          Jobbdjungeln är en personlig översikt över dina jobbansökningar. Du äger din data: allt
           kan exporteras som CSV och kontot kan raderas när som helst, med
           all data.
         </p>
 
         <h3>Personuppgiftsansvarig</h3>
         <p>
-          Jobbsöket drivs som en privat tjänst och den som driver tjänsten
+          Jobbdjungeln drivs som en privat tjänst och den som driver tjänsten
           är personuppgiftsansvarig.{" "}
           {CONTACT_EMAIL ? (
             <>

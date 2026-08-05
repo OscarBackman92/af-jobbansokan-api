@@ -52,7 +52,7 @@ describe("todayActionToIcsEvent", () => {
       label: "Uppföljning idag",
       calendarSummary: "Följ upp: Backend @ Acme",
     });
-    expect(event.uid).toBe("jobbsoket-7-followup-2026-08-15@jobbsoket");
+    expect(event.uid).toBe("jobbdjungeln-7-followup-2026-08-15@jobbdjungeln");
     expect(event.summary).toBe("Följ upp: Backend @ Acme");
     expect(event.description).toContain("Anna");
   });

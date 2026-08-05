@@ -1,4 +1,4 @@
-# Jobbsöket
+# Jobbdjungeln
 
 ![CI](https://github.com/OscarBackman92/af-jobbansokan-api/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
@@ -7,7 +7,7 @@
 
 **Koll på hela ditt jobbsök.** Job seekers build their own Excel sheets to
 track applications — statuses, recruiter calls, interviews, next steps.
-Jobbsöket (formerly "Ansökt") is that sheet, done right: a kanban board
+Jobbdjungeln (formerly "Ansökt") is that sheet, done right: a kanban board
 over your applications, a timeline per application, search over
 Platsbanken's job ads, and CSV export because the data is yours.
 
@@ -213,7 +213,7 @@ Postmark, …; the free tiers are enough):
 | `EMAIL_HOST_USER` | SMTP username |
 | `EMAIL_HOST_PASSWORD` | SMTP password / API key |
 | `EMAIL_USE_TLS` | `1` (default) or `0` |
-| `DEFAULT_FROM_EMAIL` | From address, e.g. `Jobbsöket <no-reply@dindomän.se>` |
+| `DEFAULT_FROM_EMAIL` | From address, e.g. `Jobbdjungeln <no-reply@dindomän.se>` |
 | `FRONTEND_URL` | Base URL the reset link points at (e.g. `https://jobbjungeln.onrender.com`). Defaults to the request origin, which is correct for the single-service Render deploy; set it explicitly when the frontend is hosted separately (e.g. Vercel). |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. Enables "Fortsätt med Google": create an OAuth client in Google Cloud Console with the site URL (trailing slash) as authorized redirect URI. The login button is hidden while unset. |
 | `CONTACT_EMAIL` | Public contact for privacy questions and vulnerability reports. Shown in the in-app privacy policy and served at `/.well-known/security.txt` (404 while unset). |

@@ -9,7 +9,7 @@ export default function AuthHero({ onLogin }) {
     <div className="auth-page auth-page--simple">
       <AuthCard onLogin={onLogin} />
       <p className="auth-page-back">
-        <a href="/">Mer om Jobbsöket på startsidan</a>
+        <a href="/">Mer om Jobbdjungeln på startsidan</a>
       </p>
     </div>
   );

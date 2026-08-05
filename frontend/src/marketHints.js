@@ -1,4 +1,4 @@
-const STORAGE_KEY = "jobbsoket.marketHints";
+const STORAGE_KEY = "jobbdjungeln.marketHints";
 
 function readStore() {
   try {

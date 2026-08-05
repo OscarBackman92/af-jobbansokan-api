@@ -1,7 +1,7 @@
 {
     "openapi": "3.0.3",
     "info": {
-        "title": "Jobbsöket API",
+        "title": "Jobbdjungeln API",
         "version": "0.2.0",
         "description": "API for tracking your own job applications."
     },
