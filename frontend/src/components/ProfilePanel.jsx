@@ -166,16 +166,18 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
               Avbryt
             </button>
           </div>
-          <div className="danger-zone danger-zone--compact">
-            <h3>Radera konto</h3>
-            <p className="muted">
-              Tar bort kontot och all data permanent. Går inte att ångra.
-            </p>
-            <button type="button" className="danger small" onClick={deleteAccount}>
-              Radera konto permanent
-            </button>
-          </div>
         </form>
+      )}
+      {!editing && (
+        <div className="danger-zone danger-zone--account">
+          <h3>Radera konto</h3>
+          <p className="muted">
+            Tar bort kontot och all data permanent. Går inte att ångra.
+          </p>
+          <button type="button" className="danger small" onClick={deleteAccount}>
+            Radera konto permanent
+          </button>
+        </div>
       )}
       {discardPrompt && (
         <ConfirmDialog

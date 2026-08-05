@@ -20,6 +20,8 @@ def test_landing_page_is_public_html(client):
     assert "Tre flikar" in body
     assert "Öppna appen" not in body
     assert 'rel="canonical"' in body
+    assert '{" "}' not in body
+    assert "Integritetspolicy" in body
 
 
 def test_privacy_page_is_public(client):

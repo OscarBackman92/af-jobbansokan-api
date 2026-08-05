@@ -582,7 +582,19 @@ export default function PostingsPanel({ onNavigate }) {
 
   const total = data?.total ?? 0;
   // Keep JobTech order (pubdate-desc) so pages stay stable; do not re-sort.
-  const results = data?.results ?? [];
+  // Dedupe within the page in case upstream returns the same id twice.
+  const results = (() => {
+    const rows = data?.results ?? [];
+    const seen = new Set();
+    return rows.filter((job) => {
+      const id = job?.id;
+      if (id == null) return true;
+      const key = String(id);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
   const showingFrom = total === 0 ? 0 : offset + 1;
   const showingTo = Math.min(offset + PAGE_SIZE, total);
   const pageNumber = Math.floor(offset / PAGE_SIZE) + 1;
@@ -1066,6 +1078,7 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
     <ModalOverlay
       onClose={onClose}
       className="modal job-modal"
+      overlayClassName="overlay overlay--job"
       dialogRef={dialogRef}
       labelledBy="job-modal-title"
     >

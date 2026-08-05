@@ -2443,6 +2443,21 @@ tbody tr:last-child td {
   padding: 0.75rem 0.9rem;
 }
 
+.danger-zone--account {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed var(--border);
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.danger-zone--account h3 {
+  color: var(--red);
+}
+
 .danger-zone h3 {
   margin: 0 0 0.35rem;
   font-size: 0.95rem;
@@ -3368,6 +3383,7 @@ button.chart-col:focus-visible {
   animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
   margin: auto;
   flex-shrink: 0;
+  min-height: 0;
 }
 
 @keyframes pop {
@@ -3394,8 +3410,16 @@ button.chart-col:focus-visible {
 
 /* ---------- Job detail modal ---------- */
 
+.overlay--job {
+  overflow: hidden;
+  align-items: center;
+}
+
 .job-modal {
   gap: 0.85rem;
+  overflow: hidden;
+  flex-shrink: 1;
+  max-height: min(86vh, 900px);
 }
 
 .modal-head {
@@ -3459,8 +3483,10 @@ button.chart-col:focus-visible {
 }
 
 .job-modal .description {
-  flex: 1;
-  min-height: 6rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* ---------- Application detail modal ---------- */
