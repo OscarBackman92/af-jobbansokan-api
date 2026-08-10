@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { downloadBlob, request } from "../api.js";
 import {
@@ -18,6 +18,7 @@ import {
   STATUS_LABELS,
 } from "../statuses.js";
 import { foldDiacritics } from "../text.js";
+import useApplications from "../useApplications.js";
 import ApplicationModal from "./ApplicationModal.jsx";
 import MetricTile from "./board/MetricTile.jsx";
 import MonthlyStats from "./board/MonthlyStats.jsx";
@@ -110,10 +111,9 @@ function monthFilterLabel(monthFilter) {
 }
 
 export default function BoardPanel({ token, onNavigate }) {
-  const [applications, setApplications] = useState(null);
+  const { applications, reload, error, setError } = useApplications(token);
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
-  const [error, setError] = useState(null);
   const [query, setQuery] = useState("");
   const [quickFilters, setQuickFilters] = useState([]);
   const [stageFilter, setStageFilter] = useState(null);
@@ -130,31 +130,6 @@ export default function BoardPanel({ token, onNavigate }) {
     localStorage.setItem("jobbdjungeln-welcome-dismissed", "1");
     setShowWelcome(false);
   }
-
-  const reload = useCallback(async () => {
-    try {
-      setError(null);
-      // The board needs every row; one big page covers realistic
-      // trackers, the loop only continues past 200 rows.
-      let url = "/api/v1/applications/?page_size=200";
-      const rows = [];
-      while (url) {
-        const page = await request(url, { token });
-        rows.push(...page.results);
-        url = page.next;
-      }
-      setApplications(rows);
-    } catch (err) {
-      setError(err.message);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    reload();
-    const handler = () => reload();
-    window.addEventListener("application-created", handler);
-    return () => window.removeEventListener("application-created", handler);
-  }, [reload]);
 
   useEffect(() => {
     if (!undo) return undefined;
