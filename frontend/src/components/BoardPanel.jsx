@@ -4,7 +4,6 @@ import { downloadBlob, request } from "../api.js";
 import {
   collectMonthOptions,
   compareApplicationsByApplied,
-  daysUntil,
   encodeMonthFilter,
   formatMonthLabel,
   hasDeadlineSoon,
@@ -16,26 +15,19 @@ import {
 import { localISODate } from "../localDate.js";
 import {
   ACTIVE_STATUSES,
-  STATUSES,
   STATUS_LABELS,
 } from "../statuses.js";
 import { foldDiacritics } from "../text.js";
 import ApplicationModal from "./ApplicationModal.jsx";
+import MetricTile from "./board/MetricTile.jsx";
+import MonthlyStats from "./board/MonthlyStats.jsx";
+import PipelineStage from "./board/PipelineStage.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
-import MatchScore from "./MatchScore.jsx";
 import TodayPanel from "./TodayPanel.jsx";
 import WelcomeGuide from "./WelcomeGuide.jsx";
 
 const GOOD_MATCH_PERCENT = 20;
-const STAGE_VISIBLE = 25;
-const FUNNEL_STATUSES = [
-  "screening",
-  "interview",
-  "forwarded",
-  "offer",
-  "accepted",
-];
 
 const QUICK_FILTERS = [
   { id: "all", label: "Alla" },
@@ -748,262 +740,5 @@ export default function BoardPanel({ token, onNavigate }) {
         </ModalErrorBoundary>
       )}
     </div>
-  );
-}
-
-function MetricTile({ label, value, detail, tone = "default", filterId, onFilter }) {
-  const className = `metric-tile metric-tile--${tone}${
-    filterId ? " metric-tile--interactive" : ""
-  }`;
-  const content = (
-    <>
-      <span className="metric-label">{label}</span>
-      <strong>{value}</strong>
-      <span className="metric-detail">{detail}</span>
-    </>
-  );
-  if (filterId && onFilter) {
-    return (
-      <button
-        type="button"
-        className={className}
-        onClick={() => onFilter(filterId)}
-        aria-label={`Filtrera: ${label}`}
-      >
-        {content}
-      </button>
-    );
-  }
-  return <div className={className}>{content}</div>;
-}
-
-function PipelineStage({
-  status,
-  label,
-  applications,
-  activeFilter,
-  onFilterToggle,
-  onOpen,
-  onMove,
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const isActive = activeFilter === status;
-  const visible = expanded
-    ? applications
-    : applications.slice(0, STAGE_VISIBLE);
-  const canToggleExpand = applications.length > STAGE_VISIBLE;
-
-  return (
-    <section className={`pipeline-stage pipeline-stage--${status}`}>
-      <div
-        className={
-          isActive
-            ? "pipeline-stage-head pipeline-stage-head--active"
-            : "pipeline-stage-head"
-        }
-      >
-        <button
-          type="button"
-          className="pipeline-stage-filter"
-          onClick={() => onFilterToggle(status)}
-          aria-pressed={isActive}
-          title={
-            isActive
-              ? `Visa alla statusar (filtrerar på ${label})`
-              : `Visa bara ${label}`
-          }
-        >
-          <span className="pipeline-stage-filter-label">
-            <h3>{label}</h3>
-            <span className="pipeline-stage-filter-hint" aria-hidden="true">
-              {isActive ? "Filtrerad" : "Filtrera"}
-            </span>
-          </span>
-          <span className="pipeline-stage-count">{applications.length}</span>
-        </button>
-      </div>
-      <div className="pipeline-rows">
-        {visible.map((application) => (
-          <ApplicationRow
-            key={application.id}
-            application={application}
-            onOpen={() => onOpen(application)}
-            onMove={(next) => onMove(application.id, next)}
-          />
-        ))}
-      </div>
-      {canToggleExpand && (
-        <button
-          type="button"
-          className="secondary small pipeline-show-more"
-          onClick={() => setExpanded((value) => !value)}
-        >
-          {expanded ? "Visa mindre" : `Visa alla ${applications.length}`}
-        </button>
-      )}
-    </section>
-  );
-}
-
-function DeadlineBadge({ application }) {
-  // Deadlines only matter while the row is still Sparad.
-  if (application.status !== "wishlist") return null;
-  const days = daysUntil(application.deadline);
-  if (days === null || days > 14) return null;
-  const tone = days <= 3 ? "rejected" : "interview";
-  const text =
-    days < 0
-      ? "Deadline passerad"
-      : days === 0
-        ? "Deadline idag"
-        : `Deadline om ${days} ${days === 1 ? "dag" : "dagar"}`;
-  return <span className={`badge ${tone}`}>{text}</span>;
-}
-
-function ApplicationRow({ application, onOpen, onMove }) {
-  const meta = [
-    application.company,
-    application.location,
-    application.applied_at ? `Sökt ${application.applied_at}` : "",
-    application.contact_name ? `Kontakt: ${application.contact_name}` : "",
-  ].filter(Boolean);
-
-  // The stage header already names the status for active rows; only the
-  // mixed "Avslutade" group needs a badge to tell outcomes apart.
-  const showStatusBadge = isClosed(application);
-  const deadlineIn = daysUntil(application.deadline);
-  const showDeadlineBadge =
-    application.status === "wishlist" &&
-    deadlineIn !== null &&
-    deadlineIn <= 14;
-  const hasBadges =
-    showStatusBadge || showDeadlineBadge || application.next_action_at;
-
-  return (
-    <div className={`pipeline-row pipeline-row--${application.status}`}>
-      <button className="pipeline-row-main" onClick={onOpen}>
-        <span className="pipeline-row-title">{application.title}</span>
-        <span className="pipeline-row-meta">{meta.join(" · ")}</span>
-        {application.match && (
-          <MatchScore match={application.match} variant="compact" showMissing={false} />
-        )}
-        {hasBadges && (
-          <span className="pipeline-row-badges">
-            {showStatusBadge && (
-              <span className={`badge ${application.status}`}>
-                {application.status_label}
-              </span>
-            )}
-            <DeadlineBadge application={application} />
-            {application.next_action_at && (
-              <span className="badge neutral">
-                Nästa steg {application.next_action_at}
-              </span>
-            )}
-          </span>
-        )}
-      </button>
-      <div className="pipeline-row-actions">
-        <select
-          value={application.status}
-          onChange={(e) => onMove(e.target.value)}
-          title="Flytta till status"
-        >
-          {STATUSES.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
-}
-
-const MONTH_NAMES = [
-  "jan", "feb", "mar", "apr", "maj", "jun",
-  "jul", "aug", "sep", "okt", "nov", "dec",
-];
-
-function MonthlyStats({ applications, activeMonthFilter, onSelectAppliedMonth }) {
-  if (applications.length === 0) return null;
-
-  // Applications per month, last six months (rows with applied_at only).
-  const months = [];
-  const now = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({
-      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-      label: MONTH_NAMES[d.getMonth()],
-      count: 0,
-    });
-  }
-  for (const a of applications) {
-    if (!a.applied_at) continue;
-    const month = months.find((m) => a.applied_at.startsWith(m.key));
-    if (month) month.count += 1;
-  }
-  const max = Math.max(1, ...months.map((m) => m.count));
-  const datedSum = months.reduce((sum, m) => sum + m.count, 0);
-  const parsedActive = parseMonthFilter(activeMonthFilter);
-  const activeAppliedKey =
-    parsedActive?.field === "applied" ? parsedActive.monthKey : "";
-
-  const inProcess = applications.filter(
-    (a) => a.reached_interview || FUNNEL_STATUSES.includes(a.status)
-  ).length;
-
-  return (
-    <section className="card">
-      <h2>Statistik</h2>
-      <p className="muted">
-        Ansökningar per månad (sökt datum) · {datedSum} med datum senaste 6 mån
-        av {applications.length} totalt · {inProcess} har lett till samtal,
-        intervju eller längre. Klicka en månad för att filtrera listan.
-      </p>
-      <div
-        className="chart"
-        role="group"
-        aria-label={`Ansökningar per månad: ${months
-          .map((m) => `${m.label} ${m.count}`)
-          .join(", ")}`}
-      >
-        {months.map((m, i) => {
-          const isCurrent = i === months.length - 1;
-          const isActive = activeAppliedKey === m.key;
-          const className = [
-            "chart-col",
-            isCurrent ? "chart-col--current" : "",
-            isActive ? "chart-col--active" : "",
-            onSelectAppliedMonth ? "chart-col--clickable" : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
-          return (
-            <button
-              type="button"
-              className={className}
-              key={m.key}
-              title={`${m.count} st · filtrera på ${formatMonthLabel(m.key)}`}
-              aria-pressed={isActive}
-              aria-label={`Filtrera på ansökningar i ${formatMonthLabel(m.key)} (${m.count} st)`}
-              onClick={() => onSelectAppliedMonth?.(m.key)}
-            >
-              <span className="chart-count">{m.count}</span>
-              <div
-                className={
-                  m.count === 0 ? "chart-bar chart-bar--empty" : "chart-bar"
-                }
-                style={{
-                  height: `${m.count === 0 ? 8 : (m.count / max) * 96 + 8}px`,
-                }}
-              />
-              <span className="chart-label">{m.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </section>
   );
 }
