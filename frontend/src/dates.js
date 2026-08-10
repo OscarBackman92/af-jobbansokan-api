@@ -1,6 +1,14 @@
+import { localISODate } from "./localDate.js";
 import { CLOSED_STATUSES } from "./statuses.js";
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Default planning window when a saved job has no employer deadline. */
+export const AUTO_APPLY_BY_DAYS = 14;
+
+const DIALOG_STATUSES = ["screening", "interview", "forwarded"];
+const OFFER_STATUSES = ["offer", "accepted"];
+const APPLIED_CLOSED_STATUSES = ["rejected", "no_response", "withdrawn"];
 
 /** Days without employer contact before an applied/screening row needs follow-up. */
 export const SILENCE_FOLLOW_UP_DAYS = 7;
@@ -72,6 +80,86 @@ export function compareApplicationsByApplied(a, b) {
     if (!bDate) return -1;
     return bDate.localeCompare(aDate);
   }
+  return (b.updated_at || "").localeCompare(a.updated_at || "");
+}
+
+/**
+ * "Sök senast" date: stored apply_by, else employer deadline, else
+ * created_at + 14 days (client-side fallback matching backend auto).
+ */
+export function applyByFor(application) {
+  if (application?.apply_by) return application.apply_by;
+  if (application?.deadline) return application.deadline;
+  if (!application?.created_at) return null;
+  const created = new Date(`${application.created_at.slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(created.getTime())) return null;
+  created.setDate(created.getDate() + AUTO_APPLY_BY_DAYS);
+  return localISODate(created);
+}
+
+/** Whole days until applyByFor(application); null when no date. */
+export function daysUntilApplyBy(application) {
+  return daysUntil(applyByFor(application));
+}
+
+/**
+ * Saved-job lane: paused → expired → no_deadline (auto) → urgent → month.
+ */
+export function savedBucket(application) {
+  if (application?.intent === "paused") return "paused";
+  const days = daysUntilApplyBy(application);
+  if (days !== null && days < 0) return "expired";
+  const hasRealDeadline = Boolean(application?.deadline);
+  const isManualPlan = application?.apply_by_is_auto === false;
+  // Auto-planned "sök senast" without an employer deadline.
+  if (!hasRealDeadline && !isManualPlan) return "no_deadline";
+  if (days !== null && days <= 7) return "urgent";
+  return "month";
+}
+
+/**
+ * Days since last activity (positive = waiting). Null when unknown.
+ */
+export function daysWaiting(application) {
+  const activity = lastActivityDate(application);
+  const until = daysUntil(activity);
+  if (until === null) return null;
+  return -until;
+}
+
+/**
+ * Applied-job lane: closed → offer → dialog → late → fresh.
+ */
+export function appliedBucket(application) {
+  const status = application?.status;
+  if (APPLIED_CLOSED_STATUSES.includes(status)) return "closed";
+  if (OFFER_STATUSES.includes(status)) return "offer";
+  if (DIALOG_STATUSES.includes(status)) return "dialog";
+  const waiting = daysWaiting(application);
+  if (waiting !== null && waiting >= SILENCE_FOLLOW_UP_DAYS) return "late";
+  return "fresh";
+}
+
+function matchRatio(application) {
+  const match = application?.match;
+  if (!match?.total) return 0;
+  return match.count / match.total;
+}
+
+/**
+ * Within a lane: earlier date first (apply_by / last activity), then
+ * higher CV match ratio.
+ */
+export function compareByDateThenMatch(a, b) {
+  const dateA = applyByFor(a) || lastActivityDate(a) || "";
+  const dateB = applyByFor(b) || lastActivityDate(b) || "";
+  if (dateA !== dateB) {
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    return dateA.localeCompare(dateB);
+  }
+  const matchDiff = matchRatio(b) - matchRatio(a);
+  if (matchDiff !== 0) return matchDiff;
   return (b.updated_at || "").localeCompare(a.updated_at || "");
 }
 

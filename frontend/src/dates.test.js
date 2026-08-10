@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  appliedBucket,
+  applyByFor,
   buildTodayActions,
   collectMonthOptions,
   compareApplicationsByApplied,
+  compareByDateThenMatch,
   daysUntil,
+  daysUntilApplyBy,
+  daysWaiting,
   encodeMonthFilter,
   formatMonthLabel,
   groupTodayActions,
@@ -12,6 +17,7 @@ import {
   isFollowUp,
   matchesMonthFilter,
   parseMonthFilter,
+  savedBucket,
   SILENCE_FOLLOW_UP_DAYS,
 } from "./dates.js";
 
@@ -263,5 +269,130 @@ describe("groupTodayActions", () => {
     expect(followUps[0].kind).toBe("followup");
     expect(applyBeforeDeadline).toHaveLength(1);
     expect(applyBeforeDeadline[0].kind).toBe("deadline");
+  });
+});
+
+describe("applyByFor / daysUntilApplyBy", () => {
+  it("prefers apply_by, then deadline, then created_at + 14", () => {
+    expect(
+      applyByFor({ apply_by: "2026-08-20", deadline: "2026-08-10" })
+    ).toBe("2026-08-20");
+    expect(applyByFor({ deadline: "2026-08-10" })).toBe("2026-08-10");
+    expect(
+      applyByFor({ created_at: "2026-08-01T10:00:00Z" })
+    ).toBe("2026-08-15");
+    expect(applyByFor({})).toBeNull();
+  });
+
+  it("reports days until the resolved apply-by date", () => {
+    expect(daysUntilApplyBy({ apply_by: daysFromNow(4) })).toBe(4);
+    expect(daysUntilApplyBy({})).toBeNull();
+  });
+});
+
+describe("savedBucket", () => {
+  it("classifies paused and expired first", () => {
+    expect(
+      savedBucket({
+        intent: "paused",
+        deadline: daysFromNow(2),
+        apply_by_is_auto: false,
+      })
+    ).toBe("paused");
+    expect(
+      savedBucket({
+        deadline: daysAgo(1),
+        apply_by: daysAgo(1),
+        apply_by_is_auto: false,
+      })
+    ).toBe("expired");
+  });
+
+  it("puts auto-planned rows without deadline in no_deadline", () => {
+    expect(
+      savedBucket({
+        created_at: "2026-08-01T10:00:00Z",
+        apply_by: "2026-08-15",
+        apply_by_is_auto: true,
+      })
+    ).toBe("no_deadline");
+  });
+
+  it("splits real deadlines into urgent and month", () => {
+    expect(
+      savedBucket({
+        deadline: daysFromNow(3),
+        apply_by: daysFromNow(3),
+        apply_by_is_auto: false,
+      })
+    ).toBe("urgent");
+    expect(
+      savedBucket({
+        deadline: daysFromNow(14),
+        apply_by: daysFromNow(14),
+        apply_by_is_auto: false,
+      })
+    ).toBe("month");
+  });
+
+  it("treats manual apply_by without deadline as planned dates", () => {
+    expect(
+      savedBucket({
+        apply_by: daysFromNow(2),
+        apply_by_is_auto: false,
+      })
+    ).toBe("urgent");
+  });
+});
+
+describe("appliedBucket / daysWaiting", () => {
+  it("computes days waiting from last activity", () => {
+    expect(daysWaiting({ applied_at: daysAgo(5) })).toBe(5);
+    expect(daysWaiting({})).toBeNull();
+  });
+
+  it("routes closed, offer, and dialog before waiting age", () => {
+    expect(appliedBucket({ status: "rejected" })).toBe("closed");
+    expect(appliedBucket({ status: "accepted" })).toBe("offer");
+    expect(appliedBucket({ status: "interview" })).toBe("dialog");
+  });
+
+  it("splits applied rows into late and fresh by silence window", () => {
+    expect(
+      appliedBucket({
+        status: "applied",
+        applied_at: daysAgo(SILENCE_FOLLOW_UP_DAYS),
+      })
+    ).toBe("late");
+    expect(
+      appliedBucket({
+        status: "applied",
+        applied_at: daysAgo(2),
+      })
+    ).toBe("fresh");
+  });
+});
+
+describe("compareByDateThenMatch", () => {
+  it("sorts earlier date first, then higher match ratio", () => {
+    const rows = [
+      {
+        id: 1,
+        apply_by: "2026-08-20",
+        match: { count: 8, total: 10 },
+      },
+      {
+        id: 2,
+        apply_by: "2026-08-10",
+        match: { count: 1, total: 10 },
+      },
+      {
+        id: 3,
+        apply_by: "2026-08-10",
+        match: { count: 9, total: 10 },
+      },
+    ];
+    const sorted = [...rows].sort(compareByDateThenMatch);
+    expect(sorted.map((r) => r.id)).toEqual([3, 2, 1]);
   });
 });
