@@ -32,6 +32,7 @@ export default function ProfilePanel({
   profileLeaveGuardRef,
   profileFocus = null,
   onProfileFocusHandled,
+  active = true,
 }) {
   return (
     <div className="stack">
@@ -46,6 +47,7 @@ export default function ProfilePanel({
         profileLeaveGuardRef={profileLeaveGuardRef}
         profileFocus={profileFocus}
         onProfileFocusHandled={onProfileFocusHandled}
+        active={active}
       />
       <AccountDeleteCard
         token={token}
@@ -357,6 +359,7 @@ function ResumeCard({
   profileLeaveGuardRef,
   profileFocus = null,
   onProfileFocusHandled,
+  active = true,
 }) {
   const [resume, setResume] = useState(EMPTY_RESUME);
   const [jobProfiles, setJobProfiles] = useState(() => normalizeJobProfiles([]));
@@ -410,6 +413,7 @@ function ResumeCard({
   );
 
   useEffect(() => {
+    if (!active) return undefined;
     setLoading(true);
     request("/api/v1/me/resume/", { token })
       .then((data) => {
@@ -422,7 +426,7 @@ function ResumeCard({
       })
       .catch((err) => setMessage({ tone: "error", text: err.message }))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, active]);
 
   useEffect(() => {
     if (!open) return undefined;

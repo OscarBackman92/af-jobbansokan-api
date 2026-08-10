@@ -27,4 +27,4 @@ RUN useradd --uid 10001 --create-home appuser \
 USER appuser
 
 EXPOSE 8000
-CMD ["sh", "-c", "python backend/manage.py collectstatic --no-input && python backend/manage.py migrate --no-input && python backend/manage.py bootstrap && gunicorn config.wsgi:application --chdir backend --bind 0.0.0.0:${PORT:-8000} --workers 2"]
+CMD ["sh", "-c", "python backend/manage.py collectstatic --no-input && python backend/manage.py migrate --no-input && python backend/manage.py bootstrap && python backend/manage.py backfill_match_snapshots --limit 300 && gunicorn config.wsgi:application --chdir backend --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 90"]

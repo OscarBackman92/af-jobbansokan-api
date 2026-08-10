@@ -45,6 +45,7 @@ def test_dashboard_response_shape(api_client, user):
         "top_companies",
         "waiting_age",
         "pace",
+        "match_scope",
     }
     assert set(body["kpis"]) == {
         "to_apply",

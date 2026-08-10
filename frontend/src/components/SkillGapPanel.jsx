@@ -79,14 +79,19 @@ export default function SkillGapPanel({ token, onNavigate }) {
   const gaps = data.gap_terms || [];
   const bands = data.response_by_band || [];
   const scope = data.scope || {};
+  const withSnapshot = scope.with_snapshot ?? scope.applications ?? 0;
+  const totalApps = scope.applications ?? 0;
 
   return (
     <section className="card skill-gap-panel">
       <h2>Kompetenskoll</h2>
       <p className="muted">
-        Baserat på {scope.applications ?? 0} sparade/sökta annonser med
-        matchningsdata
-        {scope.since ? ` sedan ${scope.since}` : ""}.
+        {withSnapshot === 0
+          ? scope.hint ||
+            "Inga matchningssnapshots sparade ännu. Spara eller markera jobb som sökta."
+          : `${withSnapshot} av ${totalApps} ansökningar har matchningsdata${
+              scope.since ? ` sedan ${scope.since}` : ""
+            }.`}
       </p>
 
       <div className="skill-gap-grid">

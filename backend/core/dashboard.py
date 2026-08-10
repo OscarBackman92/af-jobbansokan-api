@@ -88,6 +88,7 @@ def build_dashboard(user) -> dict:
     week_end = today + timedelta(days=7)
     seven_ago = today - timedelta(days=7)
     base = _active_qs(user)
+    with_snapshot = base.exclude(match_scored_at__isnull=True).count()
 
     return {
         "kpis": _kpis(base, today, week_end),
@@ -99,6 +100,10 @@ def build_dashboard(user) -> dict:
         "top_companies": _top_companies(base),
         "waiting_age": _waiting_age(base, today),
         "pace": _pace(base, user, today, seven_ago),
+        "match_scope": {
+            "applications": base.count(),
+            "with_snapshot": with_snapshot,
+        },
     }
 
 
@@ -346,8 +351,9 @@ def _waiting_age(base, today):
 
 
 def _pace(base, user, today, seven_ago):
+    # One rolling ~7-day window for all pace metrics on this card.
     week_start = timezone.now() - timedelta(days=7)
-    applied_7d = base.filter(applied_at__gte=seven_ago, applied_at__lte=today).count()
+    applied_7d = base.filter(applied_at__gte=seven_ago).count()
     saved_7d = base.filter(
         status=JobApplication.STATUS_WISHLIST, created_at__gte=week_start
     ).count()
@@ -358,7 +364,7 @@ def _pace(base, user, today, seven_ago):
     created_then_applied = created_in_window.exclude(
         status=JobApplication.STATUS_WISHLIST
     ).count()
-    if created_count > 0:
+    if created_count >= 5:
         save_apply_ratio = min(1.0, round(created_then_applied / created_count, 2))
     else:
         save_apply_ratio = None

@@ -9,12 +9,12 @@ function sourceLabel(source) {
 
 function GapChip({ gap, onAddEvidence }) {
   return (
-    <span className="badge rejected match-gap-chip">
+    <span className="gap-chip">
       {gap.term}
       {onAddEvidence && (
         <button
           type="button"
-          className="linklike match-gap-add"
+          className="linklike gap-chip-add"
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();

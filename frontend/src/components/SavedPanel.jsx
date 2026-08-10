@@ -129,6 +129,21 @@ export default function SavedPanel({
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [expiredCollapsed, setExpiredCollapsed] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [showWarmHint, setShowWarmHint] = useState(false);
+
+  useEffect(() => {
+    if (applications) return undefined;
+    const timer = window.setTimeout(() => setShowWarmHint(true), 3000);
+    return () => window.clearTimeout(timer);
+  }, [applications]);
+
+  useEffect(() => {
+    function onDeselect() {
+      setSelectedIds(new Set());
+    }
+    window.addEventListener("jobbdjungeln-deselect", onDeselect);
+    return () => window.removeEventListener("jobbdjungeln-deselect", onDeselect);
+  }, []);
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -331,8 +346,15 @@ export default function SavedPanel({
         {error ? (
           <p className="error">{error}</p>
         ) : (
-          <div className="loading-row">
-            <span className="spinner" /> Laddar sparade jobb…
+          <div className="lane-skeleton" aria-busy="true" aria-label="Laddar">
+            <div className="lane-skeleton-row" />
+            <div className="lane-skeleton-row" />
+            <div className="lane-skeleton-row" />
+            {showWarmHint && (
+              <p className="muted" style={{ marginTop: "0.75rem" }}>
+                Startar servern… det kan ta en stund efter vila.
+              </p>
+            )}
           </div>
         )}
       </section>
@@ -354,14 +376,10 @@ export default function SavedPanel({
 
   return (
     <div className="stack">
-      <section className="command-hero">
+      <section className="command-hero command-hero--compact">
         <div className="command-hero-copy">
           <span className="section-kicker">Sparade jobb</span>
           <h2>Det du vill söka</h2>
-          <p className="muted">
-            Planera sök senast, lägg i kalendern och markera som sökt när du
-            skickat.
-          </p>
         </div>
         <div className="metric-grid" aria-label="Sparade jobb">
           {LANES.map((lane) => (
@@ -691,6 +709,7 @@ export default function SavedPanel({
                                       type="button"
                                       className="small"
                                       disabled={busy}
+                                      data-shortcut="apply"
                                       onClick={() => openApply(app)}
                                     >
                                       Ansök ↗
@@ -699,6 +718,7 @@ export default function SavedPanel({
                                       type="button"
                                       className="secondary small"
                                       disabled={busy}
+                                      data-shortcut="plan"
                                       onClick={() => startPlanning(app)}
                                       aria-expanded={planningId === app.id}
                                     >

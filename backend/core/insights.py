@@ -26,12 +26,10 @@ BANDS = (
 
 def build_skill_insights(user, *, since_days: int = 365) -> dict:
     since = timezone.localdate() - timedelta(days=since_days)
+    all_apps = JobApplication.objects.filter(owner=user, archived_at__isnull=True)
+    total_apps = all_apps.count()
     rows = list(
-        JobApplication.objects.filter(
-            owner=user,
-            archived_at__isnull=True,
-            match_scored_at__isnull=False,
-        )
+        all_apps.filter(match_scored_at__isnull=False)
         .exclude(match_snapshot={})
         .filter(match_scored_at__date__gte=since)
         .only("status", "match_score", "match_snapshot", "match_profile_id")
@@ -148,8 +146,18 @@ def build_skill_insights(user, *, since_days: int = 365) -> dict:
         "response_by_band": response_by_band,
         "by_profile": profile_rows,
         "scope": {
-            "applications": len(rows),
+            "applications": total_apps,
+            "with_snapshot": len(rows),
             "with_posting": with_posting,
             "since": since.isoformat(),
+            "hint": (
+                None
+                if rows
+                else (
+                    "Inga matchningssnapshots sparade ännu. "
+                    "Spara eller markera jobb som sökta, eller vänta på "
+                    "nästa deploy (backfill körs vid start)."
+                )
+            ),
         },
     }

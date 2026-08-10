@@ -52,11 +52,11 @@ const MATCH_LABELS = {
 const PACE_ROWS = [
   { key: "applied_7d", label: "Sökta senaste 7 dagarna", suffix: "st" },
   { key: "saved_7d", label: "Sparade senaste 7 dagarna", suffix: "st" },
-  { key: "save_apply_ratio", label: "Andel sparade som sökts", suffix: "" },
+  { key: "save_apply_ratio", label: "Andel skapade som sökts (7d)", suffix: "" },
   {
     key: "median_days_saved_to_applied",
     label: "Median dagar sparad → sökt",
-    suffix: "dagar",
+    suffix: "",
   },
   {
     key: "median_days_to_response",
@@ -115,24 +115,26 @@ function formatPaceValue(key, value, pace) {
   if (isMissing(value)) return null;
   if (key === "save_apply_ratio") {
     const n = pace?.save_apply_cohort;
+    if (n != null && n < 5) return null;
     const pctLabel = `${Math.round(Number(value) * 100)} %`;
     return n != null ? `${pctLabel} (av ${n} skapade)` : pctLabel;
   }
   if (key === "median_days_saved_to_applied") {
     const n = pace?.median_days_saved_to_applied_n;
-    return n != null ? `${value} (av ${n} jobb)` : String(value);
+    if (n != null && n < 5) return null;
+    return n != null ? `${value} dagar (av ${n} jobb)` : `${value} dagar`;
   }
   return String(value);
 }
 
-export default function DashboardPanel({ token, onNavigate }) {
+export default function DashboardPanel({ token, onNavigate, active = true }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!active) return undefined;
     let cancelled = false;
     setError(null);
-    setData(null);
     request("/api/v1/dashboard/")
       .then((body) => {
         if (!cancelled) setData(body);
@@ -146,7 +148,7 @@ export default function DashboardPanel({ token, onNavigate }) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, active]);
 
   if (error) {
     return (
@@ -215,6 +217,7 @@ export default function DashboardPanel({ token, onNavigate }) {
     ? 0
     : outcomeValues.reduce((sum, seg) => sum + (seg.value || 0), 0);
   const appliedTotal = outcomes?.applied_total ?? outcomesBucketSum;
+  const outcomesOther = Math.max(0, appliedTotal - outcomesBucketSum);
 
   const waitingValues = waitingAge
     ? WAITING_BUCKETS.map((bucket) => ({
@@ -462,6 +465,13 @@ export default function DashboardPanel({ token, onNavigate }) {
                   />
                 ) : null
               )}
+              {outcomesOther > 0 ? (
+                <div
+                  className="stack-bar-seg stack-bar-seg--other"
+                  style={{ flexGrow: outcomesOther, flexBasis: 0 }}
+                  title={`Övrigt: ${outcomesOther}`}
+                />
+              ) : null}
             </div>
             <ul className="stack-bar-legend">
               {outcomeValues.map((seg) => (
@@ -473,6 +483,15 @@ export default function DashboardPanel({ token, onNavigate }) {
                   {seg.label}: {seg.value}
                 </li>
               ))}
+              {outcomesOther > 0 && (
+                <li>
+                  <span
+                    className="stack-bar-swatch stack-bar-seg--other"
+                    aria-hidden="true"
+                  />
+                  Övrigt: {outcomesOther}
+                </li>
+              )}
             </ul>
           </>
         )}
@@ -553,7 +572,9 @@ export default function DashboardPanel({ token, onNavigate }) {
 
       <section className="card">
         <h2>Din takt</h2>
-        <p className="muted">Tempo och medianer för ditt jobbsök.</p>
+        <p className="muted">
+          Rullande 7 dagar (samma period för sparade, sökta och andelen).
+        </p>
         {!pace ? (
           <p className="muted">för lite data</p>
         ) : (

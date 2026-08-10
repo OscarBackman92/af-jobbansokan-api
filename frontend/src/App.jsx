@@ -87,6 +87,11 @@ function syncTabToUrl(tab) {
   window.history.pushState(null, "", url);
 }
 
+function readDensity() {
+  const stored = localStorage.getItem("density");
+  return stored === "compact" ? "compact" : "comfortable";
+}
+
 export default function App() {
   const [tab, setTab] = useState(() => readTab());
   const [token, setToken] = useState(() => getAccess());
@@ -95,10 +100,13 @@ export default function App() {
   const [verifyKey, setVerifyKey] = useState(() => readVerifyKey());
   const [googleCode, setGoogleCode] = useState(() => readGoogleCallback());
   const [theme, setTheme] = useState(() => readTheme());
+  const [density, setDensity] = useState(() => readDensity());
+  const [showKeysHelp, setShowKeysHelp] = useState(false);
   const [profileFocus, setProfileFocus] = useState(null);
   const [panelFilter, setPanelFilter] = useState(null);
   const [panelMonthFilter, setPanelMonthFilter] = useState("");
   const profileLeaveGuardRef = useRef(null);
+  const focusedRowRef = useRef(-1);
 
   const {
     applications,
@@ -165,8 +173,105 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    document.documentElement.dataset.density = density;
+    localStorage.setItem("density", density);
+  }, [density]);
+
+  useEffect(() => {
     localStorage.setItem("tab", tab);
   }, [tab]);
+
+  useEffect(() => {
+    function visibleRows() {
+      const panel = document.querySelector("main .stack:not(.tab-panel-hidden)");
+      const root =
+        document.querySelector("main > div:not(.tab-panel-hidden)") || panel;
+      if (!root) return [];
+      return Array.from(
+        root.querySelectorAll(".lane-row:not(.lane-row--dim)")
+      );
+    }
+
+    function setFocusedRow(index) {
+      const rows = visibleRows();
+      rows.forEach((row) => row.classList.remove("lane-row--focus"));
+      if (!rows.length) {
+        focusedRowRef.current = -1;
+        return;
+      }
+      const next = ((index % rows.length) + rows.length) % rows.length;
+      focusedRowRef.current = next;
+      const row = rows[next];
+      row.classList.add("lane-row--focus");
+      row.scrollIntoView({ block: "nearest" });
+      const checkbox = row.querySelector('input[type="checkbox"]');
+      if (checkbox instanceof HTMLInputElement) checkbox.focus({ preventScroll: true });
+    }
+
+    function onKeyDown(event) {
+      const target = event.target;
+      const typing =
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+      if (typing && event.key !== "Escape") return;
+
+      if (event.key === "?" && !typing) {
+        event.preventDefault();
+        setShowKeysHelp((v) => !v);
+        return;
+      }
+      if (event.key === "Escape") {
+        setShowKeysHelp(false);
+        window.dispatchEvent(new CustomEvent("jobbdjungeln-deselect"));
+        focusedRowRef.current = -1;
+        document
+          .querySelectorAll(".lane-row--focus")
+          .forEach((row) => row.classList.remove("lane-row--focus"));
+        return;
+      }
+      if (event.key === "/" && !typing) {
+        event.preventDefault();
+        const search = document.querySelector(
+          'input[aria-label="Sök sparade jobb"], input[aria-label="Sök ansökningar"], input.job-search-q'
+        );
+        if (search instanceof HTMLInputElement) {
+          search.focus();
+          search.select();
+        }
+        return;
+      }
+      if (typing) return;
+      if (event.key === "j") {
+        event.preventDefault();
+        setFocusedRow(focusedRowRef.current + 1);
+        return;
+      }
+      if (event.key === "k") {
+        event.preventDefault();
+        setFocusedRow(
+          focusedRowRef.current <= 0 ? 0 : focusedRowRef.current - 1
+        );
+        return;
+      }
+      if (event.key === "a" || event.key === "p") {
+        const rows = visibleRows();
+        const row = rows[focusedRowRef.current];
+        if (!row) return;
+        event.preventDefault();
+        const selector =
+          event.key === "a"
+            ? '[data-shortcut="apply"]'
+            : '[data-shortcut="plan"]';
+        const btn = row.querySelector(selector);
+        if (btn instanceof HTMLButtonElement && !btn.disabled) btn.click();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     const onPopState = () => setTab(readTab());
@@ -227,10 +332,10 @@ export default function App() {
                 aria-current={tab === t.id ? "page" : undefined}
               >
                 {t.label}
-                {t.id === "saved" && savedCount > 0 && (
+                {t.id === "saved" && applications && (
                   <span className="tab-count">{savedCount}</span>
                 )}
-                {t.id === "applied" && appliedCount > 0 && (
+                {t.id === "applied" && applications && (
                   <span className="tab-count">{appliedCount}</span>
                 )}
               </button>
@@ -240,6 +345,19 @@ export default function App() {
         {token && (
           <div className="header-actions">
             {me?.email && <span className="account-email">{me.email}</span>}
+            <button
+              type="button"
+              className="secondary small"
+              onClick={() =>
+                setDensity((d) =>
+                  d === "compact" ? "comfortable" : "compact"
+                )
+              }
+              title="Växla densitet"
+              aria-pressed={density === "compact"}
+            >
+              {density === "compact" ? "Kompakt" : "Bekväm"}
+            </button>
             <button
               type="button"
               className="secondary small"
@@ -295,7 +413,11 @@ export default function App() {
               className={tab === "dash" ? undefined : "tab-panel-hidden"}
               aria-hidden={tab !== "dash"}
             >
-              <DashboardPanel token={token} onNavigate={changeTab} />
+              <DashboardPanel
+                token={token}
+                onNavigate={changeTab}
+                active={tab === "dash"}
+              />
             </div>
             <div
               className={tab === "saved" ? undefined : "tab-panel-hidden"}
@@ -353,11 +475,54 @@ export default function App() {
                 profileLeaveGuardRef={profileLeaveGuardRef}
                 profileFocus={profileFocus}
                 onProfileFocusHandled={() => setProfileFocus(null)}
+                active={tab === "profile"}
               />
             </div>
           </>
         )}
       </main>
+
+      {showKeysHelp && (
+        <div
+          className="keys-help"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Tangentbordsgenvägar"
+        >
+          <div className="keys-help-card">
+            <div className="row-between">
+              <h2>Tangentbord</h2>
+              <button
+                type="button"
+                className="secondary small"
+                onClick={() => setShowKeysHelp(false)}
+              >
+                Stäng
+              </button>
+            </div>
+            <ul className="keys-help-list">
+              <li>
+                <kbd>/</kbd> Fokusera sök
+              </li>
+              <li>
+                <kbd>j</kbd> / <kbd>k</kbd> Nästa / föregående rad
+              </li>
+              <li>
+                <kbd>a</kbd> Ansök
+              </li>
+              <li>
+                <kbd>p</kbd> Planera
+              </li>
+              <li>
+                <kbd>esc</kbd> Avmarkera
+              </li>
+              <li>
+                <kbd>?</kbd> Visa/dölj den här hjälpen
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
 
       <footer className="footer">
         <span className="footer-kicker">Jobbdjungeln</span>

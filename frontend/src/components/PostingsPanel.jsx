@@ -242,6 +242,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
   }, []);
 
   useEffect(() => {
+    if (!active) return undefined;
     loadSavedSearches();
     request("/api/v1/jobs/filters/")
       .then((result) => {
@@ -266,7 +267,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
         /* non-fatal */
       }
     })();
-  }, [loadSavedSearches]);
+  }, [active, loadSavedSearches]);
 
   useEffect(() => {
     if (!browseRegion || municipalityCache[browseRegion]) return undefined;
@@ -353,8 +354,9 @@ export default function PostingsPanel({ onNavigate, active = true }) {
   }, [query, offset]);
 
   useEffect(() => {
+    if (!active) return;
     runSearch();
-  }, [runSearch]);
+  }, [active, runSearch]);
 
   function scrollToResults() {
     const section = resultsSectionRef.current;
@@ -633,7 +635,9 @@ export default function PostingsPanel({ onNavigate, active = true }) {
     }
   }
 
-  const total = data?.total ?? 0;
+  const total = error ? null : (data?.total ?? (loading ? null : 0));
+  const totalLabel =
+    total == null ? "—" : total.toLocaleString("sv-SE");
   // Keep JobTech order (pubdate-desc) so pages stay stable; do not re-sort.
   // Dedupe within the page in case upstream returns the same id twice.
   const results = (() => {
@@ -648,10 +652,11 @@ export default function PostingsPanel({ onNavigate, active = true }) {
       return true;
     });
   })();
-  const showingFrom = total === 0 ? 0 : offset + 1;
-  const showingTo = Math.min(offset + PAGE_SIZE, total);
+  const safeTotal = total ?? 0;
+  const showingFrom = safeTotal === 0 ? 0 : offset + 1;
+  const showingTo = Math.min(offset + PAGE_SIZE, safeTotal);
   const pageNumber = Math.floor(offset / PAGE_SIZE) + 1;
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(safeTotal / PAGE_SIZE));
   const locationSummary = countSummary(
     selectedMunicipalities.length,
     "ort",
@@ -686,7 +691,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
         <div className="metric-inline" aria-label="Söksammanfattning">
           <div className="metric-tile metric-tile--cyan">
             <span className="metric-label">Träffar</span>
-            <strong>{total.toLocaleString("sv-SE")}</strong>
+            <strong>{totalLabel}</strong>
             <span className="metric-detail">i sökningen</span>
           </div>
           <div className="metric-tile">
@@ -755,7 +760,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
           />
 
           <label
-            className="job-remote"
+            className={`job-filter-chip ${remote ? "active" : ""}`}
             title="Visa bara jobb som kan utföras på distans"
           >
             <input
@@ -767,7 +772,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
           </label>
 
           <label
-            className="job-remote"
+            className={`job-filter-chip ${matchCvOnly ? "active" : ""}`}
             title="Visa jobb där minst ett krav från annonsen täcks av CV:t"
           >
             <input
@@ -782,7 +787,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
           </label>
 
           <label
-            className="job-remote"
+            className={`job-filter-chip ${minMatch60 ? "active" : ""}`}
             title="Visa bara jobb med minst 60 % kravtäckning"
           >
             <input
@@ -796,7 +801,10 @@ export default function PostingsPanel({ onNavigate, active = true }) {
             Minst 60 % kravtäckning
           </label>
 
-          <label className="job-remote" title="Sortera träffarna på kravtäckning">
+          <label
+            className={`job-filter-chip ${sortMatch ? "active" : ""}`}
+            title="Sortera träffarna på kravtäckning"
+          >
             <input
               type="checkbox"
               checked={sortMatch}
@@ -806,8 +814,8 @@ export default function PostingsPanel({ onNavigate, active = true }) {
           </label>
 
           <label
-            className="job-remote"
-            title="Dölj annonser med hårda formella blockerare (t.ex. körkort)"
+            className={`job-filter-chip ${hideBlocked ? "active" : ""}`}
+            title="Dölj annonser med hårda formella blockerare"
           >
             <input
               type="checkbox"
@@ -912,23 +920,19 @@ export default function PostingsPanel({ onNavigate, active = true }) {
 
           {!loading && !error && (
             <p className="muted job-count">
-              {total === 0
+              {safeTotal === 0
                 ? query.minMatch60 || query.matchCv
                   ? `Inga av de ${Number(data?.scanned ?? data?.match_cv_scanned ?? 0).toLocaleString("sv-SE") || "—"} genomsökta annonserna nådde filtret.`
                   : "Inga annonser matchade din sökning."
                 : query.minMatch60 || query.matchCv
-                  ? `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
-                      "sv-SE"
-                    )} som når kravtäckningen${
+                  ? `Visar ${showingFrom}–${showingTo} av ${totalLabel} som når kravtäckningen${
                       data?.scanned || data?.match_cv_scanned
                         ? ` — sökte igenom de ${Number(
                             data.scanned ?? data.match_cv_scanned
                           ).toLocaleString("sv-SE")} senaste`
                         : ""
                     }${data?.truncated ? " (avbrutet efter budget)" : ""}`
-                  : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
-                      "sv-SE"
-                    )} annonser`}
+                  : `Visar ${showingFrom}–${showingTo} av ${totalLabel} annonser`}
               {activeFilters && (
                 <button className="linklike job-clear" onClick={clearFilters}>
                   Rensa filter
@@ -941,7 +945,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
             <p className="muted job-count">—</p>
           )}
 
-          {!error && !loading && total === 0 && (query.matchCv || query.minMatch60) && (
+          {!error && !loading && safeTotal === 0 && (query.matchCv || query.minMatch60) && (
             <div className="empty-actions empty-actions--inline">
               <button
                 type="button"
@@ -980,7 +984,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
           )}
         </section>
 
-        {total > PAGE_SIZE && (
+        {safeTotal > PAGE_SIZE && (
           <div className="pager" aria-label="Paginering">
             <button
               type="button"
@@ -996,7 +1000,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
             <button
               type="button"
               className="secondary small"
-              disabled={offset + PAGE_SIZE >= total || loading}
+              disabled={offset + PAGE_SIZE >= safeTotal || loading}
               onClick={() => goToPage(offset + PAGE_SIZE)}
             >
               Nästa →

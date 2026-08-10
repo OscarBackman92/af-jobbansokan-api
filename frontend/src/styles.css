@@ -993,8 +993,8 @@ a:focus-visible {
   margin: 1.4rem 0 0.5rem;
   font-size: 0.85rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--muted);
 }
 
@@ -1105,8 +1105,13 @@ textarea {
 
 select {
   width: auto;
-  padding: 0.4rem 0.6rem;
+  height: 36px;
+  padding: 0.35rem 0.65rem;
   font-size: 0.88rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
   cursor: pointer;
 }
 
@@ -1262,10 +1267,10 @@ td {
 
 th {
   color: var(--muted);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
 }
 
 tbody tr {
@@ -1711,9 +1716,9 @@ tbody tr:last-child td {
   margin: 0;
   color: var(--label);
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .pipeline-stage-count {
@@ -2071,9 +2076,9 @@ tbody tr:last-child td {
 .cv-skill-group-label {
   margin: 0 0 0.35rem;
   font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--label);
 }
 
@@ -2142,8 +2147,8 @@ tbody tr:last-child td {
   margin-bottom: 0.35rem;
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--label);
 }
 
@@ -2296,6 +2301,31 @@ tbody tr:last-child td {
   white-space: nowrap;
 }
 
+.job-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.36rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.job-filter-chip.active {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--border));
+  background: color-mix(in srgb, var(--brand) 10%, var(--surface));
+}
+
+.job-filter-chip input {
+  margin: 0;
+}
+
 .job-search-submit {
   min-height: 2.65rem;
   padding: 0.55rem 1.25rem;
@@ -2379,8 +2409,8 @@ tbody tr:last-child td {
   border-bottom: 1px solid var(--border);
   font-size: 0.78rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--label);
   flex-shrink: 0;
 }
@@ -2959,6 +2989,19 @@ tbody tr:last-child td {
   gap: 0.35rem;
 }
 
+.gap-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--border));
+  background: color-mix(in srgb, var(--amber) 12%, var(--surface));
+  color: var(--ink);
+}
+
+.gap-chip-add,
 .match-gap-add {
   font-size: 0.75rem;
   font-weight: 600;
@@ -3052,8 +3095,8 @@ tbody tr:last-child td {
 .match-score-group-label {
   display: block;
   font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--muted);
   margin-bottom: 0.35rem;
 }
@@ -3133,8 +3176,8 @@ tbody tr:last-child td {
 
 .evidence-row-title {
   font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--muted);
 }
 
@@ -3402,8 +3445,8 @@ button.chart-col:focus-visible {
 .chart-label {
   font-size: 0.72rem;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .chart-col--current .chart-label {
@@ -3491,10 +3534,11 @@ button.chart-col:focus-visible {
 
 .lane-select {
   grid-area: select;
-  align-self: center;
+  align-self: start;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   margin: 0;
+  padding-top: 0.15rem;
 }
 
 .lane-row > .pipeline-row {
@@ -3617,6 +3661,65 @@ button.chart-col:focus-visible {
   color: var(--red, #e05555);
 }
 
+.lane-row--focus {
+  outline: 2px solid color-mix(in srgb, var(--brand) 55%, var(--border));
+  outline-offset: 2px;
+}
+
+[data-density="compact"] .lane-row {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+[data-density="compact"] .lane-row-meta,
+[data-density="compact"] .match-score--compact,
+[data-density="compact"] .profile-fit-row {
+  display: none;
+}
+
+[data-density="compact"] .command-hero {
+  padding: 0.9rem 1.15rem;
+}
+
+.keys-help {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--ink) 35%, transparent);
+  padding: 1rem;
+}
+
+.keys-help-card {
+  width: min(24rem, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.15rem;
+  box-shadow: var(--shadow-md);
+}
+
+.keys-help-list {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.keys-help-list kbd {
+  display: inline-block;
+  min-width: 1.4rem;
+  padding: 0.1rem 0.35rem;
+  margin-right: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-2);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+
 .bulk-bar {
   position: sticky;
   top: 0.5rem;
@@ -3631,6 +3734,34 @@ button.chart-col:focus-visible {
   border-radius: var(--radius-sm);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
+}
+
+.lane-skeleton {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.35rem 0;
+}
+
+.lane-skeleton-row {
+  height: 3.2rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 0%,
+    color-mix(in srgb, var(--surface) 70%, var(--border)) 50%,
+    var(--surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: lane-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes lane-skeleton-pulse {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 .bulk-bar-count {
@@ -3750,6 +3881,10 @@ button.chart-col:focus-visible {
 
 .stack-bar-seg--fresh {
   background: var(--brand);
+}
+
+.stack-bar-seg--other {
+  background: color-mix(in srgb, var(--muted) 35%, var(--surface-2));
 }
 
 .stack-bar-legend {

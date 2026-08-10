@@ -353,6 +353,73 @@ def test_search_match_cv_filter(api_client, user, mock_jobtech):
     assert body["match_cv_scanned"] >= 1
 
 
+def test_search_min_match_with_filters_returns_200(api_client, user, mock_jobtech):
+    Resume.objects.create(user=user, skills=["Python", "Django", "SQL", "Excel"])
+    api_client.force_authenticate(user)
+    response = api_client.get(
+        SEARCH_URL,
+        {
+            "q": "python",
+            "min_match": "60",
+            "sort": "match",
+            "hide_blocked": "1",
+            "municipality": "AvNB_uwa_6n6",
+            "group": "DJh5_yyF_hEM",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "results" in body
+    assert "scanned" in body
+    assert "truncated" in body
+
+
+def test_search_min_match_returns_200(api_client, user, mock_jobtech):
+    Resume.objects.create(user=user, skills=["Python", "Django", "SQL", "Excel"])
+    api_client.force_authenticate(user)
+    response = api_client.get(
+        SEARCH_URL, {"q": "python", "min_match": "60", "sort": "match"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "results" in body
+    assert "scanned" in body
+    assert "truncated" in body
+
+
+def test_search_min_match_empty_profile_returns_400(api_client, user, mock_jobtech):
+    Resume.objects.create(user=user, skills=[])
+    api_client.force_authenticate(user)
+    response = api_client.get(SEARCH_URL, {"min_match": "60"})
+    assert response.status_code == 400
+
+
+def test_search_min_match_handles_null_description(api_client, user, monkeypatch):
+    Resume.objects.create(user=user, skills=["Python"])
+    payload = {
+        "total": {"value": 1},
+        "hits": [
+            {
+                "id": "9001",
+                "headline": "Utvecklare",
+                "employer": {"name": "Acme"},
+                "workplace_address": {},
+                "publication_date": "2026-06-10T08:00:00",
+                "description": {"text": None},
+                "webpage_url": "https://example.com/9001",
+            }
+        ],
+    }
+
+    def fake_get(url, params=None, timeout=None):
+        return FakeResponse(payload)
+
+    monkeypatch.setattr(jobtech.requests, "get", fake_get)
+    api_client.force_authenticate(user)
+    response = api_client.get(SEARCH_URL, {"min_match": "1"})
+    assert response.status_code == 200
+
+
 def test_passes_cv_match_uses_threshold_not_all_terms():
     from core.views import _passes_cv_match
 

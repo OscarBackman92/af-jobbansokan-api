@@ -85,6 +85,7 @@ def test_create_writes_match_snapshot(api_client, user):
     assert response.status_code == 201
     app = JobApplication.objects.get(id=response.json()["id"])
     assert app.match_scored_at is not None
+    assert app.match_score is not None
     assert app.match_snapshot != {}
     assert "must_total" in app.match_snapshot
 
@@ -92,13 +93,16 @@ def test_create_writes_match_snapshot(api_client, user):
 def test_status_applied_rewrites_match_snapshot(api_client, user):
     from core.models import Resume
 
-    Resume.objects.create(user=user, skills=["Python"])
+    Resume.objects.create(user=user, skills=["Python", "Django", "SQL", "Excel"])
+    long_desc = (
+        "Krav\n- Python\n- Django\n- SQL\n- Excel\n" + ("Beskrivning. " * 40)
+    )
     app = JobApplication.objects.create(
         owner=user,
         company="Acme",
         title="Dev",
         status="wishlist",
-        ad_description="Krav\n- Python\n" + ("Text. " * 50),
+        ad_description=long_desc,
     )
     api_client.force_authenticate(user)
     response = api_client.patch(
@@ -109,6 +113,7 @@ def test_status_applied_rewrites_match_snapshot(api_client, user):
     assert response.status_code == 200
     app.refresh_from_db()
     assert app.match_scored_at is not None
+    assert app.match_score is not None
     assert app.match_snapshot != {}
 
 

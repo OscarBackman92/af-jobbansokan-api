@@ -128,6 +128,14 @@ export default function AppliedPanel({
     }
   }, [initialMonthFilter]);
 
+  useEffect(() => {
+    function onDeselect() {
+      setSelectedIds(new Set());
+    }
+    window.addEventListener("jobbdjungeln-deselect", onDeselect);
+    return () => window.removeEventListener("jobbdjungeln-deselect", onDeselect);
+  }, []);
+
   function requestMove(applicationId, status) {
     const current = applications?.find((a) => a.id === applicationId);
     const previousStatus = current?.status;
@@ -300,13 +308,10 @@ export default function AppliedPanel({
 
   return (
     <div className="stack">
-      <section className="command-hero">
+      <section className="command-hero command-hero--compact">
         <div className="command-hero-copy">
           <span className="section-kicker">Ansökningar</span>
           <h2>Sökta jobb</h2>
-          <p className="muted">
-            Hur länge du väntat, var du är i dialogen, och vad som är avslutat.
-          </p>
         </div>
         <div className="metric-grid" aria-label="Översikt sökta">
           <MetricTile

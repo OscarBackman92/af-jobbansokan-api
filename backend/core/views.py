@@ -1,6 +1,7 @@
 import csv
 import hashlib
 import json
+import logging
 import os
 from datetime import timedelta
 from types import SimpleNamespace
@@ -28,6 +29,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.email_health import email_delivery_warnings
+
+logger = logging.getLogger(__name__)
 
 from .csv_safety import sanitize_csv_cell
 from .dashboard import build_dashboard
@@ -774,9 +777,11 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
 
 GOOD_MATCH_PERCENT = 60
 GOOD_MATCH_MIN_TERMS = 2
-# When filtering by CV, scan this many upstream ads then paginate locally.
-MATCH_CV_SCAN_LIMIT = 200
+# Bounded scan: 4 JobTech pages × 25 ads. Keep well under gunicorn timeout.
+MATCH_CV_SCAN_LIMIT = 100
 MATCH_CV_BATCH_SIZE = 25
+MATCH_CV_TIME_BUDGET_S = 8.0
+MATCH_SCORE_CACHE_TTL = 60 * 60 * 24  # 24h
 
 
 def _truthy(value):
@@ -849,23 +854,57 @@ def _dedupe_jobs_by_id(results: list) -> list:
 
 
 def _attach_cv_match(
-    jobs: list[dict], *, evidence, skills, resume=None, profiles: bool = False
+    jobs: list[dict],
+    *,
+    evidence,
+    skills,
+    resume=None,
+    profiles: bool = False,
+    cache_key_prefix: str = "",
 ) -> None:
+    from django.core.cache import cache
+
     from .requirements import score_all_profiles
 
     for job in jobs:
-        posting = SimpleNamespace(title=job["title"], description=job["description"])
+        title = job.get("title") or ""
+        description = job.get("description") or ""
+        posting = SimpleNamespace(title=title, description=description)
+        cache_key = ""
+        if cache_key_prefix and job.get("id"):
+            cache_key = f"cvmatch:{cache_key_prefix}:{job['id']}"
+            cached = cache.get(cache_key)
+            if isinstance(cached, dict):
+                job["match"] = dict(cached)
+                if profiles and resume is not None and "profiles_scored" not in job["match"]:
+                    try:
+                        profiles_scored = score_all_profiles(resume, posting)
+                        if profiles_scored:
+                            job["match"]["profiles_scored"] = profiles_scored
+                            job["match"]["best_profile"] = profiles_scored[0]
+                    except Exception:
+                        pass
+                continue
         try:
             if evidence:
                 job["match"] = match_evidence(evidence, posting)
             else:
-                job["match"] = match_skills(skills, posting)
+                job["match"] = match_skills(skills or [], posting)
             if profiles and resume is not None:
                 profiles_scored = score_all_profiles(resume, posting)
                 if profiles_scored:
                     job["match"]["profiles_scored"] = profiles_scored
                     job["match"]["best_profile"] = profiles_scored[0]
+            if cache_key:
+                # Don't cache multi-profile payload (resume-specific detail).
+                slim = {
+                    k: v
+                    for k, v in job["match"].items()
+                    if k not in ("profiles_scored", "best_profile")
+                }
+                cache.set(cache_key, slim, MATCH_SCORE_CACHE_TTL)
         except Exception:
+            logger.exception("CV match failed for job %s", job.get("id"))
             job["match"] = {
                 "must_total": 0,
                 "must_covered": 0,
@@ -897,6 +936,29 @@ def _match_sort_key(job: dict) -> tuple:
         return (0, 0)
 
 
+def _match_cache_prefix(*, evidence, skills, resume) -> str:
+    import hashlib
+
+    resume_stamp = ""
+    if resume is not None:
+        updated = getattr(resume, "updated_at", None)
+        resume_stamp = updated.isoformat() if updated else str(getattr(resume, "pk", ""))
+    raw = json.dumps(
+        {
+            "skills": skills or [],
+            "evidence": [
+                {"term": e.get("term"), "confirmed": e.get("confirmed")}
+                for e in (evidence or [])
+                if isinstance(e, dict)
+            ],
+            "resume": resume_stamp,
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+
+
 def _search_jobs_matching_cv(
     *,
     evidence,
@@ -907,34 +969,52 @@ def _search_jobs_matching_cv(
     min_percent: int = GOOD_MATCH_PERCENT,
     resume=None,
 ) -> dict:
-    """Scan JobTech results, filter by CV score, then paginate the matches.
+    """Scan a bounded JobTech window, score locally, paginate matches.
 
-    Platsbanken has no CV index we can query, so we over-fetch a bounded
-    window, score locally, and return a filtered ``total``.
+    Never raises for scoring failures — returns what we have with truncated=True.
     """
+    import time
+
     matched: list[dict] = []
     scanned = 0
     upstream_total = 0
     truncated = False
+    started = time.monotonic()
+    cache_prefix = _match_cache_prefix(evidence=evidence, skills=skills, resume=resume)
+
     while scanned < MATCH_CV_SCAN_LIMIT:
+        if time.monotonic() - started > MATCH_CV_TIME_BUDGET_S:
+            truncated = True
+            break
         batch = min(MATCH_CV_BATCH_SIZE, MATCH_CV_SCAN_LIMIT - scanned)
-        data = _cached_jobtech_search(
-            **{**search_kwargs, "offset": scanned, "limit": batch}
-        )
+        try:
+            data = _cached_jobtech_search(
+                **{**search_kwargs, "offset": scanned, "limit": batch}
+            )
+        except JobTechError:
+            truncated = True
+            if scanned == 0:
+                raise
+            break
         upstream_total = int(data.get("total") or 0)
         results = list(data.get("results") or [])
         if not results:
             break
-        # Skip multi-profile scoring during the scan — attach only for the page.
         _attach_cv_match(
-            results, evidence=evidence, skills=skills, resume=None, profiles=False
+            results,
+            evidence=evidence,
+            skills=skills,
+            resume=None,
+            profiles=False,
+            cache_key_prefix=cache_prefix,
         )
         matched.extend(_filter_jobs_by_cv_match(results, min_percent=min_percent))
         scanned += len(results)
         if scanned >= upstream_total or len(results) < batch:
             break
     else:
-        truncated = scanned < upstream_total
+        if scanned < upstream_total:
+            truncated = True
 
     if scanned < upstream_total and scanned >= MATCH_CV_SCAN_LIMIT:
         truncated = True
@@ -942,9 +1022,18 @@ def _search_jobs_matching_cv(
     matched = _dedupe_jobs_by_id(matched)
     matched.sort(key=_match_sort_key, reverse=True)
     page = matched[max(0, offset) : max(0, offset) + max(1, limit)]
-    _attach_cv_match(
-        page, evidence=evidence, skills=skills, resume=resume, profiles=True
-    )
+    try:
+        _attach_cv_match(
+            page,
+            evidence=evidence,
+            skills=skills,
+            resume=resume,
+            profiles=True,
+            cache_key_prefix=cache_prefix,
+        )
+    except Exception:
+        logger.exception("Failed to attach profile scores to match page")
+
     return {
         "results": page,
         "total": len(matched),
@@ -1095,15 +1184,23 @@ def job_search(request):
                 status=drf_status.HTTP_502_BAD_GATEWAY,
             )
         except Exception:
-            return Response(
-                {
-                    "detail": (
-                        "Kunde inte beräkna CV-matchning just nu. "
-                        "Prova utan matchningsfilter."
-                    )
-                },
-                status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            logger.exception("min_match search failed")
+            # Prefer a usable empty payload over a hard 500 — UI can show truncated.
+            data = {
+                "results": [],
+                "total": 0,
+                "offset": offset,
+                "limit": limit,
+                "match_cv_filtered": True,
+                "match_cv_scanned": 0,
+                "scanned": 0,
+                "truncated": True,
+                "match_error": True,
+                "detail": (
+                    "Kunde inte beräkna CV-matchning just nu. "
+                    "Prova utan matchningsfilter."
+                ),
+            }
         if hide_blocked:
             data["results"] = [
                 job
