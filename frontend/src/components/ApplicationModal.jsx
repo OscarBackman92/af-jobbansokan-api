@@ -37,6 +37,7 @@ export default function ApplicationModal({
   token,
   application,
   existingApplications = [],
+  defaultStatus = "applied",
   onClose,
   onChanged,
   onOpenExisting,
@@ -49,7 +50,11 @@ export default function ApplicationModal({
             Object.entries(application).map(([k, v]) => [k, v ?? ""])
           ),
         }
-      : EMPTY
+      : {
+          ...EMPTY,
+          status: defaultStatus,
+          applied_at: defaultStatus === "wishlist" ? "" : localISODate(),
+        }
   );
   const initialFormRef = useRef(JSON.stringify(form));
   const [events, setEvents] = useState(application?.events ?? []);

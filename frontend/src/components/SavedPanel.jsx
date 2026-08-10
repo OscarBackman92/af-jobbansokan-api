@@ -124,6 +124,7 @@ export default function SavedPanel({
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [expiredCollapsed, setExpiredCollapsed] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -384,6 +385,9 @@ export default function SavedPanel({
                 : `${saved.length} sparade · ${counts.urgent} bråttom.`}
             </p>
           </div>
+          <button type="button" className="small" onClick={() => setAdding(true)}>
+            + Spara jobb
+          </button>
         </div>
         {error && <p className="error">{error}</p>}
 
@@ -790,17 +794,27 @@ export default function SavedPanel({
         />
       )}
 
-      {selected && (
+      {(selected || adding) && (
         <ModalErrorBoundary
-          key={selected.id}
-          onClose={() => setSelected(null)}
+          key={selected?.id ?? "new-saved"}
+          onClose={() => {
+            setSelected(null);
+            setAdding(false);
+          }}
         >
           <ApplicationModal
             token={token}
             application={selected}
+            defaultStatus="wishlist"
             existingApplications={applications}
-            onOpenExisting={(app) => setSelected(app)}
-            onClose={() => setSelected(null)}
+            onOpenExisting={(app) => {
+              setSelected(app);
+              setAdding(false);
+            }}
+            onClose={() => {
+              setSelected(null);
+              setAdding(false);
+            }}
             onChanged={reload}
           />
         </ModalErrorBoundary>

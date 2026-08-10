@@ -42,6 +42,9 @@ export async function login(
   await fillPassword(page, password);
   await page.getByRole("button", { name: "Logga in", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Din översikt" })
+    page.getByRole("navigation", { name: "Huvudnavigering" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Översikt", exact: true })
   ).toBeVisible();
 }

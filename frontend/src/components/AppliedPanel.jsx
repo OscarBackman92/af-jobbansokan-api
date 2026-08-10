@@ -89,6 +89,7 @@ export default function AppliedPanel({
   initialMonthFilter,
 }) {
   const [selected, setSelected] = useState(null);
+  const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
   const [laneFilter, setLaneFilter] = useState(() =>
     LANE_FILTER_IDS.has(initialFilter) ? initialFilter : null
@@ -362,6 +363,13 @@ export default function AppliedPanel({
           <div className="row-gap">
             <button
               type="button"
+              className="small"
+              onClick={() => setAdding(true)}
+            >
+              + Ny ansökan
+            </button>
+            <button
+              type="button"
               className="secondary small"
               onClick={exportCsv}
             >
@@ -547,6 +555,7 @@ export default function AppliedPanel({
                   <section
                     key={group.id}
                     className={`lane pipeline-stage pipeline-stage--${group.id}`}
+                    data-lane={group.id}
                   >
                     <div
                       className={
@@ -728,17 +737,26 @@ export default function AppliedPanel({
         </div>
       )}
 
-      {selected && (
+      {(selected || adding) && (
         <ModalErrorBoundary
-          key={selected.id}
-          onClose={() => setSelected(null)}
+          key={selected?.id ?? "new-applied"}
+          onClose={() => {
+            setSelected(null);
+            setAdding(false);
+          }}
         >
           <ApplicationModal
             token={token}
             application={selected}
             existingApplications={applications}
-            onOpenExisting={(app) => setSelected(app)}
-            onClose={() => setSelected(null)}
+            onOpenExisting={(app) => {
+              setSelected(app);
+              setAdding(false);
+            }}
+            onClose={() => {
+              setSelected(null);
+              setAdding(false);
+            }}
             onChanged={reload}
           />
         </ModalErrorBoundary>

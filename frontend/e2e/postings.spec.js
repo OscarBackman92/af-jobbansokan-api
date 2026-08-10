@@ -19,8 +19,8 @@ test("search Platsbanken (mocked) and save an ad to the board", async ({
     card.getByRole("button", { name: "Sparad ✓" })
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Ansökningar", exact: true }).click();
+  await page.getByRole("button", { name: "Sparade jobb", exact: true }).click();
   await expect(
-    page.locator(".pipeline-row", { hasText: "Backendutvecklare Python" })
+    page.locator(".lane-row", { hasText: "Backendutvecklare Python" })
   ).toBeVisible();
 });
