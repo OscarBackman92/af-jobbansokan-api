@@ -1,15 +1,15 @@
 const HIGHLIGHTS = [
   {
-    title: "Ansökningar",
-    text: "Varje ansökan på en rad — och vad som är dags idag.",
+    title: "Översikt",
+    text: "Vad som ska sökas och vad som väntar på svar.",
   },
   {
-    title: "Annonser",
-    text: "Platsbanken. Spara det du tänker söka.",
+    title: "Sparade & ansökningar",
+    text: "Sparade jobb och sökta hålls isär — aldrig blandade.",
   },
   {
-    title: "Profil & CV",
-    text: "Ditt CV och vad som ska räknas i matchningen.",
+    title: "Annonser & CV",
+    text: "Platsbanken plus matchning mot ditt CV.",
   },
 ];
 

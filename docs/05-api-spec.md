@@ -42,6 +42,12 @@ the uploaded file.
 - `POST /api/v1/me/saved-searches/`
 - `DELETE /api/v1/me/saved-searches/{id}/`
 
+## Dashboard
+
+- `GET /api/v1/dashboard/` — single payload for Översikt (kpis, funnel,
+  next_actions, monthly, outcomes, response_by_match, top_companies,
+  waiting_age, pace)
+
 ## Applications
 
 - `GET /api/v1/applications/` — lean rows without `events`
@@ -50,8 +56,11 @@ the uploaded file.
 - `PATCH /api/v1/applications/{id}/`
 - `DELETE /api/v1/applications/{id}/`
 - `POST /api/v1/applications/{id}/events/`
-- `GET /api/v1/applications/tracked-urls/` — every `ad_url` on the board
-  (used by the ad search to mark already-saved ads)
+- `GET /api/v1/applications/tracked-urls/` — every `ad_url` including
+  soft-archived rows (duplicate protection for the ad search)
+- `GET /api/v1/applications/saved-summary/` — wishlist lane counts
+- `POST /api/v1/applications/bulk/` — `{ids, action, date?}` for
+  mark_applied / archive / pause / activate / set_apply_by
 - `GET /api/v1/applications/export/`
 
 List filters:
@@ -60,7 +69,12 @@ List filters:
 - `search`
 - `from`
 - `to`
-- `page_size` (max 200 — the board fetches everything in one request)
+- `archived` (`1` = show soft-archived rows only; default hides them)
+- `page_size` (max 200 — the SPA fetches everything in one request)
+
+Fields added for Sparade/Ansökningar split: `intent`, `apply_by`,
+`apply_by_is_auto`, `archived_at`, plus read-only `days_until_apply_by`
+and `days_waiting`. Status ids are unchanged.
 
 Creating an application accepts either free-text fields (`company`, `title`, …)
 or an optional legacy `posting` id (historical DB reference only).

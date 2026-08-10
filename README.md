@@ -21,14 +21,14 @@ Platsbanken's job ads, and CSV export because the data is yours.
 
 ## Features
 
-- **Ansökningar** — översikt över aktiva ansökningar med snabbfilter och
-  statusbyte:
-  Sparad → Ansökt → Telefonintervju → Intervju → Skickad vidare →
-  Erbjudande, with closed ones (Accepterat/Avslag/Inget svar/Återkallad)
-  in an archive. Cards show a deadline badge as the last application day
-  approaches
-- **Follow-ups** — a section that surfaces rows whose next-step date has
-  passed or whose deadline is within a week
+- **Översikt** — läsvy med KPI:er, nästa steg, tratt, utfall och takt;
+  länkar vidare till sparade jobb och ansökningar med förvalda filter
+- **Sparade jobb** — enbart status Sparad (wishlist), grupperade efter
+  "sök senast" (bråttom / den här månaden / utan sista dag / lagt på is /
+  utgångna). Ansök ↗ → bekräfta "Ja, sökt idag" är vägen till Ansökningar
+- **Ansökningar** — enbart sökta rader (allt utom wishlist), grupperade
+  efter väntetid och dialog: Väntar för länge → Nyligen sökta → I dialog →
+  Erbjudande → Avslutade. Statusbyte loggas automatiskt i tidslinjen
 - **Timeline per application** — notes, calls and interviews; status
   changes are logged automatically
 - **Free-text rows** — track applications from anywhere (LinkedIn,
@@ -37,13 +37,13 @@ Platsbanken's job ads, and CSV export because the data is yours.
   Arbetsförmedlingen's open
   [JobTech JobSearch API](https://jobsearch.api.jobtechdev.se) (free, no
   API key), with filters for region, occupation field and remote; save
-  an ad to the board with one click
+  an ad with one click
 - **CV** — upload a PDF/DOCX/TXT and it's parsed (in memory, never
   stored, using pypdf layout mode) into an always-visible, editable CV
   whose skills are matched against ad texts (boundary-aware, so "Go"
   doesn't match "Django")
 - **Statistics** — applications per month and how many reached a
-  call/interview or further
+  call/interview or further (on Översikt)
 - **CSV export** (data portability)
 - **Password reset by e-mail** and transparent JWT refresh, so a session
   never drops mid-task
@@ -84,11 +84,14 @@ Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
 | `/api/v1/me/resume/` | GET, PUT, DELETE | Structured CV |
 | `/api/v1/me/resume/parse/` | POST | Parse uploaded CV to a draft — file never stored |
 | `/dj-rest-auth/google/` | POST | Google login (optional; button hidden when `GOOGLE_CLIENT_ID` unset) |
-| `/api/v1/applications/` | GET, POST | Tracker rows; `?status=&search=&from=&to=&page_size=` (list omits `events`) |
-| `/api/v1/applications/{id}/` | GET, PATCH, DELETE | Edit status, deadline, notes, contacts — fully mutable; includes `events` |
+| `/api/v1/dashboard/` | GET | Översikt KPIs, funnel, next actions, monthly, pace |
+| `/api/v1/applications/` | GET, POST | Tracker rows; `?status=&search=&from=&to=&archived=1&page_size=` (list omits `events`; archived hidden by default) |
+| `/api/v1/applications/{id}/` | GET, PATCH, DELETE | Edit status, apply_by, intent, notes, contacts — fully mutable; includes `events` |
 | `/api/v1/applications/{id}/events/` | POST | Append a timeline event |
-| `/api/v1/applications/tracked-urls/` | GET | All ad URLs on the board (lets the ad search mark saved ads cheaply) |
-| `/api/v1/applications/export/` | GET | CSV download (filters apply) |
+| `/api/v1/applications/tracked-urls/` | GET | All ad URLs including archived (duplicate protection) |
+| `/api/v1/applications/saved-summary/` | GET | Lane counts for Sparade jobb |
+| `/api/v1/applications/bulk/` | POST | Bulk mark_applied / archive / pause / activate / set_apply_by |
+| `/api/v1/applications/export/` | GET | CSV download (filters apply; includes intent + apply_by) |
 | `/api/v1/jobs/` | GET | **Live Platsbanken search**; `?q=&region=&field=&remote=&offset=&limit=`; CV match per hit; identical searches cached 3 min |
 | `/api/v1/jobs/filters/` | GET | Region + occupation-field options for the search dropdowns |
 | `/api/v1/jobs/groups/` | GET | Occupation groups for a selected field |
@@ -267,8 +270,10 @@ frontend/
     api.js             #   fetch wrapper with refresh-on-401
     auth.js            #   token storage + JWT refresh
     statuses.js        #   status pipeline shared with the backend
-    components/        #   AuthHero, BoardPanel, ApplicationModal,
+    components/        #   AuthHero, DashboardPanel, SavedPanel,
+                       #   AppliedPanel, ApplicationModal,
                        #   PostingsPanel, ProfilePanel, ResetPassword
+                       #   board/ MetricTile, ApplicationRow, …
   vercel.json          #   optional: proxy /api to the backend on Vercel
 docs/                  # Vision, architecture, GDPR, pivot, deploy guides
 infra/                 # docker-compose for local PostgreSQL
