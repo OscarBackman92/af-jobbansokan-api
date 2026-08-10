@@ -3,13 +3,16 @@ import { useEffect, useRef, useState } from "react";
 import { request } from "./api.js";
 import { clearTokens, getAccess, setTokens } from "./auth.js";
 import AuthHero from "./components/AuthHero.jsx";
-import BoardPanel from "./components/BoardPanel.jsx";
+import AppliedPanel from "./components/AppliedPanel.jsx";
+import DashboardPanel from "./components/DashboardPanel.jsx";
 import GoogleSignIn from "./components/GoogleSignIn.jsx";
 import PostingsPanel from "./components/PostingsPanel.jsx";
 import ProfilePanel from "./components/ProfilePanel.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
+import SavedPanel from "./components/SavedPanel.jsx";
 import VerifyEmail from "./components/VerifyEmail.jsx";
 import { readGoogleCallback } from "./googleAuth.js";
+import useApplications from "./useApplications.js";
 
 function readResetCreds() {
   const params = new URLSearchParams(window.location.search);
@@ -24,7 +27,9 @@ function readVerifyKey() {
 }
 
 const TABS = [
-  { id: "board", label: "Ansökningar" },
+  { id: "dash", label: "Översikt" },
+  { id: "saved", label: "Sparade jobb" },
+  { id: "applied", label: "Ansökningar" },
   { id: "postings", label: "Annonser" },
   { id: "profile", label: "Profil & CV" },
 ];
@@ -35,6 +40,11 @@ const THEMES = [
   { id: "daylight", label: "Daylight" },
   { id: "signal", label: "Signal" },
 ];
+
+function normalizeTab(id) {
+  if (id === "board") return "applied";
+  return id;
+}
 
 function resolveTheme(id) {
   if (id === "system") {
@@ -56,11 +66,12 @@ function readTheme() {
 function readTab() {
   const params = new URLSearchParams(window.location.search);
   const fromUrl = params.get("tab");
-  if (fromUrl && TABS.some((t) => t.id === fromUrl)) {
-    return fromUrl;
+  if (fromUrl) {
+    const mapped = normalizeTab(fromUrl);
+    if (TABS.some((t) => t.id === mapped)) return mapped;
   }
-  const stored = localStorage.getItem("tab");
-  return TABS.some((t) => t.id === stored) ? stored : "board";
+  const stored = normalizeTab(localStorage.getItem("tab"));
+  return TABS.some((t) => t.id === stored) ? stored : "dash";
 }
 
 function syncTabToUrl(tab) {
@@ -85,18 +96,38 @@ export default function App() {
   const [googleCode, setGoogleCode] = useState(() => readGoogleCallback());
   const [theme, setTheme] = useState(() => readTheme());
   const [profileFocus, setProfileFocus] = useState(null);
+  const [panelFilter, setPanelFilter] = useState(null);
+  const [panelMonthFilter, setPanelMonthFilter] = useState("");
   const profileLeaveGuardRef = useRef(null);
+
+  const {
+    applications,
+    reload,
+    error: applicationsError,
+    setError: setApplicationsError,
+    patch,
+    bulk,
+  } = useApplications(token);
 
   const isLoggedOut = !token;
   const isGuest =
     isLoggedOut && !resetCreds && !verifyKey && !googleCode;
 
+  const savedCount =
+    applications?.filter((a) => a.status === "wishlist").length ?? 0;
+  const appliedCount =
+    applications?.filter((a) => a.status !== "wishlist").length ?? 0;
+
   function changeTab(next, options = {}) {
     const focus = options?.focus ?? null;
+    const filter = options?.filter ?? null;
+    const monthFilter = options?.monthFilter ?? "";
     const apply = () => {
       setTab(next);
       syncTabToUrl(next);
       setProfileFocus(next === "profile" ? focus : null);
+      setPanelFilter(filter);
+      setPanelMonthFilter(monthFilter);
     };
     if (next !== tab && tab === "profile" && profileLeaveGuardRef.current) {
       profileLeaveGuardRef.current(apply);
@@ -152,8 +183,8 @@ export default function App() {
     clearTokens();
     setToken(null);
     setMe(null);
-    setTab("board");
-    syncTabToUrl("board");
+    setTab("dash");
+    syncTabToUrl("dash");
   }
 
   return (
@@ -182,6 +213,12 @@ export default function App() {
                 aria-current={tab === t.id ? "page" : undefined}
               >
                 {t.label}
+                {t.id === "saved" && savedCount > 0 && (
+                  <span className="tab-count">{savedCount}</span>
+                )}
+                {t.id === "applied" && appliedCount > 0 && (
+                  <span className="tab-count">{appliedCount}</span>
+                )}
               </button>
             ))}
           </nav>
@@ -241,10 +278,45 @@ export default function App() {
         {!resetCreds && !verifyKey && token && (
           <>
             <div
-              className={tab === "board" ? undefined : "tab-panel-hidden"}
-              aria-hidden={tab !== "board"}
+              className={tab === "dash" ? undefined : "tab-panel-hidden"}
+              aria-hidden={tab !== "dash"}
             >
-              <BoardPanel token={token} onNavigate={changeTab} />
+              <DashboardPanel token={token} onNavigate={changeTab} />
+            </div>
+            <div
+              className={tab === "saved" ? undefined : "tab-panel-hidden"}
+              aria-hidden={tab !== "saved"}
+            >
+              <SavedPanel
+                token={token}
+                applications={applications}
+                reload={reload}
+                error={applicationsError}
+                setError={setApplicationsError}
+                patch={patch}
+                bulk={bulk}
+                onNavigate={changeTab}
+                initialFilter={tab === "saved" ? panelFilter : null}
+              />
+            </div>
+            <div
+              className={tab === "applied" ? undefined : "tab-panel-hidden"}
+              aria-hidden={tab !== "applied"}
+            >
+              <AppliedPanel
+                token={token}
+                applications={applications}
+                reload={reload}
+                error={applicationsError}
+                setError={setApplicationsError}
+                patch={patch}
+                bulk={bulk}
+                onNavigate={changeTab}
+                initialFilter={tab === "applied" ? panelFilter : null}
+                initialMonthFilter={
+                  tab === "applied" ? panelMonthFilter : ""
+                }
+              />
             </div>
             <div
               className={tab === "postings" ? undefined : "tab-panel-hidden"}
