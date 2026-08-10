@@ -5,12 +5,14 @@ from .views import (
     DashboardView,
     JobApplicationViewSet,
     ProfileView,
+    ResumeAddEvidenceView,
     ResumeParseView,
     ResumeSuggestEvidenceView,
     ResumeSuggestSkillsView,
     ResumeView,
     SavedJobSearchDetailView,
     SavedJobSearchListCreateView,
+    SkillsInsightsView,
     job_detail,
     job_filters,
     job_groups,
@@ -23,9 +25,15 @@ router.register(r"applications", JobApplicationViewSet, basename="applications")
 
 urlpatterns = [
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
+    path("insights/skills/", SkillsInsightsView.as_view(), name="skills-insights"),
     path("me/", ProfileView.as_view(), name="me"),
     path("me/resume/", ResumeView.as_view(), name="my-resume"),
     path("me/resume/parse/", ResumeParseView.as_view(), name="my-resume-parse"),
+    path(
+        "me/resume/evidence/",
+        ResumeAddEvidenceView.as_view(),
+        name="my-resume-evidence",
+    ),
     path(
         "me/resume/suggest-evidence/",
         ResumeSuggestEvidenceView.as_view(),

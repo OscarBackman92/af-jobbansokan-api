@@ -37,8 +37,10 @@ from .experience_skills import (
     suggest_evidence_by_source,
     suggest_skills_from_experience,
 )
+from .insights import build_skill_insights
 from .job_profiles import (
     active_profile,
+    add_evidence_to_profile,
     confirmed_evidence,
     normalize_job_profiles,
     profile_skill_terms,
@@ -53,6 +55,7 @@ from .jobtech import (
     occupation_groups,
 )
 from .jobtech import search as jobtech_search
+from .match_snapshot import score_and_store
 from .matching import match_evidence, match_skills
 from .models import ApplicationEvent, JobApplication, Resume, SavedJobSearch
 from .permissions import IsAuthenticatedUser
@@ -83,7 +86,7 @@ def _resume_match_context(user) -> dict:
     """Skills and evidence from the user's active job profile."""
     resume = Resume.objects.filter(user=user).first()
     if not resume:
-        return {"cv_skills": [], "cv_evidence": []}
+        return {"cv_skills": [], "cv_evidence": [], "resume": None}
     try:
         profiles = normalize_job_profiles(resume.job_profiles, headline=resume.headline)
     except ValueError:
@@ -101,12 +104,13 @@ def _resume_match_context(user) -> dict:
         else:
             profiles = normalize_job_profiles(profiles or [], headline=resume.headline)
     if not profiles:
-        return {"cv_skills": [], "cv_evidence": []}
+        return {"cv_skills": [], "cv_evidence": [], "resume": resume}
     profile = active_profile(profiles)
     evidence = confirmed_evidence(profile)
     return {
         "cv_skills": profile_skill_terms(profile),
         "cv_evidence": evidence,
+        "resume": resume,
     }
 
 
@@ -352,6 +356,64 @@ class ResumeSuggestSkillsView(APIView):
         )
 
 
+class ResumeAddEvidenceView(APIView):
+    """Add one evidence term to the active job profile (+ har det)."""
+
+    permission_classes = [IsAuthenticatedUser]
+
+    @extend_schema(responses={200: ResumeSerializer})
+    def post(self, request):
+        term = str(request.data.get("term") or "").strip()
+        category = str(request.data.get("category") or "technical").strip()
+        if not term:
+            raise ValidationError({"term": "Required."})
+        if category not in ("technical", "domain", "languages"):
+            raise ValidationError(
+                {"category": "Must be technical, domain or languages."}
+            )
+        source = request.data.get("source") or {
+            "type": "manual",
+            "label": "Från annons",
+        }
+        if not isinstance(source, dict):
+            raise ValidationError({"source": "Expected an object."})
+
+        resume, _ = Resume.objects.get_or_create(user=request.user)
+        try:
+            profiles = normalize_job_profiles(
+                resume.job_profiles or [], headline=resume.headline or ""
+            )
+        except ValueError as exc:
+            raise ValidationError({"job_profiles": str(exc)}) from exc
+        profile = active_profile(profiles)
+        updated = add_evidence_to_profile(
+            profile,
+            term=term,
+            category=category,
+            source=source,
+            confirmed=True,
+        )
+        for index, candidate in enumerate(profiles):
+            if candidate.get("id") == updated.get("id"):
+                profiles[index] = updated
+                break
+        else:
+            profiles[0] = updated
+        resume.job_profiles = profiles
+        resume.save(update_fields=["job_profiles", "updated_at"])
+        return Response(ResumeSerializer(resume, context={"request": request}).data)
+
+
+class SkillsInsightsView(APIView):
+    """Aggregated skill gaps/hits from stored match snapshots."""
+
+    permission_classes = [IsAuthenticatedUser]
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def get(self, request):
+        return Response(build_skill_insights(request.user))
+
+
 def _date_param(params, name):
     raw = params.get(name)
     if not raw:
@@ -404,7 +466,13 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        if self.action == "list" and self.request.user.is_authenticated:
+        if self.request.user.is_authenticated and self.action in (
+            "list",
+            "retrieve",
+            "create",
+            "update",
+            "partial_update",
+        ):
             context.update(_resume_match_context(self.request.user))
         return context
 
@@ -459,7 +527,8 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        application = serializer.save(owner=self.request.user)
+        score_and_store(application, user=self.request.user)
 
     def perform_update(self, serializer):
         previous = serializer.instance.status
@@ -485,6 +554,8 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                 ),
                 status=application.status,
             )
+            if application.status == JobApplication.STATUS_APPLIED:
+                score_and_store(application, user=self.request.user)
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["get"], url_path="tracked-urls")
@@ -614,6 +685,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                         ),
                         status=JobApplication.STATUS_APPLIED,
                     )
+                    score_and_store(app, user=request.user)
                 updated.append(app.id)
             elif action_name == "archive":
                 if app.archived_at is None:
@@ -700,7 +772,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
         return response
 
 
-GOOD_MATCH_PERCENT = 20
+GOOD_MATCH_PERCENT = 60
 GOOD_MATCH_MIN_TERMS = 2
 # When filtering by CV, scan this many upstream ads then paginate locally.
 MATCH_CV_SCAN_LIMIT = 400
@@ -731,10 +803,21 @@ def _passes_cv_match(
     min_percent: int = GOOD_MATCH_PERCENT,
     min_terms: int = GOOD_MATCH_MIN_TERMS,
 ) -> bool:
-    """Score-based gate: enough share OR enough absolute hits (never require all)."""
-    total = int(match.get("total") or 0)
-    count = int(match.get("count") or 0)
-    if total <= 0 or count <= 0:
+    """Requirement-coverage gate for Annonser filters."""
+    if not match:
+        return False
+    count = int(match.get("must_covered") or match.get("count") or 0)
+    total = int(match.get("must_total") or match.get("total") or 0)
+    if count <= 0:
+        return False
+    score = match.get("score")
+    if score is not None:
+        return int(score) >= min_percent or count >= min_terms
+    # Low confidence / unknown band: still keep ads with any covered requirement
+    # when the caller asked for a weak gate (match_cv / min_match=1).
+    if min_percent <= 1:
+        return True
+    if total <= 0:
         return False
     percent = (count / total) * 100
     return percent >= min_percent or count >= min_terms
@@ -765,13 +848,20 @@ def _dedupe_jobs_by_id(results: list) -> list:
     return unique
 
 
-def _attach_cv_match(jobs: list[dict], *, evidence, skills) -> None:
+def _attach_cv_match(jobs: list[dict], *, evidence, skills, resume=None) -> None:
+    from .requirements import score_all_profiles
+
     for job in jobs:
         posting = SimpleNamespace(title=job["title"], description=job["description"])
         if evidence:
             job["match"] = match_evidence(evidence, posting)
         else:
             job["match"] = match_skills(skills, posting)
+        if resume is not None:
+            profiles_scored = score_all_profiles(resume, posting)
+            if profiles_scored:
+                job["match"]["profiles_scored"] = profiles_scored
+                job["match"]["best_profile"] = profiles_scored[0]
 
 
 def _search_jobs_matching_cv(
@@ -781,6 +871,8 @@ def _search_jobs_matching_cv(
     search_kwargs: dict,
     offset: int,
     limit: int,
+    min_percent: int = GOOD_MATCH_PERCENT,
+    resume=None,
 ) -> dict:
     """Scan JobTech results, filter by CV score, then paginate the matches.
 
@@ -799,14 +891,24 @@ def _search_jobs_matching_cv(
         results = list(data.get("results") or [])
         if not results:
             break
-        _attach_cv_match(results, evidence=evidence, skills=skills)
-        matched.extend(_filter_jobs_by_cv_match(results))
+        _attach_cv_match(results, evidence=evidence, skills=skills, resume=resume)
+        matched.extend(_filter_jobs_by_cv_match(results, min_percent=min_percent))
         scanned += len(results)
         if scanned >= upstream_total or len(results) < batch:
             break
 
     matched = _dedupe_jobs_by_id(matched)
-    matched.sort(key=lambda job: -int((job.get("match") or {}).get("count") or 0))
+    matched.sort(
+        key=lambda job: (
+            (job.get("match") or {}).get("score") is not None,
+            int(
+                (job.get("match") or {}).get("score")
+                if (job.get("match") or {}).get("score") is not None
+                else (job.get("match") or {}).get("count") or 0
+            ),
+        ),
+        reverse=True,
+    )
     page = matched[max(0, offset) : max(0, offset) + max(1, limit)]
     return {
         "results": page,
@@ -816,7 +918,7 @@ def _search_jobs_matching_cv(
         "match_cv_filtered": True,
         "match_cv_scanned": scanned,
         "match_cv_upstream_total": upstream_total,
-        "match_cv_threshold_percent": GOOD_MATCH_PERCENT,
+        "match_cv_threshold_percent": min_percent,
         "match_cv_min_terms": GOOD_MATCH_MIN_TERMS,
     }
 
@@ -869,8 +971,24 @@ def _cached_jobtech_search(**kwargs):
             OpenApiTypes.BOOL,
             description=(
                 "Only jobs that match the user's CV "
-                f"(≥{GOOD_MATCH_PERCENT}% or ≥{GOOD_MATCH_MIN_TERMS} terms)."
+                f"(≥{GOOD_MATCH_PERCENT}% kravtäckning). "
+                "Equivalent to min_match when min_match is unset."
             ),
+        ),
+        OpenApiParameter(
+            "min_match",
+            OpenApiTypes.INT,
+            description="Minimum requirement-coverage score (0-100).",
+        ),
+        OpenApiParameter(
+            "sort",
+            OpenApiTypes.STR,
+            description="Sort: match (coverage desc) or newest.",
+        ),
+        OpenApiParameter(
+            "hide_blocked",
+            OpenApiTypes.BOOL,
+            description="Hide ads with hard formal blockers.",
         ),
         OpenApiParameter("offset", OpenApiTypes.INT),
         OpenApiParameter("limit", OpenApiTypes.INT),
@@ -901,9 +1019,20 @@ def job_search(request):
     match_ctx = _resume_match_context(request.user)
     skills = match_ctx["cv_skills"] or None
     evidence = match_ctx["cv_evidence"] or None
+    resume = match_ctx.get("resume")
     want_match_cv = _truthy(params.get("match_cv", ""))
+    min_match = None
+    if params.get("min_match") not in (None, ""):
+        try:
+            min_match = max(0, min(100, int(params.get("min_match"))))
+        except ValueError as exc:
+            raise ValidationError({"min_match": "Must be an integer 0-100."}) from exc
+    if want_match_cv and min_match is None:
+        min_match = 1
+    sort_by = (params.get("sort") or "").strip().lower()
+    hide_blocked = _truthy(params.get("hide_blocked", ""))
 
-    if want_match_cv:
+    if min_match is not None:
         if not skills:
             raise ValidationError(
                 {
@@ -920,12 +1049,23 @@ def job_search(request):
                 search_kwargs=search_kwargs,
                 offset=offset,
                 limit=limit,
+                min_percent=max(min_match, 1),
+                resume=resume,
             )
         except JobTechError:
             return Response(
                 {"detail": "Kunde inte nå Platsbanken just nu. Försök igen strax."},
                 status=drf_status.HTTP_502_BAD_GATEWAY,
             )
+        if hide_blocked:
+            data["results"] = [
+                job
+                for job in data["results"]
+                if not any(
+                    f.get("ok") is False
+                    for f in (job.get("match") or {}).get("formal") or []
+                )
+            ]
         return Response(data)
 
     try:
@@ -939,7 +1079,27 @@ def job_search(request):
     data["results"] = _dedupe_jobs_by_id(data.get("results") or [])
 
     if evidence or skills:
-        _attach_cv_match(data["results"], evidence=evidence, skills=skills)
+        _attach_cv_match(
+            data["results"], evidence=evidence, skills=skills, resume=resume
+        )
+        if hide_blocked:
+            data["results"] = [
+                job
+                for job in data["results"]
+                if not any(
+                    f.get("ok") is False
+                    for f in (job.get("match") or {}).get("formal") or []
+                )
+            ]
+        if sort_by == "match":
+            data["results"] = sorted(
+                data["results"],
+                key=lambda job: (
+                    (job.get("match") or {}).get("score") is not None,
+                    (job.get("match") or {}).get("score") or -1,
+                ),
+                reverse=True,
+            )
 
     data["offset"] = offset
     data["limit"] = limit

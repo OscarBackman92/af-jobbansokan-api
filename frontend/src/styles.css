@@ -2905,6 +2905,100 @@ tbody tr:last-child td {
   background: var(--muted);
 }
 
+.match-score--unknown .match-score-bar > span {
+  background: color-mix(in srgb, var(--muted) 50%, var(--border));
+}
+
+.match-score-merit {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+}
+
+.match-score-gaps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.match-gap-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.match-gap-add {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.formal-requirements-list {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.formal-req {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  font-size: 0.85rem;
+}
+
+.formal-req--ok .formal-req-mark {
+  color: var(--green);
+}
+
+.formal-req--block .formal-req-mark {
+  color: var(--red, #e05555);
+}
+
+.formal-req--unknown .formal-req-mark {
+  color: var(--muted);
+}
+
+.profile-fit-row {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+}
+
+.skill-gap-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.skill-gap-bands,
+.skill-gap-terms,
+.tailor-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.skill-gap-bands li,
+.skill-gap-terms li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  align-items: baseline;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.tailor-panel {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.tailor-list li {
+  padding: 0.35rem 0;
+}
+
 .match-score-missing {
   margin: 0.25rem 0 0;
   font-size: 0.78rem;

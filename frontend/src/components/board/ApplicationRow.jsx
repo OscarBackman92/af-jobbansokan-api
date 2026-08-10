@@ -2,6 +2,7 @@ import { daysUntil, isClosed } from "../../dates.js";
 import { STATUSES } from "../../statuses.js";
 import MatchScore from "../MatchScore.jsx";
 import DeadlineBadge from "./DeadlineBadge.jsx";
+import ProfileFitRow from "../ProfileFitRow.jsx";
 
 export default function ApplicationRow({ application, onOpen, onMove }) {
   const meta = [
@@ -33,6 +34,9 @@ export default function ApplicationRow({ application, onOpen, onMove }) {
             variant="compact"
             showMissing={false}
           />
+        )}
+        {application.match?.profiles_scored && (
+          <ProfileFitRow profiles={application.match.profiles_scored} />
         )}
         {hasBadges && (
           <span className="pipeline-row-badges">

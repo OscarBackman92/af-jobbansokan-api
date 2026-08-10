@@ -155,13 +155,25 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
         return _days_waiting(obj)
 
     def get_match(self, obj):
+        from .requirements import posting_like_from_application, score_all_profiles
+
         evidence = self.context.get("cv_evidence")
         if evidence:
-            return match_application_evidence(evidence, obj)
-        skills = self.context.get("cv_skills")
-        if not skills:
-            return None
-        return match_application(skills, obj)
+            result = match_application_evidence(evidence, obj)
+        else:
+            skills = self.context.get("cv_skills")
+            if not skills:
+                return None
+            result = match_application(skills, obj)
+        resume = self.context.get("resume")
+        if resume is not None:
+            profiles_scored = score_all_profiles(
+                resume, posting_like_from_application(obj)
+            )
+            if profiles_scored:
+                result["profiles_scored"] = profiles_scored
+                result["best_profile"] = profiles_scored[0]
+        return result
 
 
 class JobApplicationSerializer(serializers.ModelSerializer):

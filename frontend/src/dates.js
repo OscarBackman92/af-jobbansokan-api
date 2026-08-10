@@ -142,6 +142,8 @@ export function appliedBucket(application) {
 
 function matchRatio(application) {
   const match = application?.match;
+  if (!match) return 0;
+  if (match.score != null) return match.score / 100;
   if (!match?.total) return 0;
   return match.count / match.total;
 }

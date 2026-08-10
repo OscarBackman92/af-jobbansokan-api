@@ -143,6 +143,11 @@ class JobApplication(models.Model):
         help_text="False when the user set apply_by themselves.",
     )
     archived_at = models.DateTimeField(null=True, blank=True)
+    match_score = models.IntegerField(null=True, blank=True)
+    match_snapshot = models.JSONField(default=dict, blank=True)
+    match_version = models.IntegerField(default=2)
+    match_scored_at = models.DateTimeField(null=True, blank=True)
+    match_profile_id = models.CharField(max_length=32, blank=True)
     applied_at = models.DateField(null=True, blank=True)
     deadline = models.DateField(null=True, blank=True)
     contact_name = models.CharField(max_length=255, blank=True)

@@ -40,9 +40,18 @@ _CANONICAL_GROUPS: list[tuple[str, list[str]]] = [
     ("Agile", ["agile", "agilt arbetssätt"]),
     ("Scrum", ["scrum"]),
     ("Projektledning", ["projektledning", "projektledare"]),
-    ("Ekonomiassistent", ["ekonomiassistent", "redovisningsassistent", "accounts payable"]),
-    ("IT-support", ["it-support", "it support", "helpdesk", "help desk", "service desk"]),
-    ("Orderadministration", ["orderadministration", "orderadministratör", "orderadministrator"]),
+    (
+        "Ekonomiassistent",
+        ["ekonomiassistent", "redovisningsassistent", "accounts payable"],
+    ),
+    (
+        "IT-support",
+        ["it-support", "it support", "helpdesk", "help desk", "service desk"],
+    ),
+    (
+        "Orderadministration",
+        ["orderadministration", "orderadministratör", "orderadministrator"],
+    ),
     ("Inköp", ["inköp", "inkop"]),
     ("Upphandling", ["upphandling", "upphandlare"]),
     ("Bokföring", ["bokföring", "bokforing", "bokförare"]),
@@ -50,6 +59,17 @@ _CANONICAL_GROUPS: list[tuple[str, list[str]]] = [
     ("Svenska", ["svenska", "swedish"]),
     ("Engelska", ["engelska", "english"]),
 ]
+
+# Stem → allow Swedish word forms (upphandlingar, bokföring, …).
+# Keys are casefolded canonical labels.
+PREFIX_STEMS: dict[str, str] = {
+    "upphandling": "upphandl",
+    "bokföring": "bokför|bokfor",
+    "projektledning": "projektled",
+    "attest": "attest",
+    "redovisning": "redovis",
+    "inköp": "inköp|inkop",
+}
 
 _ALIAS_TO_CANONICAL: dict[str, str] = {}
 _CANONICAL_TO_ALIASES: dict[str, list[str]] = {}

@@ -12,6 +12,7 @@ import { localISODate } from "../localDate.js";
 import { STATUSES } from "../statuses.js";
 import ConfirmDialog from "./ConfirmDialog.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
+import TailorPanel from "./TailorPanel.jsx";
 
 const EMPTY = {
   company: "",
@@ -381,6 +382,8 @@ export default function ApplicationModal({
           )}
         </section>
       )}
+
+      {application?.match && <TailorPanel match={application.match} />}
 
       <form className="application-form" onSubmit={save}>
         {application ? (

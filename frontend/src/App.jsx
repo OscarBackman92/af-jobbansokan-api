@@ -122,6 +122,16 @@ export default function App() {
     const focus = options?.focus ?? null;
     const filter = options?.filter ?? null;
     const monthFilter = options?.monthFilter ?? "";
+    if (typeof options?.q === "string" && options.q.trim()) {
+      try {
+        sessionStorage.setItem(
+          "jobbdjungeln-pending-job-q",
+          options.q.trim()
+        );
+      } catch {
+        /* ignore */
+      }
+    }
     const apply = () => {
       setTab(next);
       syncTabToUrl(next);
@@ -322,7 +332,10 @@ export default function App() {
               className={tab === "postings" ? undefined : "tab-panel-hidden"}
               aria-hidden={tab !== "postings"}
             >
-              <PostingsPanel onNavigate={changeTab} />
+              <PostingsPanel
+                onNavigate={changeTab}
+                active={tab === "postings"}
+              />
             </div>
             <div
               className={tab === "profile" ? undefined : "tab-panel-hidden"}

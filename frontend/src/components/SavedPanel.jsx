@@ -15,7 +15,7 @@ import ConfirmDialog from "./ConfirmDialog.jsx";
 import MatchScore from "./MatchScore.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
 
-const GOOD_MATCH_PERCENT = 20;
+const GOOD_MATCH_PERCENT = 60;
 
 const LANES = [
   {
@@ -52,6 +52,9 @@ const LANES = [
 
 function isGoodMatch(application) {
   const match = application.match;
+  if (!match) return false;
+  if (match.confidence === "low" || match.band === "unknown") return false;
+  if (match.score != null) return match.score >= GOOD_MATCH_PERCENT;
   if (!match?.total) return false;
   return (match.count / match.total) * 100 >= GOOD_MATCH_PERCENT;
 }

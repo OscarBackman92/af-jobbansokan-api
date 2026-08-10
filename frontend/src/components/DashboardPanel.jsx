@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { request } from "../api.js";
 import { downloadTodayActionsIcs } from "../calendar.js";
 import { encodeMonthFilter, formatMonthLabel } from "../dates.js";
+import SkillGapPanel from "./SkillGapPanel.jsx";
 import MetricTile from "./board/MetricTile.jsx";
 
 const MONTH_SHORT = [
@@ -336,6 +337,8 @@ export default function DashboardPanel({ token, onNavigate }) {
           </ul>
         )}
       </section>
+
+      <SkillGapPanel token={token} onNavigate={onNavigate} />
 
       <section className="card">
         <h2>Tratten</h2>

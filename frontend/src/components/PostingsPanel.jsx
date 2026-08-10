@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { addEvidenceTerm, coverGapInMatch } from "../addEvidence.js";
 import { externalUrl, normalizeAdUrl } from "../adUrl.js";
 import { request } from "../api.js";
 import { recordJobMatchGaps } from "../marketHints.js";
 import MatchScore from "./MatchScore.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
 import MultiSelectFilter from "./MultiSelectFilter.jsx";
+import ProfileFitRow from "./ProfileFitRow.jsx";
 
 const LAST_SEARCH_KEY = "jobbdjungeln-last-job-search";
 const LAST_MUNICIPALITIES_KEY = "jobbdjungeln-last-municipalities";
@@ -44,6 +46,9 @@ function readLastSearch() {
       groups: Array.isArray(data.groups) ? data.groups.filter((row) => row?.id) : [],
       remote: !!data.remote,
       matchCv: !!data.matchCv,
+      minMatch60: !!data.minMatch60,
+      sortMatch: !!data.sortMatch,
+      hideBlocked: !!data.hideBlocked,
     };
   } catch {
     return null;
@@ -74,9 +79,21 @@ const EMPTY_QUERY = {
   groups: [],
   remote: false,
   matchCv: false,
+  minMatch60: false,
+  sortMatch: false,
+  hideBlocked: false,
 };
 
 function initialQuery() {
+  try {
+    const pending = sessionStorage.getItem("jobbdjungeln-pending-job-q");
+    if (pending) {
+      sessionStorage.removeItem("jobbdjungeln-pending-job-q");
+      return { ...EMPTY_QUERY, q: pending };
+    }
+  } catch {
+    /* ignore */
+  }
   const saved = readLastSearch();
   if (saved) return saved;
   const municipalities = readLastMunicipalities();
@@ -124,9 +141,9 @@ function countSummary(count, singular, plural) {
   return count === 1 ? `1 ${singular}` : `${count} ${plural}`;
 }
 
-export default function PostingsPanel({ onNavigate }) {
+export default function PostingsPanel({ onNavigate, active = true }) {
   const [filters, setFilters] = useState({ regions: [], fields: [] });
-  const [q, setQ] = useState(() => readLastSearch()?.q ?? "");
+  const [q, setQ] = useState(() => initialQuery().q ?? "");
   const [browseRegion, setBrowseRegion] = useState(
     () => localStorage.getItem(LAST_REGION_KEY) || ""
   );
@@ -146,10 +163,36 @@ export default function PostingsPanel({ onNavigate }) {
   const [matchCvOnly, setMatchCvOnly] = useState(
     () => readLastSearch()?.matchCv ?? false
   );
+  const [minMatch60, setMinMatch60] = useState(
+    () => readLastSearch()?.minMatch60 ?? false
+  );
+  const [sortMatch, setSortMatch] = useState(
+    () => readLastSearch()?.sortMatch ?? false
+  );
+  const [hideBlocked, setHideBlocked] = useState(
+    () => readLastSearch()?.hideBlocked ?? false
+  );
   const [query, setQuery] = useState(initialQuery);
   const [offset, setOffset] = useState(() => readOffsetFromUrl());
   const resultsSectionRef = useRef(null);
   const pendingScrollRef = useRef(false);
+
+  useEffect(() => {
+    if (!active) return;
+    try {
+      const pending = sessionStorage.getItem("jobbdjungeln-pending-job-q");
+      if (!pending) return;
+      sessionStorage.removeItem("jobbdjungeln-pending-job-q");
+      setQ(pending);
+      const next = { ...EMPTY_QUERY, q: pending };
+      rememberSearch(next);
+      setQuery(next);
+      syncPageToUrl(0);
+      setOffset(0);
+    } catch {
+      /* ignore */
+    }
+  }, [active]);
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -289,7 +332,10 @@ export default function PostingsPanel({ onNavigate }) {
       appendIdParams(params, "municipality", query.municipalities);
       appendIdParams(params, "group", query.groups);
       if (query.remote) params.set("remote", "true");
-      if (query.matchCv) params.set("match_cv", "true");
+      if (query.minMatch60) params.set("min_match", "60");
+      else if (query.matchCv) params.set("match_cv", "true");
+      if (query.sortMatch) params.set("sort", "match");
+      if (query.hideBlocked) params.set("hide_blocked", "1");
       const result = await request(`/api/v1/jobs/?${params.toString()}`);
       setData(result);
     } catch (err) {
@@ -365,6 +411,9 @@ export default function PostingsPanel({ onNavigate }) {
       groups: selectedGroups,
       remote,
       matchCv: matchCvOnly,
+      minMatch60,
+      sortMatch,
+      hideBlocked,
     };
     rememberSearch(next);
     setActiveSavedId(null);
@@ -377,6 +426,9 @@ export default function PostingsPanel({ onNavigate }) {
     setSelectedGroups([]);
     setRemote(false);
     setMatchCvOnly(false);
+    setMinMatch60(false);
+    setSortMatch(false);
+    setHideBlocked(false);
     clearRememberedSearch();
     try {
       localStorage.removeItem(LAST_MUNICIPALITIES_KEY);
@@ -715,14 +767,53 @@ export default function PostingsPanel({ onNavigate }) {
 
           <label
             className="job-remote"
-            title="Kräver CV med kompetenser — visar jobb där minst 40% matchar"
+            title="Visa jobb där minst ett krav från annonsen täcks av CV:t"
           >
             <input
               type="checkbox"
               checked={matchCvOnly}
-              onChange={(e) => setMatchCvOnly(e.target.checked)}
+              onChange={(e) => {
+                setMatchCvOnly(e.target.checked);
+                if (e.target.checked) setMinMatch60(false);
+              }}
             />
             Passar mitt CV
+          </label>
+
+          <label
+            className="job-remote"
+            title="Visa bara jobb med minst 60 % kravtäckning"
+          >
+            <input
+              type="checkbox"
+              checked={minMatch60}
+              onChange={(e) => {
+                setMinMatch60(e.target.checked);
+                if (e.target.checked) setMatchCvOnly(false);
+              }}
+            />
+            Minst 60 % kravtäckning
+          </label>
+
+          <label className="job-remote" title="Sortera träffarna på kravtäckning">
+            <input
+              type="checkbox"
+              checked={sortMatch}
+              onChange={(e) => setSortMatch(e.target.checked)}
+            />
+            Sortera: kravtäckning
+          </label>
+
+          <label
+            className="job-remote"
+            title="Dölj annonser med hårda formella blockerare (t.ex. körkort)"
+          >
+            <input
+              type="checkbox"
+              checked={hideBlocked}
+              onChange={(e) => setHideBlocked(e.target.checked)}
+            />
+            Dölj blockerare
           </label>
 
           <button type="submit" className="job-search-submit">
@@ -918,6 +1009,20 @@ export default function PostingsPanel({ onNavigate }) {
               setSelected(null);
             }}
             onClose={() => setSelected(null)}
+            onMatchUpdate={(nextMatch) => {
+              setSelected((prev) =>
+                prev ? { ...prev, match: nextMatch } : prev
+              );
+              setData((prev) => {
+                if (!prev?.results) return prev;
+                return {
+                  ...prev,
+                  results: prev.results.map((job) =>
+                    job.id === selected.id ? { ...job, match: nextMatch } : job
+                  ),
+                };
+              });
+            }}
           />
         )}
 
@@ -1014,6 +1119,7 @@ function SaveSearchDialog({
 }
 
 function JobCard({ job, tracked, onOpen, onTrack }) {
+  const blocked = (job.match?.formal || []).some((row) => row.ok === false);
   return (
     <div className={tracked ? "job-card job-card--tracked" : "job-card"}>
       <div className="job-card-main">
@@ -1026,12 +1132,20 @@ function JobCard({ job, tracked, onOpen, onTrack }) {
         </p>
         <div className="job-tags">
           {job.remote && <span className="badge neutral">Distans</span>}
+          {blocked && (
+            <span className="badge rejected" title="Formellt krav saknas">
+              Blockerare
+            </span>
+          )}
           {job.application_deadline && (
             <span className="badge neutral">
               Sista ansökningsdag {job.application_deadline}
             </span>
           )}
           {job.match && <MatchScore match={job.match} variant="compact" />}
+          {job.match?.profiles_scored && (
+            <ProfileFitRow profiles={job.match.profiles_scored} />
+          )}
         </div>
       </div>
       <button
@@ -1045,15 +1159,18 @@ function JobCard({ job, tracked, onOpen, onTrack }) {
   );
 }
 
-function JobDetail({ job, tracked, onTrack, onClose }) {
+function JobDetail({ job, tracked, onTrack, onClose, onMatchUpdate }) {
   const dialogRef = useRef(null);
   const applyHref =
     externalUrl(job.application_url) || externalUrl(job.webpage_url);
   const platsbankenHref = externalUrl(job.webpage_url);
 
   useEffect(() => {
-    if (job.match?.missing?.length) {
-      recordJobMatchGaps(job.match.missing);
+    const gaps = job.match?.gaps?.length
+      ? job.match.gaps.map((g) => g.term)
+      : job.match?.missing;
+    if (gaps?.length) {
+      recordJobMatchGaps(gaps);
     }
   }, [job.match]);
 
@@ -1073,6 +1190,16 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
       previous?.focus?.();
     };
   }, [onClose]);
+
+  async function handleAddEvidence(gap) {
+    try {
+      await addEvidenceTerm(gap.term);
+      const nextMatch = coverGapInMatch(job.match, gap);
+      onMatchUpdate?.(nextMatch);
+    } catch {
+      /* keep gap visible */
+    }
+  }
 
   return (
     <ModalOverlay
@@ -1135,7 +1262,16 @@ function JobDetail({ job, tracked, onTrack, onClose }) {
           : "Ansökan görs hos arbetsgivaren — spara den här så följer du den i dina ansökningar."}
       </p>
 
-      {job.match && <MatchScore match={job.match} variant="detail" />}
+      {job.match?.profiles_scored && (
+        <ProfileFitRow profiles={job.match.profiles_scored} />
+      )}
+      {job.match && (
+        <MatchScore
+          match={job.match}
+          variant="detail"
+          onAddEvidence={handleAddEvidence}
+        />
+      )}
 
       <div className="description">
         {job.description || "Ingen beskrivning tillgänglig för den här annonsen."}
