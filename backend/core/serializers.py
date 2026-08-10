@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from dj_rest_auth.serializers import (
     PasswordChangeSerializer,
@@ -37,6 +39,41 @@ from .tokens import revoke_refresh_tokens
 User = get_user_model()
 
 
+def _resolved_apply_by(obj):
+    if obj.apply_by:
+        return obj.apply_by
+    if obj.deadline:
+        return obj.deadline
+    if obj.created_at:
+        return timezone.localtime(obj.created_at).date() + timedelta(
+            days=JobApplication.AUTO_APPLY_BY_DAYS
+        )
+    return None
+
+
+def _days_until_apply_by(obj):
+    target = _resolved_apply_by(obj)
+    if not target:
+        return None
+    return (target - timezone.localdate()).days
+
+
+def _days_waiting(obj):
+    last = getattr(obj, "_last_event_at", None)
+    if last is None and hasattr(obj, "events"):
+        # Detail path: avoid N+1 when events are prefetched.
+        events = list(obj.events.all())
+        if events:
+            last = max(event.occurred_at for event in events)
+    if last is None:
+        last = obj.applied_at
+    if last is None and obj.created_at:
+        last = timezone.localtime(obj.created_at).date()
+    if last is None:
+        return None
+    return (timezone.localdate() - last).days
+
+
 class ApplicationEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicationEvent
@@ -60,6 +97,8 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     match = serializers.SerializerMethodField()
     last_activity_at = serializers.SerializerMethodField()
+    days_until_apply_by = serializers.SerializerMethodField()
+    days_waiting = serializers.SerializerMethodField()
     reached_interview = serializers.BooleanField(read_only=True, default=False)
 
     class Meta:
@@ -76,8 +115,14 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
             "source",
             "status",
             "status_label",
+            "intent",
             "applied_at",
             "deadline",
+            "apply_by",
+            "apply_by_is_auto",
+            "days_until_apply_by",
+            "days_waiting",
+            "archived_at",
             "contact_name",
             "contact_info",
             "notes",
@@ -103,6 +148,12 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
             return obj.applied_at
         return timezone.localtime(obj.created_at).date()
 
+    def get_days_until_apply_by(self, obj):
+        return _days_until_apply_by(obj)
+
+    def get_days_waiting(self, obj):
+        return _days_waiting(obj)
+
     def get_match(self, obj):
         evidence = self.context.get("cv_evidence")
         if evidence:
@@ -125,6 +176,8 @@ class JobApplicationSerializer(serializers.ModelSerializer):
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     # CharField so Platsbanken junk URLs can be blanked instead of 400.
     apply_url = serializers.CharField(required=False, allow_blank=True, max_length=500)
+    days_until_apply_by = serializers.SerializerMethodField()
+    days_waiting = serializers.SerializerMethodField()
 
     class Meta:
         model = JobApplication
@@ -141,8 +194,14 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             "source",
             "status",
             "status_label",
+            "intent",
             "applied_at",
             "deadline",
+            "apply_by",
+            "apply_by_is_auto",
+            "days_until_apply_by",
+            "days_waiting",
+            "archived_at",
             "contact_name",
             "contact_info",
             "notes",
@@ -151,11 +210,24 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "events", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "events",
+            "days_until_apply_by",
+            "days_waiting",
+            "created_at",
+            "updated_at",
+        ]
         extra_kwargs = {
             "company": {"required": False, "allow_blank": True},
             "title": {"required": False, "allow_blank": True},
         }
+
+    def get_days_until_apply_by(self, obj):
+        return _days_until_apply_by(obj)
+
+    def get_days_waiting(self, obj):
+        return _days_waiting(obj)
 
     def validate_applied_at(self, value):
         if value and value > timezone.localdate():
@@ -217,6 +289,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             ad_url = attrs["ad_url"]
 
         if ad_url and request:
+            # Include archived rows so soft-delete cannot bypass duplicate protection.
             others = JobApplication.objects.filter(owner=request.user).exclude(
                 ad_url=""
             )
@@ -232,6 +305,11 @@ class JobApplicationSerializer(serializers.ModelSerializer):
                             )
                         }
                     )
+
+        # Manual apply_by edits flip the auto flag unless the client sets it.
+        if "apply_by" in attrs and "apply_by_is_auto" not in attrs:
+            attrs["apply_by_is_auto"] = False
+
         return attrs
 
 

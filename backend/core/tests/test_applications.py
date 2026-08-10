@@ -343,6 +343,223 @@ def test_export_csv(api_client, user):
     content = response.content.decode("utf-8-sig")
     assert "'=cmd" in content
     assert "Dev" in content
+    assert "intent" in content.splitlines()[0]
+    assert "apply_by" in content.splitlines()[0]
+
+
+def test_wishlist_create_sets_auto_apply_by(api_client, user):
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        URL,
+        {"company": "Acme", "title": "Dev", "status": "wishlist"},
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["apply_by"] == str(
+        timezone.localdate() + timedelta(days=JobApplication.AUTO_APPLY_BY_DAYS)
+    )
+    assert body["apply_by_is_auto"] is True
+
+
+def test_wishlist_create_uses_deadline_as_apply_by(api_client, user):
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        URL,
+        {
+            "company": "Acme",
+            "title": "Dev",
+            "status": "wishlist",
+            "deadline": "2026-09-01",
+        },
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["apply_by"] == "2026-09-01"
+    assert body["apply_by_is_auto"] is False
+
+
+def test_archived_hidden_from_default_list_but_in_tracked_urls(api_client, user):
+    active = JobApplication.objects.create(
+        owner=user,
+        company="Active",
+        title="Dev",
+        ad_url="https://example.com/active",
+    )
+    archived = JobApplication.objects.create(
+        owner=user,
+        company="Archived",
+        title="Dev",
+        ad_url="https://example.com/archived",
+        archived_at=timezone.now(),
+    )
+    api_client.force_authenticate(user)
+    body = api_client.get(URL).json()
+    ids = {row["id"] for row in body["results"]}
+    assert active.id in ids
+    assert archived.id not in ids
+
+    archived_body = api_client.get(URL, {"archived": "1"}).json()
+    archived_ids = {row["id"] for row in archived_body["results"]}
+    assert archived.id in archived_ids
+    assert active.id not in archived_ids
+
+    tracked = api_client.get(f"{URL}tracked-urls/").json()["urls"]
+    assert "https://example.com/active" in tracked
+    assert "https://example.com/archived" in tracked
+
+
+def test_bulk_rejects_other_users_ids(api_client, user, django_user_model):
+    other = django_user_model.objects.create_user(username="other", password="x")
+    own = JobApplication.objects.create(
+        owner=user, company="Mine", title="Dev", status="wishlist"
+    )
+    foreign = JobApplication.objects.create(
+        owner=other, company="Theirs", title="Dev", status="wishlist"
+    )
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        f"{URL}bulk/",
+        {"ids": [own.id, foreign.id], "action": "archive"},
+        format="json",
+    )
+    assert response.status_code == 400
+    assert "ids" in response.json()
+    own.refresh_from_db()
+    assert own.archived_at is None
+
+
+def test_bulk_mark_applied_is_idempotent_and_logs_event(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user, company="Acme", title="Dev", status="wishlist"
+    )
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        f"{URL}bulk/",
+        {"ids": [application.id], "action": "mark_applied", "date": "2026-08-01"},
+        format="json",
+    )
+    assert response.status_code == 200
+    assert response.json()["updated"] == [application.id]
+    application.refresh_from_db()
+    assert application.status == "applied"
+    assert str(application.applied_at) == "2026-08-01"
+    assert application.events.count() == 1
+
+    again = api_client.post(
+        f"{URL}bulk/",
+        {"ids": [application.id], "action": "mark_applied"},
+        format="json",
+    )
+    assert again.status_code == 200
+    assert again.json()["updated"] == [application.id]
+    application.refresh_from_db()
+    assert application.events.count() == 1
+
+
+def test_saved_summary_shape(api_client, user):
+    today = timezone.localdate()
+    JobApplication.objects.create(
+        owner=user,
+        company="Urgent",
+        title="Dev",
+        status="wishlist",
+        deadline=today + timedelta(days=3),
+        apply_by=today + timedelta(days=3),
+        apply_by_is_auto=False,
+    )
+    JobApplication.objects.create(
+        owner=user,
+        company="Auto",
+        title="Dev",
+        status="wishlist",
+        apply_by=today + timedelta(days=10),
+        apply_by_is_auto=True,
+    )
+    JobApplication.objects.create(
+        owner=user,
+        company="Paused",
+        title="Dev",
+        status="wishlist",
+        intent="paused",
+        apply_by=today + timedelta(days=2),
+        apply_by_is_auto=False,
+        deadline=today + timedelta(days=2),
+    )
+    JobApplication.objects.create(
+        owner=user, company="Applied", title="Dev", status="applied"
+    )
+
+    api_client.force_authenticate(user)
+    body = api_client.get(f"{URL}saved-summary/").json()
+    assert set(body) == {
+        "total",
+        "urgent",
+        "this_month",
+        "no_deadline",
+        "paused",
+        "expired",
+    }
+    assert body["total"] == 3
+    assert body["urgent"] == 1
+    assert body["no_deadline"] == 1
+    assert body["paused"] == 1
+    assert body["expired"] == 0
+    assert body["this_month"] == 0
+
+
+def test_migration_backfill_apply_by(user):
+    import importlib.util
+    from pathlib import Path
+
+    from django.apps import apps
+
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "migrations"
+        / "0016_jobapplication_apply_by_intent_archived.py"
+    )
+    spec = importlib.util.spec_from_file_location("migration_0016", path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    with_deadline = JobApplication.objects.create(
+        owner=user,
+        company="Dead",
+        title="Dev",
+        status="wishlist",
+        deadline=date(2026, 9, 1),
+    )
+    # Clear auto-set fields so backfill has work to do.
+    JobApplication.objects.filter(id=with_deadline.id).update(
+        apply_by=None, apply_by_is_auto=True
+    )
+    without = JobApplication.objects.create(
+        owner=user, company="Auto", title="Dev", status="wishlist"
+    )
+    JobApplication.objects.filter(id=without.id).update(
+        apply_by=None, apply_by_is_auto=True
+    )
+    applied = JobApplication.objects.create(
+        owner=user, company="Applied", title="Dev", status="applied"
+    )
+
+    module.backfill_apply_by(apps, None)
+
+    with_deadline.refresh_from_db()
+    without.refresh_from_db()
+    applied.refresh_from_db()
+    assert with_deadline.apply_by == date(2026, 9, 1)
+    assert with_deadline.apply_by_is_auto is False
+    assert without.apply_by == (
+        timezone.localtime(without.created_at).date() + timedelta(days=14)
+    )
+    assert without.apply_by_is_auto is True
+    assert applied.apply_by is None
+
+    module.clear_apply_by(apps, None)
+    with_deadline.refresh_from_db()
+    assert with_deadline.apply_by is None
 
 
 def test_delete_own_row(api_client, user):

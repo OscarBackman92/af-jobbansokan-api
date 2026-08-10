@@ -368,6 +368,11 @@ def _date_param(params, name):
                 OpenApiTypes.STR,
                 description="Free text over company, title and notes.",
             ),
+            OpenApiParameter(
+                "archived",
+                OpenApiTypes.BOOL,
+                description="When true, list soft-archived rows only.",
+            ),
         ]
     )
 )
@@ -398,6 +403,12 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
         qs = JobApplication.objects.filter(owner=self.request.user).order_by(
             "-updated_at"
         )
+        # Soft-archive: default list/detail hide archived; ?archived=1 shows them.
+        if self.action not in ("tracked_urls", "bulk"):
+            if _truthy(self.request.query_params.get("archived")):
+                qs = qs.filter(archived_at__isnull=False)
+            else:
+                qs = qs.filter(archived_at__isnull=True)
         if self.action == "list":
             funnel_statuses = [
                 JobApplication.STATUS_SCREENING,
@@ -468,13 +479,153 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="tracked-urls")
     def tracked_urls(self, request):
         """All ad URLs on the user's board — lets the ad search mark
-        already-saved ads without downloading every application row."""
+        already-saved ads without downloading every application row.
+
+        Includes archived rows so soft-delete cannot bypass duplicate protection.
+        """
         urls = (
             JobApplication.objects.filter(owner=request.user)
             .exclude(ad_url="")
             .values_list("ad_url", flat=True)
         )
         return Response({"urls": list(urls)})
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"], url_path="saved-summary")
+    def saved_summary(self, request):
+        """Lane counts for the Sparade jobb page (wishlist, not archived)."""
+        today = timezone.localdate()
+        base = JobApplication.objects.filter(
+            owner=request.user,
+            status=JobApplication.STATUS_WISHLIST,
+            archived_at__isnull=True,
+        )
+        total = base.count()
+        paused = base.filter(intent=JobApplication.INTENT_PAUSED).count()
+        rest = base.exclude(intent=JobApplication.INTENT_PAUSED)
+        expired = rest.filter(apply_by__lt=today).count()
+        future = rest.filter(apply_by__gte=today)
+        auto_no_deadline = Q(deadline__isnull=True, apply_by_is_auto=True)
+        no_deadline = future.filter(auto_no_deadline).count()
+        planned = future.exclude(auto_no_deadline)
+        urgent_end = today + timedelta(days=7)
+        urgent = planned.filter(apply_by__lte=urgent_end).count()
+        this_month = planned.filter(apply_by__gt=urgent_end).count()
+        return Response(
+            {
+                "total": total,
+                "urgent": urgent,
+                "this_month": this_month,
+                "no_deadline": no_deadline,
+                "paused": paused,
+                "expired": expired,
+            }
+        )
+
+    @extend_schema(
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "ids": {"type": "array", "items": {"type": "integer"}},
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "mark_applied",
+                            "archive",
+                            "pause",
+                            "activate",
+                            "set_apply_by",
+                        ],
+                    },
+                    "date": {"type": "string", "format": "date"},
+                },
+                "required": ["ids", "action"],
+            }
+        },
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    @action(detail=False, methods=["post"], url_path="bulk")
+    def bulk(self, request):
+        """Idempotent bulk actions on the caller's own application ids."""
+        ids = request.data.get("ids")
+        action_name = request.data.get("action")
+        if not isinstance(ids, list) or not ids:
+            raise ValidationError({"ids": "Provide a non-empty list of ids."})
+        try:
+            ids = [int(value) for value in ids]
+        except (TypeError, ValueError) as exc:
+            raise ValidationError({"ids": "Ids must be integers."}) from exc
+        ids = list(dict.fromkeys(ids))
+
+        allowed = {
+            "mark_applied",
+            "archive",
+            "pause",
+            "activate",
+            "set_apply_by",
+        }
+        if action_name not in allowed:
+            raise ValidationError(
+                {"action": f"Must be one of: {', '.join(sorted(allowed))}."}
+            )
+
+        date_raw = request.data.get("date")
+        occurred_at = parse_date(str(date_raw)) if date_raw not in (None, "") else None
+        if date_raw not in (None, "") and occurred_at is None:
+            raise ValidationError({"date": "Invalid date, expected YYYY-MM-DD."})
+        if occurred_at is None:
+            occurred_at = timezone.localdate()
+        if action_name == "set_apply_by" and date_raw in (None, ""):
+            raise ValidationError({"date": "Required for set_apply_by."})
+
+        apps = list(
+            JobApplication.objects.filter(owner=request.user, id__in=ids).order_by("id")
+        )
+        if len(apps) != len(ids):
+            raise ValidationError({"ids": "One or more applications were not found."})
+
+        updated = []
+        status_labels = dict(JobApplication.STATUS_CHOICES)
+        for app in apps:
+            if action_name == "mark_applied":
+                previous = app.status
+                if previous != JobApplication.STATUS_APPLIED:
+                    app.status = JobApplication.STATUS_APPLIED
+                    if not app.applied_at:
+                        app.applied_at = occurred_at
+                    app.save()
+                    app.events.create(
+                        occurred_at=occurred_at,
+                        note=(
+                            f"Status: {status_labels[previous]}"
+                            f" → {app.get_status_display()}"
+                        ),
+                        status=JobApplication.STATUS_APPLIED,
+                    )
+                updated.append(app.id)
+            elif action_name == "archive":
+                if app.archived_at is None:
+                    app.archived_at = timezone.now()
+                    app.save(update_fields=["archived_at", "updated_at"])
+                updated.append(app.id)
+            elif action_name == "pause":
+                if app.intent != JobApplication.INTENT_PAUSED:
+                    app.intent = JobApplication.INTENT_PAUSED
+                    app.save(update_fields=["intent", "updated_at"])
+                updated.append(app.id)
+            elif action_name == "activate":
+                if app.intent != JobApplication.INTENT_ACTIVE:
+                    app.intent = JobApplication.INTENT_ACTIVE
+                    app.save(update_fields=["intent", "updated_at"])
+                updated.append(app.id)
+            elif action_name == "set_apply_by":
+                app.apply_by = occurred_at
+                app.apply_by_is_auto = False
+                app.save(update_fields=["apply_by", "apply_by_is_auto", "updated_at"])
+                updated.append(app.id)
+
+        return Response({"updated": updated})
 
     @extend_schema(
         request=ApplicationEventSerializer,
@@ -505,8 +656,10 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                 "title",
                 "location",
                 "status",
+                "intent",
                 "applied_at",
                 "deadline",
+                "apply_by",
                 "contact_name",
                 "contact_info",
                 "next_action_at",
@@ -522,8 +675,10 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                     sanitize_csv_cell(app.title),
                     sanitize_csv_cell(app.location),
                     sanitize_csv_cell(app.get_status_display()),
+                    sanitize_csv_cell(app.get_intent_display()),
                     app.applied_at or "",
                     app.deadline or "",
+                    app.apply_by or "",
                     sanitize_csv_cell(app.contact_name),
                     sanitize_csv_cell(app.contact_info),
                     app.next_action_at or "",

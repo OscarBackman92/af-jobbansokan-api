@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class JobPosting(models.Model):
@@ -119,6 +122,27 @@ class JobApplication(models.Model):
     status = models.CharField(
         max_length=50, choices=STATUS_CHOICES, default=STATUS_APPLIED
     )
+    INTENT_ACTIVE = "active"
+    INTENT_PAUSED = "paused"
+    INTENT_CHOICES = [
+        (INTENT_ACTIVE, "Ska söka"),
+        (INTENT_PAUSED, "Lagd på is"),
+    ]
+    AUTO_APPLY_BY_DAYS = 14
+
+    intent = models.CharField(
+        max_length=16, choices=INTENT_CHOICES, default=INTENT_ACTIVE
+    )
+    apply_by = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Sök senast — auto from deadline or created_at+14, editable.",
+    )
+    apply_by_is_auto = models.BooleanField(
+        default=True,
+        help_text="False when the user set apply_by themselves.",
+    )
+    archived_at = models.DateTimeField(null=True, blank=True)
     applied_at = models.DateField(null=True, blank=True)
     deadline = models.DateField(null=True, blank=True)
     contact_name = models.CharField(max_length=255, blank=True)
@@ -139,6 +163,26 @@ class JobApplication(models.Model):
 
     def __str__(self) -> str:
         return f"{self.title} @ {self.company} ({self.status})"
+
+    def ensure_apply_by(self) -> bool:
+        """Fill apply_by for wishlist rows when missing. Returns True if changed."""
+        if self.status != self.STATUS_WISHLIST or self.apply_by is not None:
+            return False
+        if self.deadline:
+            self.apply_by = self.deadline
+            self.apply_by_is_auto = False
+        else:
+            if self.created_at:
+                base = timezone.localtime(self.created_at).date()
+            else:
+                base = timezone.localdate()
+            self.apply_by = base + timedelta(days=self.AUTO_APPLY_BY_DAYS)
+            self.apply_by_is_auto = True
+        return True
+
+    def save(self, *args, **kwargs):
+        self.ensure_apply_by()
+        super().save(*args, **kwargs)
 
 
 class ApplicationEvent(models.Model):
