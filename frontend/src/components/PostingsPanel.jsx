@@ -443,7 +443,8 @@ export default function PostingsPanel({ onNavigate, active = true }) {
 
   function clearMatchCvFilter() {
     setMatchCvOnly(false);
-    const next = { ...query, matchCv: false };
+    setMinMatch60(false);
+    const next = { ...query, matchCv: false, minMatch60: false };
     rememberSearch(next);
     requestResultsScroll();
     resetToFirstPage();
@@ -909,26 +910,26 @@ export default function PostingsPanel({ onNavigate, active = true }) {
             </div>
           )}
 
-          {!error && (
+          {!loading && !error && (
             <p className="muted job-count">
-              {loading && total > 0
-                ? `Laddar sida ${Math.floor(offset / PAGE_SIZE) + 1}…`
-                : total === 0
-                  ? query.matchCv
-                    ? `0 av ${(data?.match_cv_scanned ?? 0).toLocaleString("sv-SE") || "genomsökta"} annonser matchade dina kompetenser. Prova färre markeringar eller byt sökprofil.`
-                    : "Inga annonser matchade din sökning."
-                  : query.matchCv
-                    ? `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
-                        "sv-SE"
-                      )} som passar CV:t${
-                        data?.match_cv_scanned
-                          ? ` (av ${Number(data.match_cv_scanned).toLocaleString("sv-SE")} genomsökta)`
-                          : ""
-                      }`
-                    : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
-                        "sv-SE"
-                      )} annonser`}
-              {!loading && activeFilters && (
+              {total === 0
+                ? query.minMatch60 || query.matchCv
+                  ? `Inga av de ${Number(data?.scanned ?? data?.match_cv_scanned ?? 0).toLocaleString("sv-SE") || "—"} genomsökta annonserna nådde filtret.`
+                  : "Inga annonser matchade din sökning."
+                : query.minMatch60 || query.matchCv
+                  ? `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
+                      "sv-SE"
+                    )} som når kravtäckningen${
+                      data?.scanned || data?.match_cv_scanned
+                        ? ` — sökte igenom de ${Number(
+                            data.scanned ?? data.match_cv_scanned
+                          ).toLocaleString("sv-SE")} senaste`
+                        : ""
+                    }${data?.truncated ? " (avbrutet efter budget)" : ""}`
+                  : `Visar ${showingFrom}–${showingTo} av ${total.toLocaleString(
+                      "sv-SE"
+                    )} annonser`}
+              {activeFilters && (
                 <button className="linklike job-clear" onClick={clearFilters}>
                   Rensa filter
                 </button>
@@ -936,7 +937,11 @@ export default function PostingsPanel({ onNavigate, active = true }) {
             </p>
           )}
 
-          {!error && !loading && total === 0 && query.matchCv && (
+          {!loading && error && (
+            <p className="muted job-count">—</p>
+          )}
+
+          {!error && !loading && total === 0 && (query.matchCv || query.minMatch60) && (
             <div className="empty-actions empty-actions--inline">
               <button
                 type="button"
@@ -955,9 +960,10 @@ export default function PostingsPanel({ onNavigate, active = true }) {
             </div>
           )}
 
+          {!loading && !error && (
           <div
-            className={loading ? "job-list job-list--loading" : "job-list"}
-            aria-busy={loading}
+            className="job-list"
+            aria-busy={false}
           >
             {results.map((job) => (
               <JobCard
@@ -971,6 +977,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
               />
             ))}
           </div>
+          )}
         </section>
 
         {total > PAGE_SIZE && (

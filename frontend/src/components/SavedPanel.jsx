@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { addEvidenceTerm, coverGapInMatch } from "../addEvidence.js";
 import { buildIcsCalendar, downloadIcs } from "../calendar.js";
 import {
   applyByFor,
@@ -13,6 +14,7 @@ import ApplicationModal from "./ApplicationModal.jsx";
 import MetricTile from "./board/MetricTile.jsx";
 import ConfirmDialog from "./ConfirmDialog.jsx";
 import MatchScore from "./MatchScore.jsx";
+import ProfileFitRow from "./ProfileFitRow.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
 
 const GOOD_MATCH_PERCENT = 60;
@@ -69,12 +71,12 @@ function daysLeftLabel(days) {
   return days === 1 ? "1 dag kvar" : `${days} dagar kvar`;
 }
 
-function daysChipTone(days) {
-  if (days === null) return "neutral";
-  if (days < 0) return "rejected";
-  if (days <= 3) return "rejected";
-  if (days <= 7) return "interview";
-  return "neutral";
+function daysDueClass(days) {
+  if (days === null) return "due";
+  if (days < 0) return "due due--expired";
+  if (days <= 3) return "due due--urgent";
+  if (days <= 7) return "due due--soon";
+  return "due";
 }
 
 function applicationToIcsEvent(application) {
@@ -417,6 +419,41 @@ export default function SavedPanel({
         ) : (
           <>
             <div className="board-tools">
+              {selectedVisible.length > 0 && (
+                <div className="bulk-bar" role="toolbar" aria-label="Massåtgärder">
+                  <span className="bulk-bar-count">
+                    {selectedVisible.length} valda
+                  </span>
+                  <button
+                    type="button"
+                    className="small"
+                    onClick={() =>
+                      markApplied(selectedVisible.map((app) => app.id))
+                    }
+                    disabled={busy}
+                  >
+                    Markera som sökta
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary small"
+                    onClick={() =>
+                      requestArchive(selectedVisible.map((app) => app.id))
+                    }
+                    disabled={busy}
+                  >
+                    Släpp
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary small"
+                    onClick={() => setSelectedIds(new Set())}
+                  >
+                    Avmarkera
+                  </button>
+                </div>
+              )}
+
               <div className="row-gap" style={{ flexWrap: "wrap" }}>
                 <button
                   type="button"
@@ -442,53 +479,35 @@ export default function SavedPanel({
                 >
                   Lägg i kalender
                 </button>
-                <button
-                  type="button"
-                  className="secondary small"
-                  onClick={() =>
-                    markApplied(selectedVisible.map((app) => app.id))
-                  }
-                  disabled={!selectedVisible.length || busy}
-                >
-                  Markera som sökta
-                </button>
-                <button
-                  type="button"
-                  className="secondary small"
-                  onClick={() =>
-                    requestArchive(selectedVisible.map((app) => app.id))
-                  }
-                  disabled={!selectedVisible.length || busy}
-                >
-                  Släpp
-                </button>
               </div>
 
-              <label className="month-filter-field">
-                <span className="sr-only">Filtrera på ort</span>
-                <select
-                  value={locationFilter}
-                  onChange={(e) => setLocationFilter(e.target.value)}
-                  aria-label="Filtrera på ort"
-                >
-                  <option value="">Alla orter</option>
-                  {locations.map((loc) => (
-                    <option key={loc} value={loc}>
-                      {loc}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="board-filters">
+                <label className="month-filter-field">
+                  <span className="sr-only">Filtrera på ort</span>
+                  <select
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                    aria-label="Filtrera på ort"
+                  >
+                    <option value="">Alla orter</option>
+                    {locations.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              <div className="quick-filters" aria-label="Filter">
-                <button
-                  type="button"
-                  className={goodMatchOnly ? "active" : ""}
-                  aria-pressed={goodMatchOnly}
-                  onClick={() => setGoodMatchOnly((v) => !v)}
-                >
-                  Passar mitt CV
-                </button>
+                <div className="quick-filters" aria-label="Filter">
+                  <button
+                    type="button"
+                    className={goodMatchOnly ? "active" : ""}
+                    aria-pressed={goodMatchOnly}
+                    onClick={() => setGoodMatchOnly((v) => !v)}
+                  >
+                    Passar mitt CV
+                  </button>
+                </div>
               </div>
 
               <div className="board-search">
@@ -602,14 +621,14 @@ export default function SavedPanel({
                                   aria-label={`Markera ${app.title}`}
                                 />
                               </label>
-                              <button
-                                type="button"
-                                className="lane-row-main"
-                                onClick={() => setSelected(app)}
-                              >
-                                <span className="lane-row-title">
+                              <div className="lane-row-main">
+                                <button
+                                  type="button"
+                                  className="lane-row-title"
+                                  onClick={() => setSelected(app)}
+                                >
                                   {app.title}
-                                </span>
+                                </button>
                                 <span className="lane-row-meta muted">
                                   {meta}
                                 </span>
@@ -617,17 +636,34 @@ export default function SavedPanel({
                                   <MatchScore
                                     match={app.match}
                                     variant="compact"
-                                    showMissing={false}
+                                    showMissing
+                                    onAddEvidence={async (gap) => {
+                                      try {
+                                        await addEvidenceTerm(gap.term);
+                                        const next = coverGapInMatch(
+                                          app.match,
+                                          gap
+                                        );
+                                        // Local list update without full reload.
+                                        app.match = next;
+                                        await reload?.();
+                                      } catch {
+                                        /* keep gap */
+                                      }
+                                    }}
+                                  />
+                                )}
+                                {app.match?.profiles_scored && (
+                                  <ProfileFitRow
+                                    profiles={app.match.profiles_scored}
                                   />
                                 )}
                                 {chip && (
-                                  <span
-                                    className={`badge ${daysChipTone(days)}`}
-                                  >
+                                  <span className={daysDueClass(days)}>
                                     {chip}
                                   </span>
                                 )}
-                              </button>
+                              </div>
 
                               <div className="lane-actions">
                                 {isExpired ? (

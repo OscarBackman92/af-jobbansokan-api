@@ -116,7 +116,11 @@ export default function App() {
   const savedCount =
     applications?.filter((a) => a.status === "wishlist").length ?? 0;
   const appliedCount =
-    applications?.filter((a) => a.status !== "wishlist").length ?? 0;
+    applications?.filter(
+      (a) =>
+        a.status !== "wishlist" &&
+        !["rejected", "no_response", "withdrawn", "accepted"].includes(a.status)
+    ).length ?? 0;
 
   function changeTab(next, options = {}) {
     const focus = options?.focus ?? null;

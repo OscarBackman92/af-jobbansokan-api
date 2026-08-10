@@ -407,6 +407,32 @@ export default function AppliedPanel({
         ) : (
           <>
             <div className="board-tools">
+              {selectedIds.size > 0 && (
+                <div className="bulk-bar" role="toolbar" aria-label="Massåtgärder">
+                  <span className="bulk-bar-count">{selectedIds.size} valda</span>
+                  <button
+                    type="button"
+                    className="small"
+                    onClick={() => followUpIds([...selectedIds])}
+                  >
+                    Följ upp valda
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary small"
+                    onClick={() => calendarForApplications(selectedApps)}
+                  >
+                    Lägg uppföljningar i kalender
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary small"
+                    onClick={() => setSelectedIds(new Set())}
+                  >
+                    Avmarkera
+                  </button>
+                </div>
+              )}
               <div className="row-gap" style={{ flexWrap: "wrap" }}>
                 <button
                   type="button"
@@ -414,22 +440,6 @@ export default function AppliedPanel({
                   onClick={toggleSelectVisible}
                 >
                   {allVisibleSelected ? "Avmarkera alla" : "Markera alla"}
-                </button>
-                <button
-                  type="button"
-                  className="small"
-                  disabled={selectedIds.size === 0}
-                  onClick={() => followUpIds([...selectedIds])}
-                >
-                  Följ upp valda
-                </button>
-                <button
-                  type="button"
-                  className="secondary small"
-                  disabled={selectedIds.size === 0}
-                  onClick={() => calendarForApplications(selectedApps)}
-                >
-                  Lägg uppföljningar i kalender
                 </button>
                 <button
                   type="button"
@@ -457,7 +467,7 @@ export default function AppliedPanel({
                   </button>
                 )}
               </div>
-              <div className="month-filters">
+              <div className="board-filters month-filters">
                 <label className="month-filter-field">
                   <span className="sr-only">Filtrera på ansökningsmånad</span>
                   <select

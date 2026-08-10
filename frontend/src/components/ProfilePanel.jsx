@@ -47,11 +47,16 @@ export default function ProfilePanel({
         profileFocus={profileFocus}
         onProfileFocusHandled={onProfileFocusHandled}
       />
+      <AccountDeleteCard
+        token={token}
+        me={me}
+        onLogout={onLogout}
+      />
     </div>
   );
 }
 
-function ProfileCard({ token, me, onMeChange, onLogout }) {
+function ProfileCard({ token, me, onMeChange, onLogout, showDelete = false }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ email: "", first_name: "", last_name: "" });
   const [message, setMessage] = useState(null);
@@ -168,7 +173,7 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
           </div>
         </form>
       )}
-      {!editing && (
+      {!editing && showDelete && (
         <div className="danger-zone danger-zone--account">
           <h3>Radera konto</h3>
           <p className="muted">
@@ -186,6 +191,46 @@ function ProfileCard({ token, me, onMeChange, onLogout }) {
           onConfirm={() => {
             setDiscardPrompt(null);
             setEditing(false);
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
+function AccountDeleteCard({ token, me, onLogout }) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  if (!me) return null;
+
+  async function deleteAccount() {
+    try {
+      await request("/api/v1/me/", { method: "DELETE", token });
+      onLogout();
+    } catch (err) {
+      window.alert(err.message || "Kunde inte radera kontot.");
+    }
+  }
+
+  return (
+    <section className="card danger-zone danger-zone--account">
+      <h2>Radera konto</h2>
+      <p className="muted">
+        Tar bort kontot och all data permanent. Går inte att ångra.
+      </p>
+      <button
+        type="button"
+        className="danger small"
+        onClick={() => setConfirmOpen(true)}
+      >
+        Radera konto permanent
+      </button>
+      {confirmOpen && (
+        <ConfirmDialog
+          message="Radera kontot permanent? Alla dina ansökningar och allt annat tas bort."
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={() => {
+            setConfirmOpen(false);
+            deleteAccount();
           }}
         />
       )}

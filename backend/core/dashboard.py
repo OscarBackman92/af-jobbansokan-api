@@ -53,6 +53,13 @@ RESPONSE_STATUSES = [
     JobApplication.STATUS_NO_RESPONSE,
     JobApplication.STATUS_WITHDRAWN,
 ]
+POSITIVE_RESPONSE = {
+    JobApplication.STATUS_SCREENING,
+    JobApplication.STATUS_INTERVIEW,
+    JobApplication.STATUS_FORWARDED,
+    JobApplication.STATUS_OFFER,
+    JobApplication.STATUS_ACCEPTED,
+}
 
 
 def _active_qs(user):
@@ -88,7 +95,7 @@ def build_dashboard(user) -> dict:
         "next_actions": _next_actions(base, today, week_end),
         "monthly": _monthly(base, today),
         "outcomes": _outcomes(base, today),
-        "response_by_match": _response_by_match(),
+        "response_by_match": _response_by_match(base),
         "top_companies": _top_companies(base),
         "waiting_age": _waiting_age(base, today),
         "pace": _pace(base, user, today, seven_ago),
@@ -131,23 +138,55 @@ def _kpis(base, today, week_end):
 
 
 def _funnel(base):
+    """Cumulative 'reached at least this stage' funnel — monotone decreasing."""
     applied_side = base.exclude(status=JobApplication.STATUS_WISHLIST)
-    return {
-        "tracked": base.count(),
-        "applied": applied_side.count(),
-        "responded": applied_side.filter(
+    tracked = base.count()
+    applied = applied_side.count()
+
+    reached_response = (
+        applied_side.filter(
             Q(status__in=RESPONSE_STATUSES) | Q(events__status__in=RESPONSE_STATUSES)
         )
         .distinct()
-        .count(),
-        "in_dialog": base.filter(status__in=DIALOG_STATUSES).count(),
-        "interview": base.filter(
-            Q(status=JobApplication.STATUS_INTERVIEW)
-            | Q(events__status=JobApplication.STATUS_INTERVIEW)
+        .count()
+    )
+    # Merge dialog + interview into one cumulative "reached dialog-or-beyond".
+    reached_dialog = (
+        applied_side.filter(
+            Q(status__in=[*DIALOG_STATUSES, *OFFER_STATUSES])
+            | Q(events__status__in=[*DIALOG_STATUSES, *OFFER_STATUSES])
         )
         .distinct()
-        .count(),
-        "offer": base.filter(status__in=OFFER_STATUSES).count(),
+        .count()
+    )
+    reached_interview = (
+        applied_side.filter(
+            Q(status__in=[JobApplication.STATUS_INTERVIEW, *OFFER_STATUSES])
+            | Q(
+                events__status__in=[
+                    JobApplication.STATUS_INTERVIEW,
+                    *OFFER_STATUSES,
+                ]
+            )
+        )
+        .distinct()
+        .count()
+    )
+    reached_offer = applied_side.filter(status__in=OFFER_STATUSES).count()
+
+    # Enforce monotonicity (never grow down the funnel).
+    responded = min(reached_response, applied)
+    in_dialog = min(reached_dialog, responded)
+    interview = min(reached_interview, in_dialog)
+    offer = min(reached_offer, interview)
+
+    return {
+        "tracked": tracked,
+        "applied": applied,
+        "responded": responded,
+        "in_dialog": in_dialog,
+        "interview": interview,
+        "offer": offer,
     }
 
 
@@ -232,6 +271,7 @@ def _monthly(base, today):
 
 
 def _outcomes(base, today):
+    """Partition of sökta rows into outcome buckets (sum ≤ applied count)."""
     applied_side = base.exclude(status=JobApplication.STATUS_WISHLIST)
     silence_cutoff = today - timedelta(days=SILENCE_FOLLOW_UP_DAYS)
     return {
@@ -246,16 +286,32 @@ def _outcomes(base, today):
             status__in=AWAITING_STATUSES,
             applied_at__gt=silence_cutoff,
         ).count(),
+        "applied_total": applied_side.count(),
     }
 
 
-def _response_by_match():
-    # CV match is computed in the list serializer, not stored — leave nulls
-    # so the UI can render <span class="tag">beräknas</span>.
-    return [
-        {"bucket": "has_match", "applied": None, "responded": None},
-        {"bucket": "no_match", "applied": None, "responded": None},
+def _response_by_match(base):
+    """Response rates from stored match snapshots (not live recompute)."""
+    scored = base.exclude(status=JobApplication.STATUS_WISHLIST).exclude(
+        match_score__isnull=True
+    )
+    buckets = [
+        ("has_match", Q(match_score__gte=60)),
+        ("no_match", Q(match_score__lt=60)),
     ]
+    rows = []
+    for bucket, filt in buckets:
+        qs = scored.filter(filt)
+        applied = qs.count()
+        responded = qs.filter(status__in=POSITIVE_RESPONSE).count()
+        entry = {"bucket": bucket, "applied": applied, "responded": responded}
+        if applied >= 5:
+            entry["rate"] = round(responded / applied, 3)
+        else:
+            entry["rate"] = None
+            entry["insufficient_data"] = True
+        rows.append(entry)
+    return rows
 
 
 def _top_companies(base):
@@ -292,20 +348,35 @@ def _waiting_age(base, today):
 def _pace(base, user, today, seven_ago):
     week_start = timezone.now() - timedelta(days=7)
     applied_7d = base.filter(applied_at__gte=seven_ago, applied_at__lte=today).count()
-    saved_7d = base.filter(created_at__gte=week_start).count()
-    save_apply_ratio = round(applied_7d / saved_7d, 2) if saved_7d > 0 else None
+    saved_7d = base.filter(
+        status=JobApplication.STATUS_WISHLIST, created_at__gte=week_start
+    ).count()
 
-    # Duration between created_at (as date) and applied_at — values_list only.
+    # Same cohort: of rows *created* in the window, how many later became applied.
+    created_in_window = base.filter(created_at__gte=week_start)
+    created_count = created_in_window.count()
+    created_then_applied = created_in_window.exclude(
+        status=JobApplication.STATUS_WISHLIST
+    ).count()
+    if created_count > 0:
+        save_apply_ratio = min(1.0, round(created_then_applied / created_count, 2))
+    else:
+        save_apply_ratio = None
+
+    # Only rows saved *before* they were applied (positive lag).
     created_dates = list(
         base.filter(applied_at__isnull=False).values_list("created_at", "applied_at")[
             :500
         ]
     )
-    saved_to_applied = [
-        (applied - timezone.localtime(created).date()).days
-        for created, applied in created_dates
-        if created and applied
-    ]
+    saved_to_applied = []
+    for created, applied in created_dates:
+        if not created or not applied:
+            continue
+        created_day = timezone.localtime(created).date()
+        if applied < created_day:
+            continue
+        saved_to_applied.append((applied - created_day).days)
     median_days_saved_to_applied = (
         int(round(median(saved_to_applied))) if saved_to_applied else None
     )
@@ -343,7 +414,9 @@ def _pace(base, user, today, seven_ago):
         "applied_7d": applied_7d,
         "saved_7d": saved_7d,
         "save_apply_ratio": save_apply_ratio,
+        "save_apply_cohort": created_count,
         "median_days_saved_to_applied": median_days_saved_to_applied,
+        "median_days_saved_to_applied_n": len(saved_to_applied),
         "median_days_to_response": median_days_to_response,
         "followups_logged": followups_logged,
     }

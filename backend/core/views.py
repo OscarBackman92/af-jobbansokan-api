@@ -775,8 +775,8 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
 GOOD_MATCH_PERCENT = 60
 GOOD_MATCH_MIN_TERMS = 2
 # When filtering by CV, scan this many upstream ads then paginate locally.
-MATCH_CV_SCAN_LIMIT = 400
-MATCH_CV_BATCH_SIZE = 50
+MATCH_CV_SCAN_LIMIT = 200
+MATCH_CV_BATCH_SIZE = 25
 
 
 def _truthy(value):
@@ -848,20 +848,53 @@ def _dedupe_jobs_by_id(results: list) -> list:
     return unique
 
 
-def _attach_cv_match(jobs: list[dict], *, evidence, skills, resume=None) -> None:
+def _attach_cv_match(
+    jobs: list[dict], *, evidence, skills, resume=None, profiles: bool = False
+) -> None:
     from .requirements import score_all_profiles
 
     for job in jobs:
         posting = SimpleNamespace(title=job["title"], description=job["description"])
-        if evidence:
-            job["match"] = match_evidence(evidence, posting)
-        else:
-            job["match"] = match_skills(skills, posting)
-        if resume is not None:
-            profiles_scored = score_all_profiles(resume, posting)
-            if profiles_scored:
-                job["match"]["profiles_scored"] = profiles_scored
-                job["match"]["best_profile"] = profiles_scored[0]
+        try:
+            if evidence:
+                job["match"] = match_evidence(evidence, posting)
+            else:
+                job["match"] = match_skills(skills, posting)
+            if profiles and resume is not None:
+                profiles_scored = score_all_profiles(resume, posting)
+                if profiles_scored:
+                    job["match"]["profiles_scored"] = profiles_scored
+                    job["match"]["best_profile"] = profiles_scored[0]
+        except Exception:
+            job["match"] = {
+                "must_total": 0,
+                "must_covered": 0,
+                "merit_total": 0,
+                "merit_covered": 0,
+                "score": None,
+                "band": "unknown",
+                "confidence": "low",
+                "covered": [],
+                "gaps": [],
+                "matched": [],
+                "missing": [],
+                "count": 0,
+                "total": 0,
+            }
+
+
+def _match_sort_key(job: dict) -> tuple:
+    match = job.get("match") or {}
+    score = match.get("score")
+    if score is not None:
+        try:
+            return (1, int(score))
+        except (TypeError, ValueError):
+            pass
+    try:
+        return (0, int(match.get("count") or 0))
+    except (TypeError, ValueError):
+        return (0, 0)
 
 
 def _search_jobs_matching_cv(
@@ -882,6 +915,7 @@ def _search_jobs_matching_cv(
     matched: list[dict] = []
     scanned = 0
     upstream_total = 0
+    truncated = False
     while scanned < MATCH_CV_SCAN_LIMIT:
         batch = min(MATCH_CV_BATCH_SIZE, MATCH_CV_SCAN_LIMIT - scanned)
         data = _cached_jobtech_search(
@@ -891,25 +925,26 @@ def _search_jobs_matching_cv(
         results = list(data.get("results") or [])
         if not results:
             break
-        _attach_cv_match(results, evidence=evidence, skills=skills, resume=resume)
+        # Skip multi-profile scoring during the scan — attach only for the page.
+        _attach_cv_match(
+            results, evidence=evidence, skills=skills, resume=None, profiles=False
+        )
         matched.extend(_filter_jobs_by_cv_match(results, min_percent=min_percent))
         scanned += len(results)
         if scanned >= upstream_total or len(results) < batch:
             break
+    else:
+        truncated = scanned < upstream_total
+
+    if scanned < upstream_total and scanned >= MATCH_CV_SCAN_LIMIT:
+        truncated = True
 
     matched = _dedupe_jobs_by_id(matched)
-    matched.sort(
-        key=lambda job: (
-            (job.get("match") or {}).get("score") is not None,
-            int(
-                (job.get("match") or {}).get("score")
-                if (job.get("match") or {}).get("score") is not None
-                else (job.get("match") or {}).get("count") or 0
-            ),
-        ),
-        reverse=True,
-    )
+    matched.sort(key=_match_sort_key, reverse=True)
     page = matched[max(0, offset) : max(0, offset) + max(1, limit)]
+    _attach_cv_match(
+        page, evidence=evidence, skills=skills, resume=resume, profiles=True
+    )
     return {
         "results": page,
         "total": len(matched),
@@ -920,6 +955,8 @@ def _search_jobs_matching_cv(
         "match_cv_upstream_total": upstream_total,
         "match_cv_threshold_percent": min_percent,
         "match_cv_min_terms": GOOD_MATCH_MIN_TERMS,
+        "scanned": scanned,
+        "truncated": truncated,
     }
 
 
@@ -1057,6 +1094,16 @@ def job_search(request):
                 {"detail": "Kunde inte nå Platsbanken just nu. Försök igen strax."},
                 status=drf_status.HTTP_502_BAD_GATEWAY,
             )
+        except Exception:
+            return Response(
+                {
+                    "detail": (
+                        "Kunde inte beräkna CV-matchning just nu. "
+                        "Prova utan matchningsfilter."
+                    )
+                },
+                status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         if hide_blocked:
             data["results"] = [
                 job
@@ -1080,7 +1127,11 @@ def job_search(request):
 
     if evidence or skills:
         _attach_cv_match(
-            data["results"], evidence=evidence, skills=skills, resume=resume
+            data["results"],
+            evidence=evidence,
+            skills=skills,
+            resume=resume,
+            profiles=True,
         )
         if hide_blocked:
             data["results"] = [
@@ -1094,10 +1145,7 @@ def job_search(request):
         if sort_by == "match":
             data["results"] = sorted(
                 data["results"],
-                key=lambda job: (
-                    (job.get("match") or {}).get("score") is not None,
-                    (job.get("match") or {}).get("score") or -1,
-                ),
+                key=_match_sort_key,
                 reverse=True,
             )
 

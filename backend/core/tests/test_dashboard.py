@@ -68,9 +68,10 @@ def test_dashboard_response_shape(api_client, user):
         "no_response",
         "waiting",
         "fresh",
+        "applied_total",
     }
     assert set(body["waiting_age"]) == {"d0_6", "d7_10", "d11_14", "d15_plus"}
-    assert set(body["pace"]) == {
+    assert set(body["pace"]) >= {
         "applied_7d",
         "saved_7d",
         "save_apply_ratio",

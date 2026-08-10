@@ -45,8 +45,8 @@ const WAITING_BUCKETS = [
 ];
 
 const MATCH_LABELS = {
-  has_match: "Med CV-match",
-  no_match: "Utan CV-match",
+  has_match: "Hög match (≥60 %)",
+  no_match: "Låg match (<60 %)",
 };
 
 const PACE_ROWS = [
@@ -65,10 +65,6 @@ const PACE_ROWS = [
   },
   { key: "followups_logged", label: "Uppföljningar loggade (7d)", suffix: "st" },
 ];
-
-function Beraknas() {
-  return <span className="tag">beräknas</span>;
-}
 
 function isMissing(value) {
   return value == null;
@@ -115,10 +111,16 @@ function navigateForAction(action, onNavigate) {
   onNavigate?.("applied", { filter: "late" });
 }
 
-function formatPaceValue(key, value) {
+function formatPaceValue(key, value, pace) {
   if (isMissing(value)) return null;
   if (key === "save_apply_ratio") {
-    return `${Math.round(Number(value) * 100)} %`;
+    const n = pace?.save_apply_cohort;
+    const pctLabel = `${Math.round(Number(value) * 100)} %`;
+    return n != null ? `${pctLabel} (av ${n} skapade)` : pctLabel;
+  }
+  if (key === "median_days_saved_to_applied") {
+    const n = pace?.median_days_saved_to_applied_n;
+    return n != null ? `${value} (av ${n} jobb)` : String(value);
   }
   return String(value);
 }
@@ -157,10 +159,7 @@ export default function DashboardPanel({ token, onNavigate }) {
         </section>
         <section className="card">
           <p className="error">{error}</p>
-          <p className="muted">
-            Försök igen om en stund. Siffror som saknas visas som{" "}
-            <Beraknas />.
-          </p>
+          <p className="muted">Försök igen om en stund.</p>
         </section>
       </div>
     );
@@ -212,9 +211,10 @@ export default function DashboardPanel({ token, onNavigate }) {
     : [];
   const outcomesMissing =
     !outcomes || outcomeValues.some((seg) => isMissing(seg.value));
-  const outcomesTotal = outcomesMissing
+  const outcomesBucketSum = outcomesMissing
     ? 0
     : outcomeValues.reduce((sum, seg) => sum + (seg.value || 0), 0);
+  const appliedTotal = outcomes?.applied_total ?? outcomesBucketSum;
 
   const waitingValues = waitingAge
     ? WAITING_BUCKETS.map((bucket) => ({
@@ -243,7 +243,10 @@ export default function DashboardPanel({ token, onNavigate }) {
             En läsvy som länkar vidare till sparade jobb och ansökningar.
           </p>
         </div>
-        <div className="metric-grid" aria-label="Nyckeltal">
+        <div
+          className="metric-grid dashboard-metric-grid"
+          aria-label="Nyckeltal"
+        >
           <MetricTile
             label="Att söka"
             value={kpis.to_apply ?? 0}
@@ -263,7 +266,7 @@ export default function DashboardPanel({ token, onNavigate }) {
           <MetricTile
             label="Sparade totalt"
             value={kpis.saved_total ?? 0}
-            detail="wishlist"
+            detail="ej sökta ännu"
             filterId="saved"
             onFilter={() => onNavigate?.("saved")}
           />
@@ -343,22 +346,23 @@ export default function DashboardPanel({ token, onNavigate }) {
       <section className="card">
         <h2>Tratten</h2>
         <p className="muted">
-          Från spårade jobb till erbjudande. Procent mot spårade totalt, och
-          andel från föregående steg.
+          Kumulativt: nått minst detta steg. Procent mot spårade totalt.
         </p>
         <ol className="funnel" aria-label="Ansökningstratt">
           {FUNNEL_STEPS.map((step, index) => {
             const count = funnel[step.key] ?? 0;
             const ofTracked = pct(count, tracked);
             const prevKey = index > 0 ? FUNNEL_STEPS[index - 1].key : null;
-            const ofPrev = prevKey ? pct(count, funnel[prevKey] ?? 0) : null;
+            const prevCount = prevKey ? funnel[prevKey] ?? 0 : 0;
+            const ofPrev =
+              prevKey && prevCount > 0 ? pct(count, prevCount) : null;
             return (
               <li key={step.key}>
                 <span className="funnel-label">{step.label}</span>
                 <strong className="funnel-count">{count}</strong>
                 <span className="funnel-pct muted">
                   {ofTracked == null ? (
-                    <Beraknas />
+                    "—"
                   ) : (
                     <>
                       {ofTracked}% av spårade
@@ -429,11 +433,15 @@ export default function DashboardPanel({ token, onNavigate }) {
       </section>
 
       <section className="card">
-        <h2>Utfall av {outcomesTotal || "—"} sökta</h2>
-        <p className="muted">Avslag, inget svar, väntande och nyligen sökta.</p>
+        <h2>Utfall</h2>
+        <p className="muted">
+          Fördelning av {appliedTotal || "—"} sökta (avslag, inget svar, väntande
+          och nyligen sökta). Summan kan vara lägre än alla sökta om du har
+          dialog/erbjudanden.
+        </p>
         {outcomesMissing ? (
-          <Beraknas />
-        ) : outcomesTotal === 0 ? (
+          <p className="muted">för lite data</p>
+        ) : outcomesBucketSum === 0 ? (
           <p className="muted">Inga sökta jobb att visa utfall för ännu.</p>
         ) : (
           <>
@@ -472,30 +480,27 @@ export default function DashboardPanel({ token, onNavigate }) {
 
       <section className="card">
         <h2>Svar per CV-matchning</h2>
-        <p className="muted">Hur ofta du får svar när matchningen är hög respektive låg.</p>
+        <p className="muted">
+          Baserat på sparad matchningspoäng vid spara/sökt — inte live-omräkning.
+        </p>
         {responseByMatch.length === 0 ? (
-          <Beraknas />
+          <p className="muted">för lite data</p>
         ) : (
           <table className="pace-table">
-            <thead>
-              <tr>
-                <th scope="col">Matchning</th>
-                <th scope="col">Sökta</th>
-                <th scope="col">Svar</th>
-              </tr>
-            </thead>
             <tbody>
-              {responseByMatch.map((row) => {
-                const appliedMissing = isMissing(row.applied);
-                const respondedMissing = isMissing(row.responded);
-                return (
-                  <tr key={row.bucket}>
-                    <td>{MATCH_LABELS[row.bucket] || row.bucket}</td>
-                    <td>{appliedMissing ? <Beraknas /> : row.applied}</td>
-                    <td>{respondedMissing ? <Beraknas /> : row.responded}</td>
-                  </tr>
-                );
-              })}
+              {responseByMatch.map((row) => (
+                <tr key={row.bucket}>
+                  <th scope="row">{MATCH_LABELS[row.bucket] || row.bucket}</th>
+                  <td>
+                    {row.insufficient_data || row.rate == null
+                      ? "för lite data"
+                      : `${Math.round(row.rate * 100)} % svar`}
+                  </td>
+                  <td className="muted">
+                    {row.applied ?? 0} sökta · {row.responded ?? 0} svar
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}
@@ -520,9 +525,11 @@ export default function DashboardPanel({ token, onNavigate }) {
 
       <section className="card">
         <h2>Hur länge de väntande har väntat</h2>
-        <p className="muted">Fördelning bland ansökningar som fortfarande väntar på svar.</p>
+        <p className="muted">
+          Fördelning bland ansökningar som fortfarande väntar på svar.
+        </p>
         {waitingMissing ? (
-          <Beraknas />
+          <p className="muted">för lite data</p>
         ) : (
           <div className="histogram" role="list" aria-label="Väntetid">
             {waitingValues.map((bucket) => (
@@ -533,6 +540,7 @@ export default function DashboardPanel({ token, onNavigate }) {
                     className="histogram-bar"
                     style={{
                       width: `${((bucket.value || 0) / waitingMax) * 100}%`,
+                      minWidth: bucket.value > 0 ? "4px" : "0",
                     }}
                   />
                 </div>
@@ -547,23 +555,22 @@ export default function DashboardPanel({ token, onNavigate }) {
         <h2>Din takt</h2>
         <p className="muted">Tempo och medianer för ditt jobbsök.</p>
         {!pace ? (
-          <Beraknas />
+          <p className="muted">för lite data</p>
         ) : (
           <table className="pace-table">
             <tbody>
               {PACE_ROWS.map((row) => {
-                const formatted = formatPaceValue(row.key, pace[row.key]);
+                const formatted = formatPaceValue(row.key, pace[row.key], pace);
                 return (
                   <tr key={row.key}>
                     <th scope="row">{row.label}</th>
                     <td>
                       {formatted == null ? (
-                        <Beraknas />
+                        "för lite data"
                       ) : (
                         <>
                           {formatted}
-                          {row.suffix &&
-                          row.key !== "save_apply_ratio"
+                          {row.suffix && row.key !== "save_apply_ratio"
                             ? ` ${row.suffix}`
                             : null}
                         </>

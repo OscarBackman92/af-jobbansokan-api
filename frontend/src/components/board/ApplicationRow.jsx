@@ -25,14 +25,20 @@ export default function ApplicationRow({ application, onOpen, onMove }) {
 
   return (
     <div className={`pipeline-row pipeline-row--${application.status}`}>
-      <button className="pipeline-row-main" onClick={onOpen}>
-        <span className="pipeline-row-title">{application.title}</span>
+      <div className="pipeline-row-main">
+        <button
+          type="button"
+          className="pipeline-row-title"
+          onClick={onOpen}
+        >
+          {application.title}
+        </button>
         <span className="pipeline-row-meta">{meta.join(" · ")}</span>
         {application.match && (
           <MatchScore
             match={application.match}
             variant="compact"
-            showMissing={false}
+            showMissing
           />
         )}
         {application.match?.profiles_scored && (
@@ -53,7 +59,7 @@ export default function ApplicationRow({ application, onOpen, onMove }) {
             )}
           </span>
         )}
-      </button>
+      </div>
       <div className="pipeline-row-actions">
         <select
           value={application.status}

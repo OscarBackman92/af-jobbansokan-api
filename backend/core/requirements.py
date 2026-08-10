@@ -261,15 +261,22 @@ def score_posting(
         term for term in cv_terms if not _terms_hit_text(term, full_text)
     ]
 
-    req_total = must_total + merit_total
     confidence = "high"
-    if req_total < 3 or len(description.strip()) < 200:
+    if len(description.strip()) < 200:
+        confidence = "low"
+    elif must_total > 0 and must_total < 4:
+        # Thin requirement lists inflate raw coverage — keep them neutral.
+        confidence = "low"
+    elif must_total == 0 and merit_total < 3:
         confidence = "low"
 
+    # Shrinkage: never report 100% on a tiny requirement set.
     if must_total > 0:
-        score = int(round(100 * must_covered / must_total))
+        raw_score = 100 * must_covered / (must_total + 2)
+        score = int(round(raw_score))
     elif merit_total > 0:
-        score = int(round(100 * merit_covered / merit_total))
+        raw_score = 100 * merit_covered / (merit_total + 2)
+        score = int(round(raw_score))
     else:
         score = None
 

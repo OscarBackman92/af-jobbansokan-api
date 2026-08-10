@@ -89,8 +89,29 @@ def test_score_falls_back_to_merit_when_no_must():
     assert result["must_total"] == 0
     assert result["merit_total"] >= 3
     assert result["confidence"] == "high"
-    assert result["score"] == 100
-    assert result["band"] == "strong"
+    # Shrinkage: 3/5 = 60, not raw 100%.
+    assert result["score"] == 60
+    assert result["band"] == "medium"
+
+
+def test_low_confidence_when_few_must_requirements():
+    posting = SimpleNamespace(
+        title="Rehab",
+        description="\n".join(
+            [
+                "Krav",
+                "- Excel",
+                "- Svenska",
+                ("Lång beskrivning av uppdraget. " * 30),
+            ]
+        ),
+    )
+    result = score_posting(["Excel", "Svenska"], posting)
+    assert result["must_total"] == 2
+    assert result["must_covered"] == 2
+    assert result["confidence"] == "low"
+    assert result["score"] is None
+    assert result["band"] == "unknown"
 
 
 def test_low_confidence_when_description_short():
@@ -123,13 +144,15 @@ def test_prefix_match_upphandlingar():
                 "- Erfarenhet av upphandlingar",
                 "- Goda kunskaper i Excel",
                 "- Svenska i tal och skrift",
+                "- Power BI",
                 ("Beskrivning av uppdraget. " * 25),
             ]
         ),
     )
-    result = score_posting(["Upphandling", "Excel", "Svenska"], posting)
+    result = score_posting(["Upphandling", "Excel", "Svenska", "Power BI"], posting)
     assert result["must_covered"] >= 1
     assert any(c["term"] == "Upphandling" for c in result["covered"])
+    assert result["must_total"] >= 4
     assert result["confidence"] == "high"
 
 
@@ -183,15 +206,30 @@ def test_score_all_profiles_sorts_desc():
             "confirmed": True,
             "source": {"type": "manual", "index": None, "label": ""},
         },
+        {
+            "id": "e4",
+            "term": "PostgreSQL",
+            "category": "technical",
+            "confirmed": True,
+            "source": {"type": "manual", "index": None, "label": ""},
+        },
+        {
+            "id": "e5",
+            "term": "SQL",
+            "category": "technical",
+            "confirmed": True,
+            "source": {"type": "manual", "index": None, "label": ""},
+        },
     ]
     resume = SimpleNamespace(headline="", job_profiles=[ekonomi, it_support])
     posting = SimpleNamespace(
         title="Backend",
         description=(
-            "Krav\n- Python\n- Django\n- Excel\n" + ("Lång beskrivning. " * 40)
+            "Krav\n- Python\n- Django\n- PostgreSQL\n- SQL\n- Excel\n"
+            + ("Lång beskrivning. " * 40)
         ),
     )
     scored = score_all_profiles(resume, posting)
     assert len(scored) == 2
     assert scored[0]["label"] == "IT-support"
-    assert scored[0]["score"] >= scored[1]["score"]
+    assert (scored[0]["score"] or -1) >= (scored[1]["score"] or -1)

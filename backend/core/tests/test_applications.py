@@ -65,6 +65,53 @@ def test_create_with_platsbanken_snapshot(api_client, user):
     assert body["source_job_id"] == "31258362"
 
 
+def test_create_writes_match_snapshot(api_client, user):
+    from core.models import Resume
+
+    Resume.objects.create(user=user, skills=["Python", "Django"])
+    api_client.force_authenticate(user)
+    long_desc = (
+        "Krav\n- Python\n- Django\n- SQL\n- Excel\n" + ("Beskrivning. " * 40)
+    )
+    response = api_client.post(
+        URL,
+        {
+            "company": "Acme",
+            "title": "Backend",
+            "status": "wishlist",
+            "ad_description": long_desc,
+        },
+    )
+    assert response.status_code == 201
+    app = JobApplication.objects.get(id=response.json()["id"])
+    assert app.match_scored_at is not None
+    assert app.match_snapshot != {}
+    assert "must_total" in app.match_snapshot
+
+
+def test_status_applied_rewrites_match_snapshot(api_client, user):
+    from core.models import Resume
+
+    Resume.objects.create(user=user, skills=["Python"])
+    app = JobApplication.objects.create(
+        owner=user,
+        company="Acme",
+        title="Dev",
+        status="wishlist",
+        ad_description="Krav\n- Python\n" + ("Text. " * 50),
+    )
+    api_client.force_authenticate(user)
+    response = api_client.patch(
+        f"{URL}{app.id}/",
+        {"status": "applied", "applied_at": "2026-08-01"},
+        format="json",
+    )
+    assert response.status_code == 200
+    app.refresh_from_db()
+    assert app.match_scored_at is not None
+    assert app.match_snapshot != {}
+
+
 def test_create_without_posting_requires_company_and_title(api_client, user):
     api_client.force_authenticate(user)
     response = api_client.post(URL, {"status": "applied"})
