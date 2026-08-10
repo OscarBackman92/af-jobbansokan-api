@@ -377,7 +377,7 @@ function ResumeCard({
   const [unsavedPrompt, setUnsavedPrompt] = useState(null);
   const skillsSectionRef = useRef(null);
 
-  const active = activeProfile(jobProfiles);
+  const activeJobProfile = activeProfile(jobProfiles);
 
   function revertEdits() {
     setResume(savedResume);
@@ -430,7 +430,7 @@ function ResumeCard({
 
   useEffect(() => {
     if (!open) return undefined;
-    setMarketHints(getMarketHints(confirmedEvidence(active).map((item) => item.term)));
+    setMarketHints(getMarketHints(confirmedEvidence(activeJobProfile).map((item) => item.term)));
 
     const hasText =
       resume.experience.some((row) => row.description?.trim() || row.title?.trim()) ||
@@ -454,7 +454,7 @@ function ResumeCard({
             experience: resume.experience,
             education: resume.education,
             job_profiles: jobProfiles,
-            active_profile_id: active.id,
+            active_profile_id: activeJobProfile.id,
           },
         });
         if (!cancelled) setEvidenceSuggestions(data.by_source);
@@ -469,7 +469,7 @@ function ResumeCard({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [open, resume.experience, resume.education, resume.headline, resume.summary, jobProfiles, active.id, token]);
+  }, [open, resume.experience, resume.education, resume.headline, resume.summary, jobProfiles, activeJobProfile.id, token]);
 
   useEffect(() => {
     if (profileFocus !== "skills" || loading) return undefined;
@@ -518,7 +518,7 @@ function ResumeCard({
 
   function addEvidenceItem(source, item) {
     mutateProfiles((profiles) =>
-      applyEvidenceToProfiles(profiles, active.id, (profile) =>
+      applyEvidenceToProfiles(profiles, activeJobProfile.id, (profile) =>
         addEvidence(profile, {
           term: item.term,
           category: item.category,
@@ -537,7 +537,7 @@ function ResumeCard({
 
   function removeEvidenceItem(term) {
     mutateProfiles((profiles) =>
-      applyEvidenceToProfiles(profiles, active.id, (profile) => removeEvidence(profile, term))
+      applyEvidenceToProfiles(profiles, activeJobProfile.id, (profile) => removeEvidence(profile, term))
     );
   }
 
@@ -707,7 +707,7 @@ function ResumeCard({
   }
 
   const cvHasContent = hasCvContent(resume, jobProfiles);
-  const markedEvidence = confirmedEvidence(active);
+  const markedEvidence = confirmedEvidence(activeJobProfile);
   const suggestionEntries = Object.entries(evidenceSuggestions || {}).filter(
     ([, items]) => items?.length
   );
@@ -788,7 +788,7 @@ function ResumeCard({
           </label>
           <JobProfileSelector
             profiles={jobProfiles}
-            activeId={active.id}
+            activeId={activeJobProfile.id}
             onSelect={(id) => mutateProfiles((profiles) => setActiveProfile(profiles, id))}
             onAdd={() => {
               const label = window.prompt("Namn på ny profil", `Profil ${jobProfiles.length + 1}`);
@@ -969,7 +969,7 @@ function ResumeCard({
               </label>
               <EvidenceRow
                 title="Bevis från denna rad"
-                evidence={evidenceForSource(active, `experience:${i}`)}
+                evidence={evidenceForSource(activeJobProfile, `experience:${i}`)}
                 suggestions={evidenceSuggestions?.[`experience:${i}`] ?? []}
                 onAddSuggestion={(item) =>
                   addEvidenceItem(
@@ -1047,7 +1047,7 @@ function ResumeCard({
               </div>
               <EvidenceRow
                 title="Bevis från utbildningen"
-                evidence={evidenceForSource(active, `education:${i}`)}
+                evidence={evidenceForSource(activeJobProfile, `education:${i}`)}
                 suggestions={evidenceSuggestions?.[`education:${i}`] ?? []}
                 onAddSuggestion={(item) =>
                   addEvidenceItem(
