@@ -3285,6 +3285,361 @@ button.chart-col:focus-visible {
   font-weight: 700;
 }
 
+/* ---------- Dashboard: tag, funnel, stack-bar, histogram ---------- */
+
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.tab.active .tab-count {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--border));
+}
+
+.lanes {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.lane {
+  border-left: 3px solid var(--brand);
+  padding-left: 0.75rem;
+}
+
+.lane[data-lane="urgent"],
+.lane[data-lane="late"] {
+  border-left-color: var(--amber);
+}
+
+.lane[data-lane="expired"],
+.lane[data-lane="closed"] {
+  border-left-color: var(--muted);
+}
+
+.lane[data-lane="offer"] {
+  border-left-color: var(--green);
+}
+
+.lane[data-lane="dialog"] {
+  border-left-color: var(--st-interview, var(--brand));
+}
+
+.lane-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.45rem;
+}
+
+.lane-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.lane-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem 0.75rem;
+  align-items: start;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+.lane-row--urgent,
+.lane-row--late {
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+}
+
+.lane-row--dim {
+  opacity: 0.78;
+}
+
+.lane-row-main {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  box-shadow: none;
+}
+
+.lane-row-main:hover {
+  filter: none;
+  transform: none;
+  box-shadow: none;
+  color: var(--brand);
+}
+
+.lane-row-title {
+  font-weight: 600;
+}
+
+.lane-row-meta {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.lane-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.lane-confirm,
+.lane-plan {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+@media (max-width: 640px) {
+  .lane-row {
+    grid-template-columns: 1fr;
+  }
+
+  .lane-actions {
+    justify-content: stretch;
+  }
+
+  .lane-actions button {
+    flex: 1;
+  }
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.ics-knapp {
+  white-space: nowrap;
+}
+
+.funnel {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.funnel li {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.9fr) auto minmax(0, 1.4fr);
+  gap: 0.65rem;
+  align-items: baseline;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+}
+
+.funnel-label {
+  font-weight: 600;
+}
+
+.funnel-count {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.funnel-pct {
+  font-size: 0.82rem;
+}
+
+.stack-bar {
+  display: flex;
+  width: 100%;
+  height: 1.35rem;
+  margin-top: 0.75rem;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.stack-bar-seg {
+  min-width: 2px;
+  height: 100%;
+}
+
+.stack-bar-seg--rejected {
+  background: var(--red, #e05555);
+}
+
+.stack-bar-seg--no_response {
+  background: color-mix(in srgb, var(--muted) 55%, var(--border));
+}
+
+.stack-bar-seg--waiting {
+  background: var(--amber);
+}
+
+.stack-bar-seg--fresh {
+  background: var(--brand);
+}
+
+.stack-bar-legend {
+  list-style: none;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.stack-bar-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.stack-bar-swatch {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.histogram {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.histogram-row {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) 2rem;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.histogram-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.histogram-track {
+  height: 0.7rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.histogram-bar {
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: var(--brand);
+}
+
+.histogram-count {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.pace-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.65rem;
+  font-size: 0.9rem;
+}
+
+.pace-table th,
+.pace-table td {
+  text-align: left;
+  padding: 0.45rem 0.35rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: baseline;
+}
+
+.pace-table th {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.pace-table td {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.top-companies {
+  list-style: none;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.top-companies li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.15rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.top-companies li:last-child {
+  border-bottom: none;
+}
+
+.top-companies strong {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .funnel li {
+    grid-template-columns: 1fr auto;
+  }
+
+  .funnel-pct {
+    grid-column: 1 / -1;
+  }
+
+  .histogram-row {
+    grid-template-columns: 5.5rem minmax(0, 1fr) 1.75rem;
+  }
+}
+
 .badge.wishlist,
 .badge.withdrawn,
 .badge.no_response {
