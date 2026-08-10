@@ -30,6 +30,7 @@ from rest_framework.views import APIView
 from core.email_health import email_delivery_warnings
 
 from .csv_safety import sanitize_csv_cell
+from .dashboard import build_dashboard
 from .experience_skills import (
     merge_skill_suggestions,
     skills_list_to_suggestions,
@@ -121,6 +122,16 @@ def health(_request):
     if warnings:
         payload["warnings"] = warnings
     return Response(payload)
+
+
+class DashboardView(APIView):
+    """Single-call overview metrics for the Översikt tab."""
+
+    permission_classes = [IsAuthenticatedUser]
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def get(self, request):
+        return Response(build_dashboard(request.user))
 
 
 @extend_schema(exclude=True)  # serves JS for the SPA, not part of the API

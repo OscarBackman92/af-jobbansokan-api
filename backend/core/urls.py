@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    DashboardView,
     JobApplicationViewSet,
     ProfileView,
     ResumeParseView,
@@ -21,6 +22,7 @@ router = DefaultRouter()
 router.register(r"applications", JobApplicationViewSet, basename="applications")
 
 urlpatterns = [
+    path("dashboard/", DashboardView.as_view(), name="dashboard"),
     path("me/", ProfileView.as_view(), name="me"),
     path("me/resume/", ResumeView.as_view(), name="my-resume"),
     path("me/resume/parse/", ResumeParseView.as_view(), name="my-resume-parse"),
