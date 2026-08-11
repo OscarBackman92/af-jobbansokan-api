@@ -188,12 +188,13 @@ export default function App() {
     function alignActive() {
       const activeTab = nav.querySelector(".tab.active");
       if (!(activeTab instanceof HTMLElement)) return;
-      // "auto" avoids racing a smooth animation against badge layout growth.
-      activeTab.scrollIntoView({
-        inline: "nearest",
-        block: "nearest",
-        behavior: "auto",
-      });
+      // Explicit left scroll (not scrollIntoView) so we land on a stable
+      // offset even if CSS snap is reintroduced later.
+      const maxLeft = Math.max(0, nav.scrollWidth - nav.clientWidth);
+      const target = Math.min(Math.max(0, activeTab.offsetLeft), maxLeft);
+      if (Math.abs(nav.scrollLeft - target) > 1) {
+        nav.scrollTo({ left: target, behavior: "auto" });
+      }
     }
 
     alignActive();

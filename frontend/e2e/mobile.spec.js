@@ -65,7 +65,7 @@ test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
   }
 });
 
-test("mobile deep link keeps active tab visible after badges load", async ({
+test("mobile deep link keeps active tab visible before and after badges", async ({
   page,
 }) => {
   await login(page);
@@ -76,7 +76,9 @@ test("mobile deep link keeps active tab visible after badges load", async ({
       page.getByRole("button", { name: label, exact: true })
     ).toHaveAttribute("aria-current", "page");
 
-    // Wait for nav badges (applications fetch) so scrollWidth can grow.
+    // Mount state — before nav badges may have grown the strip.
+    await assertActiveTabFullyVisible(page);
+
     await page
       .waitForFunction(
         () => document.querySelectorAll(".tabs .tab-count").length >= 1,
@@ -85,6 +87,7 @@ test("mobile deep link keeps active tab visible after badges load", async ({
       )
       .catch(() => {});
 
+    // After badges render and scrollWidth grows.
     await assertActiveTabFullyVisible(page);
   }
 });

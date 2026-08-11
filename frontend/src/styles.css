@@ -4565,7 +4565,6 @@ code {
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
   }
 
   .tabs::-webkit-scrollbar {
@@ -4579,7 +4578,6 @@ code {
     padding: 0.55rem 0.7rem;
     font-size: 0.82rem;
     min-height: 44px;
-    scroll-snap-align: start;
   }
 
   .account-email {
