@@ -7,8 +7,11 @@ function sourceLabel(source) {
   return source.label;
 }
 
-function shrinkageScoreLabel(covered, total) {
+export function shrinkageScoreLabel(covered, total, { kind = "krav" } = {}) {
   if (total <= 0) return null;
+  if (kind === "meriterande") {
+    return `Nedjusterad för korta listor — ${covered} av ${total} meriterande träffade`;
+  }
   return `Nedjusterad för korta kravlistor — ${covered} av ${total} krav träffade`;
 }
 
@@ -47,11 +50,14 @@ export default function MatchScore({
   const mustCovered = match.must_covered ?? match.count ?? 0;
   const meritTotal = match.merit_total ?? 0;
   const meritCovered = match.merit_covered ?? 0;
+  const meritOnly = mustTotal === 0 && meritTotal > 0;
+  const coverageCovered = meritOnly ? meritCovered : mustCovered;
+  const coverageTotal = meritOnly ? meritTotal : mustTotal;
   const score =
     match.score != null
       ? match.score
-      : mustTotal > 0
-        ? Math.round((mustCovered / mustTotal) * 100)
+      : coverageTotal > 0
+        ? Math.round((coverageCovered / coverageTotal) * 100)
         : null;
   const tone = lowConfidence
     ? "unknown"
@@ -62,7 +68,12 @@ export default function MatchScore({
         : score != null && score > 0
           ? "weak"
           : "none";
-  const scoreExplain = shrinkageScoreLabel(mustCovered, mustTotal);
+  const scoreExplain = meritOnly
+    ? shrinkageScoreLabel(meritCovered, meritTotal, { kind: "meriterande" })
+    : shrinkageScoreLabel(mustCovered, mustTotal);
+  const headLabel = meritOnly
+    ? `${meritCovered} av ${meritTotal} meriterande`
+    : `${mustCovered} av ${mustTotal} krav`;
 
   // No requirements extracted and no legacy total → nothing to show.
   if (!lowConfidence && !mustTotal && !meritTotal && !match.total) return null;
@@ -83,9 +94,7 @@ export default function MatchScore({
             <span className="match-score-label">Litet underlag</span>
           ) : (
             <>
-              <span className="match-score-label">
-                {mustCovered} av {mustTotal} krav
-              </span>
+              <span className="match-score-label">{headLabel}</span>
               {score != null && (
                 <span
                   className="match-score-pct"
@@ -98,19 +107,23 @@ export default function MatchScore({
             </>
           )}
         </div>
-        {!lowConfidence && mustTotal > 0 && (
+        {!lowConfidence && coverageTotal > 0 && (
           <div
             className="match-score-bar"
             role="progressbar"
-            aria-valuenow={mustCovered}
+            aria-valuenow={coverageCovered}
             aria-valuemin={0}
-            aria-valuemax={mustTotal}
-            aria-label={`Du täcker ${mustCovered} av ${mustTotal} krav i annonsen`}
+            aria-valuemax={coverageTotal}
+            aria-label={
+              meritOnly
+                ? `Du täcker ${meritCovered} av ${meritTotal} meriterande i annonsen`
+                : `Du täcker ${mustCovered} av ${mustTotal} krav i annonsen`
+            }
           >
             <span style={{ width: `${score ?? 0}%` }} />
           </div>
         )}
-        {!lowConfidence && meritTotal > 0 && (
+        {!lowConfidence && !meritOnly && meritTotal > 0 && (
           <p className="match-score-merit muted">
             {meritCovered} av {meritTotal} meriterande
           </p>
@@ -147,26 +160,28 @@ export default function MatchScore({
           <span className="badge neutral">Litet underlag</span>
         ) : (
           <span
-            className={`badge ${mustCovered > 0 ? "applied" : "neutral"}`}
+            className={`badge ${coverageCovered > 0 ? "applied" : "neutral"}`}
             title={score != null ? scoreExplain || undefined : undefined}
           >
-            Du täcker {mustCovered} av {mustTotal} krav
+            {meritOnly
+              ? `Du täcker ${meritCovered} av ${meritTotal} meriterande`
+              : `Du täcker ${mustCovered} av ${mustTotal} krav`}
             {score != null ? ` (${score}%)` : ""}
           </span>
         )}
       </div>
-      {!lowConfidence && meritTotal > 0 && (
+      {!lowConfidence && !meritOnly && meritTotal > 0 && (
         <p className="muted">
           {meritCovered} av {meritTotal} meriterande
         </p>
       )}
-      {!lowConfidence && mustTotal > 0 && (
+      {!lowConfidence && coverageTotal > 0 && (
         <div
           className="match-score-bar"
           role="progressbar"
-          aria-valuenow={mustCovered}
+          aria-valuenow={coverageCovered}
           aria-valuemin={0}
-          aria-valuemax={mustTotal}
+          aria-valuemax={coverageTotal}
         >
           <span style={{ width: `${score ?? 0}%` }} />
         </div>

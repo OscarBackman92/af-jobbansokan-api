@@ -28,6 +28,20 @@ async function assertActiveTabFullyVisible(page) {
   expect(clipped).toBe(false);
 }
 
+async function assertNoRealMainOverflow(page) {
+  const overflowing = await page.evaluate(() => {
+    const main = document.querySelector("main");
+    if (!main) return -1;
+    return Array.from(main.querySelectorAll("*")).filter((el) => {
+      if (el.classList?.contains("sr-only")) return false;
+      const box = el.getBoundingClientRect();
+      if (box.width < 4 || box.height < 4) return false;
+      return el.scrollWidth - el.clientWidth > 2;
+    }).length;
+  });
+  expect(overflowing).toBe(0);
+}
+
 test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
   await login(page);
 
@@ -62,6 +76,7 @@ test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
       expect(tab.scrollWidth).toBeLessThanOrEqual(Math.ceil(tab.width) + 1);
     }
     await assertActiveTabFullyVisible(page);
+    await assertNoRealMainOverflow(page);
   }
 });
 
