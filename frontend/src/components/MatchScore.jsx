@@ -7,6 +7,11 @@ function sourceLabel(source) {
   return source.label;
 }
 
+function shrinkageScoreLabel(covered, total) {
+  if (total <= 0) return null;
+  return `Nedjusterad för korta kravlistor — ${covered} av ${total} krav träffade`;
+}
+
 function GapChip({ gap, onAddEvidence }) {
   return (
     <span className="gap-chip">
@@ -57,6 +62,7 @@ export default function MatchScore({
         : score != null && score > 0
           ? "weak"
           : "none";
+  const scoreExplain = shrinkageScoreLabel(mustCovered, mustTotal);
 
   // No requirements extracted and no legacy total → nothing to show.
   if (!lowConfidence && !mustTotal && !meritTotal && !match.total) return null;
@@ -81,7 +87,13 @@ export default function MatchScore({
                 {mustCovered} av {mustTotal} krav
               </span>
               {score != null && (
-                <span className="match-score-pct">{score}%</span>
+                <span
+                  className="match-score-pct"
+                  title={scoreExplain || undefined}
+                  aria-label={scoreExplain || undefined}
+                >
+                  {score}%
+                </span>
               )}
             </>
           )}
@@ -134,7 +146,10 @@ export default function MatchScore({
         {lowConfidence ? (
           <span className="badge neutral">Litet underlag</span>
         ) : (
-          <span className={`badge ${mustCovered > 0 ? "applied" : "neutral"}`}>
+          <span
+            className={`badge ${mustCovered > 0 ? "applied" : "neutral"}`}
+            title={score != null ? scoreExplain || undefined : undefined}
+          >
             Du täcker {mustCovered} av {mustTotal} krav
             {score != null ? ` (${score}%)` : ""}
           </span>

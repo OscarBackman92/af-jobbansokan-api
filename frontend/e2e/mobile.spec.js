@@ -91,3 +91,15 @@ test("mobile deep link keeps active tab visible before and after badges", async 
     await assertActiveTabFullyVisible(page);
   }
 });
+
+test("annonser KPI uses tracked wording, not sparade", async ({ page }) => {
+  await login(page);
+  await page.getByRole("button", { name: "Annonser", exact: true }).click();
+
+  const summary = page.getByLabel("Söksammanfattning");
+  await expect(summary).toBeVisible();
+  await expect(summary.getByText("Spårade", { exact: true })).toBeVisible();
+  await expect(summary.getByText("redan i listan", { exact: true })).toBeVisible();
+  await expect(summary.locator(".metric-label", { hasText: /^Sparade$/ })).toHaveCount(0);
+  await expect(summary.locator(".metric-detail", { hasText: /^sparade$/ })).toHaveCount(0);
+});
