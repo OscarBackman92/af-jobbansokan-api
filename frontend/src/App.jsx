@@ -182,15 +182,28 @@ export default function App() {
   }, [tab]);
 
   useEffect(() => {
-    const activeTab = document.querySelector(".tabs .tab.active");
-    if (activeTab instanceof HTMLElement) {
+    const nav = document.querySelector(".tabs");
+    if (!(nav instanceof HTMLElement)) return undefined;
+
+    function alignActive() {
+      const activeTab = nav.querySelector(".tab.active");
+      if (!(activeTab instanceof HTMLElement)) return;
+      // "auto" avoids racing a smooth animation against badge layout growth.
       activeTab.scrollIntoView({
         inline: "nearest",
         block: "nearest",
-        behavior: "smooth",
+        behavior: "auto",
       });
     }
-  }, [tab]);
+
+    alignActive();
+    const observer = new ResizeObserver(() => alignActive());
+    observer.observe(nav);
+    for (const child of nav.querySelectorAll(".tab")) {
+      observer.observe(child);
+    }
+    return () => observer.disconnect();
+  }, [tab, savedCount, appliedCount, token]);
 
   useEffect(() => {
     function visibleRows() {

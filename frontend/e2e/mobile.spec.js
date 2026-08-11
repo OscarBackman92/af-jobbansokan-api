@@ -6,6 +6,28 @@ test.use({ viewport: { width: 393, height: 852 } });
 
 const TABS = ["Översikt", "Sparade jobb", "Ansökningar", "Annonser", "Profil & CV"];
 
+const DEEP_LINKS = [
+  { tab: "dash", label: "Översikt" },
+  { tab: "saved", label: "Sparade jobb" },
+  { tab: "applied", label: "Ansökningar" },
+  { tab: "postings", label: "Annonser" },
+  { tab: "profile", label: "Profil & CV" },
+];
+
+async function assertActiveTabFullyVisible(page) {
+  const clipped = await page.evaluate(() => {
+    const tabs = document.querySelector(".tabs");
+    const active = tabs?.querySelector(".tab.active");
+    if (!tabs || !active) return true;
+    const tabsBox = tabs.getBoundingClientRect();
+    const activeBox = active.getBoundingClientRect();
+    return (
+      activeBox.right > tabsBox.right + 1 || activeBox.left < tabsBox.left - 1
+    );
+  });
+  expect(clipped).toBe(false);
+}
+
 test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
   await login(page);
 
@@ -22,9 +44,7 @@ test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
       return {
         scrollWidth: doc.scrollWidth,
         clientWidth: doc.clientWidth,
-        paceOverflow: pace
-          ? pace.scrollWidth - pace.clientWidth
-          : 0,
+        paceOverflow: pace ? pace.scrollWidth - pace.clientWidth : 0,
         tabBoxes: tabs.map((tab) => {
           const box = tab.getBoundingClientRect();
           return {
@@ -41,5 +61,30 @@ test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
     for (const tab of metrics.tabBoxes) {
       expect(tab.scrollWidth).toBeLessThanOrEqual(Math.ceil(tab.width) + 1);
     }
+    await assertActiveTabFullyVisible(page);
+  }
+});
+
+test("mobile deep link keeps active tab visible after badges load", async ({
+  page,
+}) => {
+  await login(page);
+
+  for (const { tab, label } of DEEP_LINKS) {
+    await page.goto(`/app/?tab=${tab}`);
+    await expect(
+      page.getByRole("button", { name: label, exact: true })
+    ).toHaveAttribute("aria-current", "page");
+
+    // Wait for nav badges (applications fetch) so scrollWidth can grow.
+    await page
+      .waitForFunction(
+        () => document.querySelectorAll(".tabs .tab-count").length >= 1,
+        null,
+        { timeout: 15_000 }
+      )
+      .catch(() => {});
+
+    await assertActiveTabFullyVisible(page);
   }
 });
