@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { addEvidenceTerm } from "../addEvidence.js";
 import { request } from "../api.js";
 
 function rateLabel(entry) {
@@ -33,24 +34,11 @@ export default function SkillGapPanel({ token, onNavigate }) {
   async function addTerm(term) {
     setBusyTerm(term);
     try {
-      await request("/api/v1/me/resume/evidence/", {
-        method: "POST",
-        body: {
-          term,
-          category: "domain",
-          source: { type: "manual", label: "Från gap-analys" },
-        },
-      });
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              gap_terms: (prev.gap_terms || []).filter((row) => row.term !== term),
-            }
-          : prev
-      );
+      await addEvidenceTerm(term, { label: "Från gap-analys" });
+      const body = await request("/api/v1/insights/skills/");
+      setData(body);
     } catch {
-      /* keep term visible */
+      /* keep term visible on failure */
     } finally {
       setBusyTerm(null);
     }

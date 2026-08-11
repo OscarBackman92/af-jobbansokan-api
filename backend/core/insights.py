@@ -7,7 +7,13 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from .models import JobApplication
+from .job_profiles import (
+    active_profile,
+    normalize_job_profiles,
+    profile_skill_terms,
+)
+from .models import JobApplication, Resume
+from .skill_canonical import canonical_skill_label
 
 RESPONSE_STATUSES = {
     JobApplication.STATUS_SCREENING,
@@ -22,6 +28,26 @@ BANDS = (
     ("40-69", 40, 69),
     ("70-100", 70, 100),
 )
+
+
+def _owned_skill_keys(user) -> set[str]:
+    """Canonical keys for terms already on the user's active profile."""
+    resume = Resume.objects.filter(user=user).first()
+    if not resume:
+        return set()
+
+    terms: list[str] = []
+    try:
+        profiles = normalize_job_profiles(
+            resume.job_profiles or [], headline=resume.headline or ""
+        )
+    except ValueError:
+        profiles = []
+    if profiles:
+        terms = profile_skill_terms(active_profile(profiles))
+    if not terms and resume.skills:
+        terms = list(resume.skills)
+    return {canonical_skill_label(term).casefold() for term in terms if term}
 
 
 def build_skill_insights(user, *, since_days: int = 365) -> dict:
@@ -64,6 +90,8 @@ def build_skill_insights(user, *, since_days: int = 365) -> dict:
             unused_counter[term] += 1
 
     total = max(len(rows), 1)
+    owned = _owned_skill_keys(user)
+    # Take a wider top-N before filtering so owned terms don't empty the list.
     gap_terms = [
         {
             "term": term,
@@ -71,8 +99,9 @@ def build_skill_insights(user, *, since_days: int = 365) -> dict:
             "count": count,
             "share": round(count / total, 3),
         }
-        for term, count in gap_counter.most_common(12)
-    ]
+        for term, count in gap_counter.most_common(24)
+        if canonical_skill_label(term).casefold() not in owned
+    ][:12]
     hit_terms = [
         {"term": term, "count": count, "share": round(count / total, 3)}
         for term, count in hit_counter.most_common(12)

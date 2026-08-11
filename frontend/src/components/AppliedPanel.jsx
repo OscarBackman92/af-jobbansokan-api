@@ -446,13 +446,6 @@ export default function AppliedPanel({
                 >
                   {allVisibleSelected ? "Avmarkera alla" : "Markera alla"}
                 </button>
-                <button
-                  type="button"
-                  className="secondary small"
-                  onClick={exportCsv}
-                >
-                  Exportera CSV
-                </button>
               </div>
               <div className="board-search">
                 <input

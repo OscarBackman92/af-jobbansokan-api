@@ -182,6 +182,17 @@ export default function App() {
   }, [tab]);
 
   useEffect(() => {
+    const activeTab = document.querySelector(".tabs .tab.active");
+    if (activeTab instanceof HTMLElement) {
+      activeTab.scrollIntoView({
+        inline: "nearest",
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, [tab]);
+
+  useEffect(() => {
     function visibleRows() {
       const panel = document.querySelector("main .stack:not(.tab-panel-hidden)");
       const root =
