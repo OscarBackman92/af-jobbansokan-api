@@ -298,24 +298,28 @@ a:focus-visible {
 
 .header {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
   padding: 0.85rem 0.15rem;
   margin: 0.25rem 0 1.7rem;
   border-bottom: 1px solid var(--border);
+  min-width: 0;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  min-width: 0;
+  min-width: 2.5rem;
+  max-width: 100%;
 }
 
 .brand-link {
   text-decoration: none;
   color: inherit;
+  min-width: 2.5rem;
+  max-width: 100%;
 }
 
 .brand-link:hover {
@@ -371,6 +375,9 @@ a:focus-visible {
   line-height: 1.1;
   color: var(--ink);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .tagline {
@@ -401,11 +408,21 @@ a:focus-visible {
 }
 
 .tabs {
-  display: inline-flex;
-  justify-self: center;
+  display: flex;
+  justify-self: stretch;
   gap: 0.25rem;
   border-bottom: 1px solid var(--border);
   padding: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
@@ -421,6 +438,7 @@ a:focus-visible {
   color: var(--muted);
   white-space: nowrap;
   box-shadow: none;
+  flex: 0 0 auto;
   transition:
     color 0.2s var(--ease-out),
     border-color 0.2s var(--ease-out);
@@ -1605,6 +1623,7 @@ tbody tr:last-child td {
 
 .pager {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
 }
@@ -2044,6 +2063,7 @@ tbody tr:last-child td {
   align-items: center;
   gap: 0.9rem;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .profile-id h2 {
@@ -2052,6 +2072,10 @@ tbody tr:last-child td {
 
 .profile-id .muted {
   margin: 0.1rem 0 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .avatar {
@@ -2252,18 +2276,17 @@ tbody tr:last-child td {
 
 .job-search {
   display: grid;
-  grid-template-columns:
-    minmax(170px, 2fr) minmax(120px, 1fr) minmax(130px, 1fr)
-    minmax(145px, 1fr) minmax(170px, 1.2fr) auto auto;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
   gap: 0.5rem;
   align-items: center;
   margin: 0.9rem 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .job-search--advanced {
-  grid-template-columns:
-    minmax(180px, 2fr) minmax(140px, 1fr) minmax(140px, 1fr)
-    auto auto auto;
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
 }
 
 .job-search input,
@@ -2332,6 +2355,9 @@ tbody tr:last-child td {
   font-size: 0.8rem;
   white-space: nowrap;
   cursor: pointer;
+  max-width: 100%;
+  min-width: 0;
+  justify-self: start;
 }
 
 .job-filter-chip.active {
@@ -2349,6 +2375,7 @@ tbody tr:last-child td {
   min-height: 2.65rem;
   padding: 0.55rem 1.25rem;
   font-weight: 600;
+  justify-self: start;
 }
 
 .multi-select-filter {
@@ -3061,7 +3088,8 @@ tbody tr:last-child td {
 .skill-gap-grid {
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  min-width: 0;
 }
 
 .skill-gap-bands,
@@ -3648,6 +3676,10 @@ button.chart-col:focus-visible {
   text-align: left;
   cursor: pointer;
   font: inherit;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lane-row-title:hover {
@@ -4523,6 +4555,37 @@ code {
 
 /* ---------- Responsive (tablet / mobile) ---------- */
 
+/* Two-row header through tablet/laptop mid-widths so tabs never crush the brand. */
+@media (max-width: 1100px) {
+  .header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.6rem 0.75rem;
+  }
+
+  .header .brand {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .header-actions {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .header-guest-nav {
+    grid-row: 1;
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .tabs {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-self: stretch;
+  }
+}
+
 @media (max-width: 760px) {
   .app {
     padding:
@@ -4831,6 +4894,21 @@ code {
   .metric-grid {
     grid-template-columns: 1fr;
   }
+
+  .pager-status {
+    min-width: 0;
+    flex: 1 1 100%;
+    order: -1;
+  }
+
+  .brand-text {
+    display: none;
+  }
+
+  .header-actions .secondary.small {
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+  }
 }
 
 /* ---------- Desktop polish ---------- */
@@ -4854,9 +4932,11 @@ code {
   }
 
   .job-search {
-    grid-template-columns:
-      minmax(200px, 2.2fr) minmax(130px, 1fr) minmax(130px, 1fr)
-      minmax(145px, 1fr) minmax(170px, 1.1fr) auto auto;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .job-search--advanced {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
 }
 
