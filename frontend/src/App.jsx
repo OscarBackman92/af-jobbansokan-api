@@ -185,15 +185,21 @@ export default function App() {
     const nav = document.querySelector(".tabs");
     if (!(nav instanceof HTMLElement)) return undefined;
 
+    // Scroll only when the active tab is clipped — nearest edge, never
+    // force it to scrollLeft 0 (which hid "Översikt" under the brand).
     function alignActive() {
       const activeTab = nav.querySelector(".tab.active");
       if (!(activeTab instanceof HTMLElement)) return;
-      // Explicit left scroll (not scrollIntoView) so we land on a stable
-      // offset even if CSS snap is reintroduced later.
-      const maxLeft = Math.max(0, nav.scrollWidth - nav.clientWidth);
-      const target = Math.min(Math.max(0, activeTab.offsetLeft), maxLeft);
-      if (Math.abs(nav.scrollLeft - target) > 1) {
-        nav.scrollTo({ left: target, behavior: "auto" });
+      const navRect = nav.getBoundingClientRect();
+      const tabRect = activeTab.getBoundingClientRect();
+      let delta = 0;
+      if (tabRect.left < navRect.left) {
+        delta = tabRect.left - navRect.left;
+      } else if (tabRect.right > navRect.right) {
+        delta = tabRect.right - navRect.right;
+      }
+      if (Math.abs(delta) > 1) {
+        nav.scrollBy({ left: delta, behavior: "auto" });
       }
     }
 
@@ -334,7 +340,21 @@ export default function App() {
   return (
     <div className={isGuest ? "app app--guest" : "app"}>
       <header className="header">
-        <a className="brand brand-link" href="/">
+        <a
+          className="brand brand-link"
+          href={token ? "/app/?tab=dash" : "/"}
+          aria-label={
+            token ? "Jobbdjungeln – till översikten" : undefined
+          }
+          onClick={(event) => {
+            if (!token) return;
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+              return;
+            }
+            event.preventDefault();
+            changeTab("dash");
+          }}
+        >
           <div className="logo" aria-hidden="true">
             J
           </div>
