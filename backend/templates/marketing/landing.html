@@ -33,8 +33,9 @@
         och när man tänkte höra av sig. Här har du allt samlat — plus sök i
         Platsbanken när du vill fylla på.
       </p>
-      <p class="hero-cta">
-        <a class="btn-primary" href="{{ app_url }}">Skapa konto</a>
+      <p class="hero-cta" data-session-cta>
+        <a class="btn-primary" href="{{ app_url }}" data-guest-cta>Skapa konto</a>
+        <a class="btn-primary" href="/app/?tab=dash" data-authed-cta hidden>Till min översikt</a>
       </p>
       <p class="hero-note muted">
         Gratis. Inga annonser. Exportera eller radera allt när du vill.
@@ -48,7 +49,10 @@
         <li>Ser vilka krav i annonsen som finns i CV:t — inte bara en procentsiffra</li>
         <li>Platsbanken inbyggt — spara jobb du vill söka</li>
       </ul>
-      <a class="btn-primary" href="{{ app_url }}">Logga in</a>
+      <p class="hero-cta hero-cta--card" data-session-cta>
+        <a class="btn-primary" href="{{ app_url }}" data-guest-cta>Logga in</a>
+        <a class="btn-primary" href="/app/?tab=dash" data-authed-cta hidden>Till min översikt</a>
+      </p>
       <p class="hero-note muted" style="margin-top: 1rem; margin-bottom: 0">
         Inte en rekryteringssajt. Bara din egen översikt.
       </p>
@@ -128,9 +132,29 @@
       Konto tar en minut. Första gången du loggar in finns en kort förklaring under
       Ansökningar.
     </p>
-    <p>
-      <a class="btn-primary" href="{{ app_url }}">Skapa konto</a>
+    <p class="hero-cta" data-session-cta>
+      <a class="btn-primary" href="{{ app_url }}" data-guest-cta>Skapa konto</a>
+      <a class="btn-primary" href="/app/?tab=dash" data-authed-cta hidden>Till min översikt</a>
     </p>
   </section>
 </main>
+{#
+  sessionStorage is per-tab: opening "/" in a new tab shows guest CTAs even
+  if another tab is signed in. That is intentional — no auto-redirect from "/".
+#}
+<script>
+(function () {
+  try {
+    if (!sessionStorage.getItem("token")) return;
+  } catch (e) {
+    return;
+  }
+  document.querySelectorAll("[data-session-cta]").forEach(function (wrap) {
+    var guest = wrap.querySelector("[data-guest-cta]");
+    var authed = wrap.querySelector("[data-authed-cta]");
+    if (guest) guest.hidden = true;
+    if (authed) authed.hidden = false;
+  });
+})();
+</script>
 {% endblock %}

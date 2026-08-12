@@ -278,6 +278,14 @@ a:focus-visible {
 
 .hero-cta {
   margin: 1.25rem 0 0;
+  /* Reserve CTA height so sessionStorage swap does not shift layout. */
+  min-height: 2.6rem;
+  display: flex;
+  align-items: center;
+}
+
+.hero-cta--card {
+  margin: 1.25rem 0 0;
 }
 
 .hero-note {
