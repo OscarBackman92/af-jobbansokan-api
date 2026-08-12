@@ -369,11 +369,22 @@ export default function App() {
         ) : (
           <nav className="tabs" aria-label="Huvudnavigering">
             {TABS.map((t) => (
-              <button
+              <a
                 key={t.id}
-                type="button"
+                href={`/app/?tab=${t.id}`}
                 className={tab === t.id ? "tab active" : "tab"}
-                onClick={() => changeTab(t.id)}
+                onClick={(event) => {
+                  if (
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  changeTab(t.id);
+                }}
                 aria-current={tab === t.id ? "page" : undefined}
               >
                 {t.label}
@@ -383,7 +394,7 @@ export default function App() {
                 {t.id === "applied" && applications && (
                   <span className="tab-count">{appliedCount}</span>
                 )}
-              </button>
+              </a>
             ))}
           </nav>
         )}

@@ -45,6 +45,6 @@ export async function login(
     page.getByRole("navigation", { name: "Huvudnavigering" })
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Översikt", exact: true })
+    page.getByRole("link", { name: "Översikt", exact: true })
   ).toBeVisible();
 }

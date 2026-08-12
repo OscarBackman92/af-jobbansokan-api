@@ -452,6 +452,10 @@ a:focus-visible {
   white-space: nowrap;
   box-shadow: none;
   flex: 0 0 auto;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   transition:
     color 0.2s var(--ease-out),
     border-color 0.2s var(--ease-out);

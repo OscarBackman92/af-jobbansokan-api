@@ -7,7 +7,7 @@ test("create an application, move status, timeline logs the change", async ({
 }) => {
   await login(page);
 
-  await page.getByRole("button", { name: "Ansökningar", exact: true }).click();
+  await page.getByRole("link", { name: "Ansökningar", exact: true }).click();
   await page.getByRole("button", { name: "+ Ny ansökan" }).click();
   await page.getByLabel(/^Företag/).fill("Testföretaget AB");
   await page.getByLabel(/^Roll/).fill("QA-ingenjör");
@@ -36,7 +36,7 @@ test("create an application, move status, timeline logs the change", async ({
 test("save job then mark applied moves it to Ansökningar", async ({ page }) => {
   await login(page);
 
-  await page.getByRole("button", { name: "Sparade jobb", exact: true }).click();
+  await page.getByRole("link", { name: "Sparade jobb", exact: true }).click();
   await page.getByRole("button", { name: "+ Spara jobb" }).click();
   await page.getByLabel(/^Företag/).fill("Sparat AB");
   await page.getByLabel(/^Roll/).fill("Frontendutvecklare");
@@ -54,7 +54,7 @@ test("save job then mark applied moves it to Ansökningar", async ({ page }) => 
     page.locator(".lane-row", { hasText: "Frontendutvecklare" })
   ).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Ansökningar", exact: true }).click();
+  await page.getByRole("link", { name: "Ansökningar", exact: true }).click();
   await expect(
     page.locator(".pipeline-row", { hasText: "Frontendutvecklare" })
   ).toBeVisible();

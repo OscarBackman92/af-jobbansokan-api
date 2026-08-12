@@ -15,17 +15,24 @@ const DEEP_LINKS = [
 ];
 
 async function assertActiveTabFullyVisible(page) {
-  const clipped = await page.evaluate(() => {
+  const result = await page.evaluate(() => {
     const tabs = document.querySelector(".tabs");
     const active = tabs?.querySelector(".tab.active");
-    if (!tabs || !active) return true;
+    if (!(tabs instanceof HTMLElement) || !(active instanceof HTMLElement)) {
+      return { clipped: true, hitMiss: true };
+    }
     const tabsBox = tabs.getBoundingClientRect();
     const activeBox = active.getBoundingClientRect();
-    return (
-      activeBox.right > tabsBox.right + 1 || activeBox.left < tabsBox.left - 1
-    );
+    const clipped =
+      activeBox.right > tabsBox.right + 1 || activeBox.left < tabsBox.left - 1;
+    const x = activeBox.left + activeBox.width / 2;
+    const y = activeBox.top + activeBox.height / 2;
+    const hit = document.elementFromPoint(x, y);
+    const hitMiss = !(hit instanceof Element) || !active.contains(hit);
+    return { clipped, hitMiss };
   });
-  expect(clipped).toBe(false);
+  expect(result.clipped).toBe(false);
+  expect(result.hitMiss).toBe(false);
 }
 
 async function assertNoRealMainOverflow(page) {
@@ -46,9 +53,9 @@ test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
   await login(page);
 
   for (const label of TABS) {
-    await page.getByRole("button", { name: label, exact: true }).click();
+    await page.getByRole("link", { name: label, exact: true }).click();
     await expect(
-      page.getByRole("button", { name: label, exact: true })
+      page.getByRole("link", { name: label, exact: true })
     ).toHaveAttribute("aria-current", "page");
 
     const metrics = await page.evaluate(() => {
@@ -88,7 +95,7 @@ test("mobile deep link keeps active tab visible before and after badges", async 
   for (const { tab, label } of DEEP_LINKS) {
     await page.goto(`/app/?tab=${tab}`);
     await expect(
-      page.getByRole("button", { name: label, exact: true })
+      page.getByRole("link", { name: label, exact: true })
     ).toHaveAttribute("aria-current", "page");
 
     // Mount state — before nav badges may have grown the strip.
@@ -109,7 +116,7 @@ test("mobile deep link keeps active tab visible before and after badges", async 
 
 test("annonser KPI uses tracked wording, not sparade", async ({ page }) => {
   await login(page);
-  await page.getByRole("button", { name: "Annonser", exact: true }).click();
+  await page.getByRole("link", { name: "Annonser", exact: true }).click();
 
   const summary = page.getByLabel("Söksammanfattning");
   await expect(summary).toBeVisible();

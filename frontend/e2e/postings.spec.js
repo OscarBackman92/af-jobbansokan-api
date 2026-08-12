@@ -7,7 +7,7 @@ test("search Platsbanken (mocked) and save an ad to the board", async ({
 }) => {
   await login(page);
 
-  await page.getByRole("button", { name: "Annonser", exact: true }).click();
+  await page.getByRole("link", { name: "Annonser", exact: true }).click();
 
   const card = page.locator(".job-card", {
     hasText: "Backendutvecklare Python",
@@ -19,7 +19,7 @@ test("search Platsbanken (mocked) and save an ad to the board", async ({
     card.getByRole("button", { name: "Sparad ✓" })
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Sparade jobb", exact: true }).click();
+  await page.getByRole("link", { name: "Sparade jobb", exact: true }).click();
   await expect(
     page.locator(".lane-row", { hasText: "Backendutvecklare Python" })
   ).toBeVisible();

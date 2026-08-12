@@ -73,7 +73,7 @@ test.describe("responsive widths", () => {
       for (const tab of TABS) {
         await page.goto(`/app/?tab=${tab.id}`);
         await expect(
-          page.getByRole("button", { name: tab.label, exact: true })
+          page.getByRole("link", { name: tab.label, exact: true })
         ).toHaveAttribute("aria-current", "page");
         await assertResponsiveLayout(page);
       }
