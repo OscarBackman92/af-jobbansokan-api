@@ -4,8 +4,10 @@ import { createPortal } from "react-dom";
 const PANEL_WIDTH = 560;
 const PANEL_MAX_HEIGHT = 420;
 const VIEWPORT_MARGIN = 12;
+const PANEL_GAP = 8;
+const CLOSE_MS = 240;
 
-function computePanelStyle(triggerEl) {
+function computePanelLayout(triggerEl) {
   const rect = triggerEl.getBoundingClientRect();
   const width = Math.min(PANEL_WIDTH, window.innerWidth - VIEWPORT_MARGIN * 2);
   const left = Math.min(
@@ -23,15 +25,18 @@ function computePanelStyle(triggerEl) {
   );
 
   return {
-    position: "fixed",
-    left: `${left}px`,
-    top: openUp
-      ? `${rect.top - maxHeight - VIEWPORT_MARGIN}px`
-      : `${rect.bottom + VIEWPORT_MARGIN}px`,
-    width: `${width}px`,
-    height: `${Math.max(180, maxHeight)}px`,
-    maxHeight: `${Math.max(180, maxHeight)}px`,
-    zIndex: 200,
+    placement: openUp ? "above" : "below",
+    style: {
+      position: "fixed",
+      left: `${left}px`,
+      top: openUp
+        ? `${rect.top - maxHeight - PANEL_GAP}px`
+        : `${rect.bottom + PANEL_GAP}px`,
+      width: `${width}px`,
+      height: `${Math.max(180, maxHeight)}px`,
+      maxHeight: `${Math.max(180, maxHeight)}px`,
+      zIndex: 200,
+    },
   };
 }
 
@@ -65,7 +70,10 @@ export default function MultiSelectFilter({
   secondaryEmptyText = "Välj kategori till vänster",
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [shown, setShown] = useState(false);
   const [panelStyle, setPanelStyle] = useState(null);
+  const [placement, setPlacement] = useState("below");
   const panelRef = useRef(null);
   const triggerRef = useRef(null);
   const primaryListRef = useRef(null);
@@ -85,14 +93,13 @@ export default function MultiSelectFilter({
   }
 
   useLayoutEffect(() => {
-    if (!open || !triggerRef.current) {
-      setPanelStyle(null);
-      return undefined;
-    }
+    if (!open || !triggerRef.current) return undefined;
 
     function updatePosition() {
       if (!triggerRef.current) return;
-      setPanelStyle(computePanelStyle(triggerRef.current));
+      const next = computePanelLayout(triggerRef.current);
+      setPanelStyle(next.style);
+      setPlacement(next.placement);
     }
 
     updatePosition();
@@ -101,6 +108,34 @@ export default function MultiSelectFilter({
       window.removeEventListener("resize", updatePosition);
     };
   }, [open, primaryOptions.length, secondaryOptions.length]);
+
+  useEffect(() => {
+    if (open) setMounted(true);
+  }, [open]);
+
+  useEffect(() => {
+    if (open && mounted) {
+      let inner = 0;
+      const outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(() => setShown(true));
+      });
+      return () => {
+        cancelAnimationFrame(outer);
+        cancelAnimationFrame(inner);
+      };
+    }
+    if (!open) setShown(false);
+    return undefined;
+  }, [open, mounted]);
+
+  useEffect(() => {
+    if (open || !mounted) return undefined;
+    const timer = window.setTimeout(() => {
+      setMounted(false);
+      setPanelStyle(null);
+    }, CLOSE_MS);
+    return () => window.clearTimeout(timer);
+  }, [open, mounted]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -211,14 +246,18 @@ export default function MultiSelectFilter({
     return undefined;
   }, [open]);
 
-  const panel = open && panelStyle && (
+  const panel = mounted && panelStyle && (
     <div
       id={panelId}
-      className="multi-select-panel multi-select-panel--floating"
+      className={`multi-select-panel multi-select-panel--floating${
+        shown ? " multi-select-panel--open" : ""
+      }`}
+      data-placement={placement}
       style={panelStyle}
       ref={panelRef}
       role="dialog"
       aria-modal="true"
+      aria-hidden={!open}
       aria-label={`${triggerLabel}-filter`}
     >
       <div className="multi-select-column">
@@ -347,7 +386,7 @@ export default function MultiSelectFilter({
         <span>{triggerLabel}</span>
         {summary && <span className="multi-select-summary">{summary}</span>}
         <span className="multi-select-chevron" aria-hidden="true">
-          {open ? "▴" : "▾"}
+          ▾
         </span>
       </button>
 
