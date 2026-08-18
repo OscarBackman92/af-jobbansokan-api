@@ -329,6 +329,10 @@ def hit_to_job(hit: dict) -> dict:
     location = workplace.get("municipality") or workplace.get("region") or ""
     webpage_url = (hit.get("webpage_url") or "")[:500]
     application_url = _application_url(hit)
+    occupation = hit.get("occupation") or []
+    first_occ = occupation[0] if isinstance(occupation, list) and occupation else {}
+    if not isinstance(first_occ, dict):
+        first_occ = {}
     return {
         "id": str(hit.get("id") or ""),
         "title": hit.get("headline") or "",
@@ -340,6 +344,8 @@ def hit_to_job(hit: dict) -> dict:
         "published_at": (hit.get("publication_date") or "")[:10] or None,
         "application_deadline": (hit.get("application_deadline") or "")[:10] or None,
         "remote": bool(hit.get("remote_work")),
+        "occupation_concept_id": str(first_occ.get("concept_id") or ""),
+        "occupation_label": first_occ.get("label") or "",
     }
 
 

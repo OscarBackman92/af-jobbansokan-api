@@ -1,6 +1,12 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from .period_views import (
+    PeriodDetailView,
+    PeriodListView,
+    PeriodReopenView,
+    PeriodSubmitView,
+)
 from .views import (
     DashboardView,
     JobApplicationViewSet,
@@ -25,6 +31,18 @@ router.register(r"applications", JobApplicationViewSet, basename="applications")
 
 urlpatterns = [
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
+    path("periods/", PeriodListView.as_view(), name="period-list"),
+    path(
+        "periods/<str:key>/submit/",
+        PeriodSubmitView.as_view(),
+        name="period-submit",
+    ),
+    path(
+        "periods/<str:key>/reopen/",
+        PeriodReopenView.as_view(),
+        name="period-reopen",
+    ),
+    path("periods/<str:key>/", PeriodDetailView.as_view(), name="period-detail"),
     path("insights/skills/", SkillsInsightsView.as_view(), name="skills-insights"),
     path("me/", ProfileView.as_view(), name="me"),
     path("me/resume/", ResumeView.as_view(), name="my-resume"),

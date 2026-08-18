@@ -4,6 +4,17 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
+from .lifecycle import (
+    OUTCOME_CHOICES,
+    STAGE_AVSLUTAD,
+    STAGE_BEVAKAD,
+    STAGE_CHOICES,
+    STAGE_SOKT,
+    employer_key,
+    outcome_for_status,
+    stage_for_status,
+)
+
 
 class JobPosting(models.Model):
     """A job ad, imported from JobTech's open API or added by an admin."""
@@ -122,6 +133,23 @@ class JobApplication(models.Model):
     status = models.CharField(
         max_length=50, choices=STATUS_CHOICES, default=STATUS_APPLIED
     )
+    stage = models.CharField(
+        max_length=20, choices=STAGE_CHOICES, default=STAGE_SOKT, db_index=True
+    )
+    outcome = models.CharField(max_length=24, choices=OUTCOME_CHOICES, blank=True)
+    employer_key = models.CharField(max_length=255, blank=True, db_index=True)
+    occupation_concept_id = models.CharField(max_length=64, blank=True, db_index=True)
+    occupation_label = models.CharField(max_length=255, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+    report_excluded = models.BooleanField(default=False)
+    report_note = models.CharField(max_length=255, blank=True)
+    reported_in = models.ForeignKey(
+        "ReportPeriod",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="jobs",
+    )
     INTENT_ACTIVE = "active"
     INTENT_PAUSED = "paused"
     INTENT_CHOICES = [
@@ -165,6 +193,9 @@ class JobApplication(models.Model):
                 condition=models.Q(posting__isnull=False),
             )
         ]
+        indexes = [
+            models.Index(fields=["owner", "stage", "applied_at"]),
+        ]
 
     def __str__(self) -> str:
         return f"{self.title} @ {self.company} ({self.status})"
@@ -186,12 +217,30 @@ class JobApplication(models.Model):
         return True
 
     def save(self, *args, **kwargs):
+        self.stage = stage_for_status(self.status)
+        self.outcome = outcome_for_status(self.status)
+        self.employer_key = employer_key(self.company)
+        if self.stage == STAGE_AVSLUTAD and self.closed_at is None:
+            self.closed_at = timezone.now()
+        if self.stage != STAGE_AVSLUTAD:
+            self.closed_at = None
+        if self.stage != STAGE_BEVAKAD and self.applied_at is None:
+            self.applied_at = timezone.localdate()
         self.ensure_apply_by()
         super().save(*args, **kwargs)
 
 
 class ApplicationEvent(models.Model):
     """Timeline entry on an application: a note, a call, a status change."""
+
+    ORIGIN_MANUAL = "manuell"
+    ORIGIN_AUTO = "auto"
+    ORIGIN_IMPORT = "import"
+    ORIGIN_CHOICES = [
+        (ORIGIN_MANUAL, "Manuell"),
+        (ORIGIN_AUTO, "Automatisk"),
+        (ORIGIN_IMPORT, "Import"),
+    ]
 
     application = models.ForeignKey(
         JobApplication,
@@ -202,6 +251,20 @@ class ApplicationEvent(models.Model):
     note = models.CharField(max_length=500)
     status = models.CharField(
         max_length=50, choices=JobApplication.STATUS_CHOICES, blank=True
+    )
+    event_type = models.CharField(max_length=24, blank=True)
+    from_stage = models.CharField(max_length=20, blank=True)
+    to_stage = models.CharField(max_length=20, blank=True)
+    origin = models.CharField(
+        max_length=12, choices=ORIGIN_CHOICES, default=ORIGIN_MANUAL
+    )
+    is_reportable = models.BooleanField(default=False)
+    reported_in = models.ForeignKey(
+        "ReportPeriod",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="job_events",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -284,3 +347,81 @@ class Resume(models.Model):
 
     def __str__(self) -> str:
         return f"CV: {self.user.get_username()}"
+
+
+class ReportPeriod(models.Model):
+    """A calendar month as an AF reporting object. Status is derived, never stored."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="report_periods",
+    )
+    year = models.IntegerField()
+    month = models.IntegerField()
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    note = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "year", "month"],
+                name="uniq_reportperiod_user_year_month",
+            )
+        ]
+        ordering = ["-year", "-month"]
+
+    def __str__(self) -> str:
+        return f"{self.year}-{self.month:02d} ({self.user})"
+
+
+class Activity(models.Model):
+    """Something other than a job application that belongs in the AF report."""
+
+    TYPE_REKRYTERINGSTRAFF = "rekryteringstraff"
+    TYPE_KURS = "kurs"
+    TYPE_SPONTANANSOKAN = "spontanansokan"
+    TYPE_NATVERKANDE = "natverkande"
+    TYPE_CV_ARBETE = "cv_arbete"
+    TYPE_MOTE_AF = "mote_af"
+    TYPE_OVRIGT = "ovrigt"
+    TYPE_CHOICES = [
+        (TYPE_REKRYTERINGSTRAFF, "Rekryteringsträff / mässa"),
+        (TYPE_KURS, "Kurs / utbildning"),
+        (TYPE_SPONTANANSOKAN, "Spontanansökan"),
+        (TYPE_NATVERKANDE, "Nätverkskontakt"),
+        (TYPE_CV_ARBETE, "CV / personligt brev"),
+        (TYPE_MOTE_AF, "Möte med AF eller leverantör"),
+        (TYPE_OVRIGT, "Övrigt"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="activities",
+    )
+    type = models.CharField(max_length=24, choices=TYPE_CHOICES)
+    occurred_on = models.DateField()
+    title = models.CharField(max_length=255)
+    organisation = models.CharField(max_length=255, blank=True)
+    note = models.TextField(blank=True)
+    job = models.ForeignKey(
+        JobApplication,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="activities",
+    )
+    reported_in = models.ForeignKey(
+        ReportPeriod,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="activities",
+    )
+
+    class Meta:
+        ordering = ["-occurred_on", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.occurred_on}: {self.title}"

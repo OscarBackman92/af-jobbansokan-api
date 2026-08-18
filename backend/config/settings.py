@@ -344,6 +344,10 @@ SOCIALACCOUNT_PROVIDERS = {
 # Google-verified addresses skip our own verification mail.
 SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
 
+# Silence window for "väntar för länge" (spec proposed 14; product already uses 7).
+WAIT_THRESHOLD_DAYS = int(os.getenv("WAIT_THRESHOLD_DAYS", "7"))
+STALE_NO_RESPONSE_DAYS = int(os.getenv("STALE_NO_RESPONSE_DAYS", "45"))
+
 # Error monitoring (optional — active when SENTRY_DSN is set)
 SENTRY_DSN = os.getenv("SENTRY_DSN", "")
 if SENTRY_DSN:

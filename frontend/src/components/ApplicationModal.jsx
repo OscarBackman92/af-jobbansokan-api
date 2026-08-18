@@ -9,7 +9,7 @@ import {
 } from "../adUrl.js";
 import { request } from "../api.js";
 import { localISODate } from "../localDate.js";
-import { STATUSES } from "../statuses.js";
+import { STATUSES, statusChoicesFor } from "../statuses.js";
 import ConfirmDialog from "./ConfirmDialog.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
 import TailorPanel from "./TailorPanel.jsx";
@@ -496,7 +496,13 @@ function ApplicationFields({
             }
             style={{ width: "100%" }}
           >
-            {STATUSES.map((s) => (
+            {(application
+              ? statusChoicesFor({
+                  status: form.status,
+                  allowed_next_statuses: application.allowed_next_statuses,
+                })
+              : STATUSES
+            ).map((s) => (
               <option key={s.id} value={s.id}>
                 {s.label}
               </option>

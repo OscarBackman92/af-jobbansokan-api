@@ -127,7 +127,12 @@ function formatPaceValue(key, value, pace) {
   return String(value);
 }
 
-export default function DashboardPanel({ token, onNavigate, active = true }) {
+export default function DashboardPanel({
+  token,
+  onNavigate,
+  active = true,
+  periods = [],
+}) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
@@ -204,6 +209,9 @@ export default function DashboardPanel({ token, onNavigate, active = true }) {
   const tracked = funnel.tracked ?? 0;
   const monthlyMax = Math.max(1, ...monthly.map((m) => m.count || 0));
   const monthlySum = monthly.reduce((sum, m) => sum + (m.count || 0), 0);
+  const periodStatusByKey = Object.fromEntries(
+    (periods || []).map((period) => [period.key, period.status])
+  );
 
   const outcomeValues = outcomes
     ? OUTCOME_SEGMENTS.map((seg) => ({
@@ -283,7 +291,7 @@ export default function DashboardPanel({ token, onNavigate, active = true }) {
           <MetricTile
             label="I dialog"
             value={kpis.in_dialog ?? 0}
-            detail="intervjuspår"
+            detail="just nu — tratten räknar kumulativt"
             tone="cyan"
             filterId="dialog"
             onFilter={() => onNavigate?.("applied", { filter: "dialog" })}
@@ -306,7 +314,7 @@ export default function DashboardPanel({ token, onNavigate, active = true }) {
             <p className="muted">
               {nextActions.length === 0
                 ? "Inget inplanerat den här veckan."
-                : "Uppföljningar och sista ansökningsdagar närmast i tid."}
+                : "Kommande uppföljningar och sista dagar — förfallna ligger inte här."}
             </p>
           </div>
           {nextActions.length > 0 && (
@@ -382,7 +390,8 @@ export default function DashboardPanel({ token, onNavigate, active = true }) {
       <section className="card">
         <h2>Ansökningar per månad</h2>
         <p className="muted">
-          Sökt datum · {monthlySum} senaste 6 mån. Klicka en månad för att öppna
+          Sökt datum · {monthlySum} senaste 6 mån. Färg visar
+          rapportstatus (rött = försenad). Klicka en månad för att öppna
           Ansökningar med det filtret.
         </p>
         {monthly.length === 0 ? (
@@ -398,10 +407,12 @@ export default function DashboardPanel({ token, onNavigate, active = true }) {
             {monthly.map((m, index) => {
               const count = m.count || 0;
               const isCurrent = index === monthly.length - 1;
+              const reportStatus = periodStatusByKey[m.month] || "pagaende";
               const className = [
                 "chart-col",
                 "chart-col--clickable",
                 isCurrent ? "chart-col--current" : "",
+                `chart-col--period-${reportStatus}`,
               ]
                 .filter(Boolean)
                 .join(" ");
@@ -410,7 +421,7 @@ export default function DashboardPanel({ token, onNavigate, active = true }) {
                   type="button"
                   className={className}
                   key={m.month}
-                  title={`${count} st · filtrera på ${formatMonthLabel(m.month)}`}
+                  title={`${count} st · ${formatMonthLabel(m.month)} · ${reportStatus}`}
                   aria-label={`Filtrera på ansökningar i ${formatMonthLabel(m.month)} (${count} st)`}
                   onClick={() =>
                     onNavigate?.("applied", {
@@ -420,9 +431,13 @@ export default function DashboardPanel({ token, onNavigate, active = true }) {
                 >
                   <span className="chart-count">{count}</span>
                   <div
-                    className={
-                      count === 0 ? "chart-bar chart-bar--empty" : "chart-bar"
-                    }
+                    className={[
+                      "chart-bar",
+                      count === 0 ? "chart-bar--empty" : "",
+                      `chart-bar--period-${reportStatus}`,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
                     style={{
                       height: `${count === 0 ? 8 : (count / monthlyMax) * 96 + 8}px`,
                     }}

@@ -7,7 +7,6 @@ import {
 } from "../calendar.js";
 import {
   appliedBucket,
-  collectMonthOptions,
   compareByDateThenMatch,
   encodeMonthFilter,
   formatMonthLabel,
@@ -23,6 +22,7 @@ import MetricTile from "./board/MetricTile.jsx";
 import ApplicationRow from "./board/ApplicationRow.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
+import PeriodStrip from "./PeriodStrip.jsx";
 
 const STAGE_VISIBLE = 25;
 
@@ -88,6 +88,7 @@ export default function AppliedPanel({
   onNavigate,
   initialFilter,
   initialMonthFilter,
+  periods = [],
 }) {
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
@@ -250,7 +251,6 @@ export default function AppliedPanel({
   }));
 
   const visibleIds = filtered.map((a) => a.id);
-  const appliedMonthOptions = collectMonthOptions(sought, "applied");
   const hasActiveFilters =
     Boolean(query.trim()) ||
     Boolean(monthFilter) ||
@@ -464,24 +464,15 @@ export default function AppliedPanel({
                 )}
               </div>
               <div className="board-filters month-filters">
-                <label className="month-filter-field">
-                  <span className="sr-only">Filtrera på ansökningsmånad</span>
-                  <select
-                    value={monthFilter}
-                    onChange={(e) => setMonthFilter(e.target.value)}
-                    aria-label="Filtrera på ansökningsmånad"
-                  >
-                    <option value="">Alla månader</option>
-                    {appliedMonthOptions.map((option) => (
-                      <option
-                        key={`applied:${option.key}`}
-                        value={encodeMonthFilter("applied", option.key)}
-                      >
-                        Ansökt: {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <PeriodStrip
+                  periods={periods}
+                  selectedKey={parseMonthFilter(monthFilter)?.monthKey || ""}
+                  onSelect={(key) =>
+                    setMonthFilter(
+                      key ? encodeMonthFilter("applied", key) : ""
+                    )
+                  }
+                />
                 <label className="month-filter-field">
                   <span className="sr-only">Filtrera på status</span>
                   <select

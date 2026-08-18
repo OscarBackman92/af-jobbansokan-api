@@ -21,6 +21,7 @@ from .job_profiles import (
     normalize_job_profiles,
     profiles_from_skill_groups,
 )
+from .lifecycle import allowed_next_statuses, followup_overdue, is_overdue
 from .matching import match_application, match_application_evidence
 from .models import (
     ApplicationEvent,
@@ -91,7 +92,24 @@ class ApplicationEventSerializer(serializers.ModelSerializer):
         return value
 
 
-class JobApplicationListSerializer(serializers.ModelSerializer):
+class _LifecycleMixin(serializers.Serializer):
+    stage = serializers.CharField(read_only=True)
+    outcome = serializers.CharField(read_only=True)
+    allowed_next_statuses = serializers.SerializerMethodField()
+    is_overdue = serializers.SerializerMethodField()
+    followup_overdue = serializers.SerializerMethodField()
+
+    def get_allowed_next_statuses(self, obj):
+        return allowed_next_statuses(obj.status)
+
+    def get_is_overdue(self, obj):
+        return is_overdue(obj)
+
+    def get_followup_overdue(self, obj):
+        return followup_overdue(obj)
+
+
+class JobApplicationListSerializer(_LifecycleMixin, serializers.ModelSerializer):
     """Lean row for list responses — no timeline.
 
     The board renders hundreds of rows; shipping every row's full event
@@ -120,6 +138,11 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
             "source",
             "status",
             "status_label",
+            "stage",
+            "outcome",
+            "allowed_next_statuses",
+            "is_overdue",
+            "followup_overdue",
             "intent",
             "applied_at",
             "deadline",
@@ -176,7 +199,7 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
         return result
 
 
-class JobApplicationSerializer(serializers.ModelSerializer):
+class JobApplicationSerializer(_LifecycleMixin, serializers.ModelSerializer):
     """One tracker row.
 
     Created either from an imported posting (pass `posting`, company and
@@ -207,6 +230,13 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             "source",
             "status",
             "status_label",
+            "stage",
+            "outcome",
+            "allowed_next_statuses",
+            "is_overdue",
+            "followup_overdue",
+            "occupation_concept_id",
+            "occupation_label",
             "intent",
             "applied_at",
             "deadline",
@@ -231,6 +261,11 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             "days_waiting",
             "last_activity_at",
             "archived_at",
+            "stage",
+            "outcome",
+            "allowed_next_statuses",
+            "is_overdue",
+            "followup_overdue",
             "created_at",
             "updated_at",
         ]
@@ -251,7 +286,42 @@ class JobApplicationSerializer(serializers.ModelSerializer):
     def validate_applied_at(self, value):
         if value and value > timezone.localdate():
             raise serializers.ValidationError("applied_at cannot be in the future.")
+        if not value or not self.instance:
+            return value
+        request = self.context.get("request")
+        data = getattr(request, "data", {}) or {} if request is not None else {}
+        force = str(data.get("force") or "").lower() in {"1", "true", "yes"}
+        if force:
+            return value
+        from .models import ReportPeriod
+
+        if ReportPeriod.objects.filter(
+            user=self.instance.owner,
+            year=value.year,
+            month=value.month,
+            submitted_at__isnull=False,
+        ).exists():
+            raise serializers.ValidationError(
+                "Sökt datum kan inte flyttas till en redan rapporterad period."
+            )
         return value
+
+    def update(self, instance, validated_data):
+        old_applied = instance.applied_at
+        application = super().update(instance, validated_data)
+        new_applied = application.applied_at
+        if (
+            application.reported_in_id
+            and old_applied != new_applied
+            and (
+                new_applied is None
+                or application.reported_in.year != new_applied.year
+                or application.reported_in.month != new_applied.month
+            )
+        ):
+            application.reported_in = None
+            application.save(update_fields=["reported_in", "updated_at"])
+        return application
 
     def validate_apply_url(self, value):
         # Platsbanken sometimes returns mailto:/relative/junk — blank those

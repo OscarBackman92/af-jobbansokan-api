@@ -77,9 +77,9 @@ export default function SkillGapPanel({ token, onNavigate }) {
         {withSnapshot === 0
           ? scope.hint ||
             "Inga matchningssnapshots sparade ännu. Spara eller markera jobb som sökta."
-          : `${withSnapshot} av ${totalApps} ansökningar har matchningsdata${
+          : `${withSnapshot} av ${totalApps} spårade har matchningsdata${
               scope.since ? ` sedan ${scope.since}` : ""
-            }.`}
+            }. Svar per matchning räknas bara på de ${withSnapshot}.`}
       </p>
 
       <div className="skill-gap-grid">

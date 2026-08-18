@@ -5,6 +5,7 @@ import {
   CLOSED_STATUSES,
   STATUS_LABELS,
   STATUSES,
+  allowedNextStatuses,
 } from "./statuses.js";
 
 describe("statuses", () => {
@@ -24,5 +25,16 @@ describe("statuses", () => {
   it("covers all defined statuses in active or closed groups", () => {
     const grouped = new Set([...ACTIVE_STATUSES, ...CLOSED_STATUSES]);
     expect(grouped.size).toBe(STATUSES.length);
+  });
+
+  it("does not offer Sparad once a job is sought", () => {
+    expect(allowedNextStatuses("applied")).not.toContain("wishlist");
+    expect(allowedNextStatuses("interview")).not.toContain("wishlist");
+  });
+
+  it("requires an outcome to leave an open stage for closed", () => {
+    expect(allowedNextStatuses("applied")).toEqual(
+      expect.arrayContaining(["rejected", "no_response", "withdrawn", "accepted"])
+    );
   });
 });

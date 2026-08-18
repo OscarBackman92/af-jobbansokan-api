@@ -8,11 +8,14 @@ import DashboardPanel from "./components/DashboardPanel.jsx";
 import GoogleSignIn from "./components/GoogleSignIn.jsx";
 import PostingsPanel from "./components/PostingsPanel.jsx";
 import ProfilePanel from "./components/ProfilePanel.jsx";
+import ReportBanner from "./components/ReportBanner.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
 import SavedPanel from "./components/SavedPanel.jsx";
 import VerifyEmail from "./components/VerifyEmail.jsx";
+import { encodeMonthFilter } from "./dates.js";
 import { readGoogleCallback } from "./googleAuth.js";
 import useApplications from "./useApplications.js";
+import useReportPeriods from "./useReportPeriods.js";
 
 function readResetCreds() {
   const params = new URLSearchParams(window.location.search);
@@ -117,6 +120,7 @@ export default function App() {
     patch,
     bulk,
   } = useApplications(token);
+  const { periods } = useReportPeriods(token);
 
   const isLoggedOut = !token;
   const isGuest =
@@ -466,6 +470,16 @@ export default function App() {
         )}
         {!resetCreds && !verifyKey && token && (
           <>
+            {(tab === "dash" || tab === "applied") && (
+              <ReportBanner
+                periods={periods}
+                onOpenPeriod={(key) =>
+                  changeTab("applied", {
+                    monthFilter: encodeMonthFilter("applied", key),
+                  })
+                }
+              />
+            )}
             <div
               className={tab === "dash" ? undefined : "tab-panel-hidden"}
               aria-hidden={tab !== "dash"}
@@ -474,6 +488,7 @@ export default function App() {
                 token={token}
                 onNavigate={changeTab}
                 active={tab === "dash"}
+                periods={periods}
               />
             </div>
             <div
@@ -511,6 +526,7 @@ export default function App() {
                 initialMonthFilter={
                   tab === "applied" ? panelMonthFilter : ""
                 }
+                periods={periods}
               />
             </div>
             <div

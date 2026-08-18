@@ -311,8 +311,8 @@ describe("savedBucket", () => {
   it("puts auto-planned rows without deadline in no_deadline", () => {
     expect(
       savedBucket({
-        created_at: "2026-08-01T10:00:00Z",
-        apply_by: "2026-08-15",
+        created_at: daysAgo(10) + "T10:00:00Z",
+        apply_by: daysFromNow(4),
         apply_by_is_auto: true,
       })
     ).toBe("no_deadline");

@@ -87,24 +87,19 @@ export default function MatchScore({
     : match.matched_detail || [];
 
   if (variant === "compact") {
+    if (lowConfidence) return null;
     return (
       <div className={`match-score match-score--${tone}`}>
         <div className="match-score-head">
-          {lowConfidence ? (
-            <span className="match-score-label">Litet underlag</span>
-          ) : (
-            <>
-              <span className="match-score-label">{headLabel}</span>
-              {score != null && (
-                <span
-                  className="match-score-pct"
-                  title={scoreExplain || undefined}
-                  aria-label={scoreExplain || undefined}
-                >
-                  {score}%
-                </span>
-              )}
-            </>
+          <span className="match-score-label">{headLabel}</span>
+          {score != null && (
+            <span
+              className="match-score-pct"
+              title={scoreExplain || undefined}
+              aria-label={scoreExplain || undefined}
+            >
+              {score}%
+            </span>
           )}
         </div>
         {!lowConfidence && coverageTotal > 0 && (

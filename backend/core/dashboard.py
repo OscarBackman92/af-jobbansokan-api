@@ -15,11 +15,12 @@ from django.db.models import (
     DurationField,
     ExpressionWrapper,
     F,
+    Max,
     OuterRef,
     Q,
     Subquery,
 )
-from django.db.models.functions import TruncMonth
+from django.db.models.functions import Coalesce, TruncMonth
 from django.utils import timezone
 
 from .models import ApplicationEvent, JobApplication
@@ -122,14 +123,13 @@ def _kpis(base, today, week_end):
         .filter(apply_by__gte=today, apply_by__lte=week_end)
         .count()
     )
-    follow_up = applied_side.filter(
-        Q(next_action_at__lte=today)
-        | Q(
-            status__in=AWAITING_STATUSES,
-            next_action_at__isnull=True,
-            applied_at__lte=silence_cutoff,
-        )
-    ).count()
+    follow_up = (
+        applied_side.filter(status=JobApplication.STATUS_APPLIED)
+        .annotate(_last_event=Max("events__occurred_at"))
+        .annotate(last_act=Coalesce("_last_event", "applied_at"))
+        .filter(last_act__lte=silence_cutoff)
+        .count()
+    )
 
     return {
         "to_apply": to_apply,
@@ -200,7 +200,11 @@ def _next_actions(base, today, week_end):
         status__in=[*CLOSED_STATUSES, JobApplication.STATUS_ACCEPTED]
     )
     followups = list(
-        open_rows.filter(next_action_at__isnull=False, next_action_at__lte=week_end)
+        open_rows.filter(
+            next_action_at__isnull=False,
+            next_action_at__gte=today,
+            next_action_at__lte=week_end,
+        )
         .order_by("next_action_at")
         .values("id", "title", "company", "status", "next_action_at")[:5]
     )
@@ -225,7 +229,7 @@ def _next_actions(base, today, week_end):
         deadlines = (
             base.filter(status=JobApplication.STATUS_WISHLIST)
             .exclude(intent=JobApplication.INTENT_PAUSED)
-            .filter(apply_by__isnull=False, apply_by__lte=week_end)
+            .filter(apply_by__isnull=False, apply_by__gte=today, apply_by__lte=week_end)
             .exclude(id__in=taken)
             .order_by("apply_by")
             .values("id", "title", "company", "status", "apply_by")[: 5 - len(rows)]

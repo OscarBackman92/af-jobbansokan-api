@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Exists, Max, OuterRef, Q
 from django.http import Http404, HttpResponse
 from django.utils import timezone
@@ -58,6 +59,7 @@ from .jobtech import (
     occupation_groups,
 )
 from .jobtech import search as jobtech_search
+from .lifecycle import STAGE_BEVAKAD, assert_transition_allowed, stage_for_status
 from .match_snapshot import score_and_store
 from .matching import match_evidence, match_skills
 from .models import ApplicationEvent, JobApplication, Resume, SavedJobSearch
@@ -542,15 +544,28 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         previous = serializer.instance.status
+        next_status = serializer.validated_data.get("status", previous)
+        try:
+            assert_transition_allowed(previous, next_status)
+        except DjangoValidationError as exc:
+            detail = getattr(exc, "message_dict", None) or exc.messages
+            raise ValidationError(detail) from exc
         application = serializer.save()
         if previous != application.status:
             occurred_at = (
                 parse_date(str(self.request.data.get("status_changed_at") or ""))
                 or timezone.localdate()
             )
-            # Moving into "Ansökt" without a date leaves the stats chart
-            # empty — stamp applied_at from the status change when missing.
+            from_stage = stage_for_status(previous)
+            to_stage = stage_for_status(application.status)
             if (
+                from_stage == STAGE_BEVAKAD
+                and to_stage != STAGE_BEVAKAD
+                and not application.applied_at
+            ):
+                application.applied_at = occurred_at
+                application.save(update_fields=["applied_at", "updated_at"])
+            elif (
                 application.status == JobApplication.STATUS_APPLIED
                 and not application.applied_at
             ):
@@ -563,6 +578,10 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                     f" → {application.get_status_display()}"
                 ),
                 status=application.status,
+                from_stage=from_stage,
+                to_stage=to_stage,
+                event_type="avslutad" if to_stage == "avslutad" else "",
+                origin="auto",
             )
             _drop_prefetched_events(application)
             if application.status == JobApplication.STATUS_APPLIED:

@@ -1,5 +1,5 @@
 import { daysUntil, isClosed } from "../../dates.js";
-import { STATUSES } from "../../statuses.js";
+import { statusChoicesFor } from "../../statuses.js";
 import MatchScore from "../MatchScore.jsx";
 import DeadlineBadge from "./DeadlineBadge.jsx";
 import ProfileFitRow from "../ProfileFitRow.jsx";
@@ -22,6 +22,7 @@ export default function ApplicationRow({ application, onOpen, onMove }) {
     deadlineIn <= 14;
   const hasBadges =
     showStatusBadge || showDeadlineBadge || application.next_action_at;
+  const statusChoices = statusChoicesFor(application);
 
   return (
     <div className={`pipeline-row pipeline-row--${application.status}`}>
@@ -66,7 +67,7 @@ export default function ApplicationRow({ application, onOpen, onMove }) {
           onChange={(e) => onMove(e.target.value)}
           title="Flytta till status"
         >
-          {STATUSES.map((s) => (
+          {statusChoices.map((s) => (
             <option key={s.id} value={s.id}>
               {s.label}
             </option>

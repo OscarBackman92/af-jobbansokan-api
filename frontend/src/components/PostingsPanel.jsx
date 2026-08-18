@@ -535,6 +535,8 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
           ad_description: job.description || "",
           source_job_id: job.id || "",
           source: "platsbanken",
+          occupation_concept_id: job.occupation_concept_id || "",
+          occupation_label: job.occupation_label || "",
           deadline: job.application_deadline,
           status: "wishlist",
         },

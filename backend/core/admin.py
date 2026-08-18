@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin, TabularInline
 
-from .models import ApplicationEvent, JobApplication, JobPosting
+from .models import Activity, ApplicationEvent, JobApplication, JobPosting, ReportPeriod
 
 
 class ApplicationEventInline(TabularInline):
@@ -11,8 +11,17 @@ class ApplicationEventInline(TabularInline):
 
 @admin.register(JobApplication)
 class JobApplicationAdmin(ModelAdmin):
-    list_display = ("id", "owner", "company", "title", "status", "applied_at")
-    list_filter = ("status", "applied_at", "created_at")
+    list_display = (
+        "id",
+        "owner",
+        "company",
+        "title",
+        "status",
+        "stage",
+        "outcome",
+        "applied_at",
+    )
+    list_filter = ("status", "stage", "applied_at", "created_at")
     search_fields = ("company", "title", "owner__username", "owner__email")
     inlines = [ApplicationEventInline]
 
@@ -44,3 +53,17 @@ class JobPostingAdmin(ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+@admin.register(ReportPeriod)
+class ReportPeriodAdmin(ModelAdmin):
+    list_display = ("id", "user", "year", "month", "submitted_at")
+    list_filter = ("year", "month")
+    search_fields = ("user__username", "user__email")
+
+
+@admin.register(Activity)
+class ActivityAdmin(ModelAdmin):
+    list_display = ("id", "user", "type", "occurred_on", "title")
+    list_filter = ("type", "occurred_on")
+    search_fields = ("title", "organisation", "user__username", "user__email")

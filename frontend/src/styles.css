@@ -1583,6 +1583,84 @@ tbody tr:last-child td {
   padding: 0.35rem 0.55rem;
 }
 
+.period-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.period-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-width: 3.4rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.period-cell:hover {
+  transform: none;
+  filter: none;
+  background: var(--accent-soft);
+}
+
+.period-cell-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.period-cell.is-selected {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 28%, transparent);
+}
+
+.period-cell--klar {
+  border-color: var(--amber-border);
+  background: var(--amber-bg);
+}
+
+.period-cell--forsenad {
+  border-color: var(--red-border);
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+.period-cell--rapporterad {
+  opacity: 0.78;
+}
+
+.report-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--amber-border);
+  background: var(--amber-bg);
+}
+
+.report-banner p {
+  margin: 0;
+  flex: 1 1 16rem;
+}
+
+.report-banner--danger {
+  border-color: var(--red-border);
+  background: var(--red-bg);
+  color: var(--red);
+}
+
 .quick-filters {
   display: flex;
   flex-wrap: nowrap;
@@ -3520,6 +3598,24 @@ button.chart-col:focus-visible {
   background: color-mix(in srgb, var(--brand) 25%, transparent);
   border-style: solid;
   opacity: 1;
+}
+
+.chart-bar--period-klar,
+.chart-col--current .chart-bar--period-klar {
+  background: var(--amber);
+  border-color: transparent;
+}
+
+.chart-bar--period-forsenad,
+.chart-col--current .chart-bar--period-forsenad {
+  background: var(--red);
+  border-color: transparent;
+}
+
+.chart-bar--period-rapporterad,
+.chart-col--current .chart-bar--period-rapporterad {
+  background: var(--green);
+  border-color: transparent;
 }
 
 .chart-count {
