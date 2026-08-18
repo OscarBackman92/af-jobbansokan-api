@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { request } from "./api.js";
 import { clearTokens, getAccess, setTokens } from "./auth.js";
@@ -112,6 +112,7 @@ export default function App() {
   const [panelMonthFilter, setPanelMonthFilter] = useState("");
   const profileLeaveGuardRef = useRef(null);
   const focusedRowRef = useRef(-1);
+  const tabsRef = useRef(null);
 
   const {
     applications,
@@ -188,25 +189,31 @@ export default function App() {
     localStorage.setItem("tab", tab);
   }, [tab]);
 
-  useEffect(() => {
-    const nav = document.querySelector(".tabs");
+  useLayoutEffect(() => {
+    const nav = tabsRef.current;
     if (!(nav instanceof HTMLElement)) return undefined;
 
     // Scroll only when the active tab is clipped — nearest edge, never
     // force it to scrollLeft 0 (which hid "Översikt" under the brand).
     function alignActive() {
       const activeTab = nav.querySelector(".tab.active");
+      const indicator = nav.querySelector(".tab-indicator");
       if (!(activeTab instanceof HTMLElement)) return;
       const navRect = nav.getBoundingClientRect();
       const tabRect = activeTab.getBoundingClientRect();
       let delta = 0;
-      if (tabRect.left < navRect.left) {
-        delta = tabRect.left - navRect.left;
-      } else if (tabRect.right > navRect.right) {
-        delta = tabRect.right - navRect.right;
+      if (tabRect.left < navRect.left + 8) {
+        delta = tabRect.left - navRect.left - 8;
+      } else if (tabRect.right > navRect.right - 8) {
+        delta = tabRect.right - navRect.right + 8;
       }
       if (Math.abs(delta) > 1) {
         nav.scrollBy({ left: delta, behavior: "auto" });
+      }
+      if (indicator instanceof HTMLElement) {
+        indicator.style.width = `${activeTab.offsetWidth}px`;
+        indicator.style.transform = `translateX(${activeTab.offsetLeft}px)`;
+        indicator.classList.add("is-ready");
       }
     }
 
@@ -374,7 +381,8 @@ export default function App() {
             <a href="/integritet/">Integritet</a>
           </nav>
         ) : (
-          <nav className="tabs" aria-label="Huvudnavigering">
+          <nav ref={tabsRef} className="tabs" aria-label="Huvudnavigering">
+            <span className="tab-indicator" aria-hidden="true" />
             {TABS.map((t) => (
               <a
                 key={t.id}

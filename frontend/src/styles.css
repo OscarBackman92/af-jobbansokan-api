@@ -301,8 +301,8 @@ a:focus-visible {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
-  padding: 0.85rem 0.15rem;
-  margin: 0.25rem 0 1.7rem;
+  padding: 0.7rem 0.15rem 0.9rem;
+  margin: 0.15rem 0 1.45rem;
   border-bottom: 1px solid var(--border);
   min-width: 0;
 }
@@ -329,6 +329,15 @@ a:focus-visible {
 
 .brand-link:hover {
   color: inherit;
+}
+
+.brand-link:hover .logo {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--brand-2) 38%, transparent);
+}
+
+.brand-link:active .logo {
+  transform: scale(0.98);
 }
 
 .header-guest-nav {
@@ -369,6 +378,9 @@ a:focus-visible {
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--brand-2) 80%, var(--border));
   flex-shrink: 0;
+  transition:
+    transform 0.28s var(--ease-out),
+    box-shadow 0.28s var(--ease-out);
 }
 
 .header h1 {
@@ -415,16 +427,47 @@ a:focus-visible {
 
 .tabs {
   display: flex;
+  position: relative;
   justify-self: stretch;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--border);
-  padding: 0;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.22rem;
   min-width: 0;
   max-width: 100%;
   overflow-x: auto;
   flex-wrap: nowrap;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-indicator {
+  position: absolute;
+  top: 0.22rem;
+  bottom: 0.22rem;
+  left: 0;
+  width: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand-2) 22%, var(--surface));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-2) 42%, transparent),
+    0 6px 16px color-mix(in srgb, var(--brand-2) 16%, transparent);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transform: translateX(0);
+}
+
+.tab-indicator.is-ready {
+  opacity: 1;
+  transition:
+    transform 0.4s var(--ease-out),
+    width 0.4s var(--ease-out),
+    opacity 0.2s var(--ease-out);
 }
 
 /* Free tab space: email is also under Profil & CV. */
@@ -441,11 +484,10 @@ a:focus-visible {
 .tab {
   background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  padding: 0.65rem 1rem;
-  min-height: 44px;
-  font-size: 0.9rem;
+  border-radius: 999px;
+  padding: 0.55rem 0.95rem;
+  min-height: 40px;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   color: var(--muted);
@@ -456,9 +498,12 @@ a:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  position: relative;
+  z-index: 1;
   transition:
-    color 0.2s var(--ease-out),
-    border-color 0.2s var(--ease-out);
+    color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    transform 0.22s var(--ease-out);
 }
 
 .tab:focus-visible {
@@ -466,19 +511,26 @@ a:focus-visible {
   box-shadow: var(--ring);
 }
 
-.tab:hover {
+.tab:hover:not(.active) {
   color: var(--ink);
-  background: transparent;
+  background: color-mix(in srgb, var(--hover) 80%, transparent);
   filter: none;
   transform: none;
   box-shadow: none;
 }
 
+.tab:active {
+  transform: scale(0.97);
+}
+
 .tab.active {
   color: var(--ink);
-  border-bottom-color: var(--brand-2);
   background: transparent;
   box-shadow: none;
+}
+
+.tabs:not(:has(.tab-indicator.is-ready)) .tab.active {
+  background: color-mix(in srgb, var(--brand-2) 18%, transparent);
 }
 
 /* ---------- Hero ---------- */
@@ -3751,23 +3803,28 @@ button.chart-col:focus-visible {
   align-items: center;
   justify-content: center;
   min-width: 1.25rem;
-  margin-left: 0.35rem;
-  padding: 0.05rem 0.35rem;
+  margin-left: 0.1rem;
+  padding: 0.05rem 0.38rem;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--surface-2) 80%, var(--hover));
   border: 1px solid var(--border);
   vertical-align: middle;
   position: relative;
   z-index: 1;
+  transition:
+    color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    border-color 0.22s var(--ease-out);
 }
 
 .tab.active .tab-count {
   color: var(--ink);
-  border-color: color-mix(in srgb, var(--brand) 35%, var(--border));
+  background: color-mix(in srgb, var(--brand-2) 18%, var(--surface));
+  border-color: color-mix(in srgb, var(--brand-2) 40%, var(--border));
 }
 
 .lanes {
@@ -4802,8 +4859,8 @@ code {
   }
 
   .tab {
-    padding: 0.65rem 0.85rem;
-    font-size: 0.88rem;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.86rem;
   }
 }
 
@@ -4874,9 +4931,9 @@ code {
     flex: 0 0 auto;
     min-width: auto;
     text-align: center;
-    padding: 0.55rem 0.7rem;
+    padding: 0.5rem 0.68rem;
     font-size: 0.82rem;
-    min-height: 44px;
+    min-height: 40px;
   }
 
   .account-email {
