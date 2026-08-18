@@ -2,7 +2,10 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .period_views import (
+    ActivityViewSet,
     PeriodDetailView,
+    PeriodExcludeView,
+    PeriodExportView,
     PeriodListView,
     PeriodReopenView,
     PeriodSubmitView,
@@ -24,10 +27,12 @@ from .views import (
     job_groups,
     job_municipalities,
     job_search,
+    occupation_suggest,
 )
 
 router = DefaultRouter()
 router.register(r"applications", JobApplicationViewSet, basename="applications")
+router.register(r"activities", ActivityViewSet, basename="activities")
 
 urlpatterns = [
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
@@ -41,6 +46,16 @@ urlpatterns = [
         "periods/<str:key>/reopen/",
         PeriodReopenView.as_view(),
         name="period-reopen",
+    ),
+    path(
+        "periods/<str:key>/export/",
+        PeriodExportView.as_view(),
+        name="period-export",
+    ),
+    path(
+        "periods/<str:key>/exclude/",
+        PeriodExcludeView.as_view(),
+        name="period-exclude",
     ),
     path("periods/<str:key>/", PeriodDetailView.as_view(), name="period-detail"),
     path("insights/skills/", SkillsInsightsView.as_view(), name="skills-insights"),
@@ -74,6 +89,7 @@ urlpatterns = [
     ),
     path("jobs/", job_search, name="job-search"),
     path("jobs/filters/", job_filters, name="job-filters"),
+    path("jobs/occupations/", occupation_suggest, name="occupation-suggest"),
     path("jobs/groups/", job_groups, name="job-groups"),
     path("jobs/municipalities/", job_municipalities, name="job-municipalities"),
     path("jobs/<str:job_id>/", job_detail, name="job-detail"),

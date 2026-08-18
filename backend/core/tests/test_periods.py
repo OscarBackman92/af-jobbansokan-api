@@ -113,3 +113,98 @@ def test_moving_applied_at_out_of_period_clears_reported_in(api_client, user):
     app.refresh_from_db()
     assert app.applied_at == date(2026, 8, 2)
     assert app.reported_in_id is None
+
+
+def test_period_detail_has_eighteen_unique_jobs(api_client, user):
+    for index in range(18):
+        _applied(
+            user,
+            company=f"Bolag {index}",
+            title=f"Roll {index}",
+            applied_at=date(2026, 6, 1 + (index % 28)),
+        )
+    api_client.force_authenticate(user)
+    body = api_client.get(f"{URL}2026-06/").json()
+    ids = [row["id"] for row in body["jobs"]]
+    assert len(ids) == 18
+    assert len(set(ids)) == 18
+    assert body["job_count"] == 18
+
+
+def test_job_cannot_appear_in_two_period_details(api_client, user):
+    app = _applied(user, company="Flytt", applied_at=date(2026, 6, 10))
+    api_client.force_authenticate(user)
+    june = api_client.get(f"{URL}2026-06/").json()
+    assert app.id in {row["id"] for row in june["jobs"]}
+    patch = api_client.patch(
+        f"/api/v1/applications/{app.id}/", {"applied_at": "2026-08-02"}
+    )
+    assert patch.status_code == 200
+    june_after = api_client.get(f"{URL}2026-06/").json()
+    august = api_client.get(f"{URL}2026-08/").json()
+    assert app.id not in {row["id"] for row in june_after["jobs"]}
+    assert app.id in {row["id"] for row in august["jobs"]}
+
+
+def test_excluded_job_hidden_from_report_but_kept(api_client, user):
+    app = _applied(user, company="Acme", applied_at=date(2026, 6, 10))
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        f"{URL}2026-06/exclude/",
+        {"kind": "job", "id": app.id, "excluded": True, "note": "Dubbel"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert app.id not in {row["id"] for row in body["jobs"]}
+    assert app.id in {row["id"] for row in body["excluded_jobs"]}
+    app.refresh_from_db()
+    assert app.report_excluded is True
+    assert app.report_note == "Dubbel"
+
+
+def test_period_csv_is_excel_swedish(api_client, user):
+    _applied(
+        user,
+        company="Järfälla Kommun",
+        title="Handläggare",
+        applied_at=date(2026, 6, 10),
+    )
+    api_client.force_authenticate(user)
+    response = api_client.get(f"{URL}2026-06/export/")
+    assert response.status_code == 200
+    raw = response.content
+    assert raw.startswith(b"\xef\xbb\xbf")
+    text = raw.decode("utf-8-sig")
+    assert ";" in text.splitlines()[0]
+    assert "Järfälla" in text
+    assert "Datum;Typ;Yrke" in text.replace(" ", "") or "Datum;Typ" in text
+
+
+def test_missing_occupation_is_counted(api_client, user):
+    app = _applied(user, company="Acme", applied_at=date(2026, 6, 10))
+    app.occupation_label = ""
+    app.save(update_fields=["occupation_label"])
+    api_client.force_authenticate(user)
+    body = api_client.get(f"{URL}2026-06/").json()
+    assert body["missing_occupation_count"] == 1
+    assert body["jobs"][0]["occupation_label"] == ""
+
+
+def test_activity_crud(api_client, user):
+    api_client.force_authenticate(user)
+    created = api_client.post(
+        "/api/v1/activities/",
+        {
+            "type": "kurs",
+            "occurred_on": "2026-06-08",
+            "title": "Excel-kurs",
+            "organisation": "Folkuniversitetet",
+        },
+    )
+    assert created.status_code == 201
+    activity_id = created.json()["id"]
+    listed = api_client.get("/api/v1/activities/").json()
+    results = listed.get("results", listed)
+    assert any(row["id"] == activity_id for row in results)
+    deleted = api_client.delete(f"/api/v1/activities/{activity_id}/")
+    assert deleted.status_code == 204

@@ -9,6 +9,7 @@ import GoogleSignIn from "./components/GoogleSignIn.jsx";
 import PostingsPanel from "./components/PostingsPanel.jsx";
 import ProfilePanel from "./components/ProfilePanel.jsx";
 import ReportBanner from "./components/ReportBanner.jsx";
+import ReportPanel from "./components/ReportPanel.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
 import SavedPanel from "./components/SavedPanel.jsx";
 import VerifyEmail from "./components/VerifyEmail.jsx";
@@ -33,6 +34,7 @@ const TABS = [
   { id: "dash", label: "Översikt" },
   { id: "saved", label: "Sparade jobb" },
   { id: "applied", label: "Ansökningar" },
+  { id: "report", label: "Rapportera" },
   { id: "postings", label: "Annonser" },
   { id: "profile", label: "Profil & CV" },
 ];
@@ -120,7 +122,7 @@ export default function App() {
     patch,
     bulk,
   } = useApplications(token);
-  const { periods } = useReportPeriods(token);
+  const { periods, reload: reloadPeriods } = useReportPeriods(token);
 
   const isLoggedOut = !token;
   const isGuest =
@@ -470,12 +472,12 @@ export default function App() {
         )}
         {!resetCreds && !verifyKey && token && (
           <>
-            {(tab === "dash" || tab === "applied") && (
+            {(tab === "dash" || tab === "applied" || tab === "report") && (
               <ReportBanner
                 periods={periods}
                 onOpenPeriod={(key) =>
-                  changeTab("applied", {
-                    monthFilter: encodeMonthFilter("applied", key),
+                  changeTab("report", {
+                    monthFilter: encodeMonthFilter("report", key),
                   })
                 }
               />
@@ -527,6 +529,17 @@ export default function App() {
                   tab === "applied" ? panelMonthFilter : ""
                 }
                 periods={periods}
+              />
+            </div>
+            <div
+              className={tab === "report" ? undefined : "tab-panel-hidden"}
+              aria-hidden={tab !== "report"}
+            >
+              <ReportPanel
+                token={token}
+                periods={periods}
+                onPeriodsReload={reloadPeriods}
+                initialMonthFilter={tab === "report" ? panelMonthFilter : ""}
               />
             </div>
             <div

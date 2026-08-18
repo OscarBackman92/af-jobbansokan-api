@@ -104,6 +104,11 @@ def build_dashboard(user) -> dict:
         "match_scope": {
             "applications": base.count(),
             "with_snapshot": with_snapshot,
+            "applied_with_score": (
+                base.exclude(status=JobApplication.STATUS_WISHLIST)
+                .exclude(match_score__isnull=True)
+                .count()
+            ),
         },
     }
 

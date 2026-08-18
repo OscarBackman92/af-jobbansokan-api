@@ -515,7 +515,12 @@ export default function DashboardPanel({
       <section className="card">
         <h2>Svar per CV-matchning</h2>
         <p className="muted">
-          Baserat på sparad matchningspoäng vid spara/sökt — inte live-omräkning.
+          Räknas på sökta med sparad matchningspoäng
+          {data.match_scope?.applied_with_score != null
+            ? ` (${data.match_scope.applied_with_score} st)`
+            : ""}
+          — inte live-omräkning. Kompetenskoll använder snapshots på alla
+          spårade.
         </p>
         {responseByMatch.length === 0 ? (
           <p className="muted">för lite data</p>

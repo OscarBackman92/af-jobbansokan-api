@@ -129,10 +129,15 @@ describe("month filter helpers", () => {
   it("encodes and parses applied/saved month filters", () => {
     expect(encodeMonthFilter("applied", "2026-03")).toBe("applied:2026-03");
     expect(encodeMonthFilter("saved", "2026-01")).toBe("saved:2026-01");
+    expect(encodeMonthFilter("report", "2026-08")).toBe("report:2026-08");
     expect(encodeMonthFilter("applied", "")).toBe("");
     expect(parseMonthFilter("applied:2026-03")).toEqual({
       field: "applied",
       monthKey: "2026-03",
+    });
+    expect(parseMonthFilter("report:2026-08")).toEqual({
+      field: "report",
+      monthKey: "2026-08",
     });
     expect(parseMonthFilter("nope")).toBeNull();
   });

@@ -198,7 +198,7 @@ export function applicationMonthKey(application, field) {
 /** Encode board month filter as `field:YYYY-MM`, or "" for no filter. */
 export function encodeMonthFilter(field, monthKey) {
   if (!field || !monthKey) return "";
-  if (field !== "applied" && field !== "saved") return "";
+  if (field !== "applied" && field !== "saved" && field !== "report") return "";
   if (!/^\d{4}-\d{2}$/.test(monthKey)) return "";
   return `${field}:${monthKey}`;
 }
@@ -206,7 +206,7 @@ export function encodeMonthFilter(field, monthKey) {
 /** Parse `field:YYYY-MM` into `{ field, monthKey }` or null. */
 export function parseMonthFilter(value) {
   if (!value) return null;
-  const match = String(value).match(/^(applied|saved):(\d{4}-\d{2})$/);
+  const match = String(value).match(/^(applied|saved|report):(\d{4}-\d{2})$/);
   if (!match) return null;
   return { field: match[1], monthKey: match[2] };
 }

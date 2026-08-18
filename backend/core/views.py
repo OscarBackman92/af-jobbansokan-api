@@ -29,12 +29,9 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.email_health import email_delivery_warnings
-
-logger = logging.getLogger(__name__)
-
 from .csv_safety import sanitize_csv_cell
 from .dashboard import build_dashboard
+from .email_health import email_delivery_warnings
 from .experience_skills import (
     merge_skill_suggestions,
     skills_list_to_suggestions,
@@ -57,6 +54,7 @@ from .jobtech import (
     fetch_ad,
     municipalities,
     occupation_groups,
+    suggest_occupation_names,
 )
 from .jobtech import search as jobtech_search
 from .lifecycle import STAGE_BEVAKAD, assert_transition_allowed, stage_for_status
@@ -79,12 +77,15 @@ from .serializers import (
     ResumeUploadSerializer,
     SavedJobSearchSerializer,
 )
+from .similar import find_similar_applications, similar_payload
 from .skill_groups import (
     EMPTY_SKILL_GROUPS,
     normalize_skill_groups,
     skill_groups_from_flat,
 )
 from .throttles import JobTechThrottle, UploadThrottle
+
+logger = logging.getLogger(__name__)
 
 
 def _resume_match_context(user) -> dict:
@@ -648,6 +649,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                             "pause",
                             "activate",
                             "set_apply_by",
+                            "close_no_response",
                         ],
                     },
                     "date": {"type": "string", "format": "date"},
@@ -676,6 +678,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
             "pause",
             "activate",
             "set_apply_by",
+            "close_no_response",
         }
         if action_name not in allowed:
             raise ValidationError(
@@ -717,6 +720,31 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                     )
                     score_and_store(app, user=request.user)
                 updated.append(app.id)
+            elif action_name == "close_no_response":
+                previous = app.status
+                if previous != JobApplication.STATUS_NO_RESPONSE:
+                    try:
+                        assert_transition_allowed(
+                            previous, JobApplication.STATUS_NO_RESPONSE
+                        )
+                    except DjangoValidationError as exc:
+                        detail = getattr(exc, "message_dict", None) or exc.messages
+                        raise ValidationError(detail) from exc
+                    app.status = JobApplication.STATUS_NO_RESPONSE
+                    app.save()
+                    app.events.create(
+                        occurred_at=occurred_at,
+                        note=(
+                            f"Status: {status_labels[previous]}"
+                            f" → {app.get_status_display()}"
+                        ),
+                        status=JobApplication.STATUS_NO_RESPONSE,
+                        event_type="avslutad",
+                        from_stage=stage_for_status(previous),
+                        to_stage="avslutad",
+                        origin="auto",
+                    )
+                updated.append(app.id)
             elif action_name == "archive":
                 if app.archived_at is None:
                     app.archived_at = timezone.now()
@@ -739,6 +767,24 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                 updated.append(app.id)
 
         return Response({"updated": updated})
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"], url_path="similar")
+    def similar(self, request):
+        """Notice-only duplicates by employer_key + fuzzy title, or source_job_id."""
+        exclude = request.query_params.get("exclude")
+        try:
+            exclude_id = int(exclude) if exclude not in (None, "") else None
+        except (TypeError, ValueError):
+            exclude_id = None
+        rows = find_similar_applications(
+            request.user,
+            company=request.query_params.get("company", ""),
+            title=request.query_params.get("title", ""),
+            source_job_id=request.query_params.get("source_job_id", ""),
+            exclude_id=exclude_id,
+        )
+        return Response({"results": similar_payload(rows)})
 
     @extend_schema(
         request=ApplicationEventSerializer,
@@ -903,7 +949,11 @@ def _attach_cv_match(
             cached = cache.get(cache_key)
             if isinstance(cached, dict):
                 job["match"] = dict(cached)
-                if profiles and resume is not None and "profiles_scored" not in job["match"]:
+                if (
+                    profiles
+                    and resume is not None
+                    and "profiles_scored" not in job["match"]
+                ):
                     try:
                         profiles_scored = score_all_profiles(resume, posting)
                         if profiles_scored:
@@ -969,7 +1019,9 @@ def _match_cache_prefix(*, evidence, skills, resume) -> str:
     resume_stamp = ""
     if resume is not None:
         updated = getattr(resume, "updated_at", None)
-        resume_stamp = updated.isoformat() if updated else str(getattr(resume, "pk", ""))
+        resume_stamp = (
+            updated.isoformat() if updated else str(getattr(resume, "pk", ""))
+        )
     raw = json.dumps(
         {
             "skills": skills or [],
@@ -1305,6 +1357,27 @@ def job_filters(_request):
             "fields": [{"id": cid, "label": label} for cid, label in OCCUPATION_FIELDS],
         }
     )
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter("q", OpenApiTypes.STR, description="Occupation-name query."),
+    ],
+    responses={200: OpenApiTypes.OBJECT},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedUser])
+@throttle_classes([JobTechThrottle])
+def occupation_suggest(request):
+    """Autocomplete JobTech occupation-name concepts for AF report rows."""
+    try:
+        results = suggest_occupation_names(request.query_params.get("q", ""))
+    except JobTechError:
+        return Response(
+            {"detail": "Kunde inte hämta yrkeslistan just nu."},
+            status=drf_status.HTTP_502_BAD_GATEWAY,
+        )
+    return Response({"results": results})
 
 
 @extend_schema(

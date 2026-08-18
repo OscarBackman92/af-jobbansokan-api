@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import csv
 from calendar import monthrange
 from datetime import date
+from io import StringIO
 
 from django.utils import timezone
 
+from .csv_safety import sanitize_csv_cell
 from .models import Activity, ApplicationEvent, JobApplication, ReportPeriod
 
 STATUS_PAGAENDE = "pagaende"
@@ -111,6 +114,7 @@ def _reportable_event_qs(user, year: int, month: int):
     return ApplicationEvent.objects.filter(
         application__owner=user,
         is_reportable=True,
+        report_excluded=False,
         occurred_at__gte=start,
         occurred_at__lte=end,
     )
@@ -161,8 +165,10 @@ def serialize_period(
     jobs = _sought_qs(period.user, period.year, period.month)
     activities = _activity_qs(period.user, period.year, period.month)
     events = _reportable_event_qs(period.user, period.year, period.month)
+    included_jobs = jobs.filter(report_excluded=False)
+    included_activities = activities.filter(report_excluded=False)
     job_count = jobs.count()
-    activity_count = activities.count() + events.count()
+    activity_count = included_activities.count() + events.count()
     payload = {
         "key": period_key(period.year, period.month),
         "year": period.year,
@@ -176,6 +182,7 @@ def serialize_period(
         ),
         "job_count": job_count,
         "activity_count": activity_count,
+        "missing_occupation_count": included_jobs.filter(occupation_label="").count(),
         "note": period.note,
     }
     payload["banner"] = banner_text(
@@ -187,31 +194,40 @@ def serialize_period(
     if not detail:
         return payload
 
+    job_fields = [
+        "id",
+        "applied_at",
+        "company",
+        "title",
+        "location",
+        "occupation_label",
+        "occupation_concept_id",
+        "ad_url",
+        "status",
+        "report_excluded",
+        "report_note",
+    ]
     payload["jobs"] = list(
-        jobs.order_by("applied_at", "id").values(
-            "id",
-            "applied_at",
-            "company",
-            "title",
-            "location",
-            "occupation_label",
-            "occupation_concept_id",
-            "ad_url",
-            "status",
-            "report_excluded",
-            "report_note",
-        )
+        included_jobs.order_by("applied_at", "id").values(*job_fields)
     )
+    payload["excluded_jobs"] = list(
+        jobs.filter(report_excluded=True)
+        .order_by("applied_at", "id")
+        .values(*job_fields)
+    )
+    activity_fields = [
+        "id",
+        "type",
+        "occurred_on",
+        "title",
+        "organisation",
+        "note",
+        "job_id",
+        "report_excluded",
+        "report_note",
+    ]
     payload["activities"] = list(
-        activities.order_by("occurred_on", "id").values(
-            "id",
-            "type",
-            "occurred_on",
-            "title",
-            "organisation",
-            "note",
-            "job_id",
-        )
+        included_activities.order_by("occurred_on", "id").values(*activity_fields)
     )
     payload["events"] = list(
         events.order_by("occurred_at", "id").values(
@@ -221,6 +237,7 @@ def serialize_period(
             "event_type",
             "application_id",
             "is_reportable",
+            "report_excluded",
         )
     )
     return payload
@@ -251,12 +268,14 @@ def submit_period(period, *, today: date | None = None) -> ReportPeriod:
         occurred_at__gte=start,
         occurred_at__lte=end,
         is_reportable=True,
+        report_excluded=False,
         reported_in__isnull=True,
     ).update(reported_in=period)
     Activity.objects.filter(
         user=period.user,
         occurred_on__gte=start,
         occurred_on__lte=end,
+        report_excluded=False,
         reported_in__isnull=True,
     ).update(reported_in=period)
     return period
@@ -273,3 +292,107 @@ def get_or_create_period(user, year: int, month: int) -> ReportPeriod:
         user=user, year=year, month=month
     )
     return period
+
+
+REPORT_COLUMNS = [
+    "Datum",
+    "Typ",
+    "Yrke",
+    "Arbetsgivare",
+    "Ort",
+    "Länk",
+    "Anteckning",
+]
+
+_ACTIVITY_LABELS = dict(Activity.TYPE_CHOICES)
+
+
+def report_rows(period) -> list[dict]:
+    """Rows for the AF paste/CSV, excluding report_excluded items."""
+    rows: list[dict] = []
+    jobs = _sought_qs(period.user, period.year, period.month).filter(
+        report_excluded=False
+    )
+    for job in jobs.order_by("applied_at", "id"):
+        rows.append(
+            {
+                "kind": "job",
+                "id": job.id,
+                "datum": job.applied_at.isoformat() if job.applied_at else "",
+                "typ": "Sökt jobb",
+                "yrke": job.occupation_label,
+                "arbetsgivare": job.company,
+                "ort": job.location,
+                "lank": job.ad_url,
+                "anteckning": job.title,
+                "missing_occupation": not bool(job.occupation_label),
+            }
+        )
+    events = _reportable_event_qs(period.user, period.year, period.month)
+    for event in events.select_related("application").order_by("occurred_at", "id"):
+        app = event.application
+        rows.append(
+            {
+                "kind": "event",
+                "id": event.id,
+                "datum": event.occurred_at.isoformat() if event.occurred_at else "",
+                "typ": "Intervju" if event.event_type == "intervju" else "Händelse",
+                "yrke": app.occupation_label,
+                "arbetsgivare": app.company,
+                "ort": app.location,
+                "lank": app.ad_url,
+                "anteckning": event.note,
+                "missing_occupation": False,
+            }
+        )
+    activities = _activity_qs(period.user, period.year, period.month).filter(
+        report_excluded=False
+    )
+    for activity in activities.order_by("occurred_on", "id"):
+        rows.append(
+            {
+                "kind": "activity",
+                "id": activity.id,
+                "datum": activity.occurred_on.isoformat(),
+                "typ": _ACTIVITY_LABELS.get(activity.type, activity.type),
+                "yrke": "",
+                "arbetsgivare": activity.organisation,
+                "ort": "",
+                "lank": "",
+                "anteckning": activity.title,
+                "missing_occupation": False,
+            }
+        )
+    return rows
+
+
+def clipboard_line(row: dict) -> str:
+    """AF form field order: date, occupation, employer, location, link."""
+    return "\t".join(
+        [
+            str(row.get("datum") or ""),
+            str(row.get("yrke") or ""),
+            str(row.get("arbetsgivare") or ""),
+            str(row.get("ort") or ""),
+            str(row.get("lank") or ""),
+        ]
+    )
+
+
+def export_csv_bytes(period) -> bytes:
+    buf = StringIO()
+    writer = csv.writer(buf, delimiter=";", lineterminator="\n")
+    writer.writerow(REPORT_COLUMNS)
+    for row in report_rows(period):
+        writer.writerow(
+            [
+                sanitize_csv_cell(row["datum"]),
+                sanitize_csv_cell(row["typ"]),
+                sanitize_csv_cell(row["yrke"]),
+                sanitize_csv_cell(row["arbetsgivare"]),
+                sanitize_csv_cell(row["ort"]),
+                sanitize_csv_cell(row["lank"]),
+                sanitize_csv_cell(row["anteckning"]),
+            ]
+        )
+    return ("\ufeff" + buf.getvalue()).encode("utf-8")

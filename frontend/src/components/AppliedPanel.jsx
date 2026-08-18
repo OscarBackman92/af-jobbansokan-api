@@ -84,13 +84,14 @@ export default function AppliedPanel({
   error,
   setError,
   patch,
-  bulk: _bulk,
+  bulk,
   onNavigate,
   initialFilter,
   initialMonthFilter,
   periods = [],
 }) {
   const [selected, setSelected] = useState(null);
+  const [modalFocus, setModalFocus] = useState(null);
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
   const [laneFilter, setLaneFilter] = useState(() =>
@@ -228,6 +229,7 @@ export default function AppliedPanel({
   }
 
   const sought = applications.filter((a) => a.status !== "wishlist");
+  const stale = sought.filter((a) => a.is_stale);
   const counts = { late: 0, fresh: 0, dialog: 0, offer: 0, closed: 0 };
   for (const app of sought) {
     const bucket = appliedBucket(app);
@@ -353,6 +355,32 @@ export default function AppliedPanel({
         </div>
       </section>
 
+      {stale.length > 0 && (
+        <div className="report-banner report-banner--notice" role="status">
+          <p>
+            {stale.length} ansökningar har väntat över 45 dagar utan svar.
+            Stäng dem samlat så att tidsstämpeln blir densamma.
+          </p>
+          <button
+            type="button"
+            className="secondary small"
+            onClick={async () => {
+              try {
+                setError(null);
+                await bulk({
+                  ids: stale.map((row) => row.id),
+                  action: "close_no_response",
+                });
+              } catch (err) {
+                setError(err.message);
+              }
+            }}
+          >
+            Stäng alla {stale.length} som inget svar
+          </button>
+        </div>
+      )}
+
       <section className="card" ref={listSectionRef}>
         <div className="row-between">
           <div>
@@ -367,7 +395,10 @@ export default function AppliedPanel({
             <button
               type="button"
               className="small"
-              onClick={() => setAdding(true)}
+              onClick={() => {
+                setModalFocus(null);
+                setAdding(true);
+              }}
             >
               + Ny ansökan
             </button>
@@ -606,7 +637,14 @@ export default function AppliedPanel({
                             </label>
                             <ApplicationRow
                               application={application}
-                              onOpen={() => setSelected(application)}
+                              onOpen={() => {
+                                setModalFocus(null);
+                                setSelected(application);
+                              }}
+                              onLog={() => {
+                                setModalFocus("timeline");
+                                setSelected(application);
+                              }}
                               onMove={(next) =>
                                 requestMove(application.id, next)
                               }
@@ -746,13 +784,16 @@ export default function AppliedPanel({
             token={token}
             application={selected}
             existingApplications={applications}
+            initialFocus={modalFocus}
             onOpenExisting={(app) => {
               setSelected(app);
               setAdding(false);
+              setModalFocus(null);
             }}
             onClose={() => {
               setSelected(null);
               setAdding(false);
+              setModalFocus(null);
             }}
             onChanged={(row) => {
               if (row && upsert) upsert(row);

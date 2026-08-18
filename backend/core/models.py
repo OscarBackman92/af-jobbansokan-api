@@ -259,6 +259,7 @@ class ApplicationEvent(models.Model):
         max_length=12, choices=ORIGIN_CHOICES, default=ORIGIN_MANUAL
     )
     is_reportable = models.BooleanField(default=False)
+    report_excluded = models.BooleanField(default=False)
     reported_in = models.ForeignKey(
         "ReportPeriod",
         null=True,
@@ -419,6 +420,8 @@ class Activity(models.Model):
         on_delete=models.SET_NULL,
         related_name="activities",
     )
+    report_excluded = models.BooleanField(default=False)
+    report_note = models.CharField(max_length=255, blank=True)
 
     class Meta:
         ordering = ["-occurred_on", "-id"]

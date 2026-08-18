@@ -12,6 +12,7 @@ import { localISODate } from "../localDate.js";
 import { STATUSES, statusChoicesFor } from "../statuses.js";
 import ConfirmDialog from "./ConfirmDialog.jsx";
 import ModalOverlay from "./ModalOverlay.jsx";
+import OccupationPicker from "./OccupationPicker.jsx";
 import TailorPanel from "./TailorPanel.jsx";
 
 const EMPTY = {
@@ -22,6 +23,8 @@ const EMPTY = {
   apply_url: "",
   ad_description: "",
   source_job_id: "",
+  occupation_label: "",
+  occupation_concept_id: "",
   status: "applied",
   source: "",
   applied_at: localISODate(),
@@ -39,6 +42,7 @@ export default function ApplicationModal({
   application,
   existingApplications = [],
   defaultStatus = "applied",
+  initialFocus,
   onClose,
   onChanged,
   onOpenExisting,
@@ -88,9 +92,9 @@ export default function ApplicationModal({
     form.title,
     applicationId,
   ]);
-  const duplicateBlocked = Boolean(
-    duplicateByUrl || (similarByTitle && !application)
-  );
+  const [similarHits, setSimilarHits] = useState([]);
+  const duplicateBlocked = Boolean(duplicateByUrl);
+  const similarNotice = similarHits[0] || similarByTitle;
 
   const [discardPrompt, setDiscardPrompt] = useState(false);
 
@@ -190,14 +194,46 @@ export default function ApplicationModal({
     };
   }, [applicationId, jobId, previewDescription, token]);
 
+  useEffect(() => {
+    if (duplicateByUrl) {
+      setSimilarHits([]);
+      return undefined;
+    }
+    const company = form.company.trim();
+    const title = form.title.trim();
+    if (!company || !title) {
+      setSimilarHits([]);
+      return undefined;
+    }
+    const params = new URLSearchParams({ company, title });
+    if (form.source_job_id) params.set("source_job_id", form.source_job_id);
+    if (applicationId) params.set("exclude", String(applicationId));
+    const timer = window.setTimeout(() => {
+      request(`/api/v1/applications/similar/?${params}`, { token })
+        .then((body) => setSimilarHits(body.results || []))
+        .catch(() => setSimilarHits([]));
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [
+    applicationId,
+    duplicateByUrl,
+    form.company,
+    form.title,
+    form.source_job_id,
+    token,
+  ]);
+
   // Focus once on open — never re-run on form keystrokes (that stole focus).
   useEffect(() => {
     const previous = document.activeElement;
     const root = dialogRef.current;
-    const prefer = application
-      ? root?.querySelector(".modal-close")
-      : root?.querySelector("#app-field-company") ||
-        root?.querySelector(".modal-close");
+    const prefer =
+      initialFocus === "timeline"
+        ? root?.querySelector("#timeline-note")
+        : application
+          ? root?.querySelector(".modal-close")
+          : root?.querySelector("#app-field-company") ||
+            root?.querySelector(".modal-close");
     prefer?.focus({ preventScroll: true });
 
     function onKeyDown(event) {
@@ -211,7 +247,7 @@ export default function ApplicationModal({
       document.removeEventListener("keydown", onKeyDown);
       previous?.focus?.();
     };
-  }, [application]);
+  }, [application, initialFocus]);
 
   const field = (name, type = "text") => ({
     id: `app-field-${name}`,
@@ -270,10 +306,14 @@ export default function ApplicationModal({
     onClose();
   }
 
-  async function addEvent(note, occurredAt) {
+  async function addEvent(note, occurredAt, extra = {}) {
     const created = await request(
       `/api/v1/applications/${application.id}/events/`,
-      { method: "POST", token, body: { note, occurred_at: occurredAt } }
+      {
+        method: "POST",
+        token,
+        body: { note, occurred_at: occurredAt, ...extra },
+      }
     );
     eventsVersionRef.current += 1;
     setEvents((prev) => [created, ...prev]);
@@ -289,6 +329,13 @@ export default function ApplicationModal({
       `Samtal med ${who}`,
       new Date().toISOString().slice(0, 10)
     );
+  }
+
+  async function logInterview() {
+    await addEvent("Intervju", localISODate(), {
+      is_reportable: true,
+      event_type: "intervju",
+    });
   }
 
   return (
@@ -400,11 +447,15 @@ export default function ApplicationModal({
               field={field}
               form={form}
               onLogCall={logContactCall}
-              onOpenExisting={onOpenExisting}
+              onOpenExisting={(hit) => {
+                const full =
+                  existingApplications.find((row) => row.id === hit?.id) || hit;
+                onOpenExisting?.(full);
+              }}
               onRemove={remove}
               requestClose={requestClose}
               setForm={setForm}
-              similarByTitle={similarByTitle}
+              similarNotice={similarNotice}
               showLinkFields
             />
           </details>
@@ -419,18 +470,24 @@ export default function ApplicationModal({
               field={field}
               form={form}
               onLogCall={logContactCall}
-              onOpenExisting={onOpenExisting}
+              onOpenExisting={(hit) => {
+                const full =
+                  existingApplications.find((row) => row.id === hit?.id) || hit;
+                onOpenExisting?.(full);
+              }}
               onRemove={remove}
               requestClose={requestClose}
               setForm={setForm}
-              similarByTitle={similarByTitle}
+              similarNotice={similarNotice}
               showLinkFields
             />
           </>
         )}
       </form>
 
-      {application && <Timeline events={events} onAdd={addEvent} />}
+      {application && (
+        <Timeline events={events} onAdd={addEvent} onLogInterview={logInterview} />
+      )}
       </div>
     </ModalOverlay>
       {discardPrompt && (
@@ -459,7 +516,7 @@ function ApplicationFields({
   onRemove,
   requestClose,
   setForm,
-  similarByTitle,
+  similarNotice,
   showLinkFields,
 }) {
   return (
@@ -478,6 +535,17 @@ function ApplicationFields({
           <input {...field("location")} placeholder="Stockholm" />
         </label>
       </div>
+      <OccupationPicker
+        value={form.occupation_label}
+        conceptId={form.occupation_concept_id}
+        onChange={(fields) =>
+          setForm((prev) => ({
+            ...prev,
+            occupation_label: fields.occupation_label,
+            occupation_concept_id: fields.occupation_concept_id,
+          }))
+        }
+      />
       <ContactPanel
         form={form}
         setForm={setForm}
@@ -574,23 +642,18 @@ function ApplicationFields({
           .
         </p>
       )}
-      {similarByTitle && (
-        <p
-          className={application ? "warning warning--soft" : "warning"}
-          role="status"
-        >
-          Du har redan en ansökan med samma företag och roll:{" "}
+      {similarNotice && (
+        <p className="warning warning--soft" role="status">
+          Du sökte något liknande hos{" "}
+          {(similarNotice.company || "").toUpperCase()}
+          {similarNotice.applied_at ? ` ${similarNotice.applied_at}` : ""}.{" "}
           <button
             type="button"
             className="linklike"
-            onClick={() => onOpenExisting?.(similarByTitle)}
+            onClick={() => onOpenExisting?.(similarNotice)}
           >
-            {similarByTitle.title} @ {similarByTitle.company}
+            Öppna den befintliga
           </button>
-          .
-          {application
-            ? " Kontrollera att det inte är samma jobb."
-            : " Öppna den befintliga ansökan istället."}
         </p>
       )}
       <label htmlFor="app-field-notes">
@@ -704,7 +767,7 @@ function ContactPanel({ form, setForm, field, application, onLogCall }) {
   );
 }
 
-function Timeline({ events, onAdd }) {
+function Timeline({ events, onAdd, onLogInterview }) {
   const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [error, setError] = useState(null);
@@ -740,6 +803,7 @@ function Timeline({ events, onAdd }) {
         <label className="timeline-field timeline-field--note">
           <span className="sr-only">Anteckning</span>
           <input
+            id="timeline-note"
             value={note}
             onChange={(e) => {
               setNote(e.target.value);
@@ -753,6 +817,22 @@ function Timeline({ events, onAdd }) {
         <button type="submit" className="small">
           Logga
         </button>
+        {onLogInterview && (
+          <button
+            type="button"
+            className="secondary small"
+            onClick={async () => {
+              setError(null);
+              try {
+                await onLogInterview();
+              } catch (err) {
+                setError(err.message);
+              }
+            }}
+          >
+            Logga intervju
+          </button>
+        )}
       </form>
       {error && <p className="error">{error}</p>}
       {events.length === 0 ? (

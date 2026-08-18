@@ -1661,6 +1661,98 @@ tbody tr:last-child td {
   color: var(--red);
 }
 
+.report-banner--notice {
+  border-color: var(--amber-border);
+  background: var(--amber-bg);
+}
+
+.report-table-wrap {
+  overflow-x: auto;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-table th,
+.report-table td {
+  padding: 0.55rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-row--warn {
+  background: var(--red-bg);
+}
+
+.report-row--warn td {
+  color: var(--red);
+}
+
+.report-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.report-activity-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.report-activity-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-activity-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.occupation-picker {
+  position: relative;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.occupation-picker-id {
+  font-size: 0.78rem;
+}
+
+.occupation-picker-list {
+  position: absolute;
+  z-index: 5;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+  max-height: 12rem;
+  overflow: auto;
+}
+
+.occupation-picker-list button {
+  width: 100%;
+  text-align: left;
+}
+
 .quick-filters {
   display: flex;
   flex-wrap: nowrap;
@@ -1957,14 +2049,25 @@ tbody tr:last-child td {
 }
 
 .pipeline-row-actions {
-  width: min(230px, 28vw);
+  width: min(260px, 32vw);
   display: grid;
   gap: 0.45rem;
+  justify-items: stretch;
 }
 
 .pipeline-row-actions select {
   width: 100%;
   margin-top: 0;
+}
+
+.status-chip {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.status-chip-current {
+  font-size: 0.72rem;
+  color: var(--muted);
 }
 
 [data-theme="command"] .pipeline-stage,

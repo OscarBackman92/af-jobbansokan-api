@@ -21,9 +21,10 @@ from .job_profiles import (
     normalize_job_profiles,
     profiles_from_skill_groups,
 )
-from .lifecycle import allowed_next_statuses, followup_overdue, is_overdue
+from .lifecycle import allowed_next_statuses, followup_overdue, is_overdue, is_stale
 from .matching import match_application, match_application_evidence
 from .models import (
+    Activity,
     ApplicationEvent,
     JobApplication,
     Resume,
@@ -83,7 +84,16 @@ def _days_waiting(obj):
 class ApplicationEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicationEvent
-        fields = ["id", "occurred_at", "note", "status", "created_at"]
+        fields = [
+            "id",
+            "occurred_at",
+            "note",
+            "status",
+            "event_type",
+            "is_reportable",
+            "report_excluded",
+            "created_at",
+        ]
         read_only_fields = ["id", "created_at"]
 
     def validate_occurred_at(self, value):
@@ -92,11 +102,35 @@ class ApplicationEventSerializer(serializers.ModelSerializer):
         return value
 
 
+class ActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Activity
+        fields = [
+            "id",
+            "type",
+            "occurred_on",
+            "title",
+            "organisation",
+            "note",
+            "job",
+            "report_excluded",
+            "report_note",
+            "reported_in",
+        ]
+        read_only_fields = ["id", "reported_in"]
+
+    def validate_occurred_on(self, value):
+        if value > timezone.localdate():
+            raise serializers.ValidationError("occurred_on cannot be in the future.")
+        return value
+
+
 class _LifecycleMixin(serializers.Serializer):
     stage = serializers.CharField(read_only=True)
     outcome = serializers.CharField(read_only=True)
     allowed_next_statuses = serializers.SerializerMethodField()
     is_overdue = serializers.SerializerMethodField()
+    is_stale = serializers.SerializerMethodField()
     followup_overdue = serializers.SerializerMethodField()
 
     def get_allowed_next_statuses(self, obj):
@@ -104,6 +138,9 @@ class _LifecycleMixin(serializers.Serializer):
 
     def get_is_overdue(self, obj):
         return is_overdue(obj)
+
+    def get_is_stale(self, obj):
+        return is_stale(obj)
 
     def get_followup_overdue(self, obj):
         return followup_overdue(obj)
@@ -142,7 +179,9 @@ class JobApplicationListSerializer(_LifecycleMixin, serializers.ModelSerializer)
             "outcome",
             "allowed_next_statuses",
             "is_overdue",
+            "is_stale",
             "followup_overdue",
+            "employer_key",
             "intent",
             "applied_at",
             "deadline",
@@ -234,9 +273,12 @@ class JobApplicationSerializer(_LifecycleMixin, serializers.ModelSerializer):
             "outcome",
             "allowed_next_statuses",
             "is_overdue",
+            "is_stale",
             "followup_overdue",
             "occupation_concept_id",
             "occupation_label",
+            "report_excluded",
+            "report_note",
             "intent",
             "applied_at",
             "deadline",
@@ -265,6 +307,7 @@ class JobApplicationSerializer(_LifecycleMixin, serializers.ModelSerializer):
             "outcome",
             "allowed_next_statuses",
             "is_overdue",
+            "is_stale",
             "followup_overdue",
             "created_at",
             "updated_at",

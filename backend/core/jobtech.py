@@ -208,6 +208,41 @@ def _taxonomy_concepts(params: dict[str, str]) -> list[dict]:
     return _concepts_from_payload(payload)
 
 
+def suggest_occupation_names(query: str, *, limit: int = 8) -> list[dict[str, str]]:
+    """AF activity-report occupations are JobTech ``occupation-name`` concepts.
+
+    Job ads already carry that type on ``occupation.concept_id`` / ``label``,
+    so the same ids can be stored on manually added jobs. No mapping table.
+    """
+    text = (query or "").strip()
+    if len(text) < 2:
+        return []
+    concepts = _taxonomy_concepts(
+        {
+            "type": "occupation-name",
+            "text": text,
+            "limit": str(max(1, min(limit, 20))),
+        }
+    )
+    options: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for concept in concepts:
+        concept_id = concept.get("taxonomy/id") or concept.get("id") or ""
+        label = (
+            concept.get("taxonomy/preferred-label")
+            or concept.get("label")
+            or concept.get("taxonomy/preferredLabel")
+            or ""
+        )
+        if not concept_id or not label or concept_id in seen:
+            continue
+        seen.add(str(concept_id))
+        options.append({"id": str(concept_id), "label": str(label)})
+        if len(options) >= limit:
+            break
+    return options
+
+
 @lru_cache(maxsize=64)
 def occupation_groups(field_id: str) -> list[dict[str, str]]:
     """Return JobTech ssyk-level-4 occupation groups for one occupation field."""

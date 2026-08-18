@@ -1,10 +1,15 @@
 import { daysUntil, isClosed } from "../../dates.js";
-import { statusChoicesFor } from "../../statuses.js";
+import { STATUS_LABELS, statusChoicesFor } from "../../statuses.js";
 import MatchScore from "../MatchScore.jsx";
 import DeadlineBadge from "./DeadlineBadge.jsx";
 import ProfileFitRow from "../ProfileFitRow.jsx";
 
-export default function ApplicationRow({ application, onOpen, onMove }) {
+export default function ApplicationRow({
+  application,
+  onOpen,
+  onMove,
+  onLog,
+}) {
   const meta = [
     application.company,
     application.location,
@@ -12,8 +17,6 @@ export default function ApplicationRow({ application, onOpen, onMove }) {
     application.contact_name ? `Kontakt: ${application.contact_name}` : "",
   ].filter(Boolean);
 
-  // The stage header already names the status for active rows; only the
-  // mixed "Avslutade" group needs a badge to tell outcomes apart.
   const showStatusBadge = isClosed(application);
   const deadlineIn = daysUntil(application.deadline);
   const showDeadlineBadge =
@@ -62,17 +65,32 @@ export default function ApplicationRow({ application, onOpen, onMove }) {
         )}
       </div>
       <div className="pipeline-row-actions">
-        <select
-          value={application.status}
-          onChange={(e) => onMove(e.target.value)}
-          title="Flytta till status"
-        >
-          {statusChoices.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+        <label className="status-chip">
+          <span className="status-chip-current">
+            {application.status_label || STATUS_LABELS[application.status]}
+          </span>
+          <select
+            value={application.status}
+            onChange={(e) => onMove(e.target.value)}
+            aria-label="Byt steg"
+            title="Flytta till status"
+          >
+            {statusChoices.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {onLog && (
+          <button
+            type="button"
+            className="secondary small"
+            onClick={onLog}
+          >
+            Logga händelse
+          </button>
+        )}
       </div>
     </div>
   );

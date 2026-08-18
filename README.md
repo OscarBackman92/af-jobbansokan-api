@@ -12,8 +12,9 @@ over your applications, a timeline per application, search over
 Platsbanken's job ads, and CSV export because the data is yours.
 
 > Production: [jobbjungeln.onrender.com](https://jobbjungeln.onrender.com)
-> (Frankfurt). Cron jobs still use the `ansokt-*` service names from the
-> original deploy.
+> (Frankfurt). The product name is **Jobbdjungeln** (with a d); the live
+> host is the original Render service name. Cron jobs still use the
+> `ansokt-*` service names from the original deploy.
 
 > Pivoted 2026-06-12 from the earlier "verifiable job application events
 > for A-kassa" concept — see [docs/10-pivot-ansokt.md](docs/10-pivot-ansokt.md)
