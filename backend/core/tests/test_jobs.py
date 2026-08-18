@@ -387,6 +387,43 @@ def test_search_min_match_returns_200(api_client, user, mock_jobtech):
     assert "truncated" in body
 
 
+def test_min_match_newest_sorts_by_publication_date(api_client, user, monkeypatch):
+    Resume.objects.create(user=user, skills=["Python"])
+    payload = {
+        "total": {"value": 2},
+        "hits": [
+            {
+                "id": "old",
+                "headline": "Äldre Python",
+                "employer": {"name": "Acme"},
+                "publication_date": "2026-01-02T08:00:00",
+                "description": {"text": "Python"},
+                "webpage_url": "https://arbetsformedlingen.se/annons/old",
+            },
+            {
+                "id": "new",
+                "headline": "Nyare Python",
+                "employer": {"name": "Acme"},
+                "publication_date": "2026-08-18T08:00:00",
+                "description": {"text": "Python"},
+                "webpage_url": "https://arbetsformedlingen.se/annons/new",
+            },
+        ],
+    }
+
+    def fake_get(url, params=None, timeout=None):
+        return FakeResponse(payload)
+
+    monkeypatch.setattr(jobtech.requests, "get", fake_get)
+    api_client.force_authenticate(user)
+    response = api_client.get(
+        SEARCH_URL, {"q": "python", "min_match": "1", "sort": "newest"}
+    )
+    assert response.status_code == 200
+    ids = [row["id"] for row in response.json()["results"]]
+    assert ids[:2] == ["new", "old"]
+
+
 def test_search_min_match_empty_profile_returns_400(api_client, user, mock_jobtech):
     Resume.objects.create(user=user, skills=[])
     api_client.force_authenticate(user)

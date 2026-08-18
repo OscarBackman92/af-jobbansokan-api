@@ -2621,6 +2621,13 @@ tbody tr:last-child td {
   flex: 0 0 auto;
 }
 
+.job-sort {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
 .job-search-submit {
   min-height: 2.65rem;
   padding: 0.55rem 1.25rem;

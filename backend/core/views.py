@@ -1013,6 +1013,10 @@ def _match_sort_key(job: dict) -> tuple:
         return (0, 0)
 
 
+def _published_sort_key(job: dict) -> str:
+    return str(job.get("published_at") or "")
+
+
 def _match_cache_prefix(*, evidence, skills, resume) -> str:
     import hashlib
 
@@ -1047,6 +1051,7 @@ def _search_jobs_matching_cv(
     limit: int,
     min_percent: int = GOOD_MATCH_PERCENT,
     resume=None,
+    sort_by: str = "newest",
 ) -> dict:
     """Scan a bounded JobTech window, score locally, paginate matches.
 
@@ -1099,7 +1104,10 @@ def _search_jobs_matching_cv(
         truncated = True
 
     matched = _dedupe_jobs_by_id(matched)
-    matched.sort(key=_match_sort_key, reverse=True)
+    if sort_by == "match":
+        matched.sort(key=_match_sort_key, reverse=True)
+    else:
+        matched.sort(key=_published_sort_key, reverse=True)
     page = matched[max(0, offset) : max(0, offset) + max(1, limit)]
     try:
         _attach_cv_match(
@@ -1188,7 +1196,7 @@ def _cached_jobtech_search(**kwargs):
         OpenApiParameter(
             "sort",
             OpenApiTypes.STR,
-            description="Sort: match (coverage desc) or newest.",
+            description="Sort: newest (publication date) or match (coverage desc).",
         ),
         OpenApiParameter(
             "hide_blocked",
@@ -1256,6 +1264,7 @@ def job_search(request):
                 limit=limit,
                 min_percent=max(min_match, 1),
                 resume=resume,
+                sort_by=sort_by if sort_by == "match" else "newest",
             )
         except JobTechError:
             return Response(

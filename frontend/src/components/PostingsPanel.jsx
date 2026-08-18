@@ -47,7 +47,7 @@ function readLastSearch() {
       remote: !!data.remote,
       matchCv: !!data.matchCv,
       minMatch60: !!data.minMatch60,
-      sortMatch: !!data.sortMatch,
+      sortBy: data.sortBy === "match" || data.sortMatch ? "match" : "newest",
       hideBlocked: !!data.hideBlocked,
     };
   } catch {
@@ -73,6 +73,14 @@ function clearRememberedSearch() {
 
 const PAGE_SIZE = 25;
 
+function formatJobDate(iso) {
+  const day = String(iso || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return iso || "";
+  const date = new Date(`${day}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return day;
+  return date.toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
+}
+
 const EMPTY_QUERY = {
   q: "",
   municipalities: [],
@@ -80,7 +88,7 @@ const EMPTY_QUERY = {
   remote: false,
   matchCv: false,
   minMatch60: false,
-  sortMatch: false,
+  sortBy: "newest",
   hideBlocked: false,
 };
 
@@ -166,8 +174,8 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
   const [minMatch60, setMinMatch60] = useState(
     () => readLastSearch()?.minMatch60 ?? false
   );
-  const [sortMatch, setSortMatch] = useState(
-    () => readLastSearch()?.sortMatch ?? false
+  const [sortBy, setSortBy] = useState(
+    () => readLastSearch()?.sortBy ?? "newest"
   );
   const [hideBlocked, setHideBlocked] = useState(
     () => readLastSearch()?.hideBlocked ?? false
@@ -335,7 +343,8 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
       if (query.remote) params.set("remote", "true");
       if (query.minMatch60) params.set("min_match", "60");
       else if (query.matchCv) params.set("match_cv", "true");
-      if (query.sortMatch) params.set("sort", "match");
+      if (query.sortBy === "match") params.set("sort", "match");
+      else params.set("sort", "newest");
       if (query.hideBlocked) params.set("hide_blocked", "1");
       const result = await request(`/api/v1/jobs/?${params.toString()}`);
       setData(result);
@@ -402,6 +411,16 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
     setOffset(0);
   }
 
+  function applySort(nextSort) {
+    setSortBy(nextSort);
+    if (query.sortBy === nextSort) return;
+    const next = { ...query, sortBy: nextSort };
+    rememberSearch(next);
+    requestResultsScroll();
+    resetToFirstPage();
+    setQuery(next);
+  }
+
   function submit(event) {
     event.preventDefault();
     requestResultsScroll();
@@ -414,7 +433,7 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
       remote,
       matchCv: matchCvOnly,
       minMatch60,
-      sortMatch,
+      sortBy,
       hideBlocked,
     };
     rememberSearch(next);
@@ -429,7 +448,7 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
     setRemote(false);
     setMatchCvOnly(false);
     setMinMatch60(false);
-    setSortMatch(false);
+    setSortBy("newest");
     setHideBlocked(false);
     clearRememberedSearch();
     try {
@@ -804,17 +823,26 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
             Minst 60 % kravtäckning
           </label>
 
-          <label
-            className={`job-filter-chip ${sortMatch ? "active" : ""}`}
-            title="Sortera träffarna på kravtäckning"
-          >
-            <input
-              type="checkbox"
-              checked={sortMatch}
-              onChange={(e) => setSortMatch(e.target.checked)}
-            />
-            Sortera: kravtäckning
-          </label>
+          <div className="job-sort" role="group" aria-label="Sortera annonser">
+            <button
+              type="button"
+              className={`job-filter-chip ${sortBy === "newest" ? "active" : ""}`}
+              aria-pressed={sortBy === "newest"}
+              title="Nyast upplagda först, enligt Platsbanken"
+              onClick={() => applySort("newest")}
+            >
+              Senast upplagda
+            </button>
+            <button
+              type="button"
+              className={`job-filter-chip ${sortBy === "match" ? "active" : ""}`}
+              aria-pressed={sortBy === "match"}
+              title="Sortera träffarna på kravtäckning"
+              onClick={() => applySort("match")}
+            >
+              Kravtäckning
+            </button>
+          </div>
 
           <label
             className={`job-filter-chip ${hideBlocked ? "active" : ""}`}
@@ -1151,9 +1179,14 @@ function JobCard({ job, tracked, onOpen, onTrack }) {
               Blockerare
             </span>
           )}
+          {job.published_at && (
+            <span className="badge neutral">
+              Upplagd {formatJobDate(job.published_at)}
+            </span>
+          )}
           {job.application_deadline && (
             <span className="badge neutral">
-              Sista ansökningsdag {job.application_deadline}
+              Sista ansökningsdag {formatJobDate(job.application_deadline)}
             </span>
           )}
           {job.match && <MatchScore match={job.match} variant="compact" />}
@@ -1229,8 +1262,9 @@ function JobDetail({ job, tracked, onTrack, onClose, onMatchUpdate }) {
           <p className="muted">
             {job.company_name}
             {job.location && ` — ${job.location}`}
+            {job.published_at && ` · upplagd ${formatJobDate(job.published_at)}`}
             {job.application_deadline &&
-              ` · sista ansökningsdag ${job.application_deadline}`}
+              ` · sista ansökningsdag ${formatJobDate(job.application_deadline)}`}
           </p>
         </div>
         <button
