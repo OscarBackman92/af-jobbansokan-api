@@ -230,6 +230,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             "days_until_apply_by",
             "days_waiting",
             "last_activity_at",
+            "archived_at",
             "created_at",
             "updated_at",
         ]

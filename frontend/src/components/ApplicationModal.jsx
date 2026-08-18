@@ -221,16 +221,10 @@ export default function ApplicationModal({
   });
 
   function payload() {
-    const body = { ...form };
-    delete body.events;
-    delete body.id;
-    delete body.posting;
-    delete body.status_label;
-    delete body.match;
-    delete body.last_activity_at;
-    delete body.reached_interview;
-    delete body.created_at;
-    delete body.updated_at;
+    const body = {};
+    for (const key of Object.keys(EMPTY)) {
+      body[key] = form[key];
+    }
     body.ad_url = normalizeAdUrl(body.ad_url);
     body.apply_url = externalUrl(body.apply_url) || "";
     // Empty strings are not valid dates.

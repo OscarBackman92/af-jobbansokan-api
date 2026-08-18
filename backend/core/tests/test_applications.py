@@ -364,6 +364,21 @@ def test_row_is_editable(api_client, user):
     assert str(application.next_action_at) == "2026-06-20"
 
 
+def test_patch_ignores_blank_archived_at(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user, company="Acme", title="Dev", status="applied"
+    )
+    api_client.force_authenticate(user)
+    response = api_client.patch(
+        f"{URL}{application.id}/",
+        {"status": "withdrawn", "archived_at": ""},
+    )
+    assert response.status_code == 200
+    application.refresh_from_db()
+    assert application.status == "withdrawn"
+    assert application.archived_at is None
+
+
 def test_add_manual_timeline_event(api_client, user):
     application = JobApplication.objects.create(owner=user, company="Acme", title="Dev")
     api_client.force_authenticate(user)
