@@ -62,6 +62,7 @@ export default function ApplicationModal({
   const [error, setError] = useState(null);
   const [adLoading, setAdLoading] = useState(false);
   const [adFetchError, setAdFetchError] = useState(null);
+  const eventsVersionRef = useRef(0);
   const dialogRef = useRef(null);
   const platsbankenHref = externalUrl(form.ad_url);
   const applyHref = externalUrl(form.apply_url) || platsbankenHref;
@@ -110,10 +111,13 @@ export default function ApplicationModal({
   useEffect(() => {
     if (!applicationId) return undefined;
     let cancelled = false;
+    const version = eventsVersionRef.current;
     request(`/api/v1/applications/${applicationId}/`, { token })
       .then((detail) => {
         if (cancelled) return;
-        setEvents(detail.events ?? []);
+        if (eventsVersionRef.current === version) {
+          setEvents(detail.events ?? []);
+        }
         setForm((prev) => {
           const next = {
             ...prev,
@@ -241,20 +245,21 @@ export default function ApplicationModal({
     if (duplicateBlocked) return;
     setError(null);
     try {
-      if (application) {
-        await request(`/api/v1/applications/${application.id}/`, {
-          method: "PATCH",
-          token,
-          body: payload(),
-        });
-      } else {
-        await request("/api/v1/applications/", {
-          method: "POST",
-          token,
-          body: payload(),
-        });
+      const saved = application
+        ? await request(`/api/v1/applications/${application.id}/`, {
+            method: "PATCH",
+            token,
+            body: payload(),
+          })
+        : await request("/api/v1/applications/", {
+            method: "POST",
+            token,
+            body: payload(),
+          });
+      onChanged?.(saved);
+      if (!application) {
+        window.dispatchEvent(new Event("application-created"));
       }
-      onChanged();
       onClose();
     } catch (err) {
       setError(err.message);
@@ -267,7 +272,7 @@ export default function ApplicationModal({
       method: "DELETE",
       token,
     });
-    onChanged();
+    onChanged?.({ id: application.id, _deleted: true });
     onClose();
   }
 
@@ -276,8 +281,12 @@ export default function ApplicationModal({
       `/api/v1/applications/${application.id}/events/`,
       { method: "POST", token, body: { note, occurred_at: occurredAt } }
     );
-    setEvents([created, ...events]);
-    onChanged();
+    eventsVersionRef.current += 1;
+    setEvents((prev) => [created, ...prev]);
+    onChanged?.({
+      id: application.id,
+      last_activity_at: created.occurred_at,
+    });
   }
 
   async function logContactCall() {

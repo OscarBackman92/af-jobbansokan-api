@@ -117,6 +117,13 @@ def _resume_match_context(user) -> dict:
     }
 
 
+def _drop_prefetched_events(application):
+    """Newly created timeline rows must be visible on the same response."""
+    prefetched = getattr(application, "_prefetched_objects_cache", None)
+    if prefetched is not None:
+        prefetched.pop("events", None)
+
+
 @extend_schema(
     responses={200: {"type": "object", "properties": {"status": {"type": "string"}}}}
 )
@@ -557,6 +564,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                 ),
                 status=application.status,
             )
+            _drop_prefetched_events(application)
             if application.status == JobApplication.STATUS_APPLIED:
                 score_and_store(application, user=self.request.user)
 

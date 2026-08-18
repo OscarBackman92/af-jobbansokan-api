@@ -2,6 +2,21 @@ import { useCallback, useEffect, useState } from "react";
 
 import { request } from "./api.js";
 
+/** Merge a mutation response into an existing list row without dropping match. */
+export function mergeApplicationRow(prev, row) {
+  if (!prev) return row;
+  const lastActivity = [row.last_activity_at, prev.last_activity_at]
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+  return {
+    ...prev,
+    ...row,
+    match: row.match ?? prev.match,
+    last_activity_at: lastActivity || prev.last_activity_at,
+  };
+}
+
 /**
  * Shared application list for Sparade jobb / Ansökningar.
  * One fetch, shared patches — a status change on one page updates the other.
@@ -38,6 +53,23 @@ export default function useApplications(token) {
     return () => window.removeEventListener("application-created", handler);
   }, [reload]);
 
+  const upsert = useCallback((row) => {
+    if (!row?.id) return;
+    setApplications((current) => {
+      if (!current) return current;
+      if (row._deleted || row.archived_at) {
+        return current.filter((item) => item.id !== row.id);
+      }
+      const index = current.findIndex((item) => item.id === row.id);
+      if (index === -1) {
+        return [row, ...current];
+      }
+      const next = [...current];
+      next[index] = mergeApplicationRow(next[index], row);
+      return next;
+    });
+  }, []);
+
   const patch = useCallback(async (id, body) => {
     const updated = await request(`/api/v1/applications/${id}/`, {
       method: "PATCH",
@@ -45,12 +77,11 @@ export default function useApplications(token) {
     });
     setApplications((current) => {
       if (!current) return current;
-      // Soft-archived rows drop out of the default list.
       if (updated.archived_at) {
         return current.filter((row) => row.id !== id);
       }
       return current.map((row) =>
-        row.id === id ? { ...row, ...updated } : row
+        row.id === id ? mergeApplicationRow(row, updated) : row
       );
     });
     return updated;
@@ -71,5 +102,5 @@ export default function useApplications(token) {
     [reload]
   );
 
-  return { applications, reload, error, setError, patch, bulk };
+  return { applications, reload, upsert, error, setError, patch, bulk };
 }

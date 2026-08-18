@@ -111,6 +111,7 @@ export default function SavedPanel({
   token,
   applications,
   reload,
+  upsert,
   error,
   setError,
   patch,
@@ -662,9 +663,7 @@ export default function SavedPanel({
                                           app.match,
                                           gap
                                         );
-                                        // Local list update without full reload.
-                                        app.match = next;
-                                        await reload?.();
+                                        upsert?.({ ...app, match: next });
                                       } catch {
                                         /* keep gap */
                                       }
@@ -874,7 +873,10 @@ export default function SavedPanel({
               setSelected(null);
               setAdding(false);
             }}
-            onChanged={reload}
+            onChanged={(row) => {
+              if (row && upsert) upsert(row);
+              else reload();
+            }}
           />
         </ModalErrorBoundary>
       )}

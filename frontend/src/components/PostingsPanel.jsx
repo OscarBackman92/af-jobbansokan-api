@@ -141,7 +141,7 @@ function countSummary(count, singular, plural) {
   return count === 1 ? `1 ${singular}` : `${count} ${plural}`;
 }
 
-export default function PostingsPanel({ onNavigate, active = true }) {
+export default function PostingsPanel({ onNavigate, upsert, active = true }) {
   const [filters, setFilters] = useState({ regions: [], fields: [] });
   const [q, setQ] = useState(() => initialQuery().q ?? "");
   const [browseRegion, setBrowseRegion] = useState(
@@ -524,7 +524,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
     setMessage(null);
     try {
       const applyUrl = externalUrl(job.application_url || "") || "";
-      await request("/api/v1/applications/", {
+      const created = await request("/api/v1/applications/", {
         method: "POST",
         body: {
           company: job.company_name || "Okänt företag",
@@ -542,6 +542,7 @@ export default function PostingsPanel({ onNavigate, active = true }) {
       if (job.webpage_url) {
         setTracked((prev) => new Set(prev).add(normalizeAdUrl(job.webpage_url)));
       }
+      upsert?.(created);
       setMessage(`"${job.title}" sparades som Sparad.`);
       window.dispatchEvent(new Event("application-created"));
     } catch (err) {

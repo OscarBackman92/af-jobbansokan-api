@@ -111,6 +111,7 @@ export default function App() {
   const {
     applications,
     reload,
+    upsert,
     error: applicationsError,
     setError: setApplicationsError,
     patch,
@@ -483,6 +484,7 @@ export default function App() {
                 token={token}
                 applications={applications}
                 reload={reload}
+                upsert={upsert}
                 error={applicationsError}
                 setError={setApplicationsError}
                 patch={patch}
@@ -499,6 +501,7 @@ export default function App() {
                 token={token}
                 applications={applications}
                 reload={reload}
+                upsert={upsert}
                 error={applicationsError}
                 setError={setApplicationsError}
                 patch={patch}
@@ -516,6 +519,7 @@ export default function App() {
             >
               <PostingsPanel
                 onNavigate={changeTab}
+                upsert={upsert}
                 active={tab === "postings"}
               />
             </div>

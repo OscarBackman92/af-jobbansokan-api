@@ -80,6 +80,7 @@ export default function AppliedPanel({
   token,
   applications,
   reload,
+  upsert,
   error,
   setError,
   patch,
@@ -159,7 +160,6 @@ export default function AppliedPanel({
       setError(null);
       await patch(id, { status: nextStatus, status_changed_at });
       setUndo({ id, previousStatus, title });
-      reload();
     } catch (err) {
       setError(err.message);
     }
@@ -171,7 +171,6 @@ export default function AppliedPanel({
       setError(null);
       await patch(undo.id, { status: undo.previousStatus });
       setUndo(null);
-      reload();
     } catch (err) {
       setError(err.message);
     }
@@ -197,7 +196,6 @@ export default function AppliedPanel({
     try {
       setError(null);
       await Promise.all(ids.map((id) => patch(id, { next_action_at: today })));
-      reload();
     } catch (err) {
       setError(err.message);
     }
@@ -765,7 +763,10 @@ export default function AppliedPanel({
               setSelected(null);
               setAdding(false);
             }}
-            onChanged={reload}
+            onChanged={(row) => {
+              if (row && upsert) upsert(row);
+              else reload();
+            }}
           />
         </ModalErrorBoundary>
       )}

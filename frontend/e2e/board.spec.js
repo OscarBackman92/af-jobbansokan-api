@@ -64,3 +64,35 @@ test("save job then mark applied moves it to Ansökningar", async ({ page }) => 
     })
   ).toHaveCount(0);
 });
+
+test("save and log updates the board without a page reload", async ({ page }) => {
+  await login(page);
+
+  await page.getByRole("link", { name: "Ansökningar", exact: true }).click();
+  await page.getByRole("button", { name: "+ Ny ansökan" }).click();
+  await page.getByLabel(/^Företag/).fill("Direkt AB");
+  await page.getByLabel(/^Roll/).fill("Originalroll");
+  await page.getByRole("button", { name: "Spara" }).click();
+
+  const row = page.locator(".pipeline-row", { hasText: "Originalroll" });
+  await expect(row).toBeVisible();
+
+  await row.locator(".pipeline-row-main").click();
+  await page.getByLabel(/^Roll/).fill("Uppdaterad roll");
+  await page.getByRole("button", { name: "Spara" }).click();
+
+  await expect(
+    page.locator(".pipeline-row", { hasText: "Uppdaterad roll" })
+  ).toBeVisible();
+  await expect(
+    page.locator(".pipeline-row", { hasText: "Originalroll" })
+  ).toHaveCount(0);
+
+  await page
+    .locator(".pipeline-row", { hasText: "Uppdaterad roll" })
+    .locator(".pipeline-row-main")
+    .click();
+  await page.getByLabel("Anteckning").fill("Ringde rekryteraren");
+  await page.getByRole("button", { name: "Logga" }).click();
+  await expect(page.locator(".timeline")).toContainText("Ringde rekryteraren");
+});

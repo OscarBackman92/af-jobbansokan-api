@@ -58,7 +58,7 @@ def _days_until_apply_by(obj):
     return (target - timezone.localdate()).days
 
 
-def _days_waiting(obj):
+def _last_activity_date(obj):
     last = getattr(obj, "_last_event_at", None)
     if last is None and hasattr(obj, "events"):
         # Detail path: avoid N+1 when events are prefetched.
@@ -69,6 +69,11 @@ def _days_waiting(obj):
         last = obj.applied_at
     if last is None and obj.created_at:
         last = timezone.localtime(obj.created_at).date()
+    return last
+
+
+def _days_waiting(obj):
+    last = _last_activity_date(obj)
     if last is None:
         return None
     return (timezone.localdate() - last).days
@@ -141,12 +146,7 @@ class JobApplicationListSerializer(serializers.ModelSerializer):
         Used by the board to measure employer silence without shipping
         every event on the list payload.
         """
-        last_event = getattr(obj, "_last_event_at", None)
-        if last_event:
-            return last_event
-        if obj.applied_at:
-            return obj.applied_at
-        return timezone.localtime(obj.created_at).date()
+        return _last_activity_date(obj)
 
     def get_days_until_apply_by(self, obj):
         return _days_until_apply_by(obj)
@@ -190,6 +190,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
     apply_url = serializers.CharField(required=False, allow_blank=True, max_length=500)
     days_until_apply_by = serializers.SerializerMethodField()
     days_waiting = serializers.SerializerMethodField()
+    last_activity_at = serializers.SerializerMethodField()
 
     class Meta:
         model = JobApplication
@@ -218,6 +219,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             "contact_info",
             "notes",
             "next_action_at",
+            "last_activity_at",
             "events",
             "created_at",
             "updated_at",
@@ -227,6 +229,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             "events",
             "days_until_apply_by",
             "days_waiting",
+            "last_activity_at",
             "created_at",
             "updated_at",
         ]
@@ -240,6 +243,9 @@ class JobApplicationSerializer(serializers.ModelSerializer):
 
     def get_days_waiting(self, obj):
         return _days_waiting(obj)
+
+    def get_last_activity_at(self, obj):
+        return _last_activity_date(obj)
 
     def validate_applied_at(self, value):
         if value and value > timezone.localdate():

@@ -71,6 +71,7 @@ async function send(
     method,
     headers: { ...headers },
     body: isForm ? (body as BodyInit) : body ? JSON.stringify(body) : undefined,
+    cache: "no-store",
   });
 }
 

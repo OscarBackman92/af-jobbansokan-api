@@ -330,6 +330,26 @@ def test_list_includes_last_activity_at(api_client, user):
     row = api_client.get(URL).json()["results"][0]
     assert row["last_activity_at"] == "2026-06-10"
 
+    detail = api_client.get(f"{URL}{application.id}/").json()
+    assert detail["last_activity_at"] == "2026-06-10"
+
+
+def test_status_change_returns_fresh_last_activity_at(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user,
+        company="Acme",
+        title="Dev",
+        status="applied",
+        applied_at=date(2026, 6, 1),
+    )
+    api_client.force_authenticate(user)
+    body = api_client.patch(
+        f"{URL}{application.id}/",
+        {"status": "interview", "status_changed_at": "2026-06-15"},
+    ).json()
+    assert body["last_activity_at"] == "2026-06-15"
+    assert any("Status:" in event["note"] for event in body["events"])
+
 
 def test_row_is_editable(api_client, user):
     application = JobApplication.objects.create(owner=user, company="Acme", title="Dev")
