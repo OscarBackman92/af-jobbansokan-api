@@ -26,3 +26,32 @@ export function matchScanCaption({
   }
   return `${range} — matchat mot ${scannedLabel} träffar`;
 }
+
+function idsKey(items = []) {
+  return items
+    .map((row) => (typeof row === "string" ? row : row?.id))
+    .filter(Boolean)
+    .join("\0");
+}
+
+export function isSearchDraftPending(draft, applied) {
+  if (!draft || !applied) return false;
+  return (
+    String(draft.q || "").trim() !== String(applied.q || "").trim() ||
+    idsKey(draft.municipalities) !== idsKey(applied.municipalities) ||
+    idsKey(draft.groups) !== idsKey(applied.groups) ||
+    Boolean(draft.remote) !== Boolean(applied.remote) ||
+    Boolean(draft.matchCv) !== Boolean(applied.matchCv) ||
+    Boolean(draft.minMatch60) !== Boolean(applied.minMatch60) ||
+    Boolean(draft.hideBlocked) !== Boolean(applied.hideBlocked)
+  );
+}
+
+export function pendingCountCaption(draftQ, appliedQ) {
+  const typed = String(draftQ || "").trim();
+  const applied = String(appliedQ || "").trim();
+  if (typed && typed !== applied) {
+    return `Träffarna gäller inte “${typed}” ännu — klicka Sök.`;
+  }
+  return "Filtren är ändrade — klicka Sök för att uppdatera träffarna.";
+}

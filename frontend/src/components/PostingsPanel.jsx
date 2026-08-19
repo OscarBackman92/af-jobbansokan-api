@@ -4,7 +4,7 @@ import { addEvidenceTerm, coverGapInMatch } from "../addEvidence.js";
 import { externalUrl, normalizeAdUrl } from "../adUrl.js";
 import { request } from "../api.js";
 import { recordJobMatchGaps } from "../marketHints.js";
-import { matchScanCaption } from "../jobSearchQuery.js";
+import { matchScanCaption, isSearchDraftPending, pendingCountCaption } from "../jobSearchQuery.js";
 import MatchScore from "./MatchScore.jsx";
 import ModalCloseButton from "./ModalCloseButton.jsx";
 import ModalOverlay, { useModalClose } from "./ModalOverlay.jsx";
@@ -681,6 +681,19 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
   const showingTo = Math.min(offset + PAGE_SIZE, safeTotal);
   const matchScanned = Number(data?.scanned ?? data?.match_cv_scanned ?? 0);
   const matchUpstream = Number(data?.match_cv_upstream_total ?? 0);
+  const searchPending = isSearchDraftPending(
+    {
+      q,
+      municipalities: selectedMunicipalities,
+      groups: selectedGroups,
+      remote,
+      matchCv: matchCvOnly,
+      minMatch60,
+      hideBlocked,
+    },
+    query
+  );
+  const countStale = searchPending || loading;
   const pageNumber = Math.floor(offset / PAGE_SIZE) + 1;
   const pageCount = Math.max(1, Math.ceil(safeTotal / PAGE_SIZE));
   const locationSummary = countSummary(
@@ -717,7 +730,9 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
         <div className="metric-inline" aria-label="Söksammanfattning">
           <div className="metric-tile metric-tile--cyan">
             <span className="metric-label">Träffar</span>
-            <strong>{totalLabel}</strong>
+            <strong className={countStale ? "is-muted" : undefined}>
+              {countStale ? "—" : totalLabel}
+            </strong>
             <span className="metric-detail">i sökningen</span>
           </div>
           <div className="metric-tile">
@@ -962,7 +977,9 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
 
           {!loading && !error && (
             <p className="muted job-count">
-              {safeTotal === 0
+              {searchPending
+                ? pendingCountCaption(q, query.q)
+                : safeTotal === 0
                 ? query.minMatch60 || query.matchCv
                   ? matchScanCaption({
                       showingFrom,

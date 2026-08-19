@@ -1214,6 +1214,10 @@ a:focus-visible {
   font-size: 0.9rem;
 }
 
+.is-muted {
+  opacity: 0.45;
+}
+
 /* ---------- Forms ---------- */
 
 label {
