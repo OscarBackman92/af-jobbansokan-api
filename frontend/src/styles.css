@@ -283,19 +283,24 @@ a:focus-visible {
 
 .app--guest .header {
   margin-bottom: 0;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
 }
 
 .app--guest .footer {
-  margin-top: 2rem;
-}
-
-.main {
-  animation: page-in 0.45s var(--ease-out) both;
+  margin-top: 2.5rem;
 }
 
 .main--guest {
   width: 100%;
-  padding: clamp(1.5rem, 4vh, 2.75rem) 0 0;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: clamp(1.75rem, 4vh, 3rem) 0 0;
+}
+
+.main {
+  animation: page-in 0.45s var(--ease-out) both;
 }
 
 @keyframes page-in {
@@ -360,19 +365,30 @@ a:focus-visible {
 .header-guest-nav {
   display: flex;
   justify-self: center;
-  gap: 0.75rem;
   align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  box-shadow: var(--shadow-sm);
 }
 
 .header-guest-nav a {
   color: var(--muted);
   text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  transition:
+    color 0.2s var(--ease-out),
+    background 0.2s var(--ease-out);
 }
 
 .header-guest-nav a:hover {
   color: var(--ink);
+  background: color-mix(in srgb, var(--brand-2) 10%, var(--surface));
 }
 
 .brand-text {
@@ -569,28 +585,6 @@ a:focus-visible {
   width: 100%;
 }
 
-.auth-page--simple {
-  width: 100%;
-  max-width: 26rem;
-  margin: 0 auto;
-}
-
-.auth-page-back {
-  margin: 1rem 0 0;
-  text-align: center;
-  font-size: 0.9rem;
-}
-
-.auth-page-back a {
-  color: var(--muted);
-  text-decoration: none;
-}
-
-.auth-page-back a:hover {
-  color: var(--ink);
-  text-decoration: underline;
-}
-
 .auth-page-inner {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(300px, 400px);
@@ -618,6 +612,7 @@ a:focus-visible {
 
 .auth-intro {
   min-width: 0;
+  animation: rise 0.45s var(--ease-out) both;
 }
 
 .auth-intro h2 {
@@ -627,6 +622,10 @@ a:focus-visible {
   line-height: 1.12;
   font-weight: 800;
   letter-spacing: -0.03em;
+}
+
+.auth-intro .grad {
+  color: var(--brand-2);
 }
 
 .auth-intro .lede {
@@ -643,11 +642,20 @@ a:focus-visible {
 }
 
 .auth-intro-list li {
-  padding: 0.75rem 0.85rem;
+  padding: 0.8rem 0.9rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
+  animation: rise 0.35s var(--ease-out) both;
+}
+
+.auth-intro-list li:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+.auth-intro-list li:nth-child(3) {
+  animation-delay: 0.1s;
 }
 
 .auth-intro-list strong {
@@ -671,11 +679,18 @@ a:focus-visible {
 
 .auth-intro-foot a {
   color: var(--muted);
+  text-decoration: none;
+}
+
+.auth-intro-foot a:hover {
+  color: var(--ink);
+  text-decoration: underline;
 }
 
 .auth-page-form {
   width: 100%;
   min-width: 0;
+  animation: rise 0.4s var(--ease-out) 0.06s both;
 }
 
 .auth-page-form .auth-card {
@@ -691,6 +706,7 @@ a:focus-visible {
   .auth-page-inner {
     grid-template-columns: 1fr;
     max-width: 26rem;
+    margin: 0 auto;
     align-items: stretch;
     gap: 1.25rem;
   }
@@ -946,23 +962,20 @@ a:focus-visible {
 }
 
 .auth-card {
+  border: 1px solid var(--border);
   border-top: 2px solid var(--brand-2);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   background: var(--surface);
+  padding: 1.65rem 1.85rem;
 }
 
-.app--guest {
-  background: var(--bg);
-}
-
-.app--guest .header {
-  background: var(--surface);
-  border-bottom-color: var(--border);
+.auth-card-lede {
+  margin: 0 0 1rem;
 }
 
 .app--guest .auth-intro-list li {
   background: var(--surface);
-  box-shadow: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .app--guest .auth-intro-foot a {

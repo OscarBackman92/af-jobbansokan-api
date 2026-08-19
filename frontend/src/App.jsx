@@ -92,11 +92,6 @@ function syncTabToUrl(tab) {
   window.history.pushState(null, "", url);
 }
 
-function readDensity() {
-  const stored = localStorage.getItem("density");
-  return stored === "compact" ? "compact" : "comfortable";
-}
-
 export default function App() {
   const [tab, setTab] = useState(() => readTab());
   const [token, setToken] = useState(() => getAccess());
@@ -105,7 +100,6 @@ export default function App() {
   const [verifyKey, setVerifyKey] = useState(() => readVerifyKey());
   const [googleCode, setGoogleCode] = useState(() => readGoogleCallback());
   const [theme, setTheme] = useState(() => readTheme());
-  const [density, setDensity] = useState(() => readDensity());
   const [showKeysHelp, setShowKeysHelp] = useState(false);
   const [keysHelpClosing, setKeysHelpClosing] = useState(false);
   const [profileFocus, setProfileFocus] = useState(null);
@@ -193,11 +187,6 @@ export default function App() {
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, [theme]);
-
-  useEffect(() => {
-    document.documentElement.dataset.density = density;
-    localStorage.setItem("density", density);
-  }, [density]);
 
   useEffect(() => {
     localStorage.setItem("tab", tab);
@@ -392,6 +381,7 @@ export default function App() {
         </a>
         {!token ? (
           <nav className="header-guest-nav" aria-label="Huvudnavigering">
+            <a href="/">Start</a>
             <a href="/integritet/">Integritet</a>
           </nav>
         ) : (
@@ -430,19 +420,6 @@ export default function App() {
         {token && (
           <div className="header-actions">
             {me?.email && <span className="account-email">{me.email}</span>}
-            <button
-              type="button"
-              className="secondary small"
-              onClick={() =>
-                setDensity((d) =>
-                  d === "compact" ? "comfortable" : "compact"
-                )
-              }
-              title="Växla densitet"
-              aria-pressed={density === "compact"}
-            >
-              {density === "compact" ? "Kompakt" : "Bekväm"}
-            </button>
             <button
               type="button"
               className="secondary small"

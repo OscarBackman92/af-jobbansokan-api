@@ -2,15 +2,18 @@ import { useState } from "react";
 
 import { request } from "../api.js";
 import { googleClientId, startGoogleLogin } from "../googleAuth.js";
+import AuthIntro from "./AuthIntro.jsx";
 import PasswordInput from "./PasswordInput.jsx";
 
 export default function AuthHero({ onLogin }) {
   return (
-    <div className="auth-page auth-page--simple">
-      <AuthCard onLogin={onLogin} />
-      <p className="auth-page-back">
-        <a href="/">Mer om Jobbdjungeln på startsidan</a>
-      </p>
+    <div className="auth-page">
+      <div className="auth-page-inner">
+        <AuthIntro />
+        <div className="auth-page-form">
+          <AuthCard onLogin={onLogin} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -71,7 +74,7 @@ function AuthCard({ onLogin }) {
 
   if (mode === "forgot" && sent) {
     return (
-      <div className="card narrow auth-card">
+      <div className="card auth-card">
         <h2>Kolla din mejl</h2>
         <p className="muted">
           Om det finns ett konto för <strong>{email}</strong> har vi skickat
@@ -84,7 +87,7 @@ function AuthCard({ onLogin }) {
 
   if (mode === "register" && sent) {
     return (
-      <div className="card narrow auth-card">
+      <div className="card auth-card">
         <h2>Bekräfta din e-post</h2>
         <p className="muted">
           Vi har skickat en verifieringslänk till{" "}
@@ -100,9 +103,9 @@ function AuthCard({ onLogin }) {
     mode === "login" ? "Logga in" : mode === "register" ? "Skapa konto" : "Glömt lösenord";
 
   return (
-    <form className="card narrow auth-card" onSubmit={submit}>
+    <form className="card auth-card" onSubmit={submit}>
       <h2>{heading}</h2>
-      <p className="muted">
+      <p className="muted auth-card-lede">
         {mode === "login" && "Logga in för att se dina ansökningar."}
         {mode === "register" &&
           "Mejl och lösenord. Vi skickar en länk så du kan verifiera adressen."}
