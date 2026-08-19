@@ -491,7 +491,9 @@ export default function App() {
               />
             )}
             <div
-              className={tab === "dash" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "dash" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "dash"}
             >
               <DashboardPanel
@@ -502,7 +504,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "saved" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "saved" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "saved"}
             >
               <SavedPanel
@@ -519,7 +523,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "applied" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "applied" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "applied"}
             >
               <AppliedPanel
@@ -540,7 +546,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "report" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "report" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "report"}
             >
               <ReportPanel
@@ -551,7 +559,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "postings" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "postings" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "postings"}
             >
               <PostingsPanel
@@ -561,7 +571,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "profile" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "profile" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "profile"}
             >
               <ProfilePanel

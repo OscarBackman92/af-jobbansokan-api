@@ -255,8 +255,25 @@ a:focus-visible {
   position: relative;
 }
 
+/* Panels stay mounted; display:none → block restarts the entrance
+   animation, so every tab switch gets the same soft rise. */
+.tab-panel {
+  animation: panel-in 0.32s var(--ease-out) both;
+}
+
 .tab-panel-hidden {
   display: none !important;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .app--guest {
@@ -1246,7 +1263,17 @@ button:hover {
 }
 
 button:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
+}
+
+/* Text-like and layout buttons should not squash on press. */
+.linklike:active,
+button.chart-col:active,
+.lane-row-main:active,
+.lane-row-title:active,
+.multi-select-trigger:active,
+.multi-select-primary-item:active {
+  transform: none;
 }
 
 button:disabled {
@@ -1379,7 +1406,7 @@ th {
 }
 
 tbody tr {
-  transition: background 0.12s ease;
+  transition: background-color 0.18s var(--ease-out);
 }
 
 tbody tr:hover {
@@ -1403,6 +1430,10 @@ tbody tr:last-child td {
   margin: 0 0.15rem 0.15rem 0;
   border: 1px solid color-mix(in srgb, var(--chip-ink) 12%, transparent);
   letter-spacing: 0.01em;
+  transition:
+    background-color 0.18s var(--ease-out),
+    color 0.18s var(--ease-out),
+    border-color 0.18s var(--ease-out);
 }
 
 .badge.applied {
@@ -1654,12 +1685,22 @@ tbody tr:last-child td {
   background: var(--surface);
   color: var(--ink);
   box-shadow: none;
+  transition:
+    border-color 0.18s var(--ease-out),
+    background-color 0.18s var(--ease-out),
+    box-shadow 0.18s var(--ease-out);
 }
 
 .period-cell:hover {
   transform: none;
   filter: none;
   background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--brand-2) 35%, var(--border));
+  box-shadow: var(--shadow-sm);
+}
+
+.period-cell:active {
+  transform: scale(0.97);
 }
 
 .period-cell-label {
@@ -1700,6 +1741,7 @@ tbody tr:last-child td {
   border-radius: 8px;
   border: 1px solid var(--amber-border);
   background: var(--amber-bg);
+  animation: rise 0.4s var(--ease-out) both;
 }
 
 .report-banner p {
@@ -2203,8 +2245,31 @@ tbody tr:last-child td {
   min-height: 76px;
   transition:
     border-color 0.2s var(--ease-out),
-    box-shadow 0.2s var(--ease-out);
+    box-shadow 0.2s var(--ease-out),
+    transform 0.22s var(--ease-out);
   position: relative;
+  animation: rise 0.4s var(--ease-out) both;
+}
+
+/* Staggered reveal, same rhythm as .stack children. */
+.metric-grid > .metric-tile:nth-child(2) {
+  animation-delay: 0.04s;
+}
+
+.metric-grid > .metric-tile:nth-child(3) {
+  animation-delay: 0.08s;
+}
+
+.metric-grid > .metric-tile:nth-child(4) {
+  animation-delay: 0.12s;
+}
+
+.metric-grid > .metric-tile:nth-child(5) {
+  animation-delay: 0.16s;
+}
+
+.metric-grid > .metric-tile:nth-child(n + 6) {
+  animation-delay: 0.2s;
 }
 
 .metric-tile::before {
@@ -2219,10 +2284,14 @@ tbody tr:last-child td {
 
 @media (hover: hover) {
   .metric-tile--interactive:hover {
-    border-color: var(--border);
+    border-color: color-mix(in srgb, var(--brand-2) 35%, var(--border));
     box-shadow: var(--shadow-md);
-    transform: none;
+    transform: translateY(-2px);
   }
+}
+
+.metric-tile--interactive:active {
+  transform: translateY(0) scale(0.99);
 }
 
 .metric-tile--interactive {
@@ -2933,6 +3002,27 @@ tbody tr:last-child td {
   gap: 0.6rem;
 }
 
+/* New search results rise in with a short sweep. */
+.job-list > .job-card {
+  animation: rise 0.4s var(--ease-out) both;
+}
+
+.job-list > .job-card:nth-child(2) {
+  animation-delay: 0.04s;
+}
+
+.job-list > .job-card:nth-child(3) {
+  animation-delay: 0.08s;
+}
+
+.job-list > .job-card:nth-child(4) {
+  animation-delay: 0.12s;
+}
+
+.job-list > .job-card:nth-child(n + 5) {
+  animation-delay: 0.16s;
+}
+
 .job-results {
   scroll-margin-top: 5rem;
 }
@@ -3330,7 +3420,20 @@ tbody tr:last-child td {
   display: block;
   height: 100%;
   border-radius: inherit;
-  transition: width 0.2s ease;
+  transition:
+    width 0.55s var(--ease-out),
+    background-color 0.3s var(--ease-out);
+  animation: score-fill 0.6s var(--ease-out) both;
+  transform-origin: left;
+}
+
+@keyframes score-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .match-score--strong .match-score-bar > span {
@@ -3820,7 +3923,44 @@ button.chart-col:focus-visible {
   border-radius: 4px 4px 0 0;
   background: color-mix(in srgb, var(--brand) 42%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--brand) 55%, var(--border));
-  transition: height 0.25s ease, box-shadow 0.2s ease;
+  transition:
+    height 0.35s var(--ease-out),
+    box-shadow 0.2s var(--ease-out),
+    background-color 0.2s var(--ease-out);
+  transform-origin: bottom;
+  animation: bar-grow 0.5s var(--ease-out) both;
+}
+
+@keyframes bar-grow {
+  from {
+    opacity: 0;
+    transform: scaleY(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+/* Gentle left-to-right sweep across the first columns. */
+.chart-col:nth-child(2) .chart-bar {
+  animation-delay: 0.04s;
+}
+
+.chart-col:nth-child(3) .chart-bar {
+  animation-delay: 0.08s;
+}
+
+.chart-col:nth-child(4) .chart-bar {
+  animation-delay: 0.12s;
+}
+
+.chart-col:nth-child(5) .chart-bar {
+  animation-delay: 0.16s;
+}
+
+.chart-col:nth-child(n + 6) .chart-bar {
+  animation-delay: 0.2s;
 }
 
 .chart-bar--empty {
@@ -3966,6 +4106,15 @@ button.chart-col:focus-visible {
   border-bottom: 1px solid var(--border);
   background: transparent;
   border-left: 3px solid transparent;
+  transition:
+    background-color 0.18s var(--ease-out),
+    border-color 0.18s var(--ease-out);
+}
+
+@media (hover: hover) {
+  .lane-row:not(.lane-row--urgent):not(.lane-row--late):hover {
+    background: color-mix(in srgb, var(--hover) 55%, transparent);
+  }
 }
 
 .lane-select {
@@ -4008,6 +4157,7 @@ button.chart-col:focus-visible {
   color: inherit;
   box-shadow: none;
   justify-items: start;
+  transition: color 0.18s var(--ease-out);
 }
 
 .lane-row-main .badge,
@@ -4039,6 +4189,7 @@ button.chart-col:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 0.18s var(--ease-out);
 }
 
 .lane-row-title:hover {
@@ -4085,6 +4236,10 @@ button.chart-col:focus-visible {
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--ink);
+  transition:
+    background-color 0.18s var(--ease-out),
+    border-color 0.18s var(--ease-out),
+    color 0.18s var(--ease-out);
 }
 
 .due--urgent {
