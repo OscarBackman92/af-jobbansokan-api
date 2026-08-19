@@ -5,7 +5,8 @@ import { externalUrl, normalizeAdUrl } from "../adUrl.js";
 import { request } from "../api.js";
 import { recordJobMatchGaps } from "../marketHints.js";
 import MatchScore from "./MatchScore.jsx";
-import ModalOverlay from "./ModalOverlay.jsx";
+import ModalCloseButton from "./ModalCloseButton.jsx";
+import ModalOverlay, { useModalClose } from "./ModalOverlay.jsx";
 import MultiSelectFilter from "./MultiSelectFilter.jsx";
 import ProfileFitRow from "./ProfileFitRow.jsx";
 
@@ -1105,18 +1106,10 @@ function SaveSearchDialog({
   useEffect(() => {
     const previous = document.activeElement;
     dialogRef.current?.querySelector("input")?.focus();
-    function onKeyDown(event) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onCancel();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
       previous?.focus?.();
     };
-  }, [onCancel]);
+  }, []);
 
   return (
     <ModalOverlay
@@ -1125,19 +1118,34 @@ function SaveSearchDialog({
       dialogRef={dialogRef}
       labelledBy="save-search-title"
     >
+      <SaveSearchDialogBody
+        title={title}
+        label={label}
+        onLabelChange={onLabelChange}
+        onSave={onSave}
+        saveText={saveText}
+      />
+    </ModalOverlay>
+  );
+}
+
+function SaveSearchDialogBody({
+  title,
+  label,
+  onLabelChange,
+  onSave,
+  saveText,
+}) {
+  const requestClose = useModalClose();
+
+  return (
+    <>
       <div className="modal-head">
         <div className="modal-head-text">
           <h2 id="save-search-title">{title}</h2>
           <p className="muted">Ge sökningen ett namn du känner igen.</p>
         </div>
-        <button
-          type="button"
-          className="secondary small modal-close"
-          onClick={onCancel}
-          aria-label="Stäng"
-        >
-          ✕
-        </button>
+        <ModalCloseButton />
       </div>
       <label className="stack-tight">
         <span className="field-label">Namn</span>
@@ -1149,14 +1157,14 @@ function SaveSearchDialog({
         />
       </label>
       <div className="modal-actions">
-        <button type="button" className="secondary" onClick={onCancel}>
+        <button type="button" className="secondary" onClick={requestClose}>
           Avbryt
         </button>
         <button type="button" className="btn-primary" onClick={onSave}>
           {saveText}
         </button>
       </div>
-    </ModalOverlay>
+    </>
   );
 }
 
@@ -1224,20 +1232,39 @@ function JobDetail({ job, tracked, onTrack, onClose, onMatchUpdate }) {
   useEffect(() => {
     const previous = document.activeElement;
     dialogRef.current?.querySelector("button, a")?.focus();
-
-    function onKeyDown(event) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
       previous?.focus?.();
     };
   }, [onClose]);
 
+  return (
+    <ModalOverlay
+      onClose={onClose}
+      className="modal job-modal"
+      overlayClassName="overlay overlay--job"
+      dialogRef={dialogRef}
+      labelledBy="job-modal-title"
+    >
+      <JobDetailBody
+        job={job}
+        tracked={tracked}
+        onTrack={onTrack}
+        onMatchUpdate={onMatchUpdate}
+        applyHref={applyHref}
+        platsbankenHref={platsbankenHref}
+      />
+    </ModalOverlay>
+  );
+}
+
+function JobDetailBody({
+  job,
+  tracked,
+  onTrack,
+  onMatchUpdate,
+  applyHref,
+  platsbankenHref,
+}) {
   async function handleAddEvidence(gap) {
     try {
       await addEvidenceTerm(gap.term);
@@ -1249,13 +1276,7 @@ function JobDetail({ job, tracked, onTrack, onClose, onMatchUpdate }) {
   }
 
   return (
-    <ModalOverlay
-      onClose={onClose}
-      className="modal job-modal"
-      overlayClassName="overlay overlay--job"
-      dialogRef={dialogRef}
-      labelledBy="job-modal-title"
-    >
+    <>
       <div className="modal-head">
         <div className="modal-head-text">
           <h2 id="job-modal-title">{job.title}</h2>
@@ -1267,14 +1288,7 @@ function JobDetail({ job, tracked, onTrack, onClose, onMatchUpdate }) {
               ` · sista ansökningsdag ${formatJobDate(job.application_deadline)}`}
           </p>
         </div>
-        <button
-          type="button"
-          className="secondary small modal-close"
-          onClick={onClose}
-          aria-label="Stäng"
-        >
-          ✕
-        </button>
+        <ModalCloseButton />
       </div>
 
       <div className="modal-actions">
@@ -1324,6 +1338,6 @@ function JobDetail({ job, tracked, onTrack, onClose, onMatchUpdate }) {
       <div className="description">
         {job.description || "Ingen beskrivning tillgänglig för den här annonsen."}
       </div>
-    </ModalOverlay>
+    </>
   );
 }

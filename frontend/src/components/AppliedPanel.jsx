@@ -21,7 +21,8 @@ import ApplicationModal from "./ApplicationModal.jsx";
 import MetricTile from "./board/MetricTile.jsx";
 import ApplicationRow from "./board/ApplicationRow.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
-import ModalOverlay from "./ModalOverlay.jsx";
+import ModalCloseButton from "./ModalCloseButton.jsx";
+import ModalOverlay, { useModalClose } from "./ModalOverlay.jsx";
 import PeriodStrip from "./PeriodStrip.jsx";
 
 const STAGE_VISIBLE = 25;
@@ -706,51 +707,13 @@ export default function AppliedPanel({
       </section>
 
       {pendingMove && (
-        <ModalOverlay
+        <StatusChangeDialog
+          pendingMove={pendingMove}
+          pendingDate={pendingDate}
+          onPendingDateChange={setPendingDate}
+          onConfirm={confirmPendingMove}
           onClose={() => setPendingMove(null)}
-          className="modal status-change-modal"
-          labelledBy="status-change-title"
-        >
-          <div className="modal-head">
-            <div className="modal-head-text">
-              <h2 id="status-change-title">Byt status</h2>
-              <p className="muted">
-                {pendingMove.title} @ {pendingMove.company}
-                {" → "}
-                {STATUS_LABELS[pendingMove.nextStatus] || pendingMove.nextStatus}
-              </p>
-            </div>
-            <button
-              type="button"
-              className="secondary small modal-close"
-              onClick={() => setPendingMove(null)}
-              aria-label="Stäng"
-            >
-              ✕
-            </button>
-          </div>
-          <label htmlFor="applied-status-change-date">
-            Datum för statusbytet
-            <input
-              id="applied-status-change-date"
-              type="date"
-              value={pendingDate}
-              onChange={(e) => setPendingDate(e.target.value)}
-            />
-          </label>
-          <div className="row-gap" style={{ marginTop: "1rem" }}>
-            <button type="button" onClick={confirmPendingMove}>
-              Bekräfta
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => setPendingMove(null)}
-            >
-              Avbryt
-            </button>
-          </div>
-        </ModalOverlay>
+        />
       )}
 
       {undo && (
@@ -803,5 +766,70 @@ export default function AppliedPanel({
         </ModalErrorBoundary>
       )}
     </div>
+  );
+}
+
+function StatusChangeDialog({
+  pendingMove,
+  pendingDate,
+  onPendingDateChange,
+  onConfirm,
+  onClose,
+}) {
+  return (
+    <ModalOverlay
+      onClose={onClose}
+      className="modal status-change-modal"
+      labelledBy="status-change-title"
+    >
+      <StatusChangeDialogBody
+        pendingMove={pendingMove}
+        pendingDate={pendingDate}
+        onPendingDateChange={onPendingDateChange}
+        onConfirm={onConfirm}
+      />
+    </ModalOverlay>
+  );
+}
+
+function StatusChangeDialogBody({
+  pendingMove,
+  pendingDate,
+  onPendingDateChange,
+  onConfirm,
+}) {
+  const requestClose = useModalClose();
+
+  return (
+    <>
+      <div className="modal-head">
+        <div className="modal-head-text">
+          <h2 id="status-change-title">Byt status</h2>
+          <p className="muted">
+            {pendingMove.title} @ {pendingMove.company}
+            {" → "}
+            {STATUS_LABELS[pendingMove.nextStatus] || pendingMove.nextStatus}
+          </p>
+        </div>
+        <ModalCloseButton />
+      </div>
+      <label htmlFor="applied-status-change-date">
+        Datum för statusbytet
+        <input
+          id="applied-status-change-date"
+          type="date"
+          value={pendingDate}
+          onChange={(e) => onPendingDateChange(e.target.value)}
+        />
+      </label>
+      <div className="row-gap" style={{ marginTop: "1rem" }}>
+        <button type="button" onClick={onConfirm}>
+          Bekräfta
+        </button>
+        <button type="button" className="secondary" onClick={requestClose}>
+          Avbryt
+        </button>
+      </div>
+    </>
   );
 }

@@ -1,6 +1,33 @@
 import { useEffect, useRef } from "react";
 
-import ModalOverlay from "./ModalOverlay.jsx";
+import ModalOverlay, { useModalClose } from "./ModalOverlay.jsx";
+
+function ConfirmDialogBody({
+  title,
+  message,
+  cancelLabel,
+  confirmLabel,
+  confirmClassName,
+  onConfirm,
+  labelledBy,
+}) {
+  const requestClose = useModalClose();
+
+  return (
+    <>
+      <h2 id={labelledBy}>{title}</h2>
+      <p>{message}</p>
+      <div className="modal-actions">
+        <button type="button" className="secondary" onClick={requestClose}>
+          {cancelLabel}
+        </button>
+        <button type="button" className={confirmClassName} onClick={onConfirm}>
+          {confirmLabel}
+        </button>
+      </div>
+    </>
+  );
+}
 
 /**
  * Themed confirm dialog — replaces window.confirm for dirty/discard flows.
@@ -20,19 +47,10 @@ export default function ConfirmDialog({
   useEffect(() => {
     const previous = document.activeElement;
     dialogRef.current?.querySelector("button")?.focus();
-
-    function onKeyDown(event) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onCancel();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
       previous?.focus?.();
     };
-  }, [onCancel]);
+  }, []);
 
   return (
     <ModalOverlay
@@ -41,16 +59,15 @@ export default function ConfirmDialog({
       dialogRef={dialogRef}
       labelledBy={labelledBy}
     >
-      <h2 id={labelledBy}>{title}</h2>
-      <p>{message}</p>
-      <div className="modal-actions">
-        <button type="button" className="secondary" onClick={onCancel}>
-          {cancelLabel}
-        </button>
-        <button type="button" className={confirmClassName} onClick={onConfirm}>
-          {confirmLabel}
-        </button>
-      </div>
+      <ConfirmDialogBody
+        title={title}
+        message={message}
+        cancelLabel={cancelLabel}
+        confirmLabel={confirmLabel}
+        confirmClassName={confirmClassName}
+        onConfirm={onConfirm}
+        labelledBy={labelledBy}
+      />
     </ModalOverlay>
   );
 }
