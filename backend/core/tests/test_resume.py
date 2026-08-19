@@ -303,6 +303,18 @@ def test_parse_oscar_backman_canva_cv():
         },
     ]
 
+    boc = next(
+        row
+        for row in draft["experience"]
+        if row["title"] == "Business Operations Coordinator"
+    )
+    description = boc["description"]
+    assert "månads-, kvartals- och årsbokslut" in description
+    assert "ekonomisystem" in description
+    assert "automatiserade och manuella flöden" in description
+    assert not description.rstrip().endswith("inför")
+    assert "webshop korrekt." not in description.replace("\n", " ")
+
 
 def test_parse_txt_upload(api_client, user):
     api_client.force_authenticate(user)

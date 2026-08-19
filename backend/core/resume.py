@@ -140,8 +140,11 @@ def _split_line_columns(raw_line: str) -> tuple[str, str]:
         return "", stripped
 
     parts = [part.strip() for part in COLUMN_GAP_RE.split(raw_line) if part.strip()]
-    if len(parts) == 2:
-        return parts[0], parts[1]
+    if len(parts) >= 2:
+        # Three-plus chunks are left-column skills PLUS a far-right
+        # experience continuation. Keep the last chunk as the right column
+        # so wrapped bullets are not swallowed into Kompetenser.
+        return "    ".join(parts[:-1]), parts[-1]
     return stripped, ""
 
 
