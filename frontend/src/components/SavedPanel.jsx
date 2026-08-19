@@ -16,6 +16,7 @@ import ConfirmDialog from "./ConfirmDialog.jsx";
 import MatchScore from "./MatchScore.jsx";
 import ProfileFitRow from "./ProfileFitRow.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
+import { countSummary } from "../plural.js";
 
 const GOOD_MATCH_PERCENT = 60;
 
@@ -406,7 +407,7 @@ export default function SavedPanel({
             <p className="muted">
               {saved.length === 0
                 ? "Inga sparade jobb ännu."
-                : `${saved.length} sparade · ${counts.urgent} bråttom.`}
+                : `${countSummary(saved.length, "sparat", "sparade")} · ${countSummary(counts.urgent, "bråttom", "bråttom")}.`}
             </p>
           </div>
           <button type="button" className="small" onClick={() => setAdding(true)}>
@@ -838,7 +839,11 @@ export default function SavedPanel({
 
       {archiveTarget && (
         <ConfirmDialog
-          title="Släpp sparade jobb?"
+          title={
+            archiveTarget.length === 1
+              ? "Släpp sparat jobb?"
+              : "Släpp sparade jobb?"
+          }
           message={
             archiveTarget.length === 1
               ? "Jobbet arkiveras och försvinner från listan. Du tar inte bort det permanent."
