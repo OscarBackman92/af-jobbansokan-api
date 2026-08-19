@@ -879,26 +879,27 @@ def _passes_cv_match(
     match: dict,
     *,
     min_percent: int = GOOD_MATCH_PERCENT,
-    min_terms: int = GOOD_MATCH_MIN_TERMS,
+    min_must_covered: int = 1,
 ) -> bool:
-    """Requirement-coverage gate for Annonser filters."""
+    """Requirement-coverage gate for Annonser filters.
+
+    Ads without a computed score never pass — they are not "at least N%".
+    ``min_terms`` used to let 2+ hits through even at 12% coverage; that
+    backdoor is gone. The score field is the only threshold.
+    """
     if not match:
         return False
-    count = int(match.get("must_covered") or match.get("count") or 0)
-    total = int(match.get("must_total") or match.get("total") or 0)
-    if count <= 0:
-        return False
     score = match.get("score")
-    if score is not None:
-        return int(score) >= min_percent or count >= min_terms
-    # Low confidence / unknown band: still keep ads with any covered requirement
-    # when the caller asked for a weak gate (match_cv / min_match=1).
-    if min_percent <= 1:
-        return True
-    if total <= 0:
+    if score is None:
         return False
-    percent = (count / total) * 100
-    return percent >= min_percent or count >= min_terms
+    try:
+        score_int = int(score)
+    except (TypeError, ValueError):
+        return False
+    must_covered = int(match.get("must_covered") or match.get("count") or 0)
+    if must_covered < min_must_covered:
+        return False
+    return score_int >= min_percent
 
 
 def _filter_jobs_by_cv_match(results, *, min_percent=GOOD_MATCH_PERCENT):

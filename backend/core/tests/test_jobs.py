@@ -30,6 +30,25 @@ SAMPLE_PAYLOAD = {
     ],
 }
 
+# Long enough + ≥4 must-krav so score_posting sets confidence=high and a score.
+HIGH_CONFIDENCE_AD = (
+    "Krav: Python. Krav: Django. Krav: SQL. Krav: Docker.\n"
+    "Vi söker en kollega som utvecklar tjänster, skriver tester och "
+    "samarbetar i teamet. "
+    * 6
+)
+
+
+def _hit(job_id, headline, published, description=HIGH_CONFIDENCE_AD):
+    return {
+        "id": job_id,
+        "headline": headline,
+        "employer": {"name": "Acme"},
+        "publication_date": published,
+        "description": {"text": description},
+        "webpage_url": f"https://arbetsformedlingen.se/annons/{job_id}",
+    }
+
 
 class FakeResponse:
     def __init__(self, payload):
@@ -342,14 +361,22 @@ def test_search_adds_cv_match(api_client, user, mock_jobtech):
     assert body["results"][0]["match"]["matched"] == ["Python"]
 
 
-def test_search_match_cv_filter(api_client, user, mock_jobtech):
-    Resume.objects.create(user=user, skills=["Python", "Rust"])
+def test_search_match_cv_filter(api_client, user, monkeypatch):
+    Resume.objects.create(
+        user=user, skills=["Python", "Django", "SQL", "Docker"]
+    )
+    payload = {"total": {"value": 1}, "hits": [_hit("1001", "Python", "2026-06-10T08:00:00")]}
+
+    def fake_get(url, params=None, timeout=None):
+        return FakeResponse(payload)
+
+    monkeypatch.setattr(jobtech.requests, "get", fake_get)
     api_client.force_authenticate(user)
     body = api_client.get(SEARCH_URL, {"q": "python", "match_cv": "true"}).json()
     assert body["match_cv_filtered"] is True
     assert body["total"] == 1
     assert len(body["results"]) == 1
-    assert body["results"][0]["match"]["matched"] == ["Python"]
+    assert body["results"][0]["match"]["score"] is not None
     assert body["match_cv_scanned"] >= 1
 
 
@@ -388,26 +415,14 @@ def test_search_min_match_returns_200(api_client, user, mock_jobtech):
 
 
 def test_min_match_newest_sorts_by_publication_date(api_client, user, monkeypatch):
-    Resume.objects.create(user=user, skills=["Python"])
+    Resume.objects.create(
+        user=user, skills=["Python", "Django", "SQL", "Docker"]
+    )
     payload = {
         "total": {"value": 2},
         "hits": [
-            {
-                "id": "old",
-                "headline": "Äldre Python",
-                "employer": {"name": "Acme"},
-                "publication_date": "2026-01-02T08:00:00",
-                "description": {"text": "Python"},
-                "webpage_url": "https://arbetsformedlingen.se/annons/old",
-            },
-            {
-                "id": "new",
-                "headline": "Nyare Python",
-                "employer": {"name": "Acme"},
-                "publication_date": "2026-08-18T08:00:00",
-                "description": {"text": "Python"},
-                "webpage_url": "https://arbetsformedlingen.se/annons/new",
-            },
+            _hit("old", "Äldre Python", "2026-01-02T08:00:00"),
+            _hit("new", "Nyare Python", "2026-08-18T08:00:00"),
         ],
     }
 
@@ -457,15 +472,30 @@ def test_search_min_match_handles_null_description(api_client, user, monkeypatch
     assert response.status_code == 200
 
 
-def test_passes_cv_match_uses_threshold_not_all_terms():
+def test_passes_cv_match_requires_score_at_threshold():
     from core.views import _passes_cv_match
 
-    # 3 of 24 ≈ 12.5% — still passes via min_terms=2
-    assert _passes_cv_match({"count": 3, "total": 24}) is True
-    assert _passes_cv_match({"count": 1, "total": 24}) is False
-    # 1 of 1 = 100% — passes via percent
-    assert _passes_cv_match({"count": 1, "total": 1}) is True
-    assert _passes_cv_match({"count": 0, "total": 10}) is False
+    assert _passes_cv_match({"score": 60, "must_covered": 3, "must_total": 5}) is True
+    assert _passes_cv_match({"score": 59, "must_covered": 3, "must_total": 5}) is False
+    # 50 % with several hits used to pass via min_terms=2.
+    assert _passes_cv_match({"score": 50, "must_covered": 2, "must_total": 4}) is False
+    assert _passes_cv_match({"score": None, "must_covered": 5, "must_total": 5}) is False
+    assert _passes_cv_match({"count": 3, "total": 24}) is False
+    assert _passes_cv_match({}) is False
+    assert _passes_cv_match(None) is False
+
+
+def test_min_match_filter_drops_below_threshold_and_unscored():
+    from core.views import _filter_jobs_by_cv_match
+
+    jobs = [
+        {"id": "ok", "match": {"score": 60, "must_covered": 3}},
+        {"id": "low", "match": {"score": 50, "must_covered": 2}},
+        {"id": "unscored", "match": {"score": None, "must_covered": 4}},
+        {"id": "missing", "match": None},
+    ]
+    kept = _filter_jobs_by_cv_match(jobs, min_percent=60)
+    assert [job["id"] for job in kept] == ["ok"]
 
 
 def test_search_match_cv_requires_resume(api_client, user, mock_jobtech):
