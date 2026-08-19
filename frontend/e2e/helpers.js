@@ -32,6 +32,13 @@ export async function fillPassword(page, password) {
   await page.getByLabel("Lösenord", { exact: true }).fill(password);
 }
 
+export function tabLink(page, label) {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return page.getByRole("link", {
+    name: new RegExp(`^${escaped}(?:\\s+\\d+)?$`),
+  });
+}
+
 export async function login(
   page,
   email = SEEDED_USER.email,

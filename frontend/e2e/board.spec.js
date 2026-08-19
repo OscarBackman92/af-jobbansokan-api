@@ -1,17 +1,17 @@
 import { expect, test } from "@playwright/test";
 
-import { login } from "./helpers.js";
+import { login, tabLink } from "./helpers.js";
 
 test("create an application, move status, timeline logs the change", async ({
   page,
 }) => {
   await login(page);
 
-  await page.getByRole("link", { name: "Ansökningar", exact: true }).click();
+  await tabLink(page, "Ansökningar").click();
   await page.getByRole("button", { name: "+ Ny ansökan" }).click();
   await page.getByLabel(/^Företag/).fill("Testföretaget AB");
   await page.getByLabel(/^Roll/).fill("QA-ingenjör");
-  await page.getByRole("button", { name: "Lägg till", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Spara", exact: true }).click();
 
   const row = page.locator(".pipeline-row", { hasText: "QA-ingenjör" });
   await expect(row).toBeVisible();
@@ -36,12 +36,12 @@ test("create an application, move status, timeline logs the change", async ({
 test("save job then mark applied moves it to Ansökningar", async ({ page }) => {
   await login(page);
 
-  await page.getByRole("link", { name: "Sparade jobb", exact: true }).click();
+  await tabLink(page, "Sparade jobb").click();
   await page.getByRole("button", { name: "+ Spara jobb" }).click();
-  await page.getByLabel(/^Företag/).fill("Sparat AB");
-  await page.getByLabel(/^Roll/).fill("Frontendutvecklare");
-  await page.getByLabel("Status").selectOption("wishlist");
-  await page.getByRole("button", { name: "Lägg till", exact: true }).click();
+  await page.getByRole("dialog").getByLabel(/^Företag/).fill("Sparat AB");
+  await page.getByRole("dialog").getByLabel(/^Roll/).fill("Frontendutvecklare");
+  await page.getByRole("dialog").locator("#app-field-status").selectOption("wishlist");
+  await page.getByRole("dialog").getByRole("button", { name: "Spara", exact: true }).click();
 
   const savedRow = page.locator(".lane-row", { hasText: "Frontendutvecklare" });
   await expect(savedRow).toBeVisible();
@@ -50,11 +50,15 @@ test("save job then mark applied moves it to Ansökningar", async ({ page }) => 
   await expect(savedRow.getByText("Markerade du som sökt?")).toBeVisible();
   await savedRow.getByRole("button", { name: "Ja, sökt idag" }).click();
 
+  // Applied jobs stay mounted in the hidden Ansökningar panel as .lane-row.
   await expect(
-    page.locator(".lane-row", { hasText: "Frontendutvecklare" })
+    page.locator(".tab-panel:not(.tab-panel-hidden) .lane-row", {
+      hasText: "Frontendutvecklare",
+    })
   ).toHaveCount(0);
+  await expect(tabLink(page, "Sparade jobb")).toContainText("0");
 
-  await page.getByRole("link", { name: "Ansökningar", exact: true }).click();
+  await tabLink(page, "Ansökningar").click();
   await expect(
     page.locator(".pipeline-row", { hasText: "Frontendutvecklare" })
   ).toBeVisible();
@@ -68,18 +72,18 @@ test("save job then mark applied moves it to Ansökningar", async ({ page }) => 
 test("save and log updates the board without a page reload", async ({ page }) => {
   await login(page);
 
-  await page.getByRole("link", { name: "Ansökningar", exact: true }).click();
+  await tabLink(page, "Ansökningar").click();
   await page.getByRole("button", { name: "+ Ny ansökan" }).click();
   await page.getByLabel(/^Företag/).fill("Direkt AB");
   await page.getByLabel(/^Roll/).fill("Originalroll");
-  await page.getByRole("button", { name: "Spara" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Spara", exact: true }).click();
 
   const row = page.locator(".pipeline-row", { hasText: "Originalroll" });
   await expect(row).toBeVisible();
 
   await row.locator(".pipeline-row-main").click();
   await page.getByLabel(/^Roll/).fill("Uppdaterad roll");
-  await page.getByRole("button", { name: "Spara" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Spara", exact: true }).click();
 
   await expect(
     page.locator(".pipeline-row", { hasText: "Uppdaterad roll" })
@@ -92,7 +96,7 @@ test("save and log updates the board without a page reload", async ({ page }) =>
     .locator(".pipeline-row", { hasText: "Uppdaterad roll" })
     .locator(".pipeline-row-main")
     .click();
-  await page.getByLabel("Anteckning").fill("Ringde rekryteraren");
-  await page.getByRole("button", { name: "Logga" }).click();
+  await page.getByRole("textbox", { name: "Anteckning", exact: true }).fill("Ringde rekryteraren");
+  await page.getByRole("dialog").getByRole("button", { name: "Logga", exact: true }).click();
   await expect(page.locator(".timeline")).toContainText("Ringde rekryteraren");
 });

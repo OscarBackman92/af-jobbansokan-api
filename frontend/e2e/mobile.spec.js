@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { login } from "./helpers.js";
+import { login, tabLink } from "./helpers.js";
 
 test.use({ viewport: { width: 393, height: 852 } });
 
@@ -53,10 +53,8 @@ test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
   await login(page);
 
   for (const label of TABS) {
-    await page.getByRole("link", { name: label, exact: true }).click();
-    await expect(
-      page.getByRole("link", { name: label, exact: true })
-    ).toHaveAttribute("aria-current", "page");
+    await tabLink(page, label).click();
+    await expect(tabLink(page, label)).toHaveAttribute("aria-current", "page");
 
     const metrics = await page.evaluate(() => {
       const doc = document.documentElement;
@@ -94,9 +92,7 @@ test("mobile deep link keeps active tab visible before and after badges", async 
 
   for (const { tab, label } of DEEP_LINKS) {
     await page.goto(`/app/?tab=${tab}`);
-    await expect(
-      page.getByRole("link", { name: label, exact: true })
-    ).toHaveAttribute("aria-current", "page");
+    await expect(tabLink(page, label)).toHaveAttribute("aria-current", "page");
 
     // Mount state — before nav badges may have grown the strip.
     await assertActiveTabFullyVisible(page);
@@ -116,7 +112,7 @@ test("mobile deep link keeps active tab visible before and after badges", async 
 
 test("annonser KPI uses tracked wording, not sparade", async ({ page }) => {
   await login(page);
-  await page.getByRole("link", { name: "Annonser", exact: true }).click();
+  await tabLink(page, "Annonser").click();
 
   const summary = page.getByLabel("Söksammanfattning");
   await expect(summary).toBeVisible();

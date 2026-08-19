@@ -5791,7 +5791,7 @@ code {
   }
 }
 
-@media (min-width: 1101px) {
+@media (min-width: 1280px) {
   .header {
     grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 1rem;

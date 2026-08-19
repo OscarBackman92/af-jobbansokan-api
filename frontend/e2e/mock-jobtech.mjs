@@ -14,7 +14,7 @@ const SEARCH_PAYLOAD = {
       employer: { name: "Testbolaget AB" },
       workplace_address: { municipality: "Stockholm" },
       publication_date: "2026-06-20T08:00:00",
-      application_deadline: "2026-08-15T23:59:59",
+      application_deadline: "2026-12-15T23:59:59",
       description: {
         text: [
           "Vi arbetar med Python och Django i molnet.",
@@ -35,7 +35,7 @@ const SEARCH_PAYLOAD = {
       employer: { name: "Webbyran AB" },
       workplace_address: { municipality: "Göteborg" },
       publication_date: "2026-06-21T08:00:00",
-      application_deadline: "2026-08-20T23:59:59",
+      application_deadline: "2026-12-20T23:59:59",
       description: { text: "React, Vite och TypeScript i vardagen." },
       webpage_url: "https://arbetsformedlingen.se/platsbanken/annonser/9002",
       remote_work: false,

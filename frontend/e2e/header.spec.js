@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { login } from "./helpers.js";
+import { login, tabLink } from "./helpers.js";
 
 const TABS = [
   { id: "dash", label: "Översikt" },
@@ -18,7 +18,7 @@ const DESKTOP_VIEWPORTS = [
 async function assertAllTabsVisible(page) {
   const nav = page.getByRole("navigation", { name: "Huvudnavigering" });
   for (const tab of TABS) {
-    await expect(nav.getByRole("link", { name: tab.label, exact: true })).toBeVisible();
+    await expect(tabLink(nav, tab.label)).toBeVisible();
   }
 }
 
@@ -52,9 +52,10 @@ for (const viewport of DESKTOP_VIEWPORTS) {
 
       for (const tab of TABS) {
         await page.goto(`/app/?tab=${tab.id}`);
-        await expect(
-          page.getByRole("link", { name: tab.label, exact: true })
-        ).toHaveAttribute("aria-current", "page");
+        await expect(tabLink(page, tab.label)).toHaveAttribute(
+          "aria-current",
+          "page"
+        );
         await assertAllTabsVisible(page);
         await assertActiveTabHitTest(page);
       }
@@ -68,9 +69,10 @@ test.describe("brand navigation when signed in", () => {
   test("logo returns to overview without full reload", async ({ page }) => {
     await login(page);
     await page.goto("/app/?tab=saved");
-    await expect(
-      page.getByRole("link", { name: "Sparade jobb", exact: true })
-    ).toHaveAttribute("aria-current", "page");
+    await expect(tabLink(page, "Sparade jobb")).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
 
     await page.evaluate(() => {
       window.__jdNoReload = true;
@@ -81,7 +83,10 @@ test.describe("brand navigation when signed in", () => {
       .click();
 
     await expect(page).toHaveURL(/\/app\/\?tab=dash/);
-    await expect(page.getByRole("heading", { name: "Din översikt" })).toBeVisible();
+    await expect(tabLink(page, "Översikt")).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
     await expect(page.getByRole("button", { name: "Logga in", exact: true })).toHaveCount(
       0
     );

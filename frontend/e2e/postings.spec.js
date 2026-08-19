@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-import { login } from "./helpers.js";
+import { login, tabLink } from "./helpers.js";
 
 test("search Platsbanken (mocked) and save an ad to the board", async ({
   page,
 }) => {
   await login(page);
 
-  await page.getByRole("link", { name: "Annonser", exact: true }).click();
+  await tabLink(page, "Annonser").click();
 
   const card = page.locator(".job-card", {
     hasText: "Backendutvecklare Python",
@@ -19,7 +19,7 @@ test("search Platsbanken (mocked) and save an ad to the board", async ({
     card.getByRole("button", { name: "Sparad ✓" })
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "Sparade jobb", exact: true }).click();
+  await tabLink(page, "Sparade jobb").click();
   await expect(
     page.locator(".lane-row", { hasText: "Backendutvecklare Python" })
   ).toBeVisible();
@@ -32,7 +32,7 @@ const AD_SCROLL_VIEWPORTS = [
 
 async function openPythonAd(page) {
   await login(page);
-  await page.getByRole("link", { name: "Annonser", exact: true }).click();
+  await tabLink(page, "Annonser").click();
   const card = page.locator(".job-card", {
     hasText: "Backendutvecklare Python",
   });
@@ -45,10 +45,8 @@ async function openPythonAd(page) {
 }
 
 async function assertAdDialogScrolls(page) {
-  const end = page.getByText("SLUT-PA-ANNONSTEXT");
-  await expect(end).not.toBeInViewport();
-
   const result = await page.evaluate(() => {
+    const MARKER = "SLUT-PA-ANNONSTEXT";
     const dialog = document.querySelector('[role="dialog"]');
     const overlay = dialog?.closest(".overlay");
     const body = dialog?.querySelector(".job-modal-body");
@@ -58,7 +56,7 @@ async function assertAdDialogScrolls(page) {
     const scroller = candidates.find(
       (el) => el.scrollHeight > el.clientHeight + 8
     );
-    if (!scroller) {
+    if (!(scroller instanceof HTMLElement)) {
       return {
         ok: false,
         reason: "no-scroller",
@@ -69,25 +67,50 @@ async function assertAdDialogScrolls(page) {
         })),
       };
     }
+
+    function markerBox() {
+      const walker = document.createTreeWalker(
+        dialog,
+        NodeFilter.SHOW_TEXT
+      );
+      let node;
+      while ((node = walker.nextNode())) {
+        const idx = node.data.indexOf(MARKER);
+        if (idx < 0) continue;
+        const range = document.createRange();
+        range.setStart(node, idx);
+        range.setEnd(node, idx + MARKER.length);
+        return range.getBoundingClientRect();
+      }
+      return null;
+    }
+
     const before = scroller.scrollTop;
-    scroller.scrollTop = Math.min(
-      480,
-      scroller.scrollHeight - scroller.clientHeight
-    );
+    const startBox = markerBox();
+    scroller.scrollTop = scroller.scrollHeight;
+    const after = scroller.scrollTop;
+    const endBox = markerBox();
+    const port = scroller.getBoundingClientRect();
+    const markerVisible =
+      !!endBox &&
+      endBox.bottom <= port.bottom + 4 &&
+      endBox.top >= port.top - 4;
+
     return {
-      ok: scroller.scrollTop > before + 40,
+      ok: after > before + 40,
+      markerVisible,
+      startedOffscreen: !!startBox && startBox.bottom > port.bottom + 4,
       className: String(scroller.className || "").slice(0, 80),
       before,
-      after: scroller.scrollTop,
+      after,
       scrollHeight: scroller.scrollHeight,
       clientHeight: scroller.clientHeight,
     };
   });
 
   expect(result, JSON.stringify(result)).toMatchObject({ ok: true });
-
-  await end.scrollIntoViewIfNeeded();
-  await expect(end).toBeInViewport();
+  expect(result.startedOffscreen, JSON.stringify(result)).toBe(true);
+  expect(result.markerVisible, JSON.stringify(result)).toBe(true);
 }
 
 for (const viewport of AD_SCROLL_VIEWPORTS) {
