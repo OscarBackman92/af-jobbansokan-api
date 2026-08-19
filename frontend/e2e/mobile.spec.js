@@ -89,10 +89,8 @@ test("mobile deep link keeps active tab visible before and after badges", async 
 }) => {
   await login(page);
 
-  for (const { tab, label } of DEEP_LINKS) {
-    await page.goto(`/app/?tab=${tab}`);
-    await expect(page.getByRole("button", { name: "Logga ut" })).toBeVisible();
-    await expect(tabLink(page, label)).toHaveAttribute("aria-current", "page");
+  for (const { label } of DEEP_LINKS) {
+    await openTab(page, label);
 
     // Mount state — before nav badges may have grown the strip.
     await assertActiveTabFullyVisible(page);

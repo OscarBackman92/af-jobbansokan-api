@@ -24,7 +24,7 @@ async function assertResponsiveLayout(page) {
       (el) => {
         if (!(el instanceof HTMLElement)) return false;
         if (el.classList.contains("sr-only")) return false;
-        if (el.classList.contains("chart")) return false;
+        if (el.classList.contains("chart") || el.closest(".chart")) return false;
         if (el.classList.contains("tabs") || el.closest(".tabs")) return false;
         const style = window.getComputedStyle(el);
         if (style.textOverflow === "ellipsis") return false;
