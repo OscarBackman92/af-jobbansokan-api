@@ -1,3 +1,5 @@
+import useCountUp from "../../countUp.js";
+
 export default function MetricTile({
   label,
   value,
@@ -6,13 +8,14 @@ export default function MetricTile({
   filterId,
   onFilter,
 }) {
+  const [valueRef, countedValue] = useCountUp(value);
   const className = `metric-tile metric-tile--${tone}${
     filterId ? " metric-tile--interactive" : ""
   }`;
   const content = (
     <>
       <span className="metric-label">{label}</span>
-      <strong>{value}</strong>
+      <strong ref={valueRef}>{countedValue}</strong>
       <span className="metric-detail">{detail}</span>
     </>
   );
