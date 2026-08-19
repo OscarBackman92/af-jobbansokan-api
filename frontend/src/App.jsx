@@ -15,6 +15,7 @@ import SavedPanel from "./components/SavedPanel.jsx";
 import VerifyEmail from "./components/VerifyEmail.jsx";
 import { encodeMonthFilter } from "./dates.js";
 import { readGoogleCallback } from "./googleAuth.js";
+import { syncPillIndicator } from "./pillIndicator.js";
 import useApplications from "./useApplications.js";
 import useReportPeriods from "./useReportPeriods.js";
 
@@ -113,6 +114,9 @@ export default function App() {
   const profileLeaveGuardRef = useRef(null);
   const focusedRowRef = useRef(-1);
   const tabsRef = useRef(null);
+  const themePickerRef = useRef(null);
+  const [keysHelpShown, setKeysHelpShown] = useState(false);
+  const [keysHelpMounted, setKeysHelpMounted] = useState(false);
 
   const {
     applications,
@@ -197,7 +201,6 @@ export default function App() {
     // force it to scrollLeft 0 (which hid "Översikt" under the brand).
     function alignActive() {
       const activeTab = nav.querySelector(".tab.active");
-      const indicator = nav.querySelector(".tab-indicator");
       if (!(activeTab instanceof HTMLElement)) return;
       const navRect = nav.getBoundingClientRect();
       const tabRect = activeTab.getBoundingClientRect();
@@ -210,11 +213,10 @@ export default function App() {
       if (Math.abs(delta) > 1) {
         nav.scrollBy({ left: delta, behavior: "auto" });
       }
-      if (indicator instanceof HTMLElement) {
-        indicator.style.width = `${activeTab.offsetWidth}px`;
-        indicator.style.transform = `translateX(${activeTab.offsetLeft}px)`;
-        indicator.classList.add("is-ready");
-      }
+      syncPillIndicator(nav, {
+        activeSelector: ".tab.active",
+        indicatorSelector: ".tab-indicator",
+      });
     }
 
     alignActive();
@@ -225,6 +227,51 @@ export default function App() {
     }
     return () => observer.disconnect();
   }, [tab, savedCount, appliedCount, token]);
+
+  useLayoutEffect(() => {
+    const picker = themePickerRef.current;
+    if (!(picker instanceof HTMLElement)) return undefined;
+
+    function alignTheme() {
+      syncPillIndicator(picker, {
+        activeSelector: "button.active",
+        indicatorSelector: ".pill-indicator",
+      });
+    }
+
+    alignTheme();
+    const observer = new ResizeObserver(() => alignTheme());
+    observer.observe(picker);
+    for (const child of picker.querySelectorAll("button")) {
+      observer.observe(child);
+    }
+    return () => observer.disconnect();
+  }, [theme]);
+
+  useEffect(() => {
+    if (showKeysHelp) setKeysHelpMounted(true);
+  }, [showKeysHelp]);
+
+  useEffect(() => {
+    if (showKeysHelp && keysHelpMounted) {
+      let inner = 0;
+      const outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(() => setKeysHelpShown(true));
+      });
+      return () => {
+        cancelAnimationFrame(outer);
+        cancelAnimationFrame(inner);
+      };
+    }
+    if (!showKeysHelp) setKeysHelpShown(false);
+    return undefined;
+  }, [showKeysHelp, keysHelpMounted]);
+
+  useEffect(() => {
+    if (showKeysHelp || !keysHelpMounted) return undefined;
+    const timer = window.setTimeout(() => setKeysHelpMounted(false), 220);
+    return () => window.clearTimeout(timer);
+  }, [showKeysHelp, keysHelpMounted]);
 
   useEffect(() => {
     function visibleRows() {
@@ -579,14 +626,19 @@ export default function App() {
         )}
       </main>
 
-      {showKeysHelp && (
+      {keysHelpMounted && (
         <div
-          className="keys-help"
+          className={`keys-help${keysHelpShown ? " keys-help--open" : ""}`}
           role="dialog"
           aria-modal="true"
+          aria-hidden={!showKeysHelp}
           aria-label="Tangentbordsgenvägar"
+          onClick={() => setShowKeysHelp(false)}
         >
-          <div className="keys-help-card">
+          <div
+            className="keys-help-card"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="row-between">
               <h2>Tangentbord</h2>
               <button
@@ -627,7 +679,12 @@ export default function App() {
         <a className="footer-link" href="/integritet/">
           Integritetspolicy
         </a>
-        <div className="theme-picker" aria-label="Visuellt tema">
+        <div
+          ref={themePickerRef}
+          className="theme-picker"
+          aria-label="Visuellt tema"
+        >
+          <span className="pill-indicator" aria-hidden="true" />
           {THEMES.map((t) => (
             <button
               key={t.id}

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { request } from "../api.js";
 
+const CLOSE_MS = 220;
+
 export default function OccupationPicker({
   label = "Yrke (AF-taxonomi)",
   value = "",
@@ -11,7 +13,10 @@ export default function OccupationPicker({
   const [query, setQuery] = useState(value || "");
   const [options, setOptions] = useState([]);
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [shown, setShown] = useState(false);
   const timer = useRef(null);
+  const rootRef = useRef(null);
 
   useEffect(() => {
     setQuery(value || "");
@@ -32,8 +37,45 @@ export default function OccupationPicker({
     return () => clearTimeout(timer.current);
   }, [query]);
 
+  const shouldShowList = open && options.length > 0;
+
+  useEffect(() => {
+    if (shouldShowList) setMounted(true);
+  }, [shouldShowList]);
+
+  useEffect(() => {
+    if (shouldShowList && mounted) {
+      let inner = 0;
+      const outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(() => setShown(true));
+      });
+      return () => {
+        cancelAnimationFrame(outer);
+        cancelAnimationFrame(inner);
+      };
+    }
+    if (!shouldShowList) setShown(false);
+    return undefined;
+  }, [shouldShowList, mounted]);
+
+  useEffect(() => {
+    if (shouldShowList || !mounted) return undefined;
+    const closeTimer = window.setTimeout(() => setMounted(false), CLOSE_MS);
+    return () => window.clearTimeout(closeTimer);
+  }, [shouldShowList, mounted]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function onPointerDown(event) {
+      if (rootRef.current?.contains(event.target)) return;
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [open]);
+
   return (
-    <label className="occupation-picker">
+    <label className="occupation-picker" ref={rootRef}>
       {label}
       <input
         value={query}
@@ -52,8 +94,14 @@ export default function OccupationPicker({
       {conceptId && (
         <span className="muted occupation-picker-id">Taxonomi {conceptId}</span>
       )}
-      {open && options.length > 0 && (
-        <ul className="occupation-picker-list" role="listbox">
+      {mounted && (
+        <ul
+          className={`occupation-picker-list${
+            shown ? " occupation-picker-list--open" : ""
+          }`}
+          role="listbox"
+          aria-hidden={!shouldShowList}
+        >
           {options.map((option) => (
             <li key={option.id}>
               <button

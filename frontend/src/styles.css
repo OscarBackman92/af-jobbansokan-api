@@ -447,10 +447,10 @@ a:focus-visible {
 
 .tab-indicator {
   position: absolute;
-  top: 0.22rem;
-  bottom: 0.22rem;
+  top: 0;
   left: 0;
   width: 0;
+  height: 0;
   border-radius: 999px;
   background: color-mix(in srgb, var(--brand-2) 22%, var(--surface));
   box-shadow:
@@ -459,7 +459,7 @@ a:focus-visible {
   pointer-events: none;
   z-index: 0;
   opacity: 0;
-  transform: translateX(0);
+  transform: translate(0, 0);
 }
 
 .tab-indicator.is-ready {
@@ -467,6 +467,33 @@ a:focus-visible {
   transition:
     transform 0.4s var(--ease-out),
     width 0.4s var(--ease-out),
+    height 0.4s var(--ease-out),
+    opacity 0.2s var(--ease-out);
+}
+
+.pill-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand-2) 22%, var(--surface));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-2) 42%, transparent),
+    0 6px 16px color-mix(in srgb, var(--brand-2) 16%, transparent);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transform: translate(0, 0);
+}
+
+.pill-indicator.is-ready {
+  opacity: 1;
+  transition:
+    transform 0.4s var(--ease-out),
+    width 0.4s var(--ease-out),
+    height 0.4s var(--ease-out),
     opacity 0.2s var(--ease-out);
 }
 
@@ -1786,23 +1813,55 @@ tbody tr:last-child td {
 .occupation-picker-list {
   position: absolute;
   z-index: 5;
-  top: 100%;
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
   margin: 0;
-  padding: 0.25rem;
+  padding: 0.3rem;
   list-style: none;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 12px;
+  box-shadow:
+    var(--shadow-md),
+    0 14px 28px color-mix(in srgb, var(--ink) 12%, transparent);
   max-height: 12rem;
   overflow: auto;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top center;
+  pointer-events: none;
+  transition:
+    opacity 0.2s var(--ease-out),
+    transform 0.26s var(--ease-out);
+}
+
+.occupation-picker-list--open {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
 }
 
 .occupation-picker-list button {
   width: 100%;
   text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: none;
+  transform: none;
+  transition: background-color 0.18s var(--ease-out);
+}
+
+.occupation-picker-list button:hover {
+  background: var(--hover);
+  filter: none;
+  transform: none;
+  box-shadow: none;
 }
 
 .quick-filters {
@@ -1826,6 +1885,12 @@ tbody tr:last-child td {
   padding: 0.36rem 0.75rem;
   font-size: 0.8rem;
   flex-shrink: 0;
+  transition:
+    color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    border-color 0.22s var(--ease-out),
+    transform 0.18s var(--ease-out),
+    box-shadow 0.22s var(--ease-out);
 }
 
 .quick-filters button:hover {
@@ -1836,10 +1901,15 @@ tbody tr:last-child td {
   box-shadow: none;
 }
 
+.quick-filters button:active {
+  transform: scale(0.97);
+}
+
 .quick-filters button.active {
   color: #fff;
   background: var(--grad);
   border-color: transparent;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--brand-2) 22%, transparent);
 }
 
 .quick-filters button:focus-visible {
@@ -2608,12 +2678,29 @@ tbody tr:last-child td {
   max-width: 100%;
   min-width: 0;
   justify-self: start;
+  transition:
+    color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    border-color 0.22s var(--ease-out),
+    box-shadow 0.22s var(--ease-out),
+    transform 0.18s var(--ease-out);
+}
+
+.job-filter-chip:hover {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--brand-2) 35%, var(--border));
+  box-shadow: var(--shadow-sm);
+}
+
+.job-filter-chip:active {
+  transform: scale(0.97);
 }
 
 .job-filter-chip.active {
   color: var(--ink);
   border-color: color-mix(in srgb, var(--brand) 45%, var(--border));
   background: color-mix(in srgb, var(--brand) 10%, var(--surface));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-2) 18%, transparent);
 }
 
 .job-filter-chip input {
@@ -3535,28 +3622,77 @@ tbody tr:last-child td {
 
 .job-profile-tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  position: relative;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.22rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  box-shadow: var(--shadow-sm);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.job-profile-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .job-profile-tab {
-  border: 1px solid var(--border);
-  background: var(--surface-2, transparent);
-  color: var(--text);
-  border-radius: var(--radius-sm);
-  padding: 0.35rem 0.7rem;
+  position: relative;
+  z-index: 1;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
   font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
+  box-shadow: none;
+  flex: 0 0 auto;
+  transition:
+    color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    transform 0.18s var(--ease-out);
+}
+
+.job-profile-tab:hover:not(.active) {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--hover) 80%, transparent);
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.job-profile-tab:active {
+  transform: scale(0.97);
 }
 
 .job-profile-tab.active {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--ink);
+  background: transparent;
+  border-color: transparent;
+}
+
+.job-profile-tabs:not(:has(.pill-indicator.is-ready)) .job-profile-tab.active {
+  background: color-mix(in srgb, var(--brand-2) 18%, transparent);
 }
 
 .job-profile-tab--add {
-  border-style: dashed;
+  border: 1px dashed color-mix(in srgb, var(--border) 80%, var(--muted));
   color: var(--muted);
+  background: transparent;
+}
+
+.job-profile-tab--add:hover {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--brand-2) 40%, var(--border));
 }
 
 .job-profile-hint {
@@ -4129,6 +4265,14 @@ button.chart-col:focus-visible {
   place-items: center;
   background: color-mix(in srgb, var(--ink) 35%, transparent);
   padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease-out);
+}
+
+.keys-help--open {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .keys-help-card {
@@ -4138,6 +4282,16 @@ button.chart-col:focus-visible {
   border-radius: var(--radius);
   padding: 1rem 1.15rem;
   box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+  transition:
+    opacity 0.2s var(--ease-out),
+    transform 0.28s var(--ease-out);
+}
+
+.keys-help--open .keys-help-card {
+  opacity: 1;
+  transform: none;
 }
 
 .keys-help-list {
@@ -4546,7 +4700,7 @@ button.chart-col:focus-visible {
   overflow-y: auto;
   overscroll-behavior: contain;
   z-index: 50;
-  animation: fade 0.18s ease both;
+  animation: fade 0.2s var(--ease-out) both;
 }
 
 @keyframes fade {
@@ -4570,7 +4724,7 @@ button.chart-col:focus-visible {
   flex-direction: column;
   gap: 0.6rem;
   box-shadow: var(--shadow-lg);
-  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation: pop 0.28s var(--ease-out) both;
   margin: auto;
   flex-shrink: 0;
   min-height: 0;
@@ -4579,7 +4733,7 @@ button.chart-col:focus-visible {
 @keyframes pop {
   from {
     opacity: 0;
-    transform: translateY(14px) scale(0.985);
+    transform: translateY(12px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -4771,17 +4925,24 @@ button.chart-col:focus-visible {
   cursor: pointer;
   list-style: none;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .application-form-toggle summary::before {
-  content: "▸ ";
-  display: inline-block;
+  content: "▾";
+  display: inline-grid;
+  place-items: center;
   width: 1rem;
   color: var(--muted);
+  font-size: 0.72rem;
+  transform: rotate(-90deg);
+  transition: transform 0.22s var(--ease-out);
 }
 
 .application-form-toggle[open] summary::before {
-  content: "▾ ";
+  transform: rotate(0deg);
 }
 
 .application-form-toggle summary::-webkit-details-marker {
@@ -4809,6 +4970,28 @@ button.chart-col:focus-visible {
   cursor: pointer;
   font-size: 0.88rem;
   color: var(--muted);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.link-details summary::before {
+  content: "▾";
+  display: inline-grid;
+  place-items: center;
+  width: 0.9rem;
+  font-size: 0.68rem;
+  transform: rotate(-90deg);
+  transition: transform 0.22s var(--ease-out);
+}
+
+.link-details[open] summary::before {
+  transform: rotate(0deg);
+}
+
+.link-details summary::-webkit-details-marker {
+  display: none;
 }
 
 .link-details label {
@@ -4859,6 +5042,18 @@ button.chart-col:focus-visible {
   box-shadow: var(--shadow);
   color: var(--ink);
   max-width: min(92vw, 28rem);
+  animation: toast-in 0.32s var(--ease-out) both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
 }
 
 .footer-kicker {
@@ -4882,34 +5077,69 @@ code {
 
 .theme-picker {
   display: flex;
+  position: relative;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.9rem;
+  gap: 0.12rem;
+  margin: 0.9rem auto 0;
+  padding: 0.22rem;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2) 70%, var(--surface));
+  box-shadow: var(--shadow-sm);
 }
 
 .theme-picker button {
-  background: var(--surface);
+  position: relative;
+  z-index: 1;
+  background: transparent;
   color: var(--muted);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 999px;
-  padding: 0.3rem 0.9rem;
+  padding: 0.35rem 0.9rem;
   font-size: 0.78rem;
   font-weight: 600;
   box-shadow: none;
+  transition:
+    color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    transform 0.18s var(--ease-out);
 }
 
-.theme-picker button:hover {
+.theme-picker button:hover:not(.active) {
   color: var(--ink);
+  background: color-mix(in srgb, var(--hover) 80%, transparent);
   filter: none;
   transform: none;
   box-shadow: none;
 }
 
+.theme-picker button:active {
+  transform: scale(0.97);
+}
+
 .theme-picker button.active {
-  background: var(--brand-2);
-  color: #fff;
+  background: transparent;
+  color: var(--ink);
   border-color: transparent;
+}
+
+.theme-picker:not(:has(.pill-indicator.is-ready)) button.active {
+  background: color-mix(in srgb, var(--brand-2) 22%, var(--surface));
+  color: var(--ink);
+}
+
+.theme-picker .pill-indicator {
+  background: color-mix(in srgb, var(--brand-2) 88%, var(--surface));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-2) 55%, transparent),
+    0 6px 14px color-mix(in srgb, var(--brand-2) 28%, transparent);
+}
+
+.theme-picker .pill-indicator.is-ready ~ button.active {
+  color: #fff;
 }
 
 /* ---------- Responsive (tablet / mobile) ---------- */
@@ -5261,7 +5491,14 @@ code {
   }
 
   .theme-picker {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .theme-picker::-webkit-scrollbar {
+    display: none;
   }
 }
 
