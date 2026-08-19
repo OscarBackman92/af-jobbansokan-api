@@ -59,6 +59,12 @@ function activityToClip(activity) {
   });
 }
 
+export function selectPeriodKey(periods = [], storedKey = "", urlKey = "") {
+  if (storedKey) return storedKey;
+  if (urlKey) return urlKey;
+  return periods[periods.length - 1]?.key || "";
+}
+
 async function copyText(text) {
   await navigator.clipboard.writeText(text);
 }
@@ -69,11 +75,9 @@ export default function ReportPanel({
   onPeriodsReload,
   initialMonthFilter = "",
 }) {
-  const periodKeys = periods.map((period) => period.key);
   const parsed = parseMonthFilter(initialMonthFilter);
-  const [key, setKey] = useState(
-    parsed?.monthKey || periodKeys[periodKeys.length - 1] || ""
-  );
+  const [key, setKey] = useState(parsed?.monthKey || "");
+  const selectedKey = selectPeriodKey(periods, key, parsed?.monthKey);
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -90,10 +94,10 @@ export default function ReportPanel({
   }, [parsed?.monthKey]);
 
   useEffect(() => {
-    if (!token || !key) return undefined;
+    if (!token || !selectedKey) return undefined;
     let cancelled = false;
     setError(null);
-    request(`/api/v1/periods/${key}/`)
+    request(`/api/v1/periods/${selectedKey}/`)
       .then((body) => {
         if (!cancelled) setDetail(body);
       })
@@ -106,7 +110,7 @@ export default function ReportPanel({
     return () => {
       cancelled = true;
     };
-  }, [token, key]);
+  }, [token, selectedKey]);
 
   const jobs = useMemo(() => detail?.jobs || [], [detail]);
   const events = detail?.events || [];
@@ -120,7 +124,7 @@ export default function ReportPanel({
   }, [jobs, excludedJobs]);
 
   async function reloadDetail() {
-    const body = await request(`/api/v1/periods/${key}/`);
+    const body = await request(`/api/v1/periods/${selectedKey}/`);
     setDetail(body);
     onPeriodsReload?.();
   }
@@ -128,7 +132,7 @@ export default function ReportPanel({
   async function exclude(kind, id, excluded, note = "") {
     setBusy(true);
     try {
-      const body = await request(`/api/v1/periods/${key}/exclude/`, {
+      const body = await request(`/api/v1/periods/${selectedKey}/exclude/`, {
         method: "POST",
         body: { kind, id, excluded, note },
       });
@@ -181,7 +185,7 @@ export default function ReportPanel({
     }
     setBusy(true);
     try {
-      const body = await request(`/api/v1/periods/${key}/submit/`, {
+      const body = await request(`/api/v1/periods/${selectedKey}/submit/`, {
         method: "POST",
       });
       setDetail(body);
@@ -195,11 +199,11 @@ export default function ReportPanel({
 
   async function exportCsv() {
     try {
-      const blob = await downloadBlob(`/api/v1/periods/${key}/export/`);
+      const blob = await downloadBlob(`/api/v1/periods/${selectedKey}/export/`);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `aktivitetsrapport-${key}.csv`;
+      link.download = `aktivitetsrapport-${selectedKey}.csv`;
       link.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -220,7 +224,7 @@ export default function ReportPanel({
     }
   }
 
-  if (!key) {
+  if (!selectedKey) {
     return (
       <section className="card">
         <h2>Rapportera</h2>
@@ -241,8 +245,8 @@ export default function ReportPanel({
         </p>
         <PeriodStrip
           periods={periods}
-          selectedKey={key}
-          onSelect={(next) => setKey(next || key)}
+          selectedKey={selectedKey}
+          onSelect={(next) => setKey(next || selectedKey)}
         />
         {detail && (
           <p>
