@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { login, tabLink } from "./helpers.js";
+import { login, openTab, tabLink } from "./helpers.js";
 
 test.use({ viewport: { width: 393, height: 852 } });
 
@@ -53,8 +53,7 @@ test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
   await login(page);
 
   for (const label of TABS) {
-    await tabLink(page, label).click();
-    await expect(tabLink(page, label)).toHaveAttribute("aria-current", "page");
+    await openTab(page, label);
 
     const metrics = await page.evaluate(() => {
       const doc = document.documentElement;
@@ -92,6 +91,7 @@ test("mobile deep link keeps active tab visible before and after badges", async 
 
   for (const { tab, label } of DEEP_LINKS) {
     await page.goto(`/app/?tab=${tab}`);
+    await expect(page.getByRole("button", { name: "Logga ut" })).toBeVisible();
     await expect(tabLink(page, label)).toHaveAttribute("aria-current", "page");
 
     // Mount state — before nav badges may have grown the strip.

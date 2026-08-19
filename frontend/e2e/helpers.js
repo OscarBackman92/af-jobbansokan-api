@@ -39,12 +39,19 @@ export function tabLink(page, label) {
   });
 }
 
+export async function openTab(page, label) {
+  const link = tabLink(page, label);
+  await link.click();
+  await expect(link).toHaveAttribute("aria-current", "page");
+  return link;
+}
+
 export async function login(
   page,
   email = SEEDED_USER.email,
   password = SEEDED_USER.password
 ) {
-  await page.goto("/");
+  await page.goto("/app/");
   await page.getByLabel("E-postadress").fill(email);
   await fillPassword(page, password);
   await page.getByRole("button", { name: "Logga in", exact: true }).click();

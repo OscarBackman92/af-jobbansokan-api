@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { login, tabLink } from "./helpers.js";
+import { login, openTab } from "./helpers.js";
 
 const WIDTHS = [
   320, 360, 375, 393, 414, 480, 640, 741, 768, 820, 900, 1024, 1180, 1280,
@@ -71,11 +71,8 @@ test.describe("responsive widths", () => {
       await login(page);
 
       for (const tab of TABS) {
-        await page.goto(`/app/?tab=${tab.id}`);
-        await expect(tabLink(page, tab.label)).toHaveAttribute(
-          "aria-current",
-          "page"
-        );
+        await openTab(page, tab.label);
+        await expect(page).toHaveURL(new RegExp(`[?&]tab=${tab.id}\\b`));
         await assertResponsiveLayout(page);
       }
     });

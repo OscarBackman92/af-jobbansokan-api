@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { login, tabLink } from "./helpers.js";
+import { login, openTab, tabLink } from "./helpers.js";
 
 const TABS = [
   { id: "dash", label: "Översikt" },
@@ -51,11 +51,8 @@ for (const viewport of DESKTOP_VIEWPORTS) {
       await login(page);
 
       for (const tab of TABS) {
-        await page.goto(`/app/?tab=${tab.id}`);
-        await expect(tabLink(page, tab.label)).toHaveAttribute(
-          "aria-current",
-          "page"
-        );
+        await openTab(page, tab.label);
+        await expect(page).toHaveURL(new RegExp(`[?&]tab=${tab.id}\\b`));
         await assertAllTabsVisible(page);
         await assertActiveTabHitTest(page);
       }
