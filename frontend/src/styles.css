@@ -534,16 +534,14 @@ a:focus-visible {
   box-shadow: var(--shadow-sm);
   -webkit-mask-image: linear-gradient(
     to right,
-    transparent 0,
-    #000 0.75rem,
-    #000 calc(100% - 0.75rem),
+    #000 0,
+    #000 calc(100% - 1.35rem),
     transparent 100%
   );
   mask-image: linear-gradient(
     to right,
-    transparent 0,
-    #000 0.75rem,
-    #000 calc(100% - 0.75rem),
+    #000 0,
+    #000 calc(100% - 1.35rem),
     transparent 100%
   );
 }
@@ -2925,10 +2923,12 @@ button.job-filter-chip.active {
 
 .job-sort {
   display: inline-flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
   padding: 0.2rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
@@ -3809,8 +3809,15 @@ button.job-filter-chip.active {
 .skill-gap-grid {
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  grid-template-columns: 1fr;
   min-width: 0;
+  align-items: start;
+}
+
+@media (min-width: 860px) {
+  .skill-gap-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .skill-gap-bands,
@@ -3989,8 +3996,9 @@ button.job-filter-chip.active {
   gap: 0.35rem;
   padding: 0.2rem 0.45rem;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--brand-2) 28%, var(--border));
+  background: color-mix(in srgb, var(--brand-2) 10%, var(--surface));
+  color: var(--ink);
   font-size: 0.82rem;
 }
 
@@ -4717,11 +4725,18 @@ button.chart-col:focus-visible {
 }
 
 .command-hero--compact .metric-grid {
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .dashboard-metric-grid {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 641px) {
+  .command-hero--compact .metric-grid,
+  .dashboard-metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 480px) {
@@ -4906,6 +4921,7 @@ button.chart-col:focus-visible {
   border-collapse: collapse;
   margin-top: 0.65rem;
   font-size: 0.9rem;
+  border-bottom: 1px solid var(--border);
 }
 
 .pace-table th,
@@ -4914,6 +4930,11 @@ button.chart-col:focus-visible {
   padding: 0.45rem 0.35rem;
   border-bottom: 1px solid var(--border);
   vertical-align: baseline;
+}
+
+.pace-table tr:last-child th,
+.pace-table tr:last-child td {
+  border-bottom: 0;
 }
 
 .pace-table th {
@@ -5516,6 +5537,15 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .job-search-chips {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .job-sort {
+    width: 100%;
+  }
+
   .pager-status {
     min-width: 0;
     flex: 1 1 100%;
@@ -5582,8 +5612,8 @@ code {
   }
 
   .command-hero--compact {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
+    grid-template-columns: 1fr;
+    align-items: start;
     padding: 1.15rem 1.5rem;
   }
 
@@ -5799,7 +5829,7 @@ code {
   }
 
   .metric-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
