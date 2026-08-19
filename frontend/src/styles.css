@@ -1727,7 +1727,7 @@ tbody tr:last-child td {
   border-radius: 8px;
   border: 1px solid var(--amber-border);
   background: var(--amber-bg);
-  animation: item-in 0.32s var(--ease-out) both;
+  animation: item-in 0.32s var(--ease-out) backwards;
 }
 
 .report-banner p {
@@ -2221,7 +2221,7 @@ tbody tr:last-child td {
 }
 
 .metric-grid > .metric-tile {
-  animation: item-in 0.36s var(--ease-out) both;
+  animation: item-in 0.36s var(--ease-out) backwards;
 }
 
 .metric-grid > .metric-tile:nth-child(2) {
@@ -3008,7 +3008,7 @@ tbody tr:last-child td {
     box-shadow 0.2s var(--ease-out),
     transform 0.2s var(--ease-out);
   box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
-  animation: item-in 0.34s var(--ease-out) both;
+  animation: item-in 0.34s var(--ease-out) backwards;
 }
 
 .job-card:nth-child(2),
@@ -3900,7 +3900,7 @@ button.chart-col:focus-visible {
   border: 1px solid color-mix(in srgb, var(--brand) 55%, var(--border));
   transition: height 0.25s ease, box-shadow 0.2s ease;
   transform-origin: bottom;
-  animation: chart-grow 0.55s var(--ease-out) both;
+  animation: chart-grow 0.55s var(--ease-out) backwards;
 }
 
 .chart-col:nth-child(2) .chart-bar {
@@ -4077,7 +4077,7 @@ button.chart-col:focus-visible {
   border-bottom: 1px solid var(--border);
   background: transparent;
   border-left: 3px solid transparent;
-  animation: item-in 0.3s var(--ease-out) both;
+  animation: item-in 0.3s var(--ease-out) backwards;
 }
 
 .lane-select {
@@ -4389,7 +4389,7 @@ button.chart-col:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-2, rgba(255, 255, 255, 0.03));
-  animation: item-in 0.32s var(--ease-out) both;
+  animation: item-in 0.32s var(--ease-out) backwards;
 }
 
 .funnel li:nth-child(2) {
@@ -4435,7 +4435,7 @@ button.chart-col:focus-visible {
   overflow: hidden;
   border: 1px solid var(--border);
   background: var(--surface-2);
-  animation: bar-reveal 0.55s var(--ease-out) both;
+  animation: bar-reveal 0.55s var(--ease-out) backwards;
   transform-origin: left;
 }
 
@@ -4519,7 +4519,7 @@ button.chart-col:focus-visible {
   min-width: 0;
   border-radius: inherit;
   background: var(--brand);
-  animation: histogram-grow 0.55s var(--ease-out) both;
+  animation: histogram-grow 0.55s var(--ease-out) backwards;
   transform-origin: left;
 }
 
