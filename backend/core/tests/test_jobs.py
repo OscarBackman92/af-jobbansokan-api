@@ -536,6 +536,38 @@ def test_cached_search_still_applies_cv_match(api_client, user, mock_jobtech):
     assert body["results"][0]["match"]["matched"] == ["Python"]
 
 
+def test_min_match_scan_is_deterministic_and_reports_upstream_total(
+    api_client, user, monkeypatch
+):
+    Resume.objects.create(
+        user=user, skills=["Python", "Django", "SQL", "Docker"]
+    )
+    monkeypatch.setattr(views, "MATCH_CV_SCAN_LIMIT", 25)
+    monkeypatch.setattr(views, "MATCH_CV_BATCH_SIZE", 25)
+    hits = [
+        _hit(f"job-{i}", "Python", "2026-08-18T08:00:00") for i in range(25)
+    ]
+    payload = {"total": {"value": 80}, "hits": hits}
+
+    def fake_get(url, params=None, timeout=None):
+        return FakeResponse(payload)
+
+    monkeypatch.setattr(jobtech.requests, "get", fake_get)
+    api_client.force_authenticate(user)
+    first = api_client.get(
+        SEARCH_URL, {"q": "python", "min_match": "60"}
+    ).json()
+    second = api_client.get(
+        SEARCH_URL, {"q": "python", "min_match": "60"}
+    ).json()
+    assert first["match_cv_scanned"] == 25
+    assert first["match_cv_upstream_total"] == 80
+    assert first["truncated"] is True
+    assert first["match_cv_scanned"] == second["match_cv_scanned"]
+    assert first["total"] == second["total"]
+    assert first["truncated"] == second["truncated"]
+
+
 # --- CV skill matching (regression guards for boundary-aware matching) ---
 
 

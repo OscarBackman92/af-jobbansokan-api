@@ -853,7 +853,6 @@ GOOD_MATCH_MIN_TERMS = 2
 # Bounded scan: 4 JobTech pages × 25 ads. Keep well under gunicorn timeout.
 MATCH_CV_SCAN_LIMIT = 100
 MATCH_CV_BATCH_SIZE = 25
-MATCH_CV_TIME_BUDGET_S = 8.0
 MATCH_SCORE_CACHE_TTL = 60 * 60 * 24  # 24h
 
 
@@ -1056,21 +1055,17 @@ def _search_jobs_matching_cv(
 ) -> dict:
     """Scan a bounded JobTech window, score locally, paginate matches.
 
-    Never raises for scoring failures — returns what we have with truncated=True.
+    The window is the first MATCH_CV_SCAN_LIMIT ads in JobTech order
+    (newest first). Same query always scans the same ads — no time-budget
+    abort, which used to make mobile/desktop return different counts.
     """
-    import time
-
     matched: list[dict] = []
     scanned = 0
     upstream_total = 0
     truncated = False
-    started = time.monotonic()
     cache_prefix = _match_cache_prefix(evidence=evidence, skills=skills, resume=resume)
 
     while scanned < MATCH_CV_SCAN_LIMIT:
-        if time.monotonic() - started > MATCH_CV_TIME_BUDGET_S:
-            truncated = True
-            break
         batch = min(MATCH_CV_BATCH_SIZE, MATCH_CV_SCAN_LIMIT - scanned)
         try:
             data = _cached_jobtech_search(

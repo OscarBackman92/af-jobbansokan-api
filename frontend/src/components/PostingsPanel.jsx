@@ -4,6 +4,7 @@ import { addEvidenceTerm, coverGapInMatch } from "../addEvidence.js";
 import { externalUrl, normalizeAdUrl } from "../adUrl.js";
 import { request } from "../api.js";
 import { recordJobMatchGaps } from "../marketHints.js";
+import { matchScanCaption } from "../jobSearchQuery.js";
 import MatchScore from "./MatchScore.jsx";
 import ModalCloseButton from "./ModalCloseButton.jsx";
 import ModalOverlay, { useModalClose } from "./ModalOverlay.jsx";
@@ -678,6 +679,8 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
   const safeTotal = total ?? 0;
   const showingFrom = safeTotal === 0 ? 0 : offset + 1;
   const showingTo = Math.min(offset + PAGE_SIZE, safeTotal);
+  const matchScanned = Number(data?.scanned ?? data?.match_cv_scanned ?? 0);
+  const matchUpstream = Number(data?.match_cv_upstream_total ?? 0);
   const pageNumber = Math.floor(offset / PAGE_SIZE) + 1;
   const pageCount = Math.max(1, Math.ceil(safeTotal / PAGE_SIZE));
   const locationSummary = countSummary(
@@ -961,16 +964,23 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
             <p className="muted job-count">
               {safeTotal === 0
                 ? query.minMatch60 || query.matchCv
-                  ? `Inga av de ${Number(data?.scanned ?? data?.match_cv_scanned ?? 0).toLocaleString("sv-SE") || "—"} genomsökta annonserna nådde filtret.`
+                  ? matchScanCaption({
+                      showingFrom,
+                      showingTo,
+                      matchTotal: safeTotal,
+                      scanned: matchScanned,
+                      upstreamTotal: matchUpstream,
+                      empty: true,
+                    })
                   : "Inga annonser matchade din sökning."
                 : query.minMatch60 || query.matchCv
-                  ? `Visar ${showingFrom}–${showingTo} av ${totalLabel} som når kravtäckningen${
-                      data?.scanned || data?.match_cv_scanned
-                        ? ` — sökte igenom de ${Number(
-                            data.scanned ?? data.match_cv_scanned
-                          ).toLocaleString("sv-SE")} senaste`
-                        : ""
-                    }${data?.truncated ? " (avbrutet efter budget)" : ""}`
+                  ? matchScanCaption({
+                      showingFrom,
+                      showingTo,
+                      matchTotal: safeTotal,
+                      scanned: matchScanned,
+                      upstreamTotal: matchUpstream,
+                    })
                   : `Visar ${showingFrom}–${showingTo} av ${totalLabel} annonser`}
               {activeFilters && (
                 <button className="linklike job-clear" onClick={clearFilters}>
