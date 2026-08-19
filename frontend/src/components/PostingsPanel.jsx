@@ -881,8 +881,11 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
               </button>
             </div>
 
-            <button type="submit" className="job-search-submit">
-              Sök
+            <button
+              type="submit"
+              className={`job-search-submit ${searchPending ? "is-pending" : ""}`}
+            >
+              {searchPending ? "Sök ändringar" : "Sök"}
             </button>
           </div>
         </form>

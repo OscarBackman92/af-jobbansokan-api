@@ -2958,6 +2958,21 @@ button.job-filter-chip.active {
   width: 100%;
 }
 
+.job-search-submit.is-pending {
+  box-shadow: var(--ring);
+}
+
+.job-search-submit.is-pending::after {
+  content: "";
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-left: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+
 .multi-select-filter {
   position: relative;
 }
