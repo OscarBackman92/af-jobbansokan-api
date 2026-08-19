@@ -15,6 +15,7 @@ import SavedPanel from "./components/SavedPanel.jsx";
 import VerifyEmail from "./components/VerifyEmail.jsx";
 import { encodeMonthFilter } from "./dates.js";
 import { readGoogleCallback } from "./googleAuth.js";
+import { observePillIndicator } from "./pillIndicator.js";
 import useApplications from "./useApplications.js";
 import useReportPeriods from "./useReportPeriods.js";
 
@@ -113,6 +114,7 @@ export default function App() {
   const profileLeaveGuardRef = useRef(null);
   const focusedRowRef = useRef(-1);
   const tabsRef = useRef(null);
+  const themePickerRef = useRef(null);
 
   const {
     applications,
@@ -190,41 +192,17 @@ export default function App() {
   }, [tab]);
 
   useLayoutEffect(() => {
-    const nav = tabsRef.current;
-    if (!(nav instanceof HTMLElement)) return undefined;
-
-    // Scroll only when the active tab is clipped — nearest edge, never
-    // force it to scrollLeft 0 (which hid "Översikt" under the brand).
-    function alignActive() {
-      const activeTab = nav.querySelector(".tab.active");
-      const indicator = nav.querySelector(".tab-indicator");
-      if (!(activeTab instanceof HTMLElement)) return;
-      const navRect = nav.getBoundingClientRect();
-      const tabRect = activeTab.getBoundingClientRect();
-      let delta = 0;
-      if (tabRect.left < navRect.left + 8) {
-        delta = tabRect.left - navRect.left - 8;
-      } else if (tabRect.right > navRect.right - 8) {
-        delta = tabRect.right - navRect.right + 8;
-      }
-      if (Math.abs(delta) > 1) {
-        nav.scrollBy({ left: delta, behavior: "auto" });
-      }
-      if (indicator instanceof HTMLElement) {
-        indicator.style.width = `${activeTab.offsetWidth}px`;
-        indicator.style.transform = `translateX(${activeTab.offsetLeft}px)`;
-        indicator.classList.add("is-ready");
-      }
-    }
-
-    alignActive();
-    const observer = new ResizeObserver(() => alignActive());
-    observer.observe(nav);
-    for (const child of nav.querySelectorAll(".tab")) {
-      observer.observe(child);
-    }
-    return () => observer.disconnect();
+    return observePillIndicator(tabsRef.current, {
+      scrollActive: true,
+      activeSelector: ".tab.active",
+    });
   }, [tab, savedCount, appliedCount, token]);
+
+  useLayoutEffect(() => {
+    return observePillIndicator(themePickerRef.current, {
+      activeSelector: "button.active",
+    });
+  }, [theme]);
 
   useEffect(() => {
     function visibleRows() {
@@ -491,7 +469,7 @@ export default function App() {
               />
             )}
             <div
-              className={tab === "dash" ? undefined : "tab-panel-hidden"}
+              className={tab === "dash" ? "tab-panel" : "tab-panel tab-panel-hidden"}
               aria-hidden={tab !== "dash"}
             >
               <DashboardPanel
@@ -502,7 +480,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "saved" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "saved" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "saved"}
             >
               <SavedPanel
@@ -519,7 +499,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "applied" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "applied" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "applied"}
             >
               <AppliedPanel
@@ -540,7 +522,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "report" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "report" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "report"}
             >
               <ReportPanel
@@ -551,7 +535,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "postings" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "postings" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "postings"}
             >
               <PostingsPanel
@@ -561,7 +547,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "profile" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "profile" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "profile"}
             >
               <ProfilePanel
@@ -627,7 +615,12 @@ export default function App() {
         <a className="footer-link" href="/integritet/">
           Integritetspolicy
         </a>
-        <div className="theme-picker" aria-label="Visuellt tema">
+        <div
+          ref={themePickerRef}
+          className="theme-picker pill-bar"
+          aria-label="Visuellt tema"
+        >
+          <span className="pill-indicator" aria-hidden="true" />
           {THEMES.map((t) => (
             <button
               key={t.id}

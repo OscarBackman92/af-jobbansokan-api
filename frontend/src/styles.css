@@ -259,6 +259,10 @@ a:focus-visible {
   display: none !important;
 }
 
+.tab-panel:not(.tab-panel-hidden) {
+  animation: page-in 0.35s var(--ease-out) both;
+}
+
 .app--guest {
   background: var(--bg);
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
@@ -352,6 +356,7 @@ a:focus-visible {
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 500;
+  transition: color 0.22s var(--ease-out);
 }
 
 .header-guest-nav a:hover {
@@ -445,7 +450,8 @@ a:focus-visible {
   box-shadow: var(--shadow-sm);
 }
 
-.tab-indicator {
+.tab-indicator,
+.pill-indicator {
   position: absolute;
   top: 0.22rem;
   bottom: 0.22rem;
@@ -462,12 +468,36 @@ a:focus-visible {
   transform: translateX(0);
 }
 
-.tab-indicator.is-ready {
+.tab-indicator.is-ready,
+.pill-indicator.is-ready {
   opacity: 1;
   transition:
     transform 0.4s var(--ease-out),
     width 0.4s var(--ease-out),
     opacity 0.2s var(--ease-out);
+}
+
+.pill-bar {
+  display: flex;
+  position: relative;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.22rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+
+.pill-bar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Free tab space: email is also under Profil & CV. */
@@ -529,7 +559,8 @@ a:focus-visible {
   box-shadow: none;
 }
 
-.tabs:not(:has(.tab-indicator.is-ready)) .tab.active {
+.tabs:not(:has(.tab-indicator.is-ready)) .tab.active,
+.pill-bar:not(:has(.pill-indicator.is-ready)) .active:not(.job-profile-tab--add) {
   background: color-mix(in srgb, var(--brand-2) 18%, transparent);
 }
 
@@ -1654,6 +1685,10 @@ tbody tr:last-child td {
   background: var(--surface);
   color: var(--ink);
   box-shadow: none;
+  transition:
+    background-color 0.22s var(--ease-out),
+    border-color 0.22s var(--ease-out),
+    box-shadow 0.22s var(--ease-out);
 }
 
 .period-cell:hover {
@@ -1786,23 +1821,57 @@ tbody tr:last-child td {
 .occupation-picker-list {
   position: absolute;
   z-index: 5;
-  top: 100%;
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
   margin: 0;
-  padding: 0.25rem;
+  padding: 0.3rem;
   list-style: none;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 12px;
+  box-shadow:
+    var(--shadow-lg),
+    0 18px 40px color-mix(in srgb, var(--ink) 16%, transparent);
   max-height: 12rem;
   overflow: auto;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.97);
+  transform-origin: top left;
+  pointer-events: none;
+  transition:
+    opacity 0.22s var(--ease-out),
+    transform 0.28s var(--ease-out);
+}
+
+.occupation-picker-list--open {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
 }
 
 .occupation-picker-list button {
   width: 100%;
+  margin: 0.08rem 0;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
   text-align: left;
+  box-shadow: none;
+  transform: none;
+  transition: background-color 0.18s var(--ease-out), color 0.18s var(--ease-out);
+}
+
+.occupation-picker-list button:hover {
+  background: var(--hover);
+  color: var(--ink);
+  filter: none;
+  transform: none;
+  box-shadow: none;
 }
 
 .quick-filters {
@@ -1826,6 +1895,10 @@ tbody tr:last-child td {
   padding: 0.36rem 0.75rem;
   font-size: 0.8rem;
   flex-shrink: 0;
+  transition:
+    color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    border-color 0.22s var(--ease-out);
 }
 
 .quick-filters button:hover {
@@ -2608,6 +2681,10 @@ tbody tr:last-child td {
   max-width: 100%;
   min-width: 0;
   justify-self: start;
+  transition:
+    color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    border-color 0.22s var(--ease-out);
 }
 
 .job-filter-chip.active {
@@ -3022,6 +3099,9 @@ tbody tr:last-child td {
   border-radius: 999px;
   overflow: hidden;
   background: var(--surface-2);
+  transition:
+    border-color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out);
 }
 
 .saved-search-chip button {
@@ -3534,29 +3614,58 @@ tbody tr:last-child td {
 }
 
 .job-profile-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .job-profile-tab {
-  border: 1px solid var(--border);
-  background: var(--surface-2, transparent);
-  color: var(--text);
-  border-radius: var(--radius-sm);
-  padding: 0.35rem 0.7rem;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  min-height: 36px;
   font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
+  color: var(--muted);
+  white-space: nowrap;
+  box-shadow: none;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 1;
+  transition:
+    color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    transform 0.22s var(--ease-out);
+}
+
+.job-profile-tab:hover:not(.active) {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--hover) 80%, transparent);
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.job-profile-tab:active {
+  transform: scale(0.97);
 }
 
 .job-profile-tab.active {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--ink);
+  background: transparent;
+  box-shadow: none;
 }
 
 .job-profile-tab--add {
-  border-style: dashed;
+  border: 1px dashed var(--border);
   color: var(--muted);
+  background: transparent;
+}
+
+.job-profile-tab--add:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--hover) 80%, transparent);
 }
 
 .job-profile-hint {
@@ -3966,6 +4075,21 @@ button.chart-col:focus-visible {
   border-bottom: 1px solid var(--border);
   background: transparent;
   border-left: 3px solid transparent;
+  border-radius: 8px;
+  transition:
+    background-color 0.22s var(--ease-out),
+    border-color 0.22s var(--ease-out);
+}
+
+@media (hover: hover) {
+  .lane-row:hover {
+    background: color-mix(in srgb, var(--hover) 70%, transparent);
+  }
+
+  .lane-row--urgent:hover,
+  .lane-row--late:hover {
+    background: color-mix(in srgb, var(--amber) 12%, var(--hover));
+  }
 }
 
 .lane-select {
@@ -4129,6 +4253,7 @@ button.chart-col:focus-visible {
   place-items: center;
   background: color-mix(in srgb, var(--ink) 35%, transparent);
   padding: 1rem;
+  animation: fade 0.18s var(--ease-out) both;
 }
 
 .keys-help-card {
@@ -4138,6 +4263,7 @@ button.chart-col:focus-visible {
   border-radius: var(--radius);
   padding: 1rem 1.15rem;
   box-shadow: var(--shadow-md);
+  animation: pop 0.28s var(--ease-out) both;
 }
 
 .keys-help-list {
@@ -4174,6 +4300,7 @@ button.chart-col:focus-visible {
   border-radius: var(--radius-sm);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
+  animation: rise 0.35s var(--ease-out) both;
 }
 
 .lane-skeleton {
@@ -4546,7 +4673,7 @@ button.chart-col:focus-visible {
   overflow-y: auto;
   overscroll-behavior: contain;
   z-index: 50;
-  animation: fade 0.18s ease both;
+  animation: fade 0.22s var(--ease-out) both;
 }
 
 @keyframes fade {
@@ -4570,7 +4697,7 @@ button.chart-col:focus-visible {
   flex-direction: column;
   gap: 0.6rem;
   box-shadow: var(--shadow-lg);
-  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation: pop 0.28s var(--ease-out) both;
   margin: auto;
   flex-shrink: 0;
   min-height: 0;
@@ -4884,31 +5011,45 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.9rem;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.9rem auto 0;
 }
 
 .theme-picker button {
-  background: var(--surface);
+  background: transparent;
   color: var(--muted);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 999px;
-  padding: 0.3rem 0.9rem;
+  padding: 0.38rem 0.9rem;
+  min-height: 32px;
   font-size: 0.78rem;
   font-weight: 600;
   box-shadow: none;
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  transition:
+    color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    transform 0.22s var(--ease-out);
 }
 
-.theme-picker button:hover {
+.theme-picker button:hover:not(.active) {
   color: var(--ink);
+  background: color-mix(in srgb, var(--hover) 80%, transparent);
   filter: none;
   transform: none;
   box-shadow: none;
 }
 
+.theme-picker button:active {
+  transform: scale(0.97);
+}
+
 .theme-picker button.active {
-  background: var(--brand-2);
-  color: #fff;
+  background: transparent;
+  color: var(--ink);
   border-color: transparent;
 }
 
@@ -5261,7 +5402,7 @@ code {
   }
 
   .theme-picker {
-    flex-wrap: wrap;
+    max-width: 100%;
   }
 }
 

@@ -10,6 +10,20 @@
     return id;
   }
 
+  function alignPill(picker) {
+    if (!picker) return;
+    var active = picker.querySelector("button.active");
+    var indicator = picker.querySelector(".pill-indicator");
+    if (!active || !indicator) return;
+    indicator.style.width = active.offsetWidth + "px";
+    indicator.style.transform = "translateX(" + active.offsetLeft + "px)";
+    indicator.classList.add("is-ready");
+  }
+
+  function alignAllPills() {
+    document.querySelectorAll(".theme-picker").forEach(alignPill);
+  }
+
   function applyTheme(id) {
     if (!THEMES.includes(id)) return;
     document.documentElement.dataset.theme = resolveTheme(id);
@@ -17,6 +31,7 @@
     document.querySelectorAll(".theme-picker [data-theme]").forEach(function (btn) {
       btn.classList.toggle("active", btn.dataset.theme === id);
     });
+    alignAllPills();
   }
 
   document.querySelectorAll(".theme-picker [data-theme]").forEach(function (btn) {
@@ -28,6 +43,8 @@
   var current = localStorage.getItem("theme") || "daylight";
   if (!THEMES.includes(current)) current = "daylight";
   applyTheme(current);
+
+  window.addEventListener("resize", alignAllPills);
 
   window
     .matchMedia("(prefers-color-scheme: dark)")

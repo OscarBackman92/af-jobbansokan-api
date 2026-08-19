@@ -20,6 +20,7 @@
   --radius-sm: 4px;
   --shadow-sm: 0 1px 2px rgba(12, 12, 9, 0.06);
   --shadow-md: 0 2px 6px rgba(12, 12, 9, 0.08);
+  --shadow-lg: 0 8px 20px rgba(12, 12, 9, 0.1);
   --font-display: "Inter", system-ui, sans-serif;
   --font-body: "Open Sans", system-ui, sans-serif;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -40,6 +41,7 @@
   --accent-border: rgba(157, 151, 232, 0.28);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.55);
 }
 
 [data-theme="signal"] {
@@ -57,6 +59,7 @@
   --accent-border: rgba(255, 255, 255, 0.12);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.55);
 }
 
 *,
@@ -129,6 +132,18 @@ a:focus-visible {
   font-size: 0.95rem;
   border: 1px solid color-mix(in srgb, var(--brand-2) 80%, var(--border));
   flex-shrink: 0;
+  transition:
+    transform 0.28s var(--ease-out),
+    box-shadow 0.28s var(--ease-out);
+}
+
+.marketing-brand:hover .marketing-logo {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--brand-2) 38%, transparent);
+}
+
+.marketing-brand:active .marketing-logo {
+  transform: scale(0.98);
 }
 
 .marketing-brand h1 {
@@ -152,6 +167,7 @@ a:focus-visible {
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 500;
+  transition: color 0.22s var(--ease-out);
 }
 
 .marketing-nav a:hover {
@@ -206,6 +222,14 @@ a:focus-visible {
   margin-bottom: 2rem;
 }
 
+.marketing-hero > * {
+  animation: rise 0.5s var(--ease-out) both;
+}
+
+.marketing-hero > *:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
 @media (max-width: 880px) {
   .marketing-hero {
     grid-template-columns: 1fr;
@@ -254,12 +278,21 @@ a:focus-visible {
   font-weight: 700;
 }
 
-.hero-card {
+.hero-card,
+.step-card,
+.app-area-card,
+.feature-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.5rem 1.75rem;
   box-shadow: var(--shadow-sm);
+  transition:
+    border-color 0.2s var(--ease-out),
+    box-shadow 0.25s var(--ease-out);
+}
+
+.hero-card {
+  padding: 1.5rem 1.75rem;
 }
 
 .hero-card h3 {
@@ -313,10 +346,15 @@ a:focus-visible {
   gap: 1rem;
   align-items: start;
   padding: 1rem 1.15rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  animation: rise 0.45s var(--ease-out) both;
+}
+
+.steps-list .step-card:nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.steps-list .step-card:nth-child(3) {
+  animation-delay: 0.12s;
 }
 
 .step-number {
@@ -353,11 +391,16 @@ a:focus-visible {
 }
 
 .app-area-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
   padding: 1.1rem 1.2rem;
-  box-shadow: var(--shadow-sm);
+  animation: rise 0.45s var(--ease-out) both;
+}
+
+.app-areas .app-area-card:nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.app-areas .app-area-card:nth-child(3) {
+  animation-delay: 0.12s;
 }
 
 .app-area-card h3 {
@@ -448,11 +491,8 @@ a:focus-visible {
 }
 
 .feature-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
   padding: 1rem 1.15rem;
-  box-shadow: var(--shadow-sm);
+  animation: rise 0.45s var(--ease-out) both;
 }
 
 .feature-card h3 {
@@ -498,32 +538,84 @@ a:focus-visible {
 
 .theme-picker {
   display: flex;
+  position: relative;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.9rem;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.9rem auto 0;
+  gap: 0.15rem;
+  padding: 0.22rem;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-picker::-webkit-scrollbar {
+  display: none;
+}
+
+.pill-indicator {
+  position: absolute;
+  top: 0.22rem;
+  bottom: 0.22rem;
+  left: 0;
+  width: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand-2) 22%, var(--surface));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-2) 42%, transparent),
+    0 6px 16px color-mix(in srgb, var(--brand-2) 16%, transparent);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transform: translateX(0);
+}
+
+.pill-indicator.is-ready {
+  opacity: 1;
+  transition:
+    transform 0.4s var(--ease-out),
+    width 0.4s var(--ease-out),
+    opacity 0.2s var(--ease-out);
 }
 
 .theme-picker button {
-  background: var(--surface);
+  background: transparent;
   color: var(--muted);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 999px;
-  padding: 0.3rem 0.9rem;
+  padding: 0.38rem 0.9rem;
+  min-height: 32px;
   font-size: 0.78rem;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  transition:
+    color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out);
 }
 
-.theme-picker button:hover {
+.theme-picker button:hover:not(.active) {
   color: var(--ink);
+  background: color-mix(in srgb, var(--hover) 80%, transparent);
 }
 
 .theme-picker button.active {
-  background: var(--brand-2);
-  color: #fff;
+  background: transparent;
+  color: var(--ink);
   border-color: transparent;
+}
+
+.theme-picker:not(:has(.pill-indicator.is-ready)) button.active {
+  background: color-mix(in srgb, var(--brand-2) 18%, transparent);
 }
 
 .privacy-body h3 {
@@ -538,4 +630,35 @@ a:focus-visible {
 
 .privacy-body li {
   margin: 0.35rem 0;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (hover: hover) {
+  .hero-card:hover,
+  .step-card:hover,
+  .app-area-card:hover,
+  .feature-card:hover {
+    box-shadow: var(--shadow-md);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

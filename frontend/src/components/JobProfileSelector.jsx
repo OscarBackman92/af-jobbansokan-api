@@ -1,4 +1,7 @@
+import { useLayoutEffect, useRef } from "react";
+
 import { MAX_PROFILES } from "../jobProfiles.js";
+import { observePillIndicator } from "../pillIndicator.js";
 
 export default function JobProfileSelector({
   profiles,
@@ -7,15 +10,34 @@ export default function JobProfileSelector({
   onAdd,
   onRename,
 }) {
+  const tabsRef = useRef(null);
+
+  useLayoutEffect(() => {
+    return observePillIndicator(tabsRef.current, {
+      scrollActive: true,
+      activeSelector: ".job-profile-tab.active",
+    });
+  }, [activeId, profiles]);
+
   return (
     <div className="job-profile-selector">
-      <div className="job-profile-tabs" role="tablist" aria-label="Jobbprofiler">
+      <div
+        ref={tabsRef}
+        className="job-profile-tabs pill-bar"
+        role="tablist"
+        aria-label="Jobbprofiler"
+      >
+        <span className="pill-indicator" aria-hidden="true" />
         {profiles.map((profile) => (
           <button
             key={profile.id}
             type="button"
             role="tab"
-            className={profile.id === activeId ? "job-profile-tab active" : "job-profile-tab"}
+            className={
+              profile.id === activeId
+                ? "job-profile-tab active"
+                : "job-profile-tab"
+            }
             aria-selected={profile.id === activeId}
             onClick={() => onSelect(profile.id)}
             onDoubleClick={() => {
@@ -28,7 +50,11 @@ export default function JobProfileSelector({
           </button>
         ))}
         {profiles.length < MAX_PROFILES && (
-          <button type="button" className="job-profile-tab job-profile-tab--add" onClick={onAdd}>
+          <button
+            type="button"
+            className="job-profile-tab job-profile-tab--add"
+            onClick={onAdd}
+          >
             + Ny profil
           </button>
         )}
