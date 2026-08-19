@@ -2248,15 +2248,36 @@ tbody tr:last-child td {
 .pipeline-row-actions {
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   gap: 0.45rem;
   align-items: center;
   justify-items: stretch;
 }
 
+.pipeline-row-actions .status-chip {
+  min-width: 0;
+  width: 100%;
+}
+
 .pipeline-row-actions select {
   width: 100%;
+  min-width: 10rem;
+  flex-shrink: 0;
   margin-top: 0;
+}
+
+.pipeline-row-actions .secondary {
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .pipeline-row-actions {
+    grid-template-columns: minmax(10rem, 1fr) auto;
+  }
+
+  .pipeline-row-actions .secondary {
+    width: auto;
+  }
 }
 
 .status-chip {
@@ -5626,6 +5647,7 @@ code {
 
   .pipeline-row-actions {
     width: min(260px, 32vw);
+    min-width: 10rem;
     grid-template-columns: 1fr;
   }
 
