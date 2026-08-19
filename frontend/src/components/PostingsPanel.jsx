@@ -1298,52 +1298,54 @@ function JobDetailBody({
         <ModalCloseButton />
       </div>
 
-      <div className="modal-actions">
-        {applyHref && (
-          <a
-            className="btn-primary"
-            href={applyHref}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {job.application_url
-              ? "Ansök hos arbetsgivaren ↗"
-              : "Ansök på platsannonsen ↗"}
-          </a>
-        )}
-        {platsbankenHref && platsbankenHref !== applyHref && (
-          <a
-            className="secondary"
-            href={platsbankenHref}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Platsbanken ↗
-          </a>
-        )}
-        <button className="secondary" onClick={onTrack} disabled={tracked}>
-          {tracked ? "Sparad ✓" : "+ Spara ansökan"}
-        </button>
-      </div>
-      <p className="muted modal-hint">
-        {job.application_url
-          ? "Ansökan görs hos arbetsgivaren — läs annonsen här och spara ansökan för uppföljning."
-          : "Ansökan görs hos arbetsgivaren — spara den här så följer du den i dina ansökningar."}
-      </p>
+      <div className="modal-body">
+        <div className="modal-actions">
+          {applyHref && (
+            <a
+              className="btn-primary"
+              href={applyHref}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {job.application_url
+                ? "Ansök hos arbetsgivaren ↗"
+                : "Ansök på platsannonsen ↗"}
+            </a>
+          )}
+          {platsbankenHref && platsbankenHref !== applyHref && (
+            <a
+              className="secondary"
+              href={platsbankenHref}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Platsbanken ↗
+            </a>
+          )}
+          <button className="secondary" onClick={onTrack} disabled={tracked}>
+            {tracked ? "Sparad ✓" : "+ Spara ansökan"}
+          </button>
+        </div>
+        <p className="muted modal-hint">
+          {job.application_url
+            ? "Ansökan görs hos arbetsgivaren — läs annonsen här och spara ansökan för uppföljning."
+            : "Ansökan görs hos arbetsgivaren — spara den här så följer du den i dina ansökningar."}
+        </p>
 
-      {job.match?.profiles_scored && (
-        <ProfileFitRow profiles={job.match.profiles_scored} />
-      )}
-      {job.match && (
-        <MatchScore
-          match={job.match}
-          variant="detail"
-          onAddEvidence={handleAddEvidence}
-        />
-      )}
+        {job.match?.profiles_scored && (
+          <ProfileFitRow profiles={job.match.profiles_scored} />
+        )}
+        {job.match && (
+          <MatchScore
+            match={job.match}
+            variant="detail"
+            onAddEvidence={handleAddEvidence}
+          />
+        )}
 
-      <div className="description">
-        {job.description || "Ingen beskrivning tillgänglig för den här annonsen."}
+        <div className="description">
+          {job.description || "Ingen beskrivning tillgänglig för den här annonsen."}
+        </div>
       </div>
     </>
   );
