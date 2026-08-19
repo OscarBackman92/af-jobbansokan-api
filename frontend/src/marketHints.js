@@ -1,8 +1,18 @@
 const STORAGE_KEY = "jobbdjungeln.marketHints";
+const LEGACY_STORAGE_KEY = "jobbsoket.marketHints";
 
 function readStore() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (raw) {
+        localStorage.setItem(STORAGE_KEY, raw);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
+    } else {
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
     const parsed = raw ? JSON.parse(raw) : {};
     return typeof parsed === "object" && parsed ? parsed : {};
   } catch {
@@ -12,6 +22,11 @@ function readStore() {
 
 function writeStore(store) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  try {
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function recordJobMatchGaps(missingTerms) {

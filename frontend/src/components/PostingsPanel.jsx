@@ -14,6 +14,7 @@ import ProfileFitRow from "./ProfileFitRow.jsx";
 const LAST_SEARCH_KEY = "jobbdjungeln-last-job-search";
 const LAST_MUNICIPALITIES_KEY = "jobbdjungeln-last-municipalities";
 const LAST_REGION_KEY = "jobbdjungeln-last-region";
+const LEGACY_REGION_KEY = "jobbsoket-last-region";
 
 function readLastMunicipalities() {
   try {
@@ -28,10 +29,32 @@ function readLastMunicipalities() {
 function rememberMunicipalities(rows, regionId) {
   try {
     localStorage.setItem(LAST_MUNICIPALITIES_KEY, JSON.stringify(rows.slice(0, 12)));
-    if (regionId) localStorage.setItem(LAST_REGION_KEY, regionId);
+    if (regionId) {
+      localStorage.setItem(LAST_REGION_KEY, regionId);
+      localStorage.removeItem(LEGACY_REGION_KEY);
+    }
   } catch {
     /* ignore quota */
   }
+}
+
+function readLastRegion() {
+  try {
+    const current = localStorage.getItem(LAST_REGION_KEY);
+    if (current) {
+      localStorage.removeItem(LEGACY_REGION_KEY);
+      return current;
+    }
+    const legacy = localStorage.getItem(LEGACY_REGION_KEY);
+    if (legacy) {
+      localStorage.setItem(LAST_REGION_KEY, legacy);
+      localStorage.removeItem(LEGACY_REGION_KEY);
+      return legacy;
+    }
+  } catch {
+    /* ignore */
+  }
+  return "";
 }
 
 function readLastSearch() {
@@ -154,9 +177,7 @@ function countSummary(count, singular, plural) {
 export default function PostingsPanel({ onNavigate, upsert, active = true }) {
   const [filters, setFilters] = useState({ regions: [], fields: [] });
   const [q, setQ] = useState(() => initialQuery().q ?? "");
-  const [browseRegion, setBrowseRegion] = useState(
-    () => localStorage.getItem(LAST_REGION_KEY) || ""
-  );
+  const [browseRegion, setBrowseRegion] = useState(() => readLastRegion());
   const [browseField, setBrowseField] = useState("");
   const [selectedMunicipalities, setSelectedMunicipalities] = useState(
     () => readLastSearch()?.municipalities ?? readLastMunicipalities()
@@ -1033,10 +1054,10 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
             </div>
           )}
 
-          {!loading && !error && (
+          {!error && results.length > 0 && (
           <div
-            className="job-list"
-            aria-busy={false}
+            className={`job-list ${loading ? "is-muted" : ""}`}
+            aria-busy={loading}
           >
             {results.map((job) => (
               <JobCard
