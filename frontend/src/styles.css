@@ -1488,6 +1488,24 @@ tbody tr:last-child td {
   color: var(--muted);
 }
 
+.error,
+.warning,
+.notice {
+  animation: alert-in 0.3s var(--ease-out) both;
+}
+
+/* Alerts drop in from above the content they explain. */
+@keyframes alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .error {
   color: var(--red);
   background: var(--red-bg);
@@ -1762,6 +1780,7 @@ tbody tr:last-child td {
   border-radius: 8px;
   border: 1px solid var(--amber-border);
   background: var(--amber-bg);
+  animation: alert-in 0.34s var(--ease-out) both;
 }
 
 .report-banner p {
@@ -4216,6 +4235,20 @@ button.chart-col:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
+  transform-origin: top center;
+  animation: expand-in 0.26s var(--ease-out) both;
+}
+
+/* Inline row panels unfold under the row that opened them. */
+@keyframes expand-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scaleY(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .due {
@@ -4272,6 +4305,7 @@ button.chart-col:focus-visible {
   place-items: center;
   background: color-mix(in srgb, var(--ink) 35%, transparent);
   padding: 1rem;
+  animation: fade 0.18s ease both;
 }
 
 .keys-help-card {
@@ -4281,6 +4315,7 @@ button.chart-col:focus-visible {
   border-radius: var(--radius);
   padding: 1rem 1.15rem;
   box-shadow: var(--shadow-md);
+  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
 .keys-help-list {
@@ -4307,6 +4342,7 @@ button.chart-col:focus-visible {
   position: sticky;
   top: 0.5rem;
   z-index: 5;
+  animation: expand-in 0.28s var(--ease-out) both;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -4983,14 +5019,20 @@ button.chart-col:focus-visible {
 }
 
 .application-form-toggle summary::before {
-  content: "▸ ";
+  content: "▸";
   display: inline-block;
   width: 1rem;
   color: var(--muted);
+  transition: transform 0.22s var(--ease-out);
 }
 
 .application-form-toggle[open] summary::before {
-  content: "▾ ";
+  transform: rotate(90deg);
+}
+
+.application-form-toggle[open] > *:not(summary),
+.link-details[open] > *:not(summary) {
+  animation: expand-in 0.26s var(--ease-out) both;
 }
 
 .application-form-toggle summary::-webkit-details-marker {
