@@ -780,7 +780,7 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
               onClearSecondary={() => clearVisibleGroups(groupOptions)}
               onClearAll={() => setSelectedGroups([])}
               secondaryLoading={groupsLoading && !groupCache[browseField]}
-              secondaryEmptyText="Välj yrkesområde till vänster"
+              secondaryEmptyText="Välj yrkesområde"
             />
           </div>
 
@@ -1284,66 +1284,70 @@ function JobDetailBody({
 
   return (
     <>
-      <div className="modal-head">
-        <div className="modal-head-text">
-          <h2 id="job-modal-title">{job.title}</h2>
-          <p className="muted">
-            {job.company_name}
-            {job.location && ` — ${job.location}`}
-            {job.published_at && ` · upplagd ${formatJobDate(job.published_at)}`}
-            {job.application_deadline &&
-              ` · sista ansökningsdag ${formatJobDate(job.application_deadline)}`}
-          </p>
+      <header className="job-modal-header">
+        <div className="modal-head">
+          <div className="modal-head-text">
+            <h2 id="job-modal-title">{job.title}</h2>
+            <p className="muted">
+              {job.company_name}
+              {job.location && ` — ${job.location}`}
+              {job.published_at && ` · upplagd ${formatJobDate(job.published_at)}`}
+              {job.application_deadline &&
+                ` · sista ansökningsdag ${formatJobDate(job.application_deadline)}`}
+            </p>
+          </div>
+          <ModalCloseButton />
         </div>
-        <ModalCloseButton />
-      </div>
 
-      <div className="modal-actions">
-        {applyHref && (
-          <a
-            className="btn-primary"
-            href={applyHref}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {job.application_url
-              ? "Ansök hos arbetsgivaren ↗"
-              : "Ansök på platsannonsen ↗"}
-          </a>
+        <div className="modal-actions">
+          {applyHref && (
+            <a
+              className="btn-primary"
+              href={applyHref}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {job.application_url
+                ? "Ansök hos arbetsgivaren ↗"
+                : "Ansök på platsannonsen ↗"}
+            </a>
+          )}
+          {platsbankenHref && platsbankenHref !== applyHref && (
+            <a
+              className="secondary"
+              href={platsbankenHref}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Platsbanken ↗
+            </a>
+          )}
+          <button className="secondary" onClick={onTrack} disabled={tracked}>
+            {tracked ? "Sparad ✓" : "+ Spara ansökan"}
+          </button>
+        </div>
+        <p className="muted modal-hint">
+          {job.application_url
+            ? "Ansökan görs hos arbetsgivaren — läs annonsen här och spara ansökan för uppföljning."
+            : "Ansökan görs hos arbetsgivaren — spara den här så följer du den i dina ansökningar."}
+        </p>
+      </header>
+
+      <div className="job-modal-body">
+        {job.match?.profiles_scored && (
+          <ProfileFitRow profiles={job.match.profiles_scored} />
         )}
-        {platsbankenHref && platsbankenHref !== applyHref && (
-          <a
-            className="secondary"
-            href={platsbankenHref}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Platsbanken ↗
-          </a>
+        {job.match && (
+          <MatchScore
+            match={job.match}
+            variant="detail"
+            onAddEvidence={handleAddEvidence}
+          />
         )}
-        <button className="secondary" onClick={onTrack} disabled={tracked}>
-          {tracked ? "Sparad ✓" : "+ Spara ansökan"}
-        </button>
-      </div>
-      <p className="muted modal-hint">
-        {job.application_url
-          ? "Ansökan görs hos arbetsgivaren — läs annonsen här och spara ansökan för uppföljning."
-          : "Ansökan görs hos arbetsgivaren — spara den här så följer du den i dina ansökningar."}
-      </p>
 
-      {job.match?.profiles_scored && (
-        <ProfileFitRow profiles={job.match.profiles_scored} />
-      )}
-      {job.match && (
-        <MatchScore
-          match={job.match}
-          variant="detail"
-          onAddEvidence={handleAddEvidence}
-        />
-      )}
-
-      <div className="description">
-        {job.description || "Ingen beskrivning tillgänglig för den här annonsen."}
+        <div className="description">
+          {job.description || "Ingen beskrivning tillgänglig för den här annonsen."}
+        </div>
       </div>
     </>
   );

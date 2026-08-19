@@ -37,13 +37,13 @@
   --radius-sm: 10px;
   --radius-pill: 999px;
   --shell-max: 1280px;
-  --shell-pad-x: 1.5rem;
-  --shell-pad-bottom: 4rem;
-  --header-padding: 0.7rem 0.15rem 0.9rem;
+  --shell-pad-x: 1rem;
+  --shell-pad-bottom: 3rem;
+  --header-padding: 0.6rem 0 0.7rem;
   --header-margin: 0.15rem 0 0;
-  --guest-content-top: 1.5rem;
-  --guest-grid-gap: clamp(1.75rem, 4vw, 3rem);
-  --guest-grid-cols: minmax(0, 1.15fr) minmax(300px, 400px);
+  --guest-content-top: 1.25rem;
+  --guest-grid-gap: 1.5rem;
+  --guest-grid-cols: minmax(0, 1fr);
   --shadow-sm: 0 1px 2px rgba(12, 12, 9, 0.06);
   --shadow-md: 0 2px 6px rgba(12, 12, 9, 0.08);
   --shadow-lg: 0 8px 20px rgba(12, 12, 9, 0.1);
@@ -260,7 +260,11 @@ a:focus-visible {
 .app {
   max-width: var(--shell-max);
   margin: 0 auto;
-  padding: 0 var(--shell-pad-x) var(--shell-pad-bottom);
+  padding:
+    max(0.25rem, env(safe-area-inset-top))
+    max(var(--shell-pad-x), env(safe-area-inset-right))
+    max(var(--shell-pad-bottom), env(safe-area-inset-bottom))
+    max(var(--shell-pad-x), env(safe-area-inset-left));
   position: relative;
 }
 
@@ -328,13 +332,35 @@ a:focus-visible {
 
 .header {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 1rem;
+  gap: 0.6rem 0.75rem;
   padding: var(--header-padding);
   margin: 0.15rem 0 1.45rem;
   border-bottom: 1px solid var(--border);
   min-width: 0;
+}
+
+.header .brand {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+.header-actions,
+.header-actions--guest {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+.header-guest-nav {
+  justify-self: end;
+}
+
+.header .tabs {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  width: 100%;
+  justify-self: stretch;
 }
 
 /* Three zones: brand | nav | actions — nothing may paint over the tabs. */
@@ -382,7 +408,6 @@ a:focus-visible {
 }
 
 .header-actions--guest {
-  grid-column: 3;
   justify-self: end;
 }
 
@@ -475,6 +500,7 @@ a:focus-visible {
 }
 
 .account-email {
+  display: none;
   font-size: 0.82rem;
   color: var(--muted);
   font-weight: 500;
@@ -529,12 +555,7 @@ a:focus-visible {
     opacity 0.2s var(--ease-out);
 }
 
-/* Free tab space: email is also under Profil & CV. */
-@media (max-width: 1000px) {
-  .account-email {
-    display: none;
-  }
-}
+/* Email lives under Profil & CV; show it in the header only on wide screens. */
 
 .tabs::-webkit-scrollbar {
   display: none;
@@ -596,10 +617,10 @@ a:focus-visible {
 
 .hero {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 3rem;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
   align-items: center;
-  padding: 2.5rem 0 1rem;
+  padding: 0.5rem 0 1rem;
   position: relative;
 }
 
@@ -622,6 +643,11 @@ a:focus-visible {
 }
 
 @media (min-width: 841px) {
+  :root {
+    --guest-grid-cols: minmax(0, 1.15fr) minmax(300px, 400px);
+    --guest-grid-gap: clamp(1.75rem, 4vw, 3rem);
+  }
+
   .auth-intro h2 {
     font-size: clamp(2rem, 4vw, 2.75rem);
   }
@@ -732,7 +758,6 @@ a:focus-visible {
 
 @media (max-width: 840px) {
   .auth-page-inner {
-    grid-template-columns: 1fr;
     max-width: 26rem;
     margin: 0 auto;
     align-items: stretch;
@@ -949,7 +974,7 @@ a:focus-visible {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.5rem 1.75rem;
+  padding: 1.15rem 1rem;
   box-shadow: var(--shadow-sm);
   animation: rise 0.35s var(--ease-out) both;
   transition:
@@ -1212,7 +1237,8 @@ select {
   padding: 0.62rem 0.85rem;
   border: 1px solid var(--input-border);
   border-radius: var(--radius-sm);
-  font-size: 0.95rem;
+  font-size: 1rem;
+  min-height: 44px;
   font-weight: 400;
   font-family: inherit;
   background: var(--surface);
@@ -1267,9 +1293,10 @@ textarea {
 
 select {
   width: auto;
-  height: 36px;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.88rem;
+  min-height: 44px;
+  height: auto;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -1285,6 +1312,7 @@ button {
   border: none;
   border-radius: var(--radius-pill);
   padding: 0.62rem 1.3rem;
+  min-height: 44px;
   font-size: 0.92rem;
   font-weight: 600;
   font-family: inherit;
@@ -1358,6 +1386,7 @@ button.danger:hover {
 button.small {
   padding: 0.38rem 0.85rem;
   font-size: 0.84rem;
+  min-height: 40px;
   border-radius: var(--radius-pill);
 }
 
@@ -1366,6 +1395,7 @@ button.small {
   border: none;
   color: var(--brand-2);
   padding: 0;
+  min-height: 0;
   font-size: 0.92rem;
   font-weight: 600;
   text-align: left;
@@ -2235,10 +2265,10 @@ tbody tr:last-child td {
 
 .command-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 1.4fr);
-  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
   align-items: start;
-  padding: 1.65rem 1.85rem;
+  padding: 1.15rem 1rem;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
@@ -2248,15 +2278,15 @@ tbody tr:last-child td {
 }
 
 .command-hero--compact {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  padding: 1.15rem 1.5rem;
+  grid-template-columns: 1fr;
+  align-items: start;
+  padding: 1.15rem 1rem;
 }
 
 .command-hero-copy h2 {
   margin: 0 0 0.4rem;
   font-family: var(--font-display);
-  font-size: 1.65rem;
+  font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.12;
@@ -2429,14 +2459,14 @@ tbody tr:last-child td {
 }
 
 .metric-inline {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
 }
 
 .metric-inline .metric-tile {
-  min-width: 100px;
+  min-width: 0;
   min-height: auto;
   padding: 0.55rem 0.85rem;
 }
@@ -2675,20 +2705,23 @@ tbody tr:last-child td {
 
 .job-search-row {
   display: flex;
+  flex-direction: column;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: stretch;
   gap: 0.5rem;
   min-width: 0;
 }
 
 .job-search-row--primary .job-search-q-wrap {
-  flex: 1 1 220px;
-  min-width: min(100%, 220px);
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
 }
 
 .job-search-row--primary .multi-select-filter {
-  flex: 0 1 auto;
-  min-width: min(100%, 11rem);
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
 }
 
 .job-search-row--filters {
@@ -2825,6 +2858,8 @@ button.job-filter-chip.active {
   align-items: center;
   gap: 0.35rem;
   flex: 0 0 auto;
+  width: 100%;
+  justify-content: flex-start;
   padding: 0.2rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
@@ -2850,7 +2885,8 @@ button.job-filter-chip.active {
   padding: 0.55rem 1.25rem;
   font-weight: 600;
   flex: 0 0 auto;
-  margin-left: auto;
+  margin-left: 0;
+  width: 100%;
 }
 
 .multi-select-filter {
@@ -2915,7 +2951,7 @@ button.job-filter-chip.active {
 
 .multi-select-panel {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.2fr);
+  grid-template-columns: 1fr;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
@@ -2957,7 +2993,7 @@ button.job-filter-chip.active {
 }
 
 .multi-select-column + .multi-select-column {
-  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
 }
 
 .multi-select-column-head {
@@ -3183,9 +3219,10 @@ button.job-filter-chip.active {
 
 .job-card {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
   padding: 0.95rem 1.05rem;
   background: color-mix(in srgb, var(--surface) 94%, transparent);
   border: 1px solid var(--border);
@@ -3238,12 +3275,14 @@ button.job-filter-chip.active {
 .job-track {
   flex-shrink: 0;
   white-space: nowrap;
+  width: 100%;
 }
 
 .saved-search-tools {
   display: flex;
+  flex-direction: column;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: stretch;
   gap: 0.6rem;
   margin: 0.75rem 0 0.25rem;
 }
@@ -4920,11 +4959,15 @@ button.chart-col:focus-visible {
   inset: 0;
   background: rgba(4, 6, 12, 0.72);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   z-index: 50;
   animation: fade 0.18s ease both;
 }
@@ -4957,7 +5000,8 @@ button.chart-col:focus-visible {
   width: 100%;
   max-width: 100%;
   justify-content: center;
-  margin: auto;
+  margin-top: auto;
+  margin-bottom: 0;
   flex-shrink: 0;
   animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
@@ -4969,21 +5013,21 @@ button.chart-col:focus-visible {
 .modal {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.75rem 2rem;
-  max-width: 760px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding:
+    1.25rem 1rem
+    calc(1.25rem + env(safe-area-inset-bottom));
+  max-width: 100%;
   width: 100%;
-  max-height: 86vh;
+  max-height: none;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   box-shadow: var(--shadow-lg);
-  margin: auto;
+  margin: 0;
   flex-shrink: 0;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
 }
 
 @keyframes pop {
@@ -5010,7 +5054,7 @@ button.chart-col:focus-visible {
 
 .description {
   white-space: pre-wrap;
-  overflow-y: auto;
+  overflow: visible;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem 1.2rem;
@@ -5022,15 +5066,37 @@ button.chart-col:focus-visible {
 /* ---------- Job detail modal ---------- */
 
 .overlay--job {
-  overflow: hidden;
-  align-items: center;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .job-modal {
+  gap: 0;
+  overflow: visible;
+  flex-shrink: 0;
+  max-height: none;
+  padding: 0;
+}
+
+.job-modal-header {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.15rem 1rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.job-modal-body {
+  display: flex;
+  flex-direction: column;
   gap: 0.85rem;
-  overflow: hidden;
-  flex-shrink: 1;
-  max-height: min(86vh, 900px);
+  padding: 1rem 1rem calc(1.25rem + env(safe-area-inset-bottom));
+  min-width: 0;
 }
 
 .modal-head {
@@ -5055,9 +5121,16 @@ button.chart-col:focus-visible {
 
 .modal-actions {
   display: flex;
+  flex-direction: column;
   flex-wrap: wrap;
   gap: 0.6rem;
   flex-shrink: 0;
+}
+
+.modal-actions .btn-primary,
+.modal-actions button,
+.modal-actions .secondary {
+  width: 100%;
 }
 
 .btn-primary {
@@ -5069,6 +5142,7 @@ button.chart-col:focus-visible {
   border: none;
   border-radius: var(--radius-pill);
   padding: 0.62rem 1.3rem;
+  min-height: 44px;
   font-size: 0.92rem;
   font-weight: 600;
   text-decoration: none;
@@ -5084,7 +5158,7 @@ button.chart-col:focus-visible {
 }
 
 .modal-hint {
-  margin: -0.4rem 0 0;
+  margin: 0;
   font-size: 0.82rem;
 }
 
@@ -5094,27 +5168,25 @@ button.chart-col:focus-visible {
 }
 
 .job-modal .description {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  flex: none;
+  min-height: 8rem;
+  overflow: visible;
 }
 
 /* ---------- Application detail modal ---------- */
 
 .overlay--application {
-  overflow: hidden;
-  align-items: center;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .application-modal {
-  max-width: 820px;
+  max-width: 100%;
   width: 100%;
   gap: 0;
   padding: 0;
-  max-height: min(92vh, 960px);
-  overflow: hidden;
+  max-height: none;
+  overflow: visible;
 }
 
 .application-modal-header {
@@ -5122,21 +5194,22 @@ button.chart-col:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  padding: 1.15rem 1.5rem 0.85rem;
+  padding: 1.15rem 1rem 0.85rem;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .application-modal-body {
-  flex: 1;
+  flex: none;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 1rem 1.75rem 1.5rem;
+  padding: 0.85rem 1rem calc(1rem + env(safe-area-inset-bottom));
 }
 
 .application-ad-toolbar {
@@ -5347,84 +5420,15 @@ code {
   border-color: transparent;
 }
 
-/* ---------- Responsive (tablet / mobile) ---------- */
-
-/* Two-row header through tablet/laptop mid-widths so tabs never crush the brand. */
-@media (max-width: 1100px) {
-  .header {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.6rem 0.75rem;
-  }
-
-  .header .brand {
-    grid-row: 1;
-    grid-column: 1;
-  }
-
-  .header-actions,
-  .header-actions--guest {
-    grid-row: 1;
-    grid-column: 2;
-  }
-
-  .header-guest-nav {
-    justify-self: end;
-  }
-
-  .tabs {
-    grid-row: 2;
-    grid-column: 1 / -1;
-    width: 100%;
-    justify-self: stretch;
-  }
-
-  .tab {
-    padding: 0.5rem 0.8rem;
-    font-size: 0.86rem;
-  }
-}
+/* ---------- Responsive (mobile first; min-width enhances) ---------- */
 
 @media (max-width: 760px) {
-  .app {
-    padding:
-      max(0.5rem, env(safe-area-inset-top))
-      max(1rem, env(safe-area-inset-right))
-      max(3rem, env(safe-area-inset-bottom))
-      max(1rem, env(safe-area-inset-left));
-  }
-
   .header {
-    grid-template-columns: 1fr auto;
-    gap: 0.6rem 0.75rem;
     margin: 0.25rem 0 1.15rem;
     padding: 0.6rem 0;
   }
 
-  .header .brand {
-    grid-row: 1;
-    grid-column: 1;
-  }
-
-  .header-actions,
-  .header-actions--guest {
-    grid-row: 1;
-    grid-column: 2;
-  }
-
-  .header-guest-nav {
-    justify-self: end;
-  }
-
   .tabs {
-    grid-row: 2;
-    grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: nowrap;
-    width: 100%;
-    justify-self: stretch;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
     /* Edge fade: signals more tabs when the strip scrolls. */
     -webkit-mask-image: linear-gradient(
       to right,
@@ -5442,67 +5446,13 @@ code {
     );
   }
 
-  .tabs::-webkit-scrollbar {
-    display: none;
-  }
-
   .tab {
-    flex: 0 0 auto;
-    min-width: auto;
-    text-align: center;
     padding: 0.5rem 0.68rem;
     font-size: 0.82rem;
-    min-height: 40px;
-  }
-
-  .account-email {
-    display: none;
-  }
-
-  .card,
-  .command-hero {
-    padding: 1.15rem 1rem;
-  }
-
-  .hero {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
-    padding-top: 0.5rem;
   }
 
   .hero h2 {
     font-size: 1.85rem;
-  }
-
-  .main--guest {
-    padding: 1.25rem 0 0;
-  }
-
-  input,
-  textarea,
-  select {
-    font-size: 16px;
-    min-height: 44px;
-  }
-
-  input[type="checkbox"],
-  input[type="radio"] {
-    width: 1.15rem;
-    height: 1.15rem;
-    min-height: 0;
-    max-width: 1.15rem;
-    font-size: inherit;
-  }
-
-  button,
-  .btn-primary,
-  .upload-button {
-    min-height: 44px;
-  }
-
-  button.small,
-  .upload-button {
-    min-height: 40px;
   }
 
   .grid3,
@@ -5513,31 +5463,8 @@ code {
     grid-template-columns: 1fr;
   }
 
-  .job-search-row--primary,
-  .job-search-row--filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .job-search-row--primary .job-search-q-wrap,
-  .job-search-row--primary .multi-select-filter {
-    flex: 1 1 auto;
-    min-width: 0;
-    width: 100%;
-  }
-
   .job-search-chips {
     flex: 1 1 auto;
-  }
-
-  .job-sort {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .job-search-submit {
-    margin-left: 0;
-    width: 100%;
   }
 
   .board-tools {
@@ -5578,29 +5505,8 @@ code {
     flex: 1;
   }
 
-  .command-hero,
-  .command-hero--compact {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .command-hero-copy h2 {
-    font-size: 1.35rem;
-  }
-
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .metric-inline {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
-  }
-
-  .metric-inline .metric-tile {
-    min-width: 0;
   }
 
   .hero-metrics {
@@ -5616,21 +5522,6 @@ code {
     width: 100%;
     grid-template-columns: 1fr auto;
     align-items: center;
-  }
-
-  .job-card {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-
-  .job-track {
-    width: 100%;
-  }
-
-  .saved-search-tools {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .saved-search-list {
@@ -5652,46 +5543,6 @@ code {
 
   .tagline {
     font-size: 0.72rem;
-  }
-
-  .overlay {
-    align-items: flex-end;
-    padding: 0;
-  }
-
-  .overlay--application {
-    align-items: flex-end;
-  }
-
-  .application-modal {
-    max-height: 92vh;
-    border-radius: var(--radius) var(--radius) 0 0;
-  }
-
-  .application-modal-header {
-    padding: 1.15rem 1rem 0.85rem;
-  }
-
-  .application-modal-body {
-    padding: 0.85rem 1rem calc(1rem + env(safe-area-inset-bottom));
-  }
-
-  .modal {
-    padding:
-      1.25rem 1rem
-      calc(1.25rem + env(safe-area-inset-bottom));
-    max-height: 92vh;
-    border-radius: var(--radius) var(--radius) 0 0;
-    width: 100%;
-  }
-
-  .modal-actions {
-    flex-direction: column;
-  }
-
-  .modal-actions .btn-primary,
-  .modal-actions button {
-    width: 100%;
   }
 
   .chart {
@@ -5740,30 +5591,155 @@ code {
   }
 }
 
-/* ---------- Desktop polish ---------- */
+@media (min-width: 761px) {
+  :root {
+    --shell-pad-x: 1.5rem;
+    --shell-pad-bottom: 4rem;
+    --header-padding: 0.7rem 0.15rem 0.9rem;
+    --guest-content-top: 1.5rem;
+  }
 
-@media (min-width: 961px) {
-  .app {
-    padding: 0 2rem 4.5rem;
+  .hero {
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 3rem;
+    padding: 2.5rem 0 1rem;
+  }
+
+  .card {
+    padding: 1.5rem 1.75rem;
   }
 
   .command-hero {
-    grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.35fr);
-    padding: 1.85rem 2rem;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 1.4fr);
+    gap: 1.5rem;
+    padding: 1.65rem 1.85rem;
   }
 
-  .metric-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+  .command-hero--compact {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 1.15rem 1.5rem;
   }
 
-  .board-tools {
-    gap: 0.85rem;
+  .command-hero-copy h2 {
+    font-size: 1.65rem;
   }
-}
 
-/* ---------- Scrollbar (desktop) ---------- */
+  .metric-inline {
+    display: flex;
+    width: auto;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
 
-@media (min-width: 761px) {
+  .metric-inline .metric-tile {
+    min-width: 100px;
+  }
+
+  .job-search-row {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .job-search-row--primary .job-search-q-wrap {
+    flex: 1 1 220px;
+    min-width: min(100%, 220px);
+    width: auto;
+  }
+
+  .job-search-row--primary .multi-select-filter {
+    flex: 0 1 auto;
+    min-width: min(100%, 11rem);
+    width: auto;
+  }
+
+  .job-sort {
+    width: auto;
+  }
+
+  .job-search-submit {
+    margin-left: auto;
+    width: auto;
+  }
+
+  .job-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .job-track {
+    width: auto;
+  }
+
+  .multi-select-panel {
+    grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.2fr);
+  }
+
+  .multi-select-column + .multi-select-column {
+    border-top: none;
+    border-left: 1px solid var(--border);
+  }
+
+  .saved-search-tools {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .overlay {
+    padding: 1.5rem;
+  }
+
+  .modal-shell {
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+
+  .modal {
+    border-radius: var(--radius);
+    padding: 1.75rem 2rem;
+    max-width: 760px;
+    width: 100%;
+  }
+
+  .job-modal {
+    padding: 0;
+    max-width: 760px;
+  }
+
+  .job-modal-header {
+    padding: 1.35rem 1.75rem 1rem;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .job-modal-body {
+    padding: 1rem 1.75rem 1.5rem;
+  }
+
+  .application-modal {
+    max-width: 820px;
+  }
+
+  .application-modal-header {
+    padding: 1.15rem 1.5rem 0.85rem;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .application-modal-body {
+    padding: 1rem 1.75rem 1.5rem;
+  }
+
+  .modal-actions {
+    flex-direction: row;
+  }
+
+  .modal-actions .btn-primary,
+  .modal-actions button,
+  .modal-actions .secondary {
+    width: auto;
+  }
+
   * {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--brand) 40%, var(--border)) transparent;
@@ -5783,6 +5759,59 @@ code {
 
   *::-webkit-scrollbar-track {
     background: transparent;
+  }
+}
+
+@media (min-width: 961px) {
+  .app {
+    padding:
+      max(0.25rem, env(safe-area-inset-top))
+      max(2rem, env(safe-area-inset-right))
+      max(4.5rem, env(safe-area-inset-bottom))
+      max(2rem, env(safe-area-inset-left));
+  }
+
+  .command-hero {
+    grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.35fr);
+    padding: 1.85rem 2rem;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .board-tools {
+    gap: 0.85rem;
+  }
+}
+
+@media (min-width: 1001px) {
+  .account-email {
+    display: inline;
+  }
+}
+
+@media (min-width: 1101px) {
+  .header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 1rem;
+  }
+
+  .header .brand,
+  .header-actions,
+  .header-actions--guest,
+  .header .tabs {
+    grid-row: auto;
+    grid-column: auto;
+  }
+
+  .header-actions--guest {
+    grid-column: 3;
+  }
+
+  .tab {
+    padding: 0.55rem 0.95rem;
+    font-size: 0.88rem;
   }
 }
 

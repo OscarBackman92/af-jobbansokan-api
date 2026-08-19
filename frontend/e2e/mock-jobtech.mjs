@@ -15,7 +15,17 @@ const SEARCH_PAYLOAD = {
       workplace_address: { municipality: "Stockholm" },
       publication_date: "2026-06-20T08:00:00",
       application_deadline: "2026-08-15T23:59:59",
-      description: { text: "Vi arbetar med Python och Django i molnet." },
+      description: {
+        text: [
+          "Vi arbetar med Python och Django i molnet.",
+          ...Array.from(
+            { length: 40 },
+            (_, i) =>
+              `Ansvar ${i + 1}: bygga och underhålla tjänster, samarbeta med teamet och dokumentera lösningar.`
+          ),
+          "SLUT-PA-ANNONSTEXT",
+        ].join("\n\n"),
+      },
       webpage_url: "https://arbetsformedlingen.se/platsbanken/annonser/9001",
       remote_work: true,
     },

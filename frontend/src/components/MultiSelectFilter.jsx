@@ -3,12 +3,15 @@ import { createPortal } from "react-dom";
 
 const PANEL_WIDTH = 560;
 const PANEL_MAX_HEIGHT = 420;
+const PANEL_MAX_HEIGHT_STACKED = 560;
 const VIEWPORT_MARGIN = 12;
 const PANEL_GAP = 8;
 const CLOSE_MS = 240;
+const STACK_BREAKPOINT = 761;
 
 function computePanelLayout(triggerEl) {
   const rect = triggerEl.getBoundingClientRect();
+  const stacked = window.innerWidth < STACK_BREAKPOINT;
   const width = Math.min(PANEL_WIDTH, window.innerWidth - VIEWPORT_MARGIN * 2);
   const left = Math.min(
     Math.max(VIEWPORT_MARGIN, rect.left),
@@ -18,11 +21,13 @@ function computePanelLayout(triggerEl) {
   const spaceBelow = window.innerHeight - rect.bottom - VIEWPORT_MARGIN;
   const spaceAbove = rect.top - VIEWPORT_MARGIN;
   const openUp = spaceBelow < 240 && spaceAbove > spaceBelow;
+  const cap = stacked ? PANEL_MAX_HEIGHT_STACKED : PANEL_MAX_HEIGHT;
   const maxHeight = Math.min(
-    PANEL_MAX_HEIGHT,
+    cap,
     openUp ? spaceAbove - VIEWPORT_MARGIN : spaceBelow - VIEWPORT_MARGIN,
     window.innerHeight - VIEWPORT_MARGIN * 2
   );
+  const minHeight = stacked ? 280 : 180;
 
   return {
     placement: openUp ? "above" : "below",
@@ -33,8 +38,8 @@ function computePanelLayout(triggerEl) {
         ? `${rect.top - maxHeight - PANEL_GAP}px`
         : `${rect.bottom + PANEL_GAP}px`,
       width: `${width}px`,
-      height: `${Math.max(180, maxHeight)}px`,
-      maxHeight: `${Math.max(180, maxHeight)}px`,
+      height: `${Math.max(minHeight, maxHeight)}px`,
+      maxHeight: `${Math.max(minHeight, maxHeight)}px`,
       zIndex: 200,
     },
   };
@@ -67,7 +72,7 @@ export default function MultiSelectFilter({
   onClearSecondary,
   onClearAll,
   secondaryLoading = false,
-  secondaryEmptyText = "Välj kategori till vänster",
+  secondaryEmptyText = "Välj kategori",
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
