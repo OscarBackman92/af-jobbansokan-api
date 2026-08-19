@@ -364,7 +364,6 @@ a:focus-visible {
 
 .header-guest-nav {
   display: flex;
-  justify-self: center;
   align-items: center;
   gap: 0.35rem;
   padding: 0.22rem;
@@ -372,6 +371,11 @@ a:focus-visible {
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 78%, transparent);
   box-shadow: var(--shadow-sm);
+}
+
+.header-actions--guest {
+  grid-column: 3;
+  justify-self: end;
 }
 
 .header-guest-nav a {
@@ -5334,14 +5338,13 @@ code {
     grid-column: 1;
   }
 
-  .header-actions {
+  .header-actions,
+  .header-actions--guest {
     grid-row: 1;
     grid-column: 2;
   }
 
   .header-guest-nav {
-    grid-row: 1;
-    grid-column: 2;
     justify-self: end;
   }
 
@@ -5379,14 +5382,13 @@ code {
     grid-column: 1;
   }
 
-  .header-actions {
+  .header-actions,
+  .header-actions--guest {
     grid-row: 1;
     grid-column: 2;
   }
 
   .header-guest-nav {
-    grid-row: 1;
-    grid-column: 2;
     justify-self: end;
   }
 

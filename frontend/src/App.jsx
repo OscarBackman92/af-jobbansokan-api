@@ -380,10 +380,12 @@ export default function App() {
           </div>
         </a>
         {!token ? (
-          <nav className="header-guest-nav" aria-label="Huvudnavigering">
-            <a href="/">Start</a>
-            <a href="/integritet/">Integritet</a>
-          </nav>
+          <div className="header-actions header-actions--guest">
+            <nav className="header-guest-nav" aria-label="Huvudnavigering">
+              <a href="/">Start</a>
+              <a href="/integritet/">Integritet</a>
+            </nav>
+          </div>
         ) : (
           <nav ref={tabsRef} className="tabs" aria-label="Huvudnavigering">
             <span className="tab-indicator" aria-hidden="true" />
