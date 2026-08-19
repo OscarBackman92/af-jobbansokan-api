@@ -135,7 +135,8 @@ export function appliedBucket(application) {
   if (APPLIED_CLOSED_STATUSES.includes(status)) return "closed";
   if (OFFER_STATUSES.includes(status)) return "offer";
   if (DIALOG_STATUSES.includes(status)) return "dialog";
-  const waiting = daysWaiting(application);
+  const until = daysUntil(application.applied_at);
+  const waiting = until === null ? null : -until;
   if (waiting !== null && waiting >= SILENCE_FOLLOW_UP_DAYS) return "late";
   return "fresh";
 }

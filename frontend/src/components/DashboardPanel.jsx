@@ -22,7 +22,7 @@ const MONTH_SHORT = [
 ];
 
 const FUNNEL_STEPS = [
-  { key: "tracked", label: "Spårade" },
+  { key: "tracked", label: "Alla spårade" },
   { key: "applied", label: "Sökta" },
   { key: "responded", label: "Fått svar" },
   { key: "in_dialog", label: "I dialog" },
@@ -33,7 +33,7 @@ const FUNNEL_STEPS = [
 const OUTCOME_SEGMENTS = [
   { key: "rejected", label: "Avslag" },
   { key: "no_response", label: "Inget svar" },
-  { key: "waiting", label: "Väntar" },
+  { key: "waiting", label: "Väntar för länge" },
   { key: "fresh", label: "Nyligen sökta" },
 ];
 
@@ -310,11 +310,11 @@ export default function DashboardPanel({
       <section className="card">
         <div className="row-between">
           <div>
-            <h2>Nästa steg — de fem närmaste</h2>
+            <h2>Nästa steg</h2>
             <p className="muted">
               {nextActions.length === 0
                 ? "Inget inplanerat den här veckan."
-                : "Kommande uppföljningar och sista dagar — förfallna ligger inte här."}
+                : "Försenade överst, sedan kommande uppföljningar och sista dagar."}
             </p>
           </div>
           {nextActions.length > 0 && (
@@ -332,7 +332,10 @@ export default function DashboardPanel({
         ) : (
           <ul className="today-list">
             {nextActions.map((action) => (
-              <li key={`${action.kind}-${action.id}-${action.date}`}>
+              <li
+                key={`${action.kind}-${action.id}-${action.date}`}
+                className={action.overdue ? "today-list-item--overdue" : undefined}
+              >
                 <div className="today-list-main">
                   <strong>
                     {action.title} @ {action.company}

@@ -362,11 +362,12 @@ describe("appliedBucket / daysWaiting", () => {
     expect(appliedBucket({ status: "interview" })).toBe("dialog");
   });
 
-  it("splits applied rows into late and fresh by silence window", () => {
+  it("splits applied rows into late and fresh by applied_at, not last activity", () => {
     expect(
       appliedBucket({
         status: "applied",
         applied_at: daysAgo(SILENCE_FOLLOW_UP_DAYS),
+        last_activity_at: daysAgo(1),
       })
     ).toBe("late");
     expect(

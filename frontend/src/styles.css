@@ -3620,6 +3620,11 @@ button.job-filter-chip.active {
   border: 1px solid var(--border);
 }
 
+.today-list-item--overdue {
+  border-color: var(--amber-border);
+  background: color-mix(in srgb, var(--amber) 10%, var(--surface-2));
+}
+
 .today-list-main {
   display: grid;
   gap: 0.2rem;

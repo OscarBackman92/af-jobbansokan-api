@@ -88,7 +88,9 @@ export default function SkillGapPanel({ token, onNavigate }) {
           <ul className="skill-gap-bands">
             {bands.map((band) => (
               <li key={band.band}>
-                <span>{band.band} %</span>
+                <span>
+                  {band.band === "ej bedömd" ? band.band : `${band.band} %`}
+                </span>
                 <strong>{rateLabel(band)}</strong>
                 <span className="muted">
                   {band.tracked} spårade · {band.responded} svar
@@ -116,7 +118,7 @@ export default function SkillGapPanel({ token, onNavigate }) {
                     {row.term}
                   </button>
                   <span className="muted">
-                    efterfrågas i {row.count} av {scope.applications || "?"}
+                    efterfrågas i {row.count} av {withSnapshot || "?"}
                   </span>
                   <button
                     type="button"

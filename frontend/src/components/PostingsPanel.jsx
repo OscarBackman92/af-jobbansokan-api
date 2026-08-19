@@ -736,9 +736,9 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
             <span className="metric-detail">i sökningen</span>
           </div>
           <div className="metric-tile">
-            <span className="metric-label">Spårade</span>
+            <span className="metric-label">Redan spårade</span>
             <strong>{tracked.size}</strong>
-            <span className="metric-detail">redan i listan</span>
+            <span className="metric-detail">i den här sökningen</span>
           </div>
         </div>
       </section>

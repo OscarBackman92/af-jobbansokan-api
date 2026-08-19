@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from datetime import timedelta
 
+from django.db.models import Min
 from django.utils import timezone
 
 from .job_profiles import (
@@ -12,16 +13,9 @@ from .job_profiles import (
     normalize_job_profiles,
     profile_skill_terms,
 )
+from .metrics import GOT_REPLY_STATUSES
 from .models import JobApplication, Resume
 from .skill_canonical import canonical_skill_label
-
-RESPONSE_STATUSES = {
-    JobApplication.STATUS_SCREENING,
-    JobApplication.STATUS_INTERVIEW,
-    JobApplication.STATUS_FORWARDED,
-    JobApplication.STATUS_OFFER,
-    JobApplication.STATUS_ACCEPTED,
-}
 
 BANDS = (
     ("0-39", 0, 39),
@@ -60,6 +54,13 @@ def build_skill_insights(user, *, since_days: int = 365) -> dict:
         .filter(match_scored_at__date__gte=since)
         .only("status", "match_score", "match_snapshot", "match_profile_id")
     )
+    earliest = (
+        all_apps.filter(match_scored_at__isnull=False)
+        .exclude(match_snapshot={})
+        .filter(match_scored_at__date__gte=since)
+        .aggregate(m=Min("match_scored_at"))["m"]
+    )
+    since_display = earliest.date().isoformat() if earliest else None
     with_posting = sum(
         1
         for row in rows
@@ -120,7 +121,7 @@ def build_skill_insights(user, *, since_days: int = 365) -> dict:
             if row.match_score is not None and low <= row.match_score <= high
         ]
         tracked = len(band_rows)
-        responded = sum(1 for row in band_rows if row.status in RESPONSE_STATUSES)
+        responded = sum(1 for row in band_rows if row.status in GOT_REPLY_STATUSES)
         entry = {"band": label, "tracked": tracked, "responded": responded}
         if tracked >= 5:
             entry["rate"] = round(responded / tracked, 3)
@@ -128,6 +129,21 @@ def build_skill_insights(user, *, since_days: int = 365) -> dict:
             entry["rate"] = None
             entry["insufficient_data"] = True
         response_by_band.append(entry)
+
+    unscored = [row for row in rows if row.match_score is None]
+    tracked = len(unscored)
+    responded = sum(1 for row in unscored if row.status in GOT_REPLY_STATUSES)
+    unknown_entry = {
+        "band": "ej bedömd",
+        "tracked": tracked,
+        "responded": responded,
+    }
+    if tracked >= 5:
+        unknown_entry["rate"] = round(responded / tracked, 3)
+    else:
+        unknown_entry["rate"] = None
+        unknown_entry["insufficient_data"] = True
+    response_by_band.append(unknown_entry)
 
     by_profile: dict[str, dict] = {}
     for row in rows:
@@ -144,7 +160,7 @@ def build_skill_insights(user, *, since_days: int = 365) -> dict:
         )
         if row.status != JobApplication.STATUS_WISHLIST:
             bucket["applied"] += 1
-        if row.status in RESPONSE_STATUSES:
+        if row.status in GOT_REPLY_STATUSES:
             bucket["responded"] += 1
         if row.match_score is not None:
             bucket["scores"].append(row.match_score)
@@ -178,7 +194,7 @@ def build_skill_insights(user, *, since_days: int = 365) -> dict:
             "applications": total_apps,
             "with_snapshot": len(rows),
             "with_posting": with_posting,
-            "since": since.isoformat(),
+            "since": since_display,
             "hint": (
                 None
                 if rows

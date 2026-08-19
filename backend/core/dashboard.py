@@ -23,44 +23,16 @@ from django.db.models import (
 from django.db.models.functions import Coalesce, TruncMonth
 from django.utils import timezone
 
+from .metrics import (
+    AWAITING_STATUSES,
+    CLOSED_STATUSES,
+    DIALOG_STATUSES,
+    GOT_REPLY_STATUSES,
+    OFFER_STATUSES,
+    POSITIVE_RESPONSE,
+    SILENCE_FOLLOW_UP_DAYS,
+)
 from .models import ApplicationEvent, JobApplication
-
-SILENCE_FOLLOW_UP_DAYS = 7
-DIALOG_STATUSES = [
-    JobApplication.STATUS_SCREENING,
-    JobApplication.STATUS_INTERVIEW,
-    JobApplication.STATUS_FORWARDED,
-]
-OFFER_STATUSES = [
-    JobApplication.STATUS_OFFER,
-    JobApplication.STATUS_ACCEPTED,
-]
-AWAITING_STATUSES = [
-    JobApplication.STATUS_APPLIED,
-    JobApplication.STATUS_SCREENING,
-]
-CLOSED_STATUSES = [
-    JobApplication.STATUS_REJECTED,
-    JobApplication.STATUS_NO_RESPONSE,
-    JobApplication.STATUS_WITHDRAWN,
-]
-RESPONSE_STATUSES = [
-    JobApplication.STATUS_SCREENING,
-    JobApplication.STATUS_INTERVIEW,
-    JobApplication.STATUS_FORWARDED,
-    JobApplication.STATUS_OFFER,
-    JobApplication.STATUS_ACCEPTED,
-    JobApplication.STATUS_REJECTED,
-    JobApplication.STATUS_NO_RESPONSE,
-    JobApplication.STATUS_WITHDRAWN,
-]
-POSITIVE_RESPONSE = {
-    JobApplication.STATUS_SCREENING,
-    JobApplication.STATUS_INTERVIEW,
-    JobApplication.STATUS_FORWARDED,
-    JobApplication.STATUS_OFFER,
-    JobApplication.STATUS_ACCEPTED,
-}
 
 
 def _active_qs(user):
@@ -155,7 +127,7 @@ def _funnel(base):
 
     reached_response = (
         applied_side.filter(
-            Q(status__in=RESPONSE_STATUSES) | Q(events__status__in=RESPONSE_STATUSES)
+            Q(status__in=GOT_REPLY_STATUSES) | Q(events__status__in=GOT_REPLY_STATUSES)
         )
         .distinct()
         .count()
@@ -204,31 +176,46 @@ def _next_actions(base, today, week_end):
     open_rows = base.exclude(
         status__in=[*CLOSED_STATUSES, JobApplication.STATUS_ACCEPTED]
     )
-    followups = list(
+
+    def serialize_followup(row, *, overdue: bool):
+        date_value = row["next_action_at"]
+        if overdue:
+            label = f"Försenad — nästa steg {date_value}"
+        elif date_value == today:
+            label = "Uppföljning idag"
+        else:
+            label = f"Nästa steg {date_value}"
+        return {
+            "id": row["id"],
+            "kind": "followup",
+            "date": str(date_value),
+            "title": row["title"],
+            "company": row["company"],
+            "status": row["status"],
+            "overdue": overdue,
+            "label": label,
+        }
+
+    overdue_rows = list(
+        open_rows.filter(next_action_at__isnull=False, next_action_at__lt=today)
+        .order_by("next_action_at")
+        .values("id", "title", "company", "status", "next_action_at")[:5]
+    )
+    rows = [serialize_followup(row, overdue=True) for row in overdue_rows]
+    taken = {row["id"] for row in rows}
+
+    upcoming = list(
         open_rows.filter(
             next_action_at__isnull=False,
             next_action_at__gte=today,
             next_action_at__lte=week_end,
         )
+        .exclude(id__in=taken)
         .order_by("next_action_at")
-        .values("id", "title", "company", "status", "next_action_at")[:5]
+        .values("id", "title", "company", "status", "next_action_at")[: 5]
     )
-    rows = [
-        {
-            "id": row["id"],
-            "kind": "followup",
-            "date": str(row["next_action_at"]),
-            "title": row["title"],
-            "company": row["company"],
-            "status": row["status"],
-            "label": (
-                "Uppföljning idag"
-                if row["next_action_at"] == today
-                else f"Nästa steg {row['next_action_at']}"
-            ),
-        }
-        for row in followups
-    ]
+    rows.extend(serialize_followup(row, overdue=False) for row in upcoming)
+
     if len(rows) < 5:
         taken = {row["id"] for row in rows}
         deadlines = (
@@ -248,11 +235,12 @@ def _next_actions(base, today, week_end):
                     "title": row["title"],
                     "company": row["company"],
                     "status": row["status"],
+                    "overdue": False,
                     "label": f"Sök senast {row['apply_by']}",
                 }
             )
-    rows.sort(key=lambda row: row["date"])
-    return rows[:5]
+    rows.sort(key=lambda row: (not row.get("overdue"), row["date"]))
+    return rows[:8]
 
 
 def _monthly(base, today):
@@ -399,7 +387,7 @@ def _pace(base, user, today, seven_ago):
     first_response = (
         ApplicationEvent.objects.filter(
             application_id=OuterRef("pk"),
-            status__in=RESPONSE_STATUSES,
+            status__in=GOT_REPLY_STATUSES,
         )
         .exclude(status=JobApplication.STATUS_APPLIED)
         .order_by("occurred_at")
