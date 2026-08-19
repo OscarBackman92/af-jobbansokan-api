@@ -2624,18 +2624,44 @@ tbody tr:last-child td {
 /* ---------- Job search (live ads) ---------- */
 
 .job-search {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
-  gap: 0.5rem;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   margin: 0.9rem 0;
   min-width: 0;
   width: 100%;
   max-width: 100%;
 }
 
-.job-search--advanced {
-  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+.job-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.job-search-row--primary .job-search-q-wrap {
+  flex: 1 1 220px;
+  min-width: min(100%, 220px);
+}
+
+.job-search-row--primary .multi-select-filter {
+  flex: 0 1 auto;
+  min-width: min(100%, 11rem);
+}
+
+.job-search-row--filters {
+  gap: 0.65rem 0.85rem;
+}
+
+.job-search-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 18rem;
+  min-width: 0;
 }
 
 .job-search input,
@@ -2696,20 +2722,53 @@ tbody tr:last-child td {
   align-items: center;
   gap: 0.4rem;
   margin: 0;
-  padding: 0.36rem 0.75rem;
+  padding: 0.38rem 0.8rem;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted);
   font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.25;
   white-space: nowrap;
   cursor: pointer;
   max-width: 100%;
   min-width: 0;
-  justify-self: start;
+}
+
+button.job-filter-chip {
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.38rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.25;
+  box-shadow: none;
+  min-height: auto;
+}
+
+button.job-filter-chip:hover {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--border));
+  background: color-mix(in srgb, var(--brand) 6%, var(--surface));
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+button.job-filter-chip:active {
+  transform: none;
 }
 
 .job-filter-chip.active {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--border));
+  background: color-mix(in srgb, var(--brand) 10%, var(--surface));
+}
+
+button.job-filter-chip.active {
   color: var(--ink);
   border-color: color-mix(in srgb, var(--brand) 45%, var(--border));
   background: color-mix(in srgb, var(--brand) 10%, var(--surface));
@@ -2721,17 +2780,37 @@ tbody tr:last-child td {
 }
 
 .job-sort {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 0.35rem;
-  min-width: 0;
+  flex: 0 0 auto;
+  padding: 0.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2, var(--surface)) 55%, transparent);
+}
+
+.job-sort-label {
+  padding: 0 0.35rem 0 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.job-sort .job-filter-chip {
+  padding: 0.32rem 0.7rem;
 }
 
 .job-search-submit {
   min-height: 2.65rem;
   padding: 0.55rem 1.25rem;
   font-weight: 600;
-  justify-self: start;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .multi-select-filter {
@@ -5400,10 +5479,35 @@ code {
   .searchbar,
   .board-tools,
   .rowline,
-  .timeline-form,
-  .job-search,
-  .job-search--advanced {
+  .timeline-form {
     grid-template-columns: 1fr;
+  }
+
+  .job-search-row--primary,
+  .job-search-row--filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .job-search-row--primary .job-search-q-wrap,
+  .job-search-row--primary .multi-select-filter {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .job-search-chips {
+    flex: 1 1 auto;
+  }
+
+  .job-sort {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .job-search-submit {
+    margin-left: 0;
+    width: 100%;
   }
 
   .board-tools {
@@ -5624,14 +5728,6 @@ code {
 
   .board-tools {
     gap: 0.85rem;
-  }
-
-  .job-search {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  }
-
-  .job-search--advanced {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
 }
 

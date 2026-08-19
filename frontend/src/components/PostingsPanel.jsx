@@ -727,139 +727,146 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
 
       <section className="card">
         <form className="job-search job-search--advanced" onSubmit={submit}>
-          <div className="job-search-q-wrap">
-            <input
-              className="job-search-q"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Sök från början av ord: yrke, företag, ort…"
-              aria-label="Sökord"
+          <div className="job-search-row job-search-row--primary">
+            <div className="job-search-q-wrap">
+              <input
+                className="job-search-q"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Sök från början av ord: yrke, företag, ort…"
+                aria-label="Sökord"
+              />
+              {q && (
+                <button
+                  type="button"
+                  className="job-search-q-clear"
+                  onClick={clearSearchText}
+                  aria-label="Rensa sökord"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <MultiSelectFilter
+              triggerLabel="Ort"
+              summary={locationSummary}
+              primaryTitle="Län"
+              secondaryTitle="Kommuner"
+              primaryOptions={filters.regions}
+              secondaryOptions={municipalityOptions}
+              activePrimaryId={browseRegion}
+              onActivePrimaryChange={setBrowseRegion}
+              selectedIds={selectedMunicipalities.map((row) => row.id)}
+              onToggleSecondary={toggleMunicipality}
+              onSelectAllSecondary={selectAllMunicipalities}
+              onClearSecondary={() => clearVisibleMunicipalities(municipalityOptions)}
+              onClearAll={() => setSelectedMunicipalities([])}
+              secondaryLoading={municipalitiesLoading && !municipalityCache[browseRegion]}
             />
-            {q && (
+
+            <MultiSelectFilter
+              triggerLabel="Yrke"
+              summary={occupationSummary}
+              primaryTitle="Yrkesområden"
+              secondaryTitle="Yrken"
+              primaryOptions={filters.fields}
+              secondaryOptions={groupOptions}
+              activePrimaryId={browseField}
+              onActivePrimaryChange={setBrowseField}
+              selectedIds={selectedGroups.map((row) => row.id)}
+              onToggleSecondary={toggleGroup}
+              onSelectAllSecondary={selectAllGroups}
+              onClearSecondary={() => clearVisibleGroups(groupOptions)}
+              onClearAll={() => setSelectedGroups([])}
+              secondaryLoading={groupsLoading && !groupCache[browseField]}
+              secondaryEmptyText="Välj yrkesområde till vänster"
+            />
+          </div>
+
+          <div className="job-search-row job-search-row--filters">
+            <div className="job-search-chips" role="group" aria-label="Filter">
+              <label
+                className={`job-filter-chip ${remote ? "active" : ""}`}
+                title="Visa bara jobb som kan utföras på distans"
+              >
+                <input
+                  type="checkbox"
+                  checked={remote}
+                  onChange={(e) => setRemote(e.target.checked)}
+                />
+                Endast distans
+              </label>
+
+              <label
+                className={`job-filter-chip ${matchCvOnly ? "active" : ""}`}
+                title="Visa jobb där minst ett krav från annonsen täcks av CV:t"
+              >
+                <input
+                  type="checkbox"
+                  checked={matchCvOnly}
+                  onChange={(e) => {
+                    setMatchCvOnly(e.target.checked);
+                    if (e.target.checked) setMinMatch60(false);
+                  }}
+                />
+                Passar mitt CV
+              </label>
+
+              <label
+                className={`job-filter-chip ${minMatch60 ? "active" : ""}`}
+                title="Visa bara jobb med minst 60 % kravtäckning"
+              >
+                <input
+                  type="checkbox"
+                  checked={minMatch60}
+                  onChange={(e) => {
+                    setMinMatch60(e.target.checked);
+                    if (e.target.checked) setMatchCvOnly(false);
+                  }}
+                />
+                Minst 60 % kravtäckning
+              </label>
+
+              <label
+                className={`job-filter-chip ${hideBlocked ? "active" : ""}`}
+                title="Dölj annonser med hårda formella blockerare"
+              >
+                <input
+                  type="checkbox"
+                  checked={hideBlocked}
+                  onChange={(e) => setHideBlocked(e.target.checked)}
+                />
+                Dölj blockerare
+              </label>
+            </div>
+
+            <div className="job-sort" role="group" aria-label="Sortera annonser">
+              <span className="job-sort-label">Sortera</span>
               <button
                 type="button"
-                className="job-search-q-clear"
-                onClick={clearSearchText}
-                aria-label="Rensa sökord"
+                className={`job-filter-chip ${sortBy === "newest" ? "active" : ""}`}
+                aria-pressed={sortBy === "newest"}
+                title="Nyast upplagda först, enligt Platsbanken"
+                onClick={() => applySort("newest")}
               >
-                ✕
+                Senast upplagda
               </button>
-            )}
-          </div>
+              <button
+                type="button"
+                className={`job-filter-chip ${sortBy === "match" ? "active" : ""}`}
+                aria-pressed={sortBy === "match"}
+                title="Sortera träffarna på kravtäckning"
+                onClick={() => applySort("match")}
+              >
+                Kravtäckning
+              </button>
+            </div>
 
-          <MultiSelectFilter
-            triggerLabel="Ort"
-            summary={locationSummary}
-            primaryTitle="Län"
-            secondaryTitle="Kommuner"
-            primaryOptions={filters.regions}
-            secondaryOptions={municipalityOptions}
-            activePrimaryId={browseRegion}
-            onActivePrimaryChange={setBrowseRegion}
-            selectedIds={selectedMunicipalities.map((row) => row.id)}
-            onToggleSecondary={toggleMunicipality}
-            onSelectAllSecondary={selectAllMunicipalities}
-            onClearSecondary={() => clearVisibleMunicipalities(municipalityOptions)}
-            onClearAll={() => setSelectedMunicipalities([])}
-            secondaryLoading={municipalitiesLoading && !municipalityCache[browseRegion]}
-          />
-
-          <MultiSelectFilter
-            triggerLabel="Yrke"
-            summary={occupationSummary}
-            primaryTitle="Yrkesområden"
-            secondaryTitle="Yrken"
-            primaryOptions={filters.fields}
-            secondaryOptions={groupOptions}
-            activePrimaryId={browseField}
-            onActivePrimaryChange={setBrowseField}
-            selectedIds={selectedGroups.map((row) => row.id)}
-            onToggleSecondary={toggleGroup}
-            onSelectAllSecondary={selectAllGroups}
-            onClearSecondary={() => clearVisibleGroups(groupOptions)}
-            onClearAll={() => setSelectedGroups([])}
-            secondaryLoading={groupsLoading && !groupCache[browseField]}
-            secondaryEmptyText="Välj yrkesområde till vänster"
-          />
-
-          <label
-            className={`job-filter-chip ${remote ? "active" : ""}`}
-            title="Visa bara jobb som kan utföras på distans"
-          >
-            <input
-              type="checkbox"
-              checked={remote}
-              onChange={(e) => setRemote(e.target.checked)}
-            />
-            Endast distans
-          </label>
-
-          <label
-            className={`job-filter-chip ${matchCvOnly ? "active" : ""}`}
-            title="Visa jobb där minst ett krav från annonsen täcks av CV:t"
-          >
-            <input
-              type="checkbox"
-              checked={matchCvOnly}
-              onChange={(e) => {
-                setMatchCvOnly(e.target.checked);
-                if (e.target.checked) setMinMatch60(false);
-              }}
-            />
-            Passar mitt CV
-          </label>
-
-          <label
-            className={`job-filter-chip ${minMatch60 ? "active" : ""}`}
-            title="Visa bara jobb med minst 60 % kravtäckning"
-          >
-            <input
-              type="checkbox"
-              checked={minMatch60}
-              onChange={(e) => {
-                setMinMatch60(e.target.checked);
-                if (e.target.checked) setMatchCvOnly(false);
-              }}
-            />
-            Minst 60 % kravtäckning
-          </label>
-
-          <div className="job-sort" role="group" aria-label="Sortera annonser">
-            <button
-              type="button"
-              className={`job-filter-chip ${sortBy === "newest" ? "active" : ""}`}
-              aria-pressed={sortBy === "newest"}
-              title="Nyast upplagda först, enligt Platsbanken"
-              onClick={() => applySort("newest")}
-            >
-              Senast upplagda
-            </button>
-            <button
-              type="button"
-              className={`job-filter-chip ${sortBy === "match" ? "active" : ""}`}
-              aria-pressed={sortBy === "match"}
-              title="Sortera träffarna på kravtäckning"
-              onClick={() => applySort("match")}
-            >
-              Kravtäckning
+            <button type="submit" className="job-search-submit">
+              Sök
             </button>
           </div>
-
-          <label
-            className={`job-filter-chip ${hideBlocked ? "active" : ""}`}
-            title="Dölj annonser med hårda formella blockerare"
-          >
-            <input
-              type="checkbox"
-              checked={hideBlocked}
-              onChange={(e) => setHideBlocked(e.target.checked)}
-            />
-            Dölj blockerare
-          </label>
-
-          <button type="submit" className="job-search-submit">
-            Sök
-          </button>
         </form>
 
         <div className="saved-search-tools">
