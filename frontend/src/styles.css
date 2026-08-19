@@ -36,6 +36,14 @@
   --radius: 16px;
   --radius-sm: 10px;
   --radius-pill: 999px;
+  --shell-max: 1280px;
+  --shell-pad-x: 1.5rem;
+  --shell-pad-bottom: 4rem;
+  --header-padding: 0.7rem 0.15rem 0.9rem;
+  --header-margin: 0.15rem 0 0;
+  --guest-content-top: 1.5rem;
+  --guest-grid-gap: clamp(1.75rem, 4vw, 3rem);
+  --guest-grid-cols: minmax(0, 1.15fr) minmax(300px, 400px);
   --shadow-sm: 0 1px 2px rgba(12, 12, 9, 0.06);
   --shadow-md: 0 2px 6px rgba(12, 12, 9, 0.08);
   --shadow-lg: 0 8px 20px rgba(12, 12, 9, 0.1);
@@ -250,9 +258,9 @@ a:focus-visible {
 }
 
 .app {
-  max-width: 1280px;
+  max-width: var(--shell-max);
   margin: 0 auto;
-  padding: 0 1.5rem 4rem;
+  padding: 0 var(--shell-pad-x) var(--shell-pad-bottom);
   position: relative;
 }
 
@@ -279,25 +287,24 @@ a:focus-visible {
 
 .app--guest {
   background: var(--bg);
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
 }
 
 .app--guest .header {
-  margin-bottom: 0;
-  padding-bottom: 0.85rem;
+  margin: var(--header-margin);
+  padding: var(--header-padding);
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
 }
 
 .app--guest .footer {
-  margin-top: 2.5rem;
+  margin-top: 3rem;
 }
 
 .main--guest {
   width: 100%;
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: clamp(1.75rem, 4vh, 3rem) 0 0;
+  max-width: none;
+  margin: 0;
+  padding: var(--guest-content-top) 0 0;
 }
 
 .main {
@@ -324,7 +331,7 @@ a:focus-visible {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
-  padding: 0.7rem 0.15rem 0.9rem;
+  padding: var(--header-padding);
   margin: 0.15rem 0 1.45rem;
   border-bottom: 1px solid var(--border);
   min-width: 0;
@@ -391,9 +398,23 @@ a:focus-visible {
     background 0.2s var(--ease-out);
 }
 
-.header-guest-nav a:hover {
+.header-guest-nav a:not(.btn-primary):hover {
   color: var(--ink);
   background: color-mix(in srgb, var(--brand-2) 10%, var(--surface));
+}
+
+.header-guest-nav .btn-primary {
+  border-radius: var(--radius-pill);
+  padding: 0.45rem 0.95rem;
+  font-size: 0.88rem;
+  min-height: 0;
+  box-shadow: none;
+}
+
+.header-guest-nav .btn-primary:hover {
+  color: #fff;
+  filter: brightness(1.05);
+  transform: none;
 }
 
 .brand-text {
@@ -592,8 +613,8 @@ a:focus-visible {
 
 .auth-page-inner {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 400px);
-  gap: clamp(1.75rem, 4vw, 3.5rem);
+  grid-template-columns: var(--guest-grid-cols);
+  gap: var(--guest-grid-gap);
   align-items: start;
   width: 100%;
   max-width: 100%;
@@ -602,12 +623,12 @@ a:focus-visible {
 
 @media (min-width: 841px) {
   .auth-intro h2 {
-    font-size: clamp(2rem, 3.2vw, 2.65rem);
+    font-size: clamp(2rem, 4vw, 2.75rem);
   }
 
   .auth-intro .lede {
-    max-width: 48ch;
-    font-size: 1.08rem;
+    max-width: 46ch;
+    font-size: 1.05rem;
   }
 
   .auth-intro-list {
@@ -621,12 +642,12 @@ a:focus-visible {
 }
 
 .auth-intro h2 {
-  margin: 0 0 0.75rem;
+  margin: 0 0 1rem;
   font-family: var(--font-display);
-  font-size: clamp(1.65rem, 3vw, 2.1rem);
-  line-height: 1.12;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.1;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
 }
 
 .auth-intro .grad {
@@ -634,8 +655,10 @@ a:focus-visible {
 }
 
 .auth-intro .lede {
-  margin-bottom: 1rem;
-  max-width: 42ch;
+  font-size: 1.05rem;
+  color: var(--muted);
+  margin: 0 0 1.4rem;
+  max-width: 46ch;
 }
 
 .auth-intro-list {
@@ -970,7 +993,7 @@ a:focus-visible {
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
   background: var(--surface);
-  padding: 1.65rem 1.85rem;
+  padding: 1.5rem 1.75rem;
 }
 
 .auth-card-lede {
@@ -5449,14 +5472,6 @@ code {
 
   .hero h2 {
     font-size: 1.85rem;
-  }
-
-  .app--guest {
-    padding:
-      max(0.5rem, env(safe-area-inset-top))
-      max(1rem, env(safe-area-inset-right))
-      max(1rem, env(safe-area-inset-bottom))
-      max(1rem, env(safe-area-inset-left));
   }
 
   .main--guest {

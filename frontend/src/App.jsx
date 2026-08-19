@@ -384,6 +384,9 @@ export default function App() {
             <nav className="header-guest-nav" aria-label="Huvudnavigering">
               <a href="/">Start</a>
               <a href="/integritet/">Integritet</a>
+              <a className="btn-primary" href="/app/" aria-current="page">
+                Logga in
+              </a>
             </nav>
           </div>
         ) : (

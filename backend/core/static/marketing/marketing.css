@@ -19,6 +19,14 @@
   --radius: 16px;
   --radius-sm: 10px;
   --radius-pill: 999px;
+  --shell-max: 1280px;
+  --shell-pad-x: 1.5rem;
+  --shell-pad-bottom: 4rem;
+  --header-padding: 0.7rem 0.15rem 0.9rem;
+  --header-margin: 0.15rem 0 0;
+  --guest-content-top: 1.5rem;
+  --guest-grid-gap: clamp(1.75rem, 4vw, 3rem);
+  --guest-grid-cols: minmax(0, 1.15fr) minmax(300px, 400px);
   --shadow-sm: 0 1px 2px rgba(12, 12, 9, 0.06);
   --shadow-md: 0 2px 6px rgba(12, 12, 9, 0.08);
   --font-display: "Inter", system-ui, sans-serif;
@@ -94,9 +102,9 @@ a:focus-visible {
 }
 
 .marketing-wrap {
-  max-width: 68rem;
+  max-width: var(--shell-max);
   margin: 0 auto;
-  padding: 0 1.5rem 4rem;
+  padding: 0 var(--shell-pad-x) var(--shell-pad-bottom);
 }
 
 .marketing-header {
@@ -104,8 +112,8 @@ a:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.7rem 0.15rem 0.9rem;
-  margin: 0.15rem 0 1.45rem;
+  padding: var(--header-padding);
+  margin: var(--header-margin);
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
 }
@@ -175,6 +183,8 @@ a:focus-visible {
   border-radius: var(--radius-pill);
   padding: 0.45rem 0.95rem;
   font-size: 0.88rem;
+  min-height: 0;
+  box-shadow: none;
 }
 
 .btn-primary {
@@ -218,17 +228,20 @@ a:focus-visible {
 
 .marketing-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-  gap: clamp(1.75rem, 4vw, 3rem);
+  grid-template-columns: var(--guest-grid-cols);
+  gap: var(--guest-grid-gap);
   align-items: start;
-  padding: 1.5rem 0 0.5rem;
-  margin-bottom: 2rem;
+  padding: var(--guest-content-top) 0 0;
+  margin-bottom: 2.5rem;
 }
 
-@media (max-width: 880px) {
+@media (max-width: 840px) {
   .marketing-hero {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.25rem;
+    max-width: 26rem;
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 
@@ -599,4 +612,22 @@ a:focus-visible {
 
 .privacy-body li {
   margin: 0.35rem 0;
+}
+
+@media (max-width: 760px) {
+  .marketing-wrap {
+    padding:
+      max(0.5rem, env(safe-area-inset-top))
+      max(1rem, env(safe-area-inset-right))
+      max(3rem, env(safe-area-inset-bottom))
+      max(1rem, env(safe-area-inset-left));
+  }
+
+  .marketing-hero {
+    padding-top: 1.25rem;
+  }
+
+  .marketing-hero h2 {
+    font-size: 1.85rem;
+  }
 }
