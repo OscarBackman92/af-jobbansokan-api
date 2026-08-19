@@ -849,6 +849,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
 
 
 GOOD_MATCH_PERCENT = 60
+CV_FIT_PERCENT = 40
 GOOD_MATCH_MIN_TERMS = 2
 # Bounded scan: 4 JobTech pages × 25 ads. Keep well under gunicorn timeout.
 MATCH_CV_SCAN_LIMIT = 100
@@ -1180,7 +1181,7 @@ def _cached_jobtech_search(**kwargs):
             OpenApiTypes.BOOL,
             description=(
                 "Only jobs that match the user's CV "
-                f"(≥{GOOD_MATCH_PERCENT}% kravtäckning). "
+                f"(≥{CV_FIT_PERCENT}% kravtäckning and at least one must-requirement). "
                 "Equivalent to min_match when min_match is unset."
             ),
         ),
@@ -1237,7 +1238,7 @@ def job_search(request):
         except ValueError as exc:
             raise ValidationError({"min_match": "Must be an integer 0-100."}) from exc
     if want_match_cv and min_match is None:
-        min_match = 1
+        min_match = CV_FIT_PERCENT
     sort_by = (params.get("sort") or "").strip().lower()
     hide_blocked = _truthy(params.get("hide_blocked", ""))
 

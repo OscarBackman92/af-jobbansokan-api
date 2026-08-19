@@ -498,6 +498,41 @@ def test_min_match_filter_drops_below_threshold_and_unscored():
     assert [job["id"] for job in kept] == ["ok"]
 
 
+def test_cv_fit_filter_requires_score_floor_and_a_hard_requirement():
+    from core.views import CV_FIT_PERCENT, _filter_jobs_by_cv_match, _passes_cv_match
+
+    assert (
+        _passes_cv_match(
+            {"score": 40, "must_covered": 1, "must_total": 4},
+            min_percent=CV_FIT_PERCENT,
+        )
+        is True
+    )
+    assert (
+        _passes_cv_match(
+            {"score": 14, "must_covered": 1, "must_total": 5},
+            min_percent=CV_FIT_PERCENT,
+        )
+        is False
+    )
+    assert (
+        _passes_cv_match(
+            {"score": 90, "must_covered": 0, "must_total": 0},
+            min_percent=CV_FIT_PERCENT,
+        )
+        is False
+    )
+    kept = _filter_jobs_by_cv_match(
+        [
+            {"id": "fit", "match": {"score": 41, "must_covered": 2}},
+            {"id": "weak", "match": {"score": 14, "must_covered": 1}},
+            {"id": "unscored", "match": {"score": None, "must_covered": 3}},
+        ],
+        min_percent=CV_FIT_PERCENT,
+    )
+    assert [job["id"] for job in kept] == ["fit"]
+
+
 def test_search_match_cv_requires_resume(api_client, user, mock_jobtech):
     api_client.force_authenticate(user)
     response = api_client.get(SEARCH_URL, {"match_cv": "true"})

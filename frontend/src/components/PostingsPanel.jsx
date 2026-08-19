@@ -803,7 +803,7 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
 
               <label
                 className={`job-filter-chip ${matchCvOnly ? "active" : ""}`}
-                title="Visa jobb där minst ett krav från annonsen täcks av CV:t"
+                title="Visa jobb med minst ett hårt krav täckt och minst 40 % kravtäckning"
               >
                 <input
                   type="checkbox"
@@ -813,7 +813,7 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
                     if (e.target.checked) setMinMatch60(false);
                   }}
                 />
-                Passar mitt CV
+                Passar mitt CV (≥ 40 % + hårt krav)
               </label>
 
               <label
