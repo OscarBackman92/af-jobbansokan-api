@@ -4833,6 +4833,20 @@ button.chart-col:focus-visible {
   }
 }
 
+.modal-shell {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
+  margin: auto;
+  flex-shrink: 0;
+  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.modal-shell--closing {
+  animation: pop-out 0.2s var(--ease-out) both;
+}
+
 .modal {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -4845,14 +4859,12 @@ button.chart-col:focus-visible {
   flex-direction: column;
   gap: 0.6rem;
   box-shadow: var(--shadow-lg);
-  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
   margin: auto;
   flex-shrink: 0;
   min-height: 0;
-}
-
-.modal--closing {
-  animation: pop-out 0.2s var(--ease-out) both;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes pop {
@@ -4862,7 +4874,7 @@ button.chart-col:focus-visible {
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: none;
   }
 }
 
@@ -4967,6 +4979,7 @@ button.chart-col:focus-visible {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ---------- Application detail modal ---------- */
@@ -5000,6 +5013,7 @@ button.chart-col:focus-visible {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 1rem;

@@ -58,14 +58,20 @@ export default function ModalOverlay({
         role="presentation"
       >
         <div
-          className={`${className}${closing ? " modal--closing" : ""}`}
-          ref={dialogRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={labelledBy}
-          onClick={(event) => event.stopPropagation()}
+          className={
+            closing ? "modal-shell modal-shell--closing" : "modal-shell"
+          }
         >
-          {children}
+          <div
+            className={className}
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={labelledBy}
+            onClick={(event) => event.stopPropagation()}
+          >
+            {children}
+          </div>
         </div>
       </div>
     </ModalCloseContext.Provider>,
