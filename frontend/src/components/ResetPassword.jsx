@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { request } from "../api.js";
+import AuthShell from "./AuthShell.jsx";
 import PasswordInput from "./PasswordInput.jsx";
 
 // Shown when the user arrives from the reset e-mail link
@@ -46,21 +47,21 @@ export default function ResetPassword({ uid, token, onDone }) {
 
   if (done) {
     return (
-      <div className="hero centered">
-        <div className="card narrow auth-card">
+      <AuthShell>
+        <div className="card auth-card">
           <h2>Klart!</h2>
           <p className="muted">
             Ditt lösenord är uppdaterat. Logga in med det nya lösenordet.
           </p>
           <button onClick={onDone}>Till inloggningen</button>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="hero centered">
-      <form className="card narrow auth-card" onSubmit={submit}>
+    <AuthShell>
+      <form className="card auth-card" onSubmit={submit}>
         <h2>Välj ett nytt lösenord</h2>
         <p className="muted">Ange ditt nya lösenord nedan.</p>
         <div className="field">
@@ -94,6 +95,6 @@ export default function ResetPassword({ uid, token, onDone }) {
           Avbryt
         </button>
       </form>
-    </div>
+    </AuthShell>
   );
 }

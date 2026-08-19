@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { request } from "../api.js";
+import AuthShell from "./AuthShell.jsx";
 
 // Shown when the user lands back from Google's consent screen
 // (/?code=...&state=...). Exchanges the code for our JWT pair.
@@ -32,22 +33,22 @@ export default function GoogleSignIn({ code, onLogin, onDone }) {
 
   if (error) {
     return (
-      <div className="hero centered">
-        <div className="card narrow auth-card">
+      <AuthShell>
+        <div className="card auth-card">
           <h2>Google-inloggningen misslyckades</h2>
           <p className="error">{error}</p>
           <button onClick={onDone}>Till inloggningen</button>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="hero centered">
-      <div className="card narrow auth-card">
+    <AuthShell>
+      <div className="card auth-card">
         <h2>Loggar in med Google…</h2>
         <p className="muted">Ett ögonblick medan vi slutför inloggningen.</p>
       </div>
-    </div>
+    </AuthShell>
   );
 }

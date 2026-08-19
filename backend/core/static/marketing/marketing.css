@@ -16,8 +16,9 @@
   --border: rgba(12, 12, 9, 0.12);
   --accent-soft: #f4f4f1;
   --accent-border: rgba(49, 44, 133, 0.22);
-  --radius: 4px;
-  --radius-sm: 4px;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
   --shadow-sm: 0 1px 2px rgba(12, 12, 9, 0.06);
   --shadow-md: 0 2px 6px rgba(12, 12, 9, 0.08);
   --font-display: "Inter", system-ui, sans-serif;
@@ -147,7 +148,7 @@ a:focus-visible {
   align-items: center;
   flex-wrap: wrap;
   padding: 0.22rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 78%, transparent);
   box-shadow: var(--shadow-sm);
@@ -159,7 +160,7 @@ a:focus-visible {
   font-size: 0.88rem;
   font-weight: 600;
   padding: 0.45rem 0.85rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition:
     color 0.2s var(--ease-out),
     background 0.2s var(--ease-out);
@@ -171,7 +172,7 @@ a:focus-visible {
 }
 
 .marketing-nav .btn-primary {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0.45rem 0.95rem;
   font-size: 0.88rem;
 }
@@ -179,7 +180,7 @@ a:focus-visible {
 .btn-primary {
   display: inline-block;
   padding: 0.55rem 1rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--brand-2);
   color: #fff !important;
   text-decoration: none;
@@ -278,7 +279,6 @@ a:focus-visible {
   border-radius: var(--radius);
   padding: 1.5rem 1.75rem;
   box-shadow: var(--shadow-md);
-  border-top: 2px solid var(--brand-2);
 }
 
 .hero-card h3 {
@@ -313,7 +313,7 @@ a:focus-visible {
   align-items: center;
   justify-content: center;
   padding: 0.55rem 1rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--brand-2) !important;
   text-decoration: none;
@@ -376,7 +376,7 @@ a:focus-visible {
   place-items: center;
   width: 2rem;
   height: 2rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--accent-soft);
   color: var(--brand);
   font-weight: 800;
@@ -569,7 +569,7 @@ a:focus-visible {
   background: var(--surface);
   color: var(--muted);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0.3rem 0.9rem;
   font-size: 0.78rem;
   font-weight: 600;

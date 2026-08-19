@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { request } from "../api.js";
+import AuthShell from "./AuthShell.jsx";
 
 // Shown when the user arrives from the verification e-mail link
 // (/?verify_key=...). Confirms the address via dj-rest-auth, then
@@ -42,36 +43,36 @@ export default function VerifyEmail({ verifyKey, onDone }) {
 
   if (busy) {
     return (
-      <div className="hero centered">
-        <div className="card narrow auth-card">
+      <AuthShell>
+        <div className="card auth-card">
           <h2>Verifierar e-post…</h2>
           <p className="muted">Ett ögonblick medan vi bekräftar din adress.</p>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
   if (done) {
     return (
-      <div className="hero centered">
-        <div className="card narrow auth-card">
+      <AuthShell>
+        <div className="card auth-card">
           <h2>E-post bekräftad!</h2>
           <p className="muted">
             Din adress är verifierad. Logga in med e-post och lösenord.
           </p>
           <button onClick={onDone}>Till inloggningen</button>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="hero centered">
-      <div className="card narrow auth-card">
+    <AuthShell>
+      <div className="card auth-card">
         <h2>Verifieringen misslyckades</h2>
         <p className="error">{error}</p>
         <button onClick={onDone}>Till inloggningen</button>
       </div>
-    </div>
+    </AuthShell>
   );
 }
