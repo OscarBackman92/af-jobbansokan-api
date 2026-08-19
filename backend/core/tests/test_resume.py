@@ -312,8 +312,30 @@ def test_parse_oscar_backman_canva_cv():
     assert "månads-, kvartals- och årsbokslut" in description
     assert "ekonomisystem" in description
     assert "automatiserade och manuella flöden" in description
+    assert "House of Service IT och FM" in description
     assert not description.rstrip().endswith("inför")
     assert "webshop korrekt." not in description.replace("\n", " ")
+
+    orderadmin = next(
+        row for row in draft["experience"] if row["title"] == "Orderadministratör"
+    )
+    assert "Hanterade försäljningsorder" in orderadmin["description"]
+    assert "Nettailer" in orderadmin["description"]
+
+    ekonomi = next(
+        row
+        for row in draft["experience"]
+        if row["title"] == "Ekonomiassistent" and row["company"] == "AVOKI"
+    )
+    assert "Hanterade fakturering" in ekonomi["description"]
+    assert "kontoavstämningar" in ekonomi["description"]
+
+    praktik = next(
+        row
+        for row in draft["experience"]
+        if row["title"] == "Ekonomiassistent (praktik)"
+    )
+    assert "Assisterade i löpande" in praktik["description"]
 
 
 def test_parse_txt_upload(api_client, user):

@@ -381,6 +381,8 @@ def _bucket_lines(text: str) -> dict[str, list[str]]:
                     )
                 ):
                     mode = "experience"
+                    if side == "left":
+                        left_mode = "experience"
                 else:
                     continue
 
