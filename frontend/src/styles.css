@@ -1734,6 +1734,10 @@ tbody tr:last-child td {
   background: var(--surface);
   color: var(--ink);
   box-shadow: none;
+  transition:
+    border-color 0.18s var(--ease-out),
+    box-shadow 0.18s var(--ease-out),
+    background-color 0.18s var(--ease-out);
 }
 
 .period-cell:hover {
@@ -3044,6 +3048,30 @@ tbody tr:last-child td {
   gap: 0.6rem;
 }
 
+.job-list > * {
+  animation: row-in 0.36s var(--ease-out) both;
+}
+
+.job-list > *:nth-child(2) {
+  animation-delay: 0.04s;
+}
+
+.job-list > *:nth-child(3) {
+  animation-delay: 0.08s;
+}
+
+.job-list > *:nth-child(4) {
+  animation-delay: 0.12s;
+}
+
+.job-list > *:nth-child(5) {
+  animation-delay: 0.16s;
+}
+
+.job-list > *:nth-child(n + 6) {
+  animation-delay: 0.2s;
+}
+
 .job-results {
   scroll-margin-top: 5rem;
 }
@@ -3133,6 +3161,9 @@ tbody tr:last-child td {
   border-radius: 999px;
   overflow: hidden;
   background: var(--surface-2);
+  transition:
+    border-color 0.18s var(--ease-out),
+    background-color 0.18s var(--ease-out);
 }
 
 .saved-search-chip button {
@@ -3144,6 +3175,7 @@ tbody tr:last-child td {
   padding: 0.35rem 0.75rem;
   font-size: 0.8rem;
   min-height: auto;
+  transition: background-color 0.18s var(--ease-out);
 }
 
 .saved-search-chip button:hover {
@@ -3521,6 +3553,16 @@ tbody tr:last-child td {
   border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--border));
   background: color-mix(in srgb, var(--amber) 12%, var(--surface));
   color: var(--ink);
+  transition:
+    border-color 0.18s var(--ease-out),
+    background-color 0.18s var(--ease-out);
+}
+
+@media (hover: hover) {
+  .gap-chip:hover {
+    border-color: color-mix(in srgb, var(--amber) 70%, var(--border));
+    background: color-mix(in srgb, var(--amber) 20%, var(--surface));
+  }
 }
 
 .gap-chip-add,
@@ -4128,6 +4170,38 @@ button.chart-col:focus-visible {
   border-bottom: 1px solid var(--border);
   background: transparent;
   border-left: 3px solid transparent;
+  animation: row-in 0.34s var(--ease-out) both;
+  transition:
+    background-color 0.18s var(--ease-out),
+    border-left-color 0.18s var(--ease-out);
+}
+
+.lane-row:nth-child(3) {
+  animation-delay: 0.04s;
+}
+
+.lane-row:nth-child(4) {
+  animation-delay: 0.08s;
+}
+
+.lane-row:nth-child(5) {
+  animation-delay: 0.12s;
+}
+
+.lane-row:nth-child(n + 6) {
+  animation-delay: 0.16s;
+}
+
+@media (hover: hover) {
+  .lane-row:hover {
+    background: color-mix(in srgb, var(--brand-2) 5%, transparent);
+    border-left-color: color-mix(in srgb, var(--brand-2) 40%, transparent);
+  }
+
+  .lane-row--urgent:hover,
+  .lane-row--late:hover {
+    background: color-mix(in srgb, var(--amber) 13%, transparent);
+  }
 }
 
 .lane-select {
@@ -5148,10 +5222,16 @@ code {
   font-size: 0.78rem;
   font-weight: 600;
   box-shadow: none;
+  transition:
+    color 0.2s var(--ease-out),
+    background-color 0.2s var(--ease-out),
+    border-color 0.2s var(--ease-out);
 }
 
 .theme-picker button:hover {
   color: var(--ink);
+  background: var(--hover);
+  border-color: color-mix(in srgb, var(--brand-2) 35%, var(--border));
   filter: none;
   transform: none;
   box-shadow: none;
