@@ -264,6 +264,7 @@ export default function DashboardPanel({
             detail="den här veckan"
             tone={(kpis.urgent ?? 0) > 0 ? "amber" : "default"}
             filterId="urgent"
+            motionIndex={0}
             onFilter={() => onNavigate?.("saved", { filter: "urgent" })}
           />
           <MetricTile
@@ -272,6 +273,7 @@ export default function DashboardPanel({
             detail="väntar för länge"
             tone={(kpis.follow_up ?? 0) > 0 ? "amber" : "default"}
             filterId="late"
+            motionIndex={1}
             onFilter={() => onNavigate?.("applied", { filter: "late" })}
           />
           <MetricTile
@@ -279,6 +281,7 @@ export default function DashboardPanel({
             value={kpis.saved_total ?? 0}
             detail="ej sökta ännu"
             filterId="saved"
+            motionIndex={2}
             onFilter={() => onNavigate?.("saved")}
           />
           <MetricTile
@@ -286,6 +289,7 @@ export default function DashboardPanel({
             value={kpis.active_applications ?? 0}
             detail="ej avslutade"
             filterId="fresh"
+            motionIndex={3}
             onFilter={() => onNavigate?.("applied")}
           />
           <MetricTile
@@ -294,6 +298,7 @@ export default function DashboardPanel({
             detail="just nu — tratten räknar kumulativt"
             tone="cyan"
             filterId="dialog"
+            motionIndex={4}
             onFilter={() => onNavigate?.("applied", { filter: "dialog" })}
           />
           <MetricTile
@@ -302,6 +307,7 @@ export default function DashboardPanel({
             detail="att ta ställning till"
             tone="green"
             filterId="offer"
+            motionIndex={5}
             onFilter={() => onNavigate?.("applied", { filter: "offer" })}
           />
         </div>
@@ -331,8 +337,11 @@ export default function DashboardPanel({
           <p className="muted">När du planerar nästa steg syns de här.</p>
         ) : (
           <ul className="today-list">
-            {nextActions.map((action) => (
-              <li key={`${action.kind}-${action.id}-${action.date}`}>
+            {nextActions.map((action, index) => (
+              <li
+                key={`${action.kind}-${action.id}-${action.date}`}
+                style={{ "--motion-index": index }}
+              >
                 <div className="today-list-main">
                   <strong>
                     {action.title} @ {action.company}
@@ -368,7 +377,7 @@ export default function DashboardPanel({
             const ofPrev =
               prevKey && prevCount > 0 ? pct(count, prevCount) : null;
             return (
-              <li key={step.key}>
+              <li key={step.key} style={{ "--motion-index": index }}>
                 <span className="funnel-label">{step.label}</span>
                 <strong className="funnel-count">{count}</strong>
                 <span className="funnel-pct muted">
@@ -440,6 +449,7 @@ export default function DashboardPanel({
                       .join(" ")}
                     style={{
                       height: `${count === 0 ? 8 : (count / monthlyMax) * 96 + 8}px`,
+                      "--motion-index": index,
                     }}
                   />
                   <span className="chart-label">{monthShortLabel(m.month)}</span>
@@ -470,12 +480,16 @@ export default function DashboardPanel({
                 .map((seg) => `${seg.label} ${seg.value}`)
                 .join(", ")}
             >
-              {outcomeValues.map((seg) =>
+              {outcomeValues.map((seg, index) =>
                 seg.value > 0 ? (
                   <div
                     key={seg.key}
                     className={`stack-bar-seg stack-bar-seg--${seg.key}`}
-                    style={{ flexGrow: seg.value, flexBasis: 0 }}
+                    style={{
+                      flexGrow: seg.value,
+                      flexBasis: 0,
+                      "--motion-index": index,
+                    }}
                     title={`${seg.label}: ${seg.value}`}
                   />
                 ) : null
@@ -483,7 +497,11 @@ export default function DashboardPanel({
               {outcomesOther > 0 ? (
                 <div
                   className="stack-bar-seg stack-bar-seg--other"
-                  style={{ flexGrow: outcomesOther, flexBasis: 0 }}
+                  style={{
+                    flexGrow: outcomesOther,
+                    flexBasis: 0,
+                    "--motion-index": outcomeValues.length,
+                  }}
                   title={`Övrigt: ${outcomesOther}`}
                 />
               ) : null}
@@ -571,7 +589,7 @@ export default function DashboardPanel({
           <p className="muted">för lite data</p>
         ) : (
           <div className="histogram" role="list" aria-label="Väntetid">
-            {waitingValues.map((bucket) => (
+            {waitingValues.map((bucket, index) => (
               <div className="histogram-row" role="listitem" key={bucket.key}>
                 <span className="histogram-label">{bucket.label}</span>
                 <div className="histogram-track">
@@ -580,6 +598,7 @@ export default function DashboardPanel({
                     style={{
                       width: `${((bucket.value || 0) / waitingMax) * 100}%`,
                       minWidth: bucket.value > 0 ? "4px" : "0",
+                      "--motion-index": index,
                     }}
                   />
                 </div>

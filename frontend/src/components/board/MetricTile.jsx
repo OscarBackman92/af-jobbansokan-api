@@ -5,6 +5,7 @@ export default function MetricTile({
   tone = "default",
   filterId,
   onFilter,
+  motionIndex = 0,
 }) {
   const className = `metric-tile metric-tile--${tone}${
     filterId ? " metric-tile--interactive" : ""
@@ -21,6 +22,7 @@ export default function MetricTile({
       <button
         type="button"
         className={className}
+        style={{ "--motion-index": motionIndex }}
         onClick={() => onFilter(filterId)}
         aria-label={`Filtrera: ${label}`}
       >
@@ -28,5 +30,9 @@ export default function MetricTile({
       </button>
     );
   }
-  return <div className={className}>{content}</div>;
+  return (
+    <div className={className} style={{ "--motion-index": motionIndex }}>
+      {content}
+    </div>
+  );
 }

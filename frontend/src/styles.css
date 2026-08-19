@@ -2205,6 +2205,8 @@ tbody tr:last-child td {
     border-color 0.2s var(--ease-out),
     box-shadow 0.2s var(--ease-out);
   position: relative;
+  animation: dashboard-rise 0.42s var(--ease-out) both;
+  animation-delay: calc(var(--motion-index, 0) * 55ms);
 }
 
 .metric-tile::before {
@@ -2215,6 +2217,10 @@ tbody tr:last-child td {
   height: 2px;
   background: var(--ink);
   opacity: 0.12;
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: dashboard-line-in 0.5s var(--ease-out) both;
+  animation-delay: calc(110ms + var(--motion-index, 0) * 55ms);
 }
 
 @media (hover: hover) {
@@ -3251,6 +3257,8 @@ tbody tr:last-child td {
   background: var(--surface-2, rgba(255, 255, 255, 0.03));
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
+  animation: dashboard-rise 0.36s var(--ease-out) both;
+  animation-delay: calc(var(--motion-index, 0) * 45ms);
 }
 
 .today-list-main {
@@ -3821,6 +3829,10 @@ button.chart-col:focus-visible {
   background: color-mix(in srgb, var(--brand) 42%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--brand) 55%, var(--border));
   transition: height 0.25s ease, box-shadow 0.2s ease;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  animation: dashboard-column-in 0.5s var(--ease-out) both;
+  animation-delay: calc(var(--motion-index, 0) * 60ms);
 }
 
 .chart-bar--empty {
@@ -3883,6 +3895,35 @@ button.chart-col:focus-visible {
 }
 
 /* ---------- Dashboard: tag, funnel, stack-bar, histogram ---------- */
+
+@keyframes dashboard-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashboard-line-in {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes dashboard-bar-in {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes dashboard-column-in {
+  to {
+    transform: scaleY(1);
+  }
+}
 
 .tab-count {
   display: inline-flex;
@@ -4275,6 +4316,8 @@ button.chart-col:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  animation: dashboard-rise 0.36s var(--ease-out) both;
+  animation-delay: calc(var(--motion-index, 0) * 45ms);
 }
 
 .funnel-label {
@@ -4305,6 +4348,10 @@ button.chart-col:focus-visible {
 .stack-bar-seg {
   min-width: 2px;
   height: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: dashboard-bar-in 0.48s var(--ease-out) both;
+  animation-delay: calc(100ms + var(--motion-index, 0) * 70ms);
 }
 
 .stack-bar-seg--rejected {
@@ -4382,6 +4429,10 @@ button.chart-col:focus-visible {
   min-width: 0;
   border-radius: inherit;
   background: var(--brand);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: dashboard-bar-in 0.46s var(--ease-out) both;
+  animation-delay: calc(var(--motion-index, 0) * 65ms);
 }
 
 .histogram-count {
