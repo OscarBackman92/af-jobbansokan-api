@@ -884,6 +884,22 @@ a:focus-visible {
   animation-delay: 0.14s;
 }
 
+.stack > *:nth-child(5) {
+  animation-delay: 0.18s;
+}
+
+.stack > *:nth-child(6) {
+  animation-delay: 0.21s;
+}
+
+.stack > *:nth-child(7) {
+  animation-delay: 0.24s;
+}
+
+.stack > *:nth-child(n + 8) {
+  animation-delay: 0.27s;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -912,6 +928,52 @@ a:focus-visible {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Shared reveal steps. Vertical only — a horizontal slide would push
+   content past the viewport edge mid-animation. */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Bars keep their laid-out size and scale in from the baseline, so the
+   grow never changes layout. */
+@keyframes bar-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes bar-grow-y {
+  from {
+    opacity: 0.4;
+    transform: scaleY(0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -2207,6 +2269,34 @@ tbody tr:last-child td {
   position: relative;
 }
 
+.metric-grid .metric-tile {
+  animation: tile-in 0.42s var(--ease-out) both;
+}
+
+.metric-grid .metric-tile:nth-child(1) {
+  animation-delay: 0.06s;
+}
+
+.metric-grid .metric-tile:nth-child(2) {
+  animation-delay: 0.11s;
+}
+
+.metric-grid .metric-tile:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+.metric-grid .metric-tile:nth-child(4) {
+  animation-delay: 0.21s;
+}
+
+.metric-grid .metric-tile:nth-child(5) {
+  animation-delay: 0.26s;
+}
+
+.metric-grid .metric-tile:nth-child(n + 6) {
+  animation-delay: 0.31s;
+}
+
 .metric-tile::before {
   content: "";
   position: absolute;
@@ -2215,6 +2305,8 @@ tbody tr:last-child td {
   height: 2px;
   background: var(--ink);
   opacity: 0.12;
+  transform-origin: left center;
+  animation: bar-grow-x 0.5s var(--ease-out) 0.12s both;
 }
 
 @media (hover: hover) {
@@ -3251,6 +3343,33 @@ tbody tr:last-child td {
   background: var(--surface-2, rgba(255, 255, 255, 0.03));
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
+  animation: row-in 0.38s var(--ease-out) both;
+  transition:
+    border-color 0.18s var(--ease-out),
+    background-color 0.18s var(--ease-out);
+}
+
+.today-list li:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+.today-list li:nth-child(3) {
+  animation-delay: 0.1s;
+}
+
+.today-list li:nth-child(4) {
+  animation-delay: 0.15s;
+}
+
+.today-list li:nth-child(n + 5) {
+  animation-delay: 0.2s;
+}
+
+@media (hover: hover) {
+  .today-list li:hover {
+    border-color: color-mix(in srgb, var(--brand-2) 32%, var(--border));
+    background: color-mix(in srgb, var(--brand-2) 5%, var(--surface-2));
+  }
 }
 
 .today-list-main {
@@ -3331,6 +3450,8 @@ tbody tr:last-child td {
   height: 100%;
   border-radius: inherit;
   transition: width 0.2s ease;
+  transform-origin: left center;
+  animation: bar-grow-x 0.5s var(--ease-out) 0.08s both;
 }
 
 .match-score--strong .match-score-bar > span {
@@ -3821,6 +3942,28 @@ button.chart-col:focus-visible {
   background: color-mix(in srgb, var(--brand) 42%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--brand) 55%, var(--border));
   transition: height 0.25s ease, box-shadow 0.2s ease;
+  transform-origin: bottom center;
+  animation: bar-grow-y 0.55s var(--ease-out) both;
+}
+
+.chart-col:nth-child(2) .chart-bar {
+  animation-delay: 0.06s;
+}
+
+.chart-col:nth-child(3) .chart-bar {
+  animation-delay: 0.12s;
+}
+
+.chart-col:nth-child(4) .chart-bar {
+  animation-delay: 0.18s;
+}
+
+.chart-col:nth-child(5) .chart-bar {
+  animation-delay: 0.24s;
+}
+
+.chart-col:nth-child(n + 6) .chart-bar {
+  animation-delay: 0.3s;
 }
 
 .chart-bar--empty {
@@ -4275,6 +4418,27 @@ button.chart-col:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  animation: row-in 0.4s var(--ease-out) both;
+}
+
+.funnel li:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+.funnel li:nth-child(3) {
+  animation-delay: 0.1s;
+}
+
+.funnel li:nth-child(4) {
+  animation-delay: 0.15s;
+}
+
+.funnel li:nth-child(5) {
+  animation-delay: 0.2s;
+}
+
+.funnel li:nth-child(n + 6) {
+  animation-delay: 0.25s;
 }
 
 .funnel-label {
@@ -4305,6 +4469,20 @@ button.chart-col:focus-visible {
 .stack-bar-seg {
   min-width: 2px;
   height: 100%;
+  transform-origin: left center;
+  animation: bar-grow-x 0.5s var(--ease-out) both;
+}
+
+.stack-bar-seg:nth-child(2) {
+  animation-delay: 0.09s;
+}
+
+.stack-bar-seg:nth-child(3) {
+  animation-delay: 0.18s;
+}
+
+.stack-bar-seg:nth-child(n + 4) {
+  animation-delay: 0.27s;
 }
 
 .stack-bar-seg--rejected {
@@ -4382,6 +4560,20 @@ button.chart-col:focus-visible {
   min-width: 0;
   border-radius: inherit;
   background: var(--brand);
+  transform-origin: left center;
+  animation: bar-grow-x 0.55s var(--ease-out) both;
+}
+
+.histogram-row:nth-child(2) .histogram-bar {
+  animation-delay: 0.07s;
+}
+
+.histogram-row:nth-child(3) .histogram-bar {
+  animation-delay: 0.14s;
+}
+
+.histogram-row:nth-child(n + 4) .histogram-bar {
+  animation-delay: 0.21s;
 }
 
 .histogram-count {
@@ -4451,6 +4643,23 @@ button.chart-col:focus-visible {
   gap: 0.75rem;
   padding: 0.45rem 0.15rem;
   border-bottom: 1px solid var(--border);
+  animation: row-in 0.38s var(--ease-out) both;
+}
+
+.top-companies li:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+.top-companies li:nth-child(3) {
+  animation-delay: 0.1s;
+}
+
+.top-companies li:nth-child(4) {
+  animation-delay: 0.15s;
+}
+
+.top-companies li:nth-child(n + 5) {
+  animation-delay: 0.2s;
 }
 
 .top-companies li:last-child {
@@ -5351,8 +5560,10 @@ code {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
 
