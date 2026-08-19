@@ -259,6 +259,21 @@ a:focus-visible {
   display: none !important;
 }
 
+.tab-panel:not(.tab-panel-hidden) {
+  animation: tab-panel-in 0.32s var(--ease-out) both;
+}
+
+@keyframes tab-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .app--guest {
   background: var(--bg);
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
@@ -2192,6 +2207,36 @@ tbody tr:last-child td {
   gap: 0.55rem;
 }
 
+.metric-grid > *,
+.dashboard-metric-grid > * {
+  animation: rise 0.35s var(--ease-out) both;
+}
+
+.metric-grid > *:nth-child(2),
+.dashboard-metric-grid > *:nth-child(2) {
+  animation-delay: 0.04s;
+}
+
+.metric-grid > *:nth-child(3),
+.dashboard-metric-grid > *:nth-child(3) {
+  animation-delay: 0.08s;
+}
+
+.metric-grid > *:nth-child(4),
+.dashboard-metric-grid > *:nth-child(4) {
+  animation-delay: 0.11s;
+}
+
+.metric-grid > *:nth-child(5),
+.dashboard-metric-grid > *:nth-child(5) {
+  animation-delay: 0.14s;
+}
+
+.metric-grid > *:nth-child(6),
+.dashboard-metric-grid > *:nth-child(6) {
+  animation-delay: 0.17s;
+}
+
 .metric-tile {
   display: flex;
   flex-direction: column;
@@ -3955,6 +4000,38 @@ button.chart-col:focus-visible {
   font-size: 1rem;
 }
 
+.pipeline-rows > .lane-row:not(.lane-row--dim) {
+  animation: rise 0.3s var(--ease-out) both;
+}
+
+.pipeline-rows > .lane-row:not(.lane-row--dim):nth-child(2) {
+  animation-delay: 0.03s;
+}
+
+.pipeline-rows > .lane-row:not(.lane-row--dim):nth-child(3) {
+  animation-delay: 0.06s;
+}
+
+.pipeline-rows > .lane-row:not(.lane-row--dim):nth-child(4) {
+  animation-delay: 0.09s;
+}
+
+.pipeline-rows > .lane-row:not(.lane-row--dim):nth-child(5) {
+  animation-delay: 0.12s;
+}
+
+.pipeline-rows > .lane-row:not(.lane-row--dim):nth-child(6) {
+  animation-delay: 0.15s;
+}
+
+.pipeline-rows > .lane-row:not(.lane-row--dim):nth-child(7) {
+  animation-delay: 0.18s;
+}
+
+.pipeline-rows > .lane-row:not(.lane-row--dim):nth-child(8) {
+  animation-delay: 0.21s;
+}
+
 .lane-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -4129,6 +4206,12 @@ button.chart-col:focus-visible {
   place-items: center;
   background: color-mix(in srgb, var(--ink) 35%, transparent);
   padding: 1rem;
+  animation: fade 0.18s ease both;
+}
+
+.keys-help--closing {
+  animation: fade-out 0.18s ease both;
+  pointer-events: none;
 }
 
 .keys-help-card {
@@ -4138,6 +4221,11 @@ button.chart-col:focus-visible {
   border-radius: var(--radius);
   padding: 1rem 1.15rem;
   box-shadow: var(--shadow-md);
+  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.keys-help--closing .keys-help-card {
+  animation: pop-out 0.2s var(--ease-out) both;
 }
 
 .keys-help-list {
@@ -4174,6 +4262,18 @@ button.chart-col:focus-visible {
   border-radius: var(--radius-sm);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
+  animation: bulk-bar-in 0.28s var(--ease-out) both;
+}
+
+@keyframes bulk-bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .lane-skeleton {
@@ -4275,6 +4375,27 @@ button.chart-col:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  animation: rise 0.32s var(--ease-out) both;
+}
+
+.funnel li:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+.funnel li:nth-child(3) {
+  animation-delay: 0.09s;
+}
+
+.funnel li:nth-child(4) {
+  animation-delay: 0.12s;
+}
+
+.funnel li:nth-child(5) {
+  animation-delay: 0.15s;
+}
+
+.funnel li:nth-child(6) {
+  animation-delay: 0.18s;
 }
 
 .funnel-label {
@@ -4549,12 +4670,26 @@ button.chart-col:focus-visible {
   animation: fade 0.18s ease both;
 }
 
+.overlay--closing {
+  animation: fade-out 0.18s ease both;
+  pointer-events: none;
+}
+
 @keyframes fade {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 
@@ -4576,6 +4711,10 @@ button.chart-col:focus-visible {
   min-height: 0;
 }
 
+.modal--closing {
+  animation: pop-out 0.2s var(--ease-out) both;
+}
+
 @keyframes pop {
   from {
     opacity: 0;
@@ -4584,6 +4723,17 @@ button.chart-col:focus-visible {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pop-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
   }
 }
 
@@ -4859,6 +5009,18 @@ button.chart-col:focus-visible {
   box-shadow: var(--shadow);
   color: var(--ink);
   max-width: min(92vw, 28rem);
+  animation: toast-in 0.32s var(--ease-out) both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .footer-kicker {

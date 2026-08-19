@@ -1,14 +1,36 @@
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useEffect } from "react";
+
+const CLOSE_MS = 220;
+
+const ModalCloseContext = createContext(null);
+
+export function useModalClose() {
+  const close = useContext(ModalCloseContext);
+  if (!close) {
+    throw new Error("useModalClose must be used within ModalOverlay");
+  }
+  return close;
+}
 
 export default function ModalOverlay({
   onClose,
+  onBeforeClose,
   children,
   className = "modal",
   overlayClassName = "overlay",
   dialogRef,
   labelledBy,
 }) {
+  const [closing, setClosing] = useState(false);
+
+  const requestClose = useCallback(() => {
+    if (closing) return;
+    if (onBeforeClose?.() === false) return;
+    setClosing(true);
+    window.setTimeout(() => onClose(), CLOSE_MS);
+  }, [closing, onBeforeClose, onClose]);
+
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -17,19 +39,36 @@ export default function ModalOverlay({
     };
   }, []);
 
+  useEffect(() => {
+    function onKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        requestClose();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [requestClose]);
+
   return createPortal(
-    <div className={overlayClassName} onClick={onClose} role="presentation">
+    <ModalCloseContext.Provider value={requestClose}>
       <div
-        className={className}
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={labelledBy}
-        onClick={(event) => event.stopPropagation()}
+        className={`${overlayClassName}${closing ? " overlay--closing" : ""}`}
+        onClick={requestClose}
+        role="presentation"
       >
-        {children}
+        <div
+          className={`${className}${closing ? " modal--closing" : ""}`}
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={labelledBy}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {children}
+        </div>
       </div>
-    </div>,
+    </ModalCloseContext.Provider>,
     document.body
   );
 }

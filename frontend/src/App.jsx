@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { request } from "./api.js";
 import { clearTokens, getAccess, setTokens } from "./auth.js";
@@ -107,6 +107,7 @@ export default function App() {
   const [theme, setTheme] = useState(() => readTheme());
   const [density, setDensity] = useState(() => readDensity());
   const [showKeysHelp, setShowKeysHelp] = useState(false);
+  const [keysHelpClosing, setKeysHelpClosing] = useState(false);
   const [profileFocus, setProfileFocus] = useState(null);
   const [panelFilter, setPanelFilter] = useState(null);
   const [panelMonthFilter, setPanelMonthFilter] = useState("");
@@ -137,6 +138,19 @@ export default function App() {
         a.status !== "wishlist" &&
         !["rejected", "no_response", "withdrawn", "accepted"].includes(a.status)
     ).length ?? 0;
+
+  const keysHelpClosingRef = useRef(false);
+
+  const closeKeysHelp = useCallback(() => {
+    if (keysHelpClosingRef.current) return;
+    keysHelpClosingRef.current = true;
+    setKeysHelpClosing(true);
+    window.setTimeout(() => {
+      setShowKeysHelp(false);
+      setKeysHelpClosing(false);
+      keysHelpClosingRef.current = false;
+    }, 220);
+  }, []);
 
   function changeTab(next, options = {}) {
     const focus = options?.focus ?? null;
@@ -269,7 +283,7 @@ export default function App() {
         return;
       }
       if (event.key === "Escape") {
-        setShowKeysHelp(false);
+        closeKeysHelp();
         window.dispatchEvent(new CustomEvent("jobbdjungeln-deselect"));
         focusedRowRef.current = -1;
         document
@@ -316,7 +330,7 @@ export default function App() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [closeKeysHelp]);
 
   useEffect(() => {
     const onPopState = () => setTab(readTab());
@@ -491,7 +505,9 @@ export default function App() {
               />
             )}
             <div
-              className={tab === "dash" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "dash" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "dash"}
             >
               <DashboardPanel
@@ -502,7 +518,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "saved" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "saved" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "saved"}
             >
               <SavedPanel
@@ -519,7 +537,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "applied" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "applied" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "applied"}
             >
               <AppliedPanel
@@ -540,7 +560,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "report" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "report" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "report"}
             >
               <ReportPanel
@@ -551,7 +573,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "postings" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "postings" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "postings"}
             >
               <PostingsPanel
@@ -561,7 +585,9 @@ export default function App() {
               />
             </div>
             <div
-              className={tab === "profile" ? undefined : "tab-panel-hidden"}
+              className={
+                tab === "profile" ? "tab-panel" : "tab-panel tab-panel-hidden"
+              }
               aria-hidden={tab !== "profile"}
             >
               <ProfilePanel
@@ -581,18 +607,22 @@ export default function App() {
 
       {showKeysHelp && (
         <div
-          className="keys-help"
+          className={keysHelpClosing ? "keys-help keys-help--closing" : "keys-help"}
           role="dialog"
           aria-modal="true"
           aria-label="Tangentbordsgenvägar"
+          onClick={closeKeysHelp}
         >
-          <div className="keys-help-card">
+          <div
+            className="keys-help-card"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="row-between">
               <h2>Tangentbord</h2>
               <button
                 type="button"
                 className="secondary small"
-                onClick={() => setShowKeysHelp(false)}
+                onClick={closeKeysHelp}
               >
                 Stäng
               </button>

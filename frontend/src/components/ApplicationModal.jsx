@@ -11,7 +11,8 @@ import { request } from "../api.js";
 import { localISODate } from "../localDate.js";
 import { STATUSES, statusChoicesFor } from "../statuses.js";
 import ConfirmDialog from "./ConfirmDialog.jsx";
-import ModalOverlay from "./ModalOverlay.jsx";
+import ModalCloseButton from "./ModalCloseButton.jsx";
+import ModalOverlay, { useModalClose } from "./ModalOverlay.jsx";
 import OccupationPicker from "./OccupationPicker.jsx";
 import TailorPanel from "./TailorPanel.jsx";
 
@@ -98,18 +99,13 @@ export default function ApplicationModal({
 
   const [discardPrompt, setDiscardPrompt] = useState(false);
 
-  const requestClose = useCallback(() => {
+  const beforeClose = useCallback(() => {
     if (JSON.stringify(form) !== initialFormRef.current) {
       setDiscardPrompt(true);
-      return;
+      return false;
     }
-    onClose();
-  }, [form, onClose]);
-
-  const requestCloseRef = useRef(requestClose);
-  useEffect(() => {
-    requestCloseRef.current = requestClose;
-  }, [requestClose]);
+    return true;
+  }, [form]);
 
   // List rows are lean (no timeline); fetch the full row when editing.
   useEffect(() => {
@@ -235,16 +231,7 @@ export default function ApplicationModal({
           : root?.querySelector("#app-field-company") ||
             root?.querySelector(".modal-close");
     prefer?.focus({ preventScroll: true });
-
-    function onKeyDown(event) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        requestCloseRef.current();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
       previous?.focus?.();
     };
   }, [application, initialFocus]);
@@ -341,7 +328,8 @@ export default function ApplicationModal({
   return (
     <>
     <ModalOverlay
-      onClose={requestClose}
+      onClose={onClose}
+      onBeforeClose={beforeClose}
       className="modal application-modal"
       overlayClassName="overlay overlay--application"
       dialogRef={dialogRef}
@@ -361,14 +349,7 @@ export default function ApplicationModal({
               </p>
             )}
           </div>
-          <button
-            type="button"
-            className="secondary small modal-close"
-            onClick={requestClose}
-            aria-label="Stäng"
-          >
-            ✕
-          </button>
+          <ModalCloseButton />
         </div>
 
         {application && (
@@ -453,7 +434,6 @@ export default function ApplicationModal({
                 onOpenExisting?.(full);
               }}
               onRemove={remove}
-              requestClose={requestClose}
               setForm={setForm}
               similarNotice={similarNotice}
               showLinkFields
@@ -476,7 +456,6 @@ export default function ApplicationModal({
                 onOpenExisting?.(full);
               }}
               onRemove={remove}
-              requestClose={requestClose}
               setForm={setForm}
               similarNotice={similarNotice}
               showLinkFields
@@ -514,11 +493,11 @@ function ApplicationFields({
   onLogCall,
   onOpenExisting,
   onRemove,
-  requestClose,
   setForm,
   similarNotice,
   showLinkFields,
 }) {
+  const requestClose = useModalClose();
   return (
     <>
       <label htmlFor="app-field-company">
