@@ -266,6 +266,14 @@ def test_tracked_urls_lists_own_ad_urls_only(api_client, user, django_user_model
     api_client.force_authenticate(user)
     body = api_client.get(f"{URL}tracked-urls/").json()
     assert body["urls"] == ["https://example.com/mine"]
+    assert body["items"] == [
+        {
+            "id": JobApplication.objects.get(ad_url="https://example.com/mine").id,
+            "ad_url": "https://example.com/mine",
+            "status": "applied",
+            "archived": False,
+        }
+    ]
 
 
 def test_tracked_urls_requires_auth(api_client):
@@ -493,6 +501,31 @@ def test_archived_hidden_from_default_list_but_in_tracked_urls(api_client, user)
     tracked = api_client.get(f"{URL}tracked-urls/").json()["urls"]
     assert "https://example.com/active" in tracked
     assert "https://example.com/archived" in tracked
+    items = {
+        row["ad_url"]: row
+        for row in api_client.get(f"{URL}tracked-urls/").json()["items"]
+    }
+    assert items["https://example.com/archived"]["archived"] is True
+    assert items["https://example.com/active"]["archived"] is False
+
+
+def test_bulk_unarchive_restores_row(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user,
+        company="Acme",
+        title="Dev",
+        status="wishlist",
+        archived_at=timezone.now(),
+    )
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        f"{URL}bulk/",
+        {"ids": [application.id], "action": "unarchive"},
+        format="json",
+    )
+    assert response.status_code == 200
+    application.refresh_from_db()
+    assert application.archived_at is None
 
 
 def test_bulk_rejects_other_users_ids(api_client, user, django_user_model):

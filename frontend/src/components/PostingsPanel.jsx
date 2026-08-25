@@ -5,6 +5,12 @@ import { externalUrl, normalizeAdUrl } from "../adUrl.js";
 import { request } from "../api.js";
 import { recordJobMatchGaps } from "../marketHints.js";
 import { matchScanCaption, isSearchDraftPending, pendingCountCaption } from "../jobSearchQuery.js";
+import {
+  indexTrackedUrls,
+  isSaveLocked,
+  isStarred,
+  trackedItemForJob,
+} from "../trackedUrls.js";
 import MatchScore from "./MatchScore.jsx";
 import ModalCloseButton from "./ModalCloseButton.jsx";
 import ModalOverlay, { useModalClose } from "./ModalOverlay.jsx";
@@ -230,7 +236,8 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [selected, setSelected] = useState(null);
-  const [tracked, setTracked] = useState(() => new Set());
+  const [tracked, setTracked] = useState(() => new Map());
+  const [saveBusy, setSaveBusy] = useState(() => new Set());
   const [savedSearches, setSavedSearches] = useState([]);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveLabel, setSaveLabel] = useState("");
@@ -288,12 +295,7 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
     (async () => {
       try {
         const trackedData = await request("/api/v1/applications/tracked-urls/");
-        const urls = new Set();
-        for (const adUrl of trackedData.urls) {
-          const key = normalizeAdUrl(adUrl);
-          if (key) urls.add(key);
-        }
-        setTracked(urls);
+        setTracked(indexTrackedUrls(trackedData));
       } catch {
         /* non-fatal */
       }
@@ -583,14 +585,79 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
           status: "wishlist",
         },
       });
-      if (job.webpage_url) {
-        setTracked((prev) => new Set(prev).add(normalizeAdUrl(job.webpage_url)));
+      const key = normalizeAdUrl(job.webpage_url);
+      if (key) {
+        setTracked((prev) => {
+          const next = new Map(prev);
+          next.set(key, {
+            id: created.id,
+            status: created.status || "wishlist",
+            archived: false,
+            ad_url: key,
+          });
+          return next;
+        });
       }
       upsert?.(created);
-      setMessage(`"${job.title}" sparades som Sparad.`);
+      setMessage(`"${job.title}" sparades.`);
       window.dispatchEvent(new Event("application-created"));
     } catch (err) {
       setMessage(err.message);
+      throw err;
+    }
+  }
+
+  async function toggleSave(job) {
+    const item = trackedItemForJob(tracked, job);
+    if (isSaveLocked(item) || saveBusy.has(job.id)) return;
+    const key = normalizeAdUrl(job.webpage_url || "");
+    setSaveBusy((prev) => new Set(prev).add(job.id));
+    setMessage(null);
+    try {
+      if (isStarred(item)) {
+        if (!item.id) return;
+        await request("/api/v1/applications/bulk/", {
+          method: "POST",
+          body: { ids: [item.id], action: "archive" },
+        });
+        upsert?.({ id: item.id, archived_at: new Date().toISOString() });
+        setTracked((prev) => {
+          const next = new Map(prev);
+          next.set(key, { ...item, archived: true });
+          return next;
+        });
+        setMessage(`"${job.title}" togs bort från sparade.`);
+        return;
+      }
+      if (item?.archived && item.id) {
+        await request("/api/v1/applications/bulk/", {
+          method: "POST",
+          body: { ids: [item.id], action: "unarchive" },
+        });
+        const restored = await request(`/api/v1/applications/${item.id}/`);
+        upsert?.(restored);
+        setTracked((prev) => {
+          const next = new Map(prev);
+          next.set(key, {
+            id: restored.id,
+            status: restored.status || item.status,
+            archived: false,
+            ad_url: key,
+          });
+          return next;
+        });
+        setMessage(`"${job.title}" sparades.`);
+        return;
+      }
+      await track(job);
+    } catch (err) {
+      setMessage(err.message);
+    } finally {
+      setSaveBusy((prev) => {
+        const next = new Set(prev);
+        next.delete(job.id);
+        return next;
+      });
     }
   }
 
@@ -697,6 +764,9 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
       return true;
     });
   })();
+  const starredInResults = results.filter((job) =>
+    isStarred(trackedItemForJob(tracked, job))
+  ).length;
   const safeTotal = total ?? 0;
   const showingFrom = safeTotal === 0 ? 0 : offset + 1;
   const showingTo = Math.min(offset + PAGE_SIZE, safeTotal);
@@ -757,9 +827,9 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
             <span className="metric-detail">i sökningen</span>
           </div>
           <div className="metric-tile">
-            <span className="metric-label">Redan spårade</span>
-            <strong>{tracked.size}</strong>
-            <span className="metric-detail">i den här sökningen</span>
+            <span className="metric-label">Spårade</span>
+            <strong>{starredInResults}</strong>
+            <span className="metric-detail">redan i listan</span>
           </div>
         </div>
       </section>
@@ -1063,11 +1133,10 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
               <JobCard
                 key={job.id}
                 job={job}
-                tracked={
-                  !!job.webpage_url && tracked.has(normalizeAdUrl(job.webpage_url))
-                }
+                item={trackedItemForJob(tracked, job)}
+                busy={saveBusy.has(job.id)}
                 onOpen={() => setSelected(job)}
-                onTrack={() => track(job)}
+                onToggle={() => toggleSave(job)}
               />
             ))}
           </div>
@@ -1101,14 +1170,9 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
         {selected && (
           <JobDetail
             job={selected}
-            tracked={
-              !!selected.webpage_url &&
-              tracked.has(normalizeAdUrl(selected.webpage_url))
-            }
-            onTrack={() => {
-              track(selected);
-              setSelected(null);
-            }}
+            item={trackedItemForJob(tracked, selected)}
+            busy={saveBusy.has(selected.id)}
+            onToggle={() => toggleSave(selected)}
             onClose={() => setSelected(null)}
             onMatchUpdate={(nextMatch) => {
               setSelected((prev) =>
@@ -1226,10 +1290,49 @@ function SaveSearchDialogBody({
   );
 }
 
-function JobCard({ job, tracked, onOpen, onTrack }) {
-  const blocked = (job.match?.formal || []).some((row) => row.ok === false);
+function SaveStar({ item, busy, onToggle }) {
+  const starred = isStarred(item);
+  const locked = isSaveLocked(item);
+  const label = locked
+    ? "Redan bland dina ansökningar"
+    : starred
+      ? "Ta bort från sparade"
+      : "Spara jobb";
   return (
-    <div className={tracked ? "job-card job-card--tracked" : "job-card"}>
+    <button
+      type="button"
+      className={
+        starred
+          ? "save-star save-star--on"
+          : "save-star"
+      }
+      aria-pressed={starred}
+      aria-label={label}
+      title={label}
+      disabled={busy || locked}
+      onClick={(event) => {
+        event.stopPropagation();
+        onToggle();
+      }}
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path
+          d="M12 3.6 14.5 9l6 .5-4.6 3.9 1.4 5.8L12 16.8 6.7 19.2l1.4-5.8L3.5 9.5l6-.5L12 3.6z"
+          fill={starred ? "currentColor" : "none"}
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
+function JobCard({ job, item, busy, onOpen, onToggle }) {
+  const blocked = (job.match?.formal || []).some((row) => row.ok === false);
+  const starred = isStarred(item);
+  return (
+    <div className={starred ? "job-card job-card--tracked" : "job-card"}>
       <div className="job-card-main">
         <button className="linklike job-title" onClick={onOpen}>
           {job.title}
@@ -1261,18 +1364,12 @@ function JobCard({ job, tracked, onOpen, onTrack }) {
           )}
         </div>
       </div>
-      <button
-        className="secondary small job-track"
-        onClick={onTrack}
-        disabled={tracked}
-      >
-        {tracked ? "Sparad ✓" : "+ Spara"}
-      </button>
+      <SaveStar item={item} busy={busy} onToggle={onToggle} />
     </div>
   );
 }
 
-function JobDetail({ job, tracked, onTrack, onClose, onMatchUpdate }) {
+function JobDetail({ job, item, busy, onToggle, onClose, onMatchUpdate }) {
   const dialogRef = useRef(null);
   const applyHref =
     externalUrl(job.application_url) || externalUrl(job.webpage_url);
@@ -1305,8 +1402,9 @@ function JobDetail({ job, tracked, onTrack, onClose, onMatchUpdate }) {
     >
       <JobDetailBody
         job={job}
-        tracked={tracked}
-        onTrack={onTrack}
+        item={item}
+        busy={busy}
+        onToggle={onToggle}
         onMatchUpdate={onMatchUpdate}
         applyHref={applyHref}
         platsbankenHref={platsbankenHref}
@@ -1317,8 +1415,9 @@ function JobDetail({ job, tracked, onTrack, onClose, onMatchUpdate }) {
 
 function JobDetailBody({
   job,
-  tracked,
-  onTrack,
+  item,
+  busy,
+  onToggle,
   onMatchUpdate,
   applyHref,
   platsbankenHref,
@@ -1346,7 +1445,10 @@ function JobDetailBody({
               ` · sista ansökningsdag ${formatJobDate(job.application_deadline)}`}
           </p>
         </div>
-        <ModalCloseButton />
+        <div className="modal-head-actions">
+          <SaveStar item={item} busy={busy} onToggle={onToggle} />
+          <ModalCloseButton />
+        </div>
       </div>
 
       <div className="modal-body">
@@ -1373,14 +1475,11 @@ function JobDetailBody({
               Platsbanken ↗
             </a>
           )}
-          <button className="secondary" onClick={onTrack} disabled={tracked}>
-            {tracked ? "Sparad ✓" : "+ Spara ansökan"}
-          </button>
         </div>
         <p className="muted modal-hint">
           {job.application_url
-            ? "Ansökan görs hos arbetsgivaren — läs annonsen här och spara ansökan för uppföljning."
-            : "Ansökan görs hos arbetsgivaren — spara den här så följer du den i dina ansökningar."}
+            ? "Ansökan görs hos arbetsgivaren. Stjärnan sparar jobbet bland Sparade jobb."
+            : "Stjärnan sparar jobbet bland Sparade jobb. Ansökan görs hos arbetsgivaren."}
         </p>
 
         {job.match?.profiles_scored && (

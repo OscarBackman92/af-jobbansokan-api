@@ -3363,6 +3363,42 @@ button.job-filter-chip.active {
   width: 100%;
 }
 
+.save-star {
+  flex-shrink: 0;
+  align-self: flex-end;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  margin: -0.35rem -0.35rem 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.save-star:hover:not(:disabled),
+.save-star:focus-visible {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.save-star--on {
+  color: var(--star);
+}
+
+.save-star--on:hover:not(:disabled),
+.save-star--on:focus-visible {
+  color: var(--star);
+}
+
+.save-star:disabled {
+  cursor: default;
+  opacity: 0.9;
+}
+
 .saved-search-tools {
   display: flex;
   flex-direction: column;
@@ -5204,6 +5240,13 @@ button.chart-col:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.modal-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
 .modal-head h2 {
   margin: 0 0 0.2rem;
 }
@@ -5713,6 +5756,10 @@ code {
 
   .job-track {
     width: auto;
+  }
+
+  .save-star {
+    align-self: flex-start;
   }
 
   .saved-search-tools {

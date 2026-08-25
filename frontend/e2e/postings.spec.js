@@ -14,9 +14,17 @@ test("search Platsbanken (mocked) and save an ad to the board", async ({
   });
   await expect(card).toBeVisible();
 
-  await card.getByRole("button", { name: "+ Spara" }).click();
+  await card.getByRole("button", { name: "Spara jobb" }).click();
   await expect(
-    card.getByRole("button", { name: "Sparad ✓" })
+    card.getByRole("button", { name: "Ta bort från sparade" })
+  ).toBeVisible();
+
+  await card.getByRole("button", { name: "Ta bort från sparade" }).click();
+  await expect(card.getByRole("button", { name: "Spara jobb" })).toBeVisible();
+
+  await card.getByRole("button", { name: "Spara jobb" }).click();
+  await expect(
+    card.getByRole("button", { name: "Ta bort från sparade" })
   ).toBeVisible();
 
   await page.getByRole("link", { name: "Sparade jobb", exact: true }).click();

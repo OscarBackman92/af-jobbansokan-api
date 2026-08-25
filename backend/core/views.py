@@ -593,12 +593,25 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
 
         Includes archived rows so soft-delete cannot bypass duplicate protection.
         """
-        urls = (
+        urls = list(
             JobApplication.objects.filter(owner=request.user)
             .exclude(ad_url="")
-            .values_list("ad_url", flat=True)
+            .values("id", "ad_url", "status", "archived_at")
         )
-        return Response({"urls": list(urls)})
+        return Response(
+            {
+                "urls": [row["ad_url"] for row in urls],
+                "items": [
+                    {
+                        "id": row["id"],
+                        "ad_url": row["ad_url"],
+                        "status": row["status"],
+                        "archived": row["archived_at"] is not None,
+                    }
+                    for row in urls
+                ],
+            }
+        )
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["get"], url_path="saved-summary")
@@ -643,6 +656,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                         "enum": [
                             "mark_applied",
                             "archive",
+                            "unarchive",
                             "pause",
                             "activate",
                             "set_apply_by",
@@ -672,6 +686,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
         allowed = {
             "mark_applied",
             "archive",
+            "unarchive",
             "pause",
             "activate",
             "set_apply_by",
@@ -757,6 +772,11 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
             elif action_name == "archive":
                 if app.archived_at is None:
                     app.archived_at = timezone.now()
+                    app.save(update_fields=["archived_at", "updated_at"])
+                updated.append(app.id)
+            elif action_name == "unarchive":
+                if app.archived_at is not None:
+                    app.archived_at = None
                     app.save(update_fields=["archived_at", "updated_at"])
                 updated.append(app.id)
             elif action_name == "pause":
