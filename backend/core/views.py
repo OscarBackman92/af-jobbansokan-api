@@ -479,13 +479,10 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        if self.request.user.is_authenticated and self.action in (
-            "list",
-            "retrieve",
-            "create",
-            "update",
-            "partial_update",
-        ):
+        # Match scoring is only rendered on list rows. Computing it on
+        # create/update made status PATCH wait on CV context the client
+        # already has from the previous list payload.
+        if self.request.user.is_authenticated and self.action == "list":
             context.update(_resume_match_context(self.request.user))
         return context
 
@@ -706,10 +703,19 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
             if action_name == "mark_applied":
                 previous = app.status
                 if previous != JobApplication.STATUS_APPLIED:
+                    try:
+                        assert_transition_allowed(
+                            previous, JobApplication.STATUS_APPLIED
+                        )
+                    except DjangoValidationError as exc:
+                        detail = getattr(exc, "message_dict", None) or exc.messages
+                        raise ValidationError(detail) from exc
                     app.status = JobApplication.STATUS_APPLIED
                     if not app.applied_at:
                         app.applied_at = occurred_at
                     app.save()
+                    from_stage = stage_for_status(previous)
+                    to_stage = stage_for_status(app.status)
                     app.events.create(
                         occurred_at=occurred_at,
                         note=(
@@ -717,6 +723,9 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                             f" → {app.get_status_display()}"
                         ),
                         status=JobApplication.STATUS_APPLIED,
+                        from_stage=from_stage,
+                        to_stage=to_stage,
+                        origin="auto",
                     )
                     score_and_store(app, user=request.user)
                 updated.append(app.id)

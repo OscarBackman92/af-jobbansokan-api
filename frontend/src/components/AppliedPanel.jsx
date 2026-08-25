@@ -108,6 +108,7 @@ export default function AppliedPanel({
   const [undo, setUndo] = useState(null);
   const [pendingMove, setPendingMove] = useState(null);
   const [pendingDate, setPendingDate] = useState(() => localISODate());
+  const [savingMove, setSavingMove] = useState(false);
   const listSectionRef = useRef(null);
 
   useEffect(() => {
@@ -155,16 +156,19 @@ export default function AppliedPanel({
   }
 
   async function confirmPendingMove() {
-    if (!pendingMove) return;
+    if (!pendingMove || savingMove) return;
     const { id, previousStatus, nextStatus, title } = pendingMove;
     const status_changed_at = pendingDate.trim() || localISODate();
-    setPendingMove(null);
+    setSavingMove(true);
     try {
       setError(null);
       await patch(id, { status: nextStatus, status_changed_at });
+      setPendingMove(null);
       setUndo({ id, previousStatus, title });
     } catch (err) {
       setError(err.message);
+    } finally {
+      setSavingMove(false);
     }
   }
 
@@ -638,6 +642,14 @@ export default function AppliedPanel({
                             </label>
                             <ApplicationRow
                               application={application}
+                              pendingStatus={
+                                pendingMove?.id === application.id
+                                  ? pendingMove.nextStatus
+                                  : null
+                              }
+                              saving={
+                                savingMove && pendingMove?.id === application.id
+                              }
                               onOpen={() => {
                                 setModalFocus(null);
                                 setSelected(application);
@@ -710,9 +722,12 @@ export default function AppliedPanel({
         <StatusChangeDialog
           pendingMove={pendingMove}
           pendingDate={pendingDate}
+          saving={savingMove}
           onPendingDateChange={setPendingDate}
           onConfirm={confirmPendingMove}
-          onClose={() => setPendingMove(null)}
+          onClose={() => {
+            if (!savingMove) setPendingMove(null);
+          }}
         />
       )}
 
@@ -772,6 +787,7 @@ export default function AppliedPanel({
 function StatusChangeDialog({
   pendingMove,
   pendingDate,
+  saving = false,
   onPendingDateChange,
   onConfirm,
   onClose,
@@ -779,12 +795,14 @@ function StatusChangeDialog({
   return (
     <ModalOverlay
       onClose={onClose}
+      onBeforeClose={() => !saving}
       className="modal status-change-modal"
       labelledBy="status-change-title"
     >
       <StatusChangeDialogBody
         pendingMove={pendingMove}
         pendingDate={pendingDate}
+        saving={saving}
         onPendingDateChange={onPendingDateChange}
         onConfirm={onConfirm}
       />
@@ -795,6 +813,7 @@ function StatusChangeDialog({
 function StatusChangeDialogBody({
   pendingMove,
   pendingDate,
+  saving = false,
   onPendingDateChange,
   onConfirm,
 }) {
@@ -819,14 +838,20 @@ function StatusChangeDialogBody({
           id="applied-status-change-date"
           type="date"
           value={pendingDate}
+          disabled={saving}
           onChange={(e) => onPendingDateChange(e.target.value)}
         />
       </label>
       <div className="row-gap" style={{ marginTop: "1rem" }}>
-        <button type="button" onClick={onConfirm}>
-          Bekräfta
+        <button type="button" onClick={onConfirm} disabled={saving}>
+          {saving ? "Sparar…" : "Bekräfta"}
         </button>
-        <button type="button" className="secondary" onClick={requestClose}>
+        <button
+          type="button"
+          className="secondary"
+          onClick={requestClose}
+          disabled={saving}
+        >
           Avbryt
         </button>
       </div>

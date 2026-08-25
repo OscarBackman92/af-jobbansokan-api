@@ -6,6 +6,8 @@ import ProfileFitRow from "../ProfileFitRow.jsx";
 
 export default function ApplicationRow({
   application,
+  pendingStatus,
+  saving = false,
   onOpen,
   onMove,
   onLog,
@@ -26,9 +28,14 @@ export default function ApplicationRow({
   const hasBadges =
     showStatusBadge || showDeadlineBadge || application.next_action_at;
   const statusChoices = statusChoicesFor(application);
+  const displayStatus = pendingStatus || application.status;
+  const displayLabel =
+    (pendingStatus && STATUS_LABELS[pendingStatus]) ||
+    application.status_label ||
+    STATUS_LABELS[application.status];
 
   return (
-    <div className={`pipeline-row pipeline-row--${application.status}`}>
+    <div className={`pipeline-row pipeline-row--${displayStatus}`}>
       <div className="pipeline-row-main">
         <button
           type="button"
@@ -67,11 +74,12 @@ export default function ApplicationRow({
       <div className="pipeline-row-actions">
         <label className="status-chip">
           <span className="status-chip-current">
-            {application.status_label || STATUS_LABELS[application.status]}
+            {displayLabel}
           </span>
           <select
-            value={application.status}
+            value={displayStatus}
             onChange={(e) => onMove(e.target.value)}
+            disabled={saving}
             aria-label="Byt steg"
             title="Flytta till status"
           >

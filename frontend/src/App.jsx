@@ -331,7 +331,11 @@ export default function App() {
     if (!token) return;
     request("/api/v1/me/")
       .then(setMe)
-      .catch(() => logout()); // refresh already tried; truly signed out
+      .catch((err) => {
+        // True expiry is handled by auth-expired. A 5xx/timeout must not
+        // wipe a still-valid refresh token just because /me/ failed.
+        if (err?.status === 401) logout();
+      });
   }, [token]);
 
   // The api layer fires this when a refresh fails (session truly expired).

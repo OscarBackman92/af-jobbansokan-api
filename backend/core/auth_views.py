@@ -22,7 +22,7 @@ class ThrottledResendEmailVerificationView(ResendEmailVerificationView):
 
 
 class ThrottledTokenRefreshView(get_refresh_view()):
-    throttle_scope = "dj_rest_auth"
+    throttle_scope = "token_refresh"
 
 
 class GoogleLoginView(SocialLoginView):

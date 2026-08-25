@@ -4,10 +4,13 @@ import {
   externalUrl,
   findDuplicateByAdUrl,
   findSimilarByCompanyTitle,
-  normalizeAdUrl,
   platsbankenJobId,
 } from "../adUrl.js";
 import { request } from "../api.js";
+import {
+  changedApplicationFields,
+  normalizeApplicationPayload,
+} from "../applicationPayload.js";
 import { localISODate } from "../localDate.js";
 import { STATUSES, statusChoicesFor } from "../statuses.js";
 import ConfirmDialog from "./ConfirmDialog.jsx";
@@ -36,8 +39,15 @@ const EMPTY = {
   notes: "",
 };
 
-// Editor for one tracker row: create when `application` is null,
-// otherwise edit + timeline.
+function rememberHydrated(initialRef, fields) {
+  let initial = {};
+  try {
+    initial = JSON.parse(initialRef.current) || {};
+  } catch {
+    initial = {};
+  }
+  initialRef.current = JSON.stringify({ ...initial, ...fields });
+}
 export default function ApplicationModal({
   token,
   application,
@@ -98,6 +108,7 @@ export default function ApplicationModal({
   const similarNotice = similarHits[0] || similarByTitle;
 
   const [discardPrompt, setDiscardPrompt] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const beforeClose = useCallback(() => {
     if (JSON.stringify(form) !== initialFormRef.current) {
@@ -112,21 +123,23 @@ export default function ApplicationModal({
     if (!applicationId) return undefined;
     let cancelled = false;
     const version = eventsVersionRef.current;
-    request(`/api/v1/applications/${applicationId}/`, { token })
+    request(`/api/v1/applications/${applicationId}/`)
       .then((detail) => {
         if (cancelled) return;
         if (eventsVersionRef.current === version) {
           setEvents(detail.events ?? []);
         }
         setForm((prev) => {
-          const next = {
-            ...prev,
+          const hydrated = {
             ad_description: detail.ad_description || prev.ad_description,
             apply_url: detail.apply_url || prev.apply_url,
             source_job_id: detail.source_job_id || prev.source_job_id,
+            occupation_label: prev.occupation_label || detail.occupation_label || "",
+            occupation_concept_id:
+              prev.occupation_concept_id || detail.occupation_concept_id || "",
           };
-          initialFormRef.current = JSON.stringify(next);
-          return next;
+          rememberHydrated(initialFormRef, hydrated);
+          return { ...prev, ...hydrated };
         });
       })
       .catch(() => {
@@ -143,7 +156,7 @@ export default function ApplicationModal({
     let cancelled = false;
     setAdLoading(true);
     setAdFetchError(null);
-    request(`/api/v1/jobs/${jobId}/`, { token })
+    request(`/api/v1/jobs/${jobId}/`)
       .then(async (job) => {
         if (cancelled) return;
         const snapshot = {
@@ -152,15 +165,14 @@ export default function ApplicationModal({
           source_job_id: job.id || "",
         };
         setForm((prev) => {
-          const next = {
-            ...prev,
+          const hydrated = {
             ad_description: snapshot.ad_description || prev.ad_description,
             apply_url: prev.apply_url || snapshot.apply_url,
             source_job_id: prev.source_job_id || snapshot.source_job_id,
             ad_url: prev.ad_url || job.webpage_url || "",
           };
-          initialFormRef.current = JSON.stringify(next);
-          return next;
+          rememberHydrated(initialFormRef, hydrated);
+          return { ...prev, ...hydrated };
         });
         if (snapshot.ad_description || snapshot.apply_url) {
           const body = {};
@@ -171,7 +183,6 @@ export default function ApplicationModal({
           try {
             await request(`/api/v1/applications/${applicationId}/`, {
               method: "PATCH",
-              token,
               body,
             });
           } catch {
@@ -205,7 +216,7 @@ export default function ApplicationModal({
     if (form.source_job_id) params.set("source_job_id", form.source_job_id);
     if (applicationId) params.set("exclude", String(applicationId));
     const timer = window.setTimeout(() => {
-      request(`/api/v1/applications/similar/?${params}`, { token })
+      request(`/api/v1/applications/similar/?${params}`)
         .then((body) => setSimilarHits(body.results || []))
         .catch(() => setSimilarHits([]));
     }, 300);
@@ -244,34 +255,33 @@ export default function ApplicationModal({
   });
 
   function payload() {
-    const body = {};
-    for (const key of Object.keys(EMPTY)) {
-      body[key] = form[key];
+    if (!application) return normalizeApplicationPayload(form);
+    let initial = {};
+    try {
+      initial = JSON.parse(initialFormRef.current) || {};
+    } catch {
+      initial = {};
     }
-    body.ad_url = normalizeAdUrl(body.ad_url);
-    body.apply_url = externalUrl(body.apply_url) || "";
-    // Empty strings are not valid dates.
-    if (!body.applied_at) body.applied_at = null;
-    if (!body.next_action_at) body.next_action_at = null;
-    if (!body.deadline) body.deadline = null;
-    return body;
+    return changedApplicationFields(form, initial);
   }
 
   async function save(event) {
     event.preventDefault();
-    if (duplicateBlocked) return;
+    if (duplicateBlocked || saving) return;
     setError(null);
+    setSaving(true);
     try {
+      const body = payload();
       const saved = application
-        ? await request(`/api/v1/applications/${application.id}/`, {
-            method: "PATCH",
-            token,
-            body: payload(),
-          })
+        ? Object.keys(body).length
+          ? await request(`/api/v1/applications/${application.id}/`, {
+              method: "PATCH",
+              body,
+            })
+          : application
         : await request("/api/v1/applications/", {
             method: "POST",
-            token,
-            body: payload(),
+            body,
           });
       onChanged?.(saved);
       if (!application) {
@@ -280,6 +290,8 @@ export default function ApplicationModal({
       onClose();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -287,7 +299,6 @@ export default function ApplicationModal({
     if (!window.confirm("Ta bort den här ansökan permanent?")) return;
     await request(`/api/v1/applications/${application.id}/`, {
       method: "DELETE",
-      token,
     });
     onChanged?.({ id: application.id, _deleted: true });
     onClose();
@@ -298,7 +309,6 @@ export default function ApplicationModal({
       `/api/v1/applications/${application.id}/events/`,
       {
         method: "POST",
-        token,
         body: { note, occurred_at: occurredAt, ...extra },
       }
     );
@@ -427,6 +437,7 @@ export default function ApplicationModal({
               error={error}
               field={field}
               form={form}
+              saving={saving}
               onLogCall={logContactCall}
               onOpenExisting={(hit) => {
                 const full =
@@ -449,6 +460,7 @@ export default function ApplicationModal({
               error={error}
               field={field}
               form={form}
+              saving={saving}
               onLogCall={logContactCall}
               onOpenExisting={(hit) => {
                 const full =
@@ -490,6 +502,7 @@ function ApplicationFields({
   error,
   field,
   form,
+  saving = false,
   onLogCall,
   onOpenExisting,
   onRemove,
@@ -641,8 +654,8 @@ function ApplicationFields({
       </label>
       {error && <p className="error">{error}</p>}
       <div className="row">
-        <button type="submit" disabled={duplicateBlocked}>
-          Spara
+        <button type="submit" disabled={duplicateBlocked || saving}>
+          {saving ? "Sparar…" : "Spara"}
         </button>
         <button type="button" className="secondary" onClick={requestClose}>
           Avbryt

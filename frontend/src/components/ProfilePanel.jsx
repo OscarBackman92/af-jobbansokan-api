@@ -37,7 +37,6 @@ export default function ProfilePanel({
   return (
     <div className="stack">
       <ProfileCard
-        token={token}
         me={me}
         onMeChange={onMeChange}
         onLogout={onLogout}
@@ -49,16 +48,12 @@ export default function ProfilePanel({
         onProfileFocusHandled={onProfileFocusHandled}
         active={active}
       />
-      <AccountDeleteCard
-        token={token}
-        me={me}
-        onLogout={onLogout}
-      />
+      <AccountDeleteCard me={me} onLogout={onLogout} />
     </div>
   );
 }
 
-function ProfileCard({ token, me, onMeChange, onLogout, showDelete = false }) {
+function ProfileCard({ me, onMeChange, onLogout, showDelete = false }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ email: "", first_name: "", last_name: "" });
   const [message, setMessage] = useState(null);
@@ -100,7 +95,6 @@ function ProfileCard({ token, me, onMeChange, onLogout, showDelete = false }) {
     try {
       const updated = await request("/api/v1/me/", {
         method: "PATCH",
-        token,
         body: form,
       });
       onMeChange(updated);
@@ -116,7 +110,7 @@ function ProfileCard({ token, me, onMeChange, onLogout, showDelete = false }) {
       "Radera kontot permanent? Alla dina ansökningar och allt annat tas bort."
     );
     if (!sure) return;
-    await request("/api/v1/me/", { method: "DELETE", token });
+    await request("/api/v1/me/", { method: "DELETE" });
     onLogout();
   }
 
@@ -200,13 +194,13 @@ function ProfileCard({ token, me, onMeChange, onLogout, showDelete = false }) {
   );
 }
 
-function AccountDeleteCard({ token, me, onLogout }) {
+function AccountDeleteCard({ me, onLogout }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   if (!me) return null;
 
   async function deleteAccount() {
     try {
-      await request("/api/v1/me/", { method: "DELETE", token });
+      await request("/api/v1/me/", { method: "DELETE" });
       onLogout();
     } catch (err) {
       window.alert(err.message || "Kunde inte radera kontot.");
@@ -415,7 +409,7 @@ function ResumeCard({
   useEffect(() => {
     if (!active) return undefined;
     setLoading(true);
-    request("/api/v1/me/resume/", { token })
+    request("/api/v1/me/resume/")
       .then((data) => {
         const profiles = normalizeJobProfiles(data.job_profiles, data.headline);
         setResume(data);
@@ -447,7 +441,6 @@ function ResumeCard({
       try {
         const data = await request("/api/v1/me/resume/suggest-evidence/", {
           method: "POST",
-          token,
           body: {
             headline: resume.headline,
             summary: resume.summary,
@@ -627,7 +620,6 @@ function ResumeCard({
       form.append("file", file);
       const draft = await request("/api/v1/me/resume/parse/", {
         method: "POST",
-        token,
         body: form,
       });
       setResume((current) => ({
@@ -662,7 +654,6 @@ function ResumeCard({
     try {
       const saved = await request("/api/v1/me/resume/", {
         method: "PUT",
-        token,
         body: {
           ...resume,
           job_profiles: jobProfiles,
@@ -691,7 +682,7 @@ function ResumeCard({
     setMessage(null);
     setDeleting(true);
     try {
-      await request("/api/v1/me/resume/", { method: "DELETE", token });
+      await request("/api/v1/me/resume/", { method: "DELETE" });
       setResume(EMPTY_RESUME);
       setJobProfiles(normalizeJobProfiles([]));
       setSavedResume(EMPTY_RESUME);

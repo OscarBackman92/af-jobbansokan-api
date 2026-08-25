@@ -228,6 +228,9 @@ REST_FRAMEWORK = {
         "jobtech": "90/min",
         # Env override exists for E2E runs, which log in many times fast.
         "dj_rest_auth": os.getenv("DJANGO_AUTH_THROTTLE_RATE", "5/min"),
+        # Refresh is used transparently every 15 min and must not share
+        # the login brute-force bucket (5/min) or a 429 logs the user out.
+        "token_refresh": os.getenv("DJANGO_REFRESH_THROTTLE_RATE", "30/min"),
     },
 }
 

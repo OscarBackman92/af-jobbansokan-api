@@ -75,6 +75,23 @@ async function send(
   });
 }
 
+function expireSession(): void {
+  clearTokens();
+  window.dispatchEvent(new Event("auth-expired"));
+}
+
+async function refreshOrExpire(): Promise<string> {
+  const result = await refreshAccess();
+  if (result.ok) return result.access;
+  if (result.reason === "transient") {
+    throw new ApiError(503, {
+      detail: "Kunde inte förnya sessionen. Försök igen.",
+    });
+  }
+  expireSession();
+  throw new ApiError(401, { detail: "Sessionen har gått ut." });
+}
+
 export async function request<T = unknown>(
   path: string,
   { method = "GET", apiKey, body, auth = true }: RequestOptions = {}
@@ -89,19 +106,14 @@ export async function request<T = unknown>(
 
   // Access token likely expired — refresh once and retry transparently.
   if (response.status === 401 && auth && !apiKey) {
-    const fresh = await refreshAccess();
-    if (fresh) {
-      response = await send(path, {
-        method,
-        headers,
-        body,
-        isForm,
-        accessToken: fresh,
-      });
-    } else {
-      clearTokens();
-      window.dispatchEvent(new Event("auth-expired"));
-    }
+    const fresh = await refreshOrExpire();
+    response = await send(path, {
+      method,
+      headers,
+      body,
+      isForm,
+      accessToken: fresh,
+    });
   }
 
   if (response.status === 204) return null as T;
@@ -117,12 +129,7 @@ export async function downloadBlob(path: string): Promise<Blob> {
     headers: { Authorization: `Bearer ${getAccess()}` },
   });
   if (response.status === 401) {
-    const fresh = await refreshAccess();
-    if (!fresh) {
-      clearTokens();
-      window.dispatchEvent(new Event("auth-expired"));
-      throw new ApiError(401, { detail: "Sessionen har gått ut." });
-    }
+    const fresh = await refreshOrExpire();
     response = await fetch(path, {
       headers: { Authorization: `Bearer ${fresh}` },
     });

@@ -543,6 +543,21 @@ def test_bulk_mark_applied_is_idempotent_and_logs_event(api_client, user):
     assert application.events.count() == 1
 
 
+def test_bulk_mark_applied_rejects_illegal_stage_jump(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user, company="Acme", title="Dev", status="interview"
+    )
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        f"{URL}bulk/",
+        {"ids": [application.id], "action": "mark_applied"},
+        format="json",
+    )
+    assert response.status_code == 400
+    application.refresh_from_db()
+    assert application.status == "interview"
+
+
 def test_saved_summary_shape(api_client, user):
     today = timezone.localdate()
     JobApplication.objects.create(
