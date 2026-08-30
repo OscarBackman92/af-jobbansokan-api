@@ -384,12 +384,12 @@ a:focus-visible {
   color: inherit;
 }
 
-.brand-link:hover .logo {
+.brand-link:hover .logo-img {
   transform: translateY(-1px) scale(1.05);
   box-shadow: 0 8px 18px color-mix(in srgb, var(--brand-2) 38%, transparent);
 }
 
-.brand-link:active .logo {
+.brand-link:active .logo-img {
   transform: scale(0.98);
 }
 
@@ -469,7 +469,18 @@ a:focus-visible {
     box-shadow 0.28s var(--ease-out);
 }
 
-.header h1 {
+.logo-img {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: block;
+  flex-shrink: 0;
+  transition:
+    transform 0.28s var(--ease-out),
+    box-shadow 0.28s var(--ease-out);
+}
+
+.header .brand-name {
   margin: 0;
   font-family: var(--font-display);
   font-size: 1.05rem;
@@ -671,7 +682,7 @@ a:focus-visible {
     order: 0;
   }
 
-  .auth-intro h2 {
+  .auth-intro h1 {
     font-size: clamp(2rem, 4vw, 2.75rem);
   }
 
@@ -690,7 +701,7 @@ a:focus-visible {
   animation: rise 0.45s var(--ease-out) both;
 }
 
-.auth-intro h2 {
+.auth-intro h1 {
   margin: 0 0 1rem;
   font-family: var(--font-display);
   font-size: clamp(2rem, 4vw, 2.75rem);

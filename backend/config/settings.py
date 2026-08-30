@@ -20,7 +20,7 @@ import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
-from config.frontend_url import resolve_frontend_url
+from config.frontend_url import public_origin_parts, resolve_frontend_url
 
 # Paths & Environment
 
@@ -34,7 +34,11 @@ load_dotenv(BASE_DIR.parent / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-insecure-secret-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+    if host.strip()
+]
 
 # Application definition
 
@@ -302,6 +306,11 @@ CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "")
 # Where the password-reset link should point (the SPA). Falls back to the
 # request origin when unset (works for local dev and single-service Render).
 FRONTEND_URL = resolve_frontend_url()
+_frontend_host, _frontend_origin = public_origin_parts(FRONTEND_URL)
+if _frontend_host and _frontend_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_frontend_host)
+if _frontend_origin and _frontend_origin not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(_frontend_origin)
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),

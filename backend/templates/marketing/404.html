@@ -1,0 +1,31 @@
+{% extends "marketing/base.html" %}
+
+{% block robots %}
+<meta name="robots" content="noindex" />
+{% endblock %}
+{% block title %}Sidan finns inte — Jobbdjungeln{% endblock %}
+{% block meta_description %}Sidan du sökte finns inte. Gå tillbaka till Jobbdjungeln startsida.{% endblock %}
+{% block og_title %}Sidan finns inte — Jobbdjungeln{% endblock %}
+{% block twitter_title %}Sidan finns inte — Jobbdjungeln{% endblock %}
+
+{% block content %}
+<main class="privacy-body not-found">
+  <span class="section-kicker">404</span>
+  <h1 class="page-title">Sidan finns inte</h1>
+  <p class="lede">
+    Adressen stämmer inte, eller sidan har flyttats. Prova startsidan eller
+    logga in om du redan har konto.
+  </p>
+  <p class="hero-cta">
+    <a class="btn-primary" href="{{ home_url }}">Till startsidan</a>
+    <a class="btn-secondary" href="{{ app_url }}">Logga in</a>
+  </p>
+  <p>
+    <a href="{{ about_url }}">Om Jobbdjungeln</a>
+    ·
+    <a href="{{ faq_url }}">Vanliga frågor</a>
+    ·
+    <a href="{{ privacy_url }}">Integritet</a>
+  </p>
+</main>
+{% endblock %}

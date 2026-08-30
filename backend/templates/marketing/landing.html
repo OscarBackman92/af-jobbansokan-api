@@ -1,33 +1,20 @@
 {% extends "marketing/base.html" %}
+{% load static %}
 
-{% block head_extra %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "Jobbdjungeln",
-  "applicationCategory": "BusinessApplication",
-  "operatingSystem": "Web",
-  "inLanguage": "sv",
-  "description": "Översikt över jobbansökningar med Platsbanken-sök och påminnelser.",
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "SEK"
-  }
-}
-</script>
-{% endblock %}
+{% block title %}Jobbdjungeln — koll på hela ditt jobbsök{% endblock %}
+{% block meta_description %}Gratis översikt över dina jobbansökningar. Platsbanken, påminnelser, CV-matchning och CSV-export — utan Excel.{% endblock %}
+{% block og_title %}Jobbdjungeln — koll på hela ditt jobbsök{% endblock %}
+{% block og_description %}Gratis översikt över dina jobbansökningar. Platsbanken, påminnelser och export när du vill.{% endblock %}
 
 {% block content %}
 <main>
   <section class="marketing-hero">
     <div>
       <span class="section-kicker">Jobbsök i Sverige</span>
-      <h2>
+      <h1>
         Håll koll på ansökningarna
         <span class="grad">utan nytt Excel-ark.</span>
-      </h2>
+      </h1>
       <p class="lede">
         När flera processer rullar samtidigt glömmer man lätt vem man pratat med
         och när man tänkte höra av sig. Här har du allt samlat — plus sök i
@@ -38,11 +25,12 @@
         <a class="btn-primary" href="/app/?tab=dash" data-authed-cta hidden>Till min översikt</a>
       </p>
       <p class="hero-note muted">
-        Gratis. Inga annonser. Exportera eller radera allt när du vill.
+        Gratis. Inga annonser. Läs <a href="{{ about_url }}">om tjänsten</a>
+        eller <a href="{{ faq_url }}">vanliga frågor</a>.
       </p>
     </div>
     <aside class="hero-card">
-      <h3>Det här är det</h3>
+      <h2>Vad du får</h2>
       <ul class="checklist">
         <li>En rad per ansökan — status, datum, kontakt, anteckningar</li>
         <li>Påminnelse när nästa steg är dags</li>
@@ -63,7 +51,7 @@
   <section class="marketing-section" aria-labelledby="how-heading">
     <h2 id="how-heading">Kom igång</h2>
     <p class="section-lede">
-      Så brukar folk börja.
+      Tre steg från tom översikt till en lista du kan lita på.
     </p>
     <ol class="steps-list">
       <li class="step-card">
@@ -102,7 +90,8 @@
   <section class="marketing-section" aria-labelledby="app-heading">
     <h2 id="app-heading">Tre flikar</h2>
     <p class="section-lede">
-      Efter inloggning.
+      Det du ser efter inloggning. Mer om bakgrunden finns på
+      <a href="{{ about_url }}">Om Jobbdjungeln</a>.
     </p>
     <div class="app-areas">
       <article class="app-area-card">
@@ -128,10 +117,11 @@
   </section>
 
   <section class="marketing-section marketing-cta">
-    <h2>Testa om du vill</h2>
+    <h2>Kom igång gratis</h2>
     <p class="lede">
       Konto tar en minut. Första gången du loggar in finns en kort förklaring under
-      Ansökningar.
+      Ansökningar. <a href="{{ privacy_url }}">Integritetspolicy</a> beskriver hur
+      data hanteras.
     </p>
     <p class="hero-cta" data-session-cta>
       <a class="btn-primary" href="{{ app_url }}" data-guest-cta>Skapa konto</a>
@@ -143,19 +133,5 @@
   sessionStorage is per-tab: opening "/" in a new tab shows guest CTAs even
   if another tab is signed in. That is intentional — no auto-redirect from "/".
 #}
-<script>
-(function () {
-  try {
-    if (!sessionStorage.getItem("token")) return;
-  } catch (e) {
-    return;
-  }
-  document.querySelectorAll("[data-session-cta]").forEach(function (wrap) {
-    var guest = wrap.querySelector("[data-guest-cta]");
-    var authed = wrap.querySelector("[data-authed-cta]");
-    if (guest) guest.hidden = true;
-    if (authed) authed.hidden = false;
-  });
-})();
-</script>
+<script src="{% static 'marketing/session-cta.js' %}"></script>
 {% endblock %}

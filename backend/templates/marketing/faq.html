@@ -1,0 +1,29 @@
+{% extends "marketing/base.html" %}
+
+{% block title %}Vanliga frågor — Jobbdjungeln{% endblock %}
+{% block meta_description %}Svar på vanliga frågor om Jobbdjungeln: pris, rekrytering, datalagring i EU, CV-filer och hur du raderar kontot.{% endblock %}
+{% block og_title %}Vanliga frågor — Jobbdjungeln{% endblock %}
+{% block og_description %}Pris, datalagring, CV-filer och hur du raderar kontot.{% endblock %}
+{% block twitter_title %}Vanliga frågor — Jobbdjungeln{% endblock %}
+
+{% block content %}
+<main class="privacy-body">
+  <span class="section-kicker">FAQ</span>
+  <h1 class="page-title">Vanliga frågor</h1>
+  <p class="lede">
+    Kort om vad tjänsten är och inte är. Mer bakgrund finns på
+    <a href="{{ about_url }}">Om Jobbdjungeln</a>.
+  </p>
+
+  {% for item in faq_items %}
+  <h2>{{ item.question }}</h2>
+  <p>{{ item.answer }}</p>
+  {% endfor %}
+
+  <p>
+    Hur personuppgifter hanteras står i
+    <a href="{{ privacy_url }}">integritetspolicyn</a>.
+  </p>
+  <p><a class="btn-primary" href="{{ app_url }}">Till appen</a></p>
+</main>
+{% endblock %}

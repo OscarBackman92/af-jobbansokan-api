@@ -32,3 +32,17 @@ def resolve_frontend_url() -> str:
         return f"https://{render_host}"
 
     return ""
+
+
+def public_origin_parts(url: str) -> tuple[str, str]:
+    """Return (hostname, origin) for ALLOWED_HOSTS / CSRF, or empty strings."""
+    if not url:
+        return "", ""
+    parsed = urlparse(url if "://" in url else f"https://{url}")
+    host = (parsed.hostname or "").strip()
+    origin = (
+        f"{parsed.scheme}://{parsed.netloc}"
+        if parsed.scheme and parsed.netloc
+        else ""
+    )
+    return host, origin

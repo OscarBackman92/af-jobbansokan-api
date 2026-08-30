@@ -1,22 +1,23 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { request } from "./api.js";
 import { clearTokens, getAccess, setTokens } from "./auth.js";
 import AuthHero from "./components/AuthHero.jsx";
-import AppliedPanel from "./components/AppliedPanel.jsx";
-import DashboardPanel from "./components/DashboardPanel.jsx";
 import GoogleSignIn from "./components/GoogleSignIn.jsx";
-import PostingsPanel from "./components/PostingsPanel.jsx";
-import ProfilePanel from "./components/ProfilePanel.jsx";
 import ReportBanner from "./components/ReportBanner.jsx";
-import ReportPanel from "./components/ReportPanel.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
-import SavedPanel from "./components/SavedPanel.jsx";
 import VerifyEmail from "./components/VerifyEmail.jsx";
 import { encodeMonthFilter } from "./dates.js";
 import { readGoogleCallback } from "./googleAuth.js";
 import useApplications from "./useApplications.js";
 import useReportPeriods from "./useReportPeriods.js";
+
+const DashboardPanel = lazy(() => import("./components/DashboardPanel.jsx"));
+const SavedPanel = lazy(() => import("./components/SavedPanel.jsx"));
+const AppliedPanel = lazy(() => import("./components/AppliedPanel.jsx"));
+const ReportPanel = lazy(() => import("./components/ReportPanel.jsx"));
+const PostingsPanel = lazy(() => import("./components/PostingsPanel.jsx"));
+const ProfilePanel = lazy(() => import("./components/ProfilePanel.jsx"));
 
 function readResetCreds() {
   const params = new URLSearchParams(window.location.search);
@@ -38,6 +39,19 @@ const TABS = [
   { id: "postings", label: "Annonser" },
   { id: "profile", label: "Profil & CV" },
 ];
+
+const TAB_META = {
+  dash: { title: "Översikt — Jobbdjungeln", heading: "Översikt" },
+  saved: { title: "Sparade jobb — Jobbdjungeln", heading: "Sparade jobb" },
+  applied: { title: "Ansökningar — Jobbdjungeln", heading: "Ansökningar" },
+  report: { title: "Rapportera — Jobbdjungeln", heading: "Rapportera" },
+  postings: { title: "Annonser — Jobbdjungeln", heading: "Annonser" },
+  profile: { title: "Profil och CV — Jobbdjungeln", heading: "Profil och CV" },
+};
+
+function PanelFallback() {
+  return <p className="muted">Laddar…</p>;
+}
 
 const THEMES = [
   { id: "system", label: "System" },
@@ -94,6 +108,7 @@ function syncTabToUrl(tab) {
 
 export default function App() {
   const [tab, setTab] = useState(() => readTab());
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set([readTab()]));
   const [token, setToken] = useState(() => getAccess());
   const [me, setMe] = useState(null);
   const [resetCreds, setResetCreds] = useState(() => readResetCreds());
@@ -123,6 +138,35 @@ export default function App() {
   const isLoggedOut = !token;
   const isGuest =
     isLoggedOut && !resetCreds && !verifyKey && !googleCode;
+
+  useEffect(() => {
+    setVisitedTabs((prev) => {
+      if (prev.has(tab)) return prev;
+      const next = new Set(prev);
+      next.add(tab);
+      return next;
+    });
+  }, [tab]);
+
+  useEffect(() => {
+    if (verifyKey) {
+      document.title = "Bekräfta e-post — Jobbdjungeln";
+      return;
+    }
+    if (resetCreds) {
+      document.title = "Nytt lösenord — Jobbdjungeln";
+      return;
+    }
+    if (googleCode) {
+      document.title = "Logga in med Google — Jobbdjungeln";
+      return;
+    }
+    if (!token) {
+      document.title = "Logga in — Jobbdjungeln";
+      return;
+    }
+    document.title = TAB_META[tab]?.title || "Jobbdjungeln";
+  }, [tab, token, verifyKey, resetCreds, googleCode]);
 
   const savedCount =
     applications?.filter((a) => a.status === "wishlist").length ?? 0;
@@ -358,6 +402,12 @@ export default function App() {
     syncTabToUrl("dash");
   }
 
+  let pageHeading = "Logga in";
+  if (verifyKey) pageHeading = "Bekräfta e-post";
+  else if (resetCreds) pageHeading = "Nytt lösenord";
+  else if (googleCode) pageHeading = "Logga in med Google";
+  else if (token) pageHeading = TAB_META[tab]?.heading ?? "Jobbdjungeln";
+
   return (
     <div className={isGuest ? "app app--guest" : "app"}>
       <header className="header">
@@ -365,7 +415,9 @@ export default function App() {
           className="brand brand-link"
           href={token ? "/app/?tab=dash" : "/"}
           aria-label={
-            token ? "Jobbdjungeln – till översikten" : undefined
+            token
+              ? "Jobbdjungeln – till översikten"
+              : "Jobbdjungeln – till startsidan"
           }
           onClick={(event) => {
             if (!token) return;
@@ -376,17 +428,23 @@ export default function App() {
             changeTab("dash");
           }}
         >
-          <div className="logo" aria-hidden="true">
-            J
-          </div>
+          <img
+            className="logo-img"
+            src="/app/favicon.svg"
+            width="36"
+            height="36"
+            alt=""
+          />
           <div className="brand-text">
-            <h1>Jobbdjungeln</h1>
+            <span className="brand-name">Jobbdjungeln</span>
           </div>
         </a>
         {!token ? (
           <div className="header-actions header-actions--guest">
             <nav className="header-guest-nav" aria-label="Huvudnavigering">
               <a href="/">Start</a>
+              <a href="/om/">Om</a>
+              <a href="/faq/">Frågor</a>
               <a href="/integritet/">Integritet</a>
               <a className="btn-primary" href="/app/" aria-current="page">
                 Logga in
@@ -442,6 +500,7 @@ export default function App() {
       </header>
 
       <main className={isGuest ? "main main--guest" : "main"}>
+        {!isGuest && <h1 className="sr-only">{pageHeading}</h1>}
         {googleCode && !token && (
           <GoogleSignIn
             code={googleCode}
@@ -490,103 +549,117 @@ export default function App() {
                 }
               />
             )}
-            <div
-              className={
-                tab === "dash" ? "tab-panel" : "tab-panel tab-panel-hidden"
-              }
-              aria-hidden={tab !== "dash"}
-            >
-              <DashboardPanel
-                token={token}
-                onNavigate={changeTab}
-                active={tab === "dash"}
-                periods={periods}
-              />
-            </div>
-            <div
-              className={
-                tab === "saved" ? "tab-panel" : "tab-panel tab-panel-hidden"
-              }
-              aria-hidden={tab !== "saved"}
-            >
-              <SavedPanel
-                token={token}
-                applications={applications}
-                reload={reload}
-                upsert={upsert}
-                error={applicationsError}
-                setError={setApplicationsError}
-                patch={patch}
-                bulk={bulk}
-                onNavigate={changeTab}
-                initialFilter={tab === "saved" ? panelFilter : null}
-              />
-            </div>
-            <div
-              className={
-                tab === "applied" ? "tab-panel" : "tab-panel tab-panel-hidden"
-              }
-              aria-hidden={tab !== "applied"}
-            >
-              <AppliedPanel
-                token={token}
-                applications={applications}
-                reload={reload}
-                upsert={upsert}
-                error={applicationsError}
-                setError={setApplicationsError}
-                patch={patch}
-                bulk={bulk}
-                onNavigate={changeTab}
-                initialFilter={tab === "applied" ? panelFilter : null}
-                initialMonthFilter={
-                  tab === "applied" ? panelMonthFilter : ""
-                }
-                periods={periods}
-              />
-            </div>
-            <div
-              className={
-                tab === "report" ? "tab-panel" : "tab-panel tab-panel-hidden"
-              }
-              aria-hidden={tab !== "report"}
-            >
-              <ReportPanel
-                token={token}
-                periods={periods}
-                onPeriodsReload={reloadPeriods}
-                initialMonthFilter={tab === "report" ? panelMonthFilter : ""}
-              />
-            </div>
-            <div
-              className={
-                tab === "postings" ? "tab-panel" : "tab-panel tab-panel-hidden"
-              }
-              aria-hidden={tab !== "postings"}
-            >
-              <PostingsPanel
-                onNavigate={changeTab}
-                upsert={upsert}
-                active={tab === "postings"}
-              />
-            </div>
-            <div
-              className={
-                tab === "profile" ? "tab-panel" : "tab-panel tab-panel-hidden"
-              }
-              aria-hidden={tab !== "profile"}
-            >
-              <ProfilePanel
-                token={token}
-                me={me}
-                onMeChange={setMe}
-                onLogout={logout}
-                profileLeaveGuardRef={profileLeaveGuardRef}
-                profileFocus={profileFocus}
-                onProfileFocusHandled={() => setProfileFocus(null)}
-                active={tab === "profile"}
-              />
-            </div>
+            <Suspense fallback={<PanelFallback />}>
+              {visitedTabs.has("dash") && (
+                <div
+                  className={
+                    tab === "dash" ? "tab-panel" : "tab-panel tab-panel-hidden"
+                  }
+                  aria-hidden={tab !== "dash"}
+                >
+                  <DashboardPanel
+                    token={token}
+                    onNavigate={changeTab}
+                    active={tab === "dash"}
+                    periods={periods}
+                  />
+                </div>
+              )}
+              {visitedTabs.has("saved") && (
+                <div
+                  className={
+                    tab === "saved" ? "tab-panel" : "tab-panel tab-panel-hidden"
+                  }
+                  aria-hidden={tab !== "saved"}
+                >
+                  <SavedPanel
+                    token={token}
+                    applications={applications}
+                    reload={reload}
+                    upsert={upsert}
+                    error={applicationsError}
+                    setError={setApplicationsError}
+                    patch={patch}
+                    bulk={bulk}
+                    onNavigate={changeTab}
+                    initialFilter={tab === "saved" ? panelFilter : null}
+                  />
+                </div>
+              )}
+              {visitedTabs.has("applied") && (
+                <div
+                  className={
+                    tab === "applied" ? "tab-panel" : "tab-panel tab-panel-hidden"
+                  }
+                  aria-hidden={tab !== "applied"}
+                >
+                  <AppliedPanel
+                    token={token}
+                    applications={applications}
+                    reload={reload}
+                    upsert={upsert}
+                    error={applicationsError}
+                    setError={setApplicationsError}
+                    patch={patch}
+                    bulk={bulk}
+                    onNavigate={changeTab}
+                    initialFilter={tab === "applied" ? panelFilter : null}
+                    initialMonthFilter={
+                      tab === "applied" ? panelMonthFilter : ""
+                    }
+                    periods={periods}
+                  />
+                </div>
+              )}
+              {visitedTabs.has("report") && (
+                <div
+                  className={
+                    tab === "report" ? "tab-panel" : "tab-panel tab-panel-hidden"
+                  }
+                  aria-hidden={tab !== "report"}
+                >
+                  <ReportPanel
+                    token={token}
+                    periods={periods}
+                    onPeriodsReload={reloadPeriods}
+                    initialMonthFilter={tab === "report" ? panelMonthFilter : ""}
+                  />
+                </div>
+              )}
+              {visitedTabs.has("postings") && (
+                <div
+                  className={
+                    tab === "postings" ? "tab-panel" : "tab-panel tab-panel-hidden"
+                  }
+                  aria-hidden={tab !== "postings"}
+                >
+                  <PostingsPanel
+                    onNavigate={changeTab}
+                    upsert={upsert}
+                    active={tab === "postings"}
+                  />
+                </div>
+              )}
+              {visitedTabs.has("profile") && (
+                <div
+                  className={
+                    tab === "profile" ? "tab-panel" : "tab-panel tab-panel-hidden"
+                  }
+                  aria-hidden={tab !== "profile"}
+                >
+                  <ProfilePanel
+                    token={token}
+                    me={me}
+                    onMeChange={setMe}
+                    onLogout={logout}
+                    profileLeaveGuardRef={profileLeaveGuardRef}
+                    profileFocus={profileFocus}
+                    onProfileFocusHandled={() => setProfileFocus(null)}
+                    active={tab === "profile"}
+                  />
+                </div>
+              )}
+            </Suspense>
           </>
         )}
       </main>
@@ -640,6 +713,18 @@ export default function App() {
       <footer className="footer">
         <span className="footer-kicker">Jobbdjungeln</span>
         Din data är din — exportera eller radera kontot när du vill.{" "}
+        <a className="footer-link" href="/">
+          Start
+        </a>
+        {" · "}
+        <a className="footer-link" href="/om/">
+          Om
+        </a>
+        {" · "}
+        <a className="footer-link" href="/faq/">
+          Vanliga frågor
+        </a>
+        {" · "}
         <a className="footer-link" href="/integritet/">
           Integritetspolicy
         </a>

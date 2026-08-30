@@ -17,10 +17,10 @@ export default function AuthIntro() {
   return (
     <aside className="auth-intro" aria-label="Om Jobbdjungeln">
       <span className="section-kicker">Jobbdjungeln</span>
-      <h2>
+      <h1>
         Dina ansökningar,
         <span className="grad"> inte en jobbsajt.</span>
-      </h2>
+      </h1>
       <p className="lede">
         Här håller du koll på dina egna ansökningar. Inget säljs till arbetsgivare.
         Du kan exportera eller radera allt när som helst.

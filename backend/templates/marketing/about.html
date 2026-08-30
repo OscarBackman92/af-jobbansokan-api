@@ -1,0 +1,43 @@
+{% extends "marketing/base.html" %}
+
+{% block title %}Om Jobbdjungeln{% endblock %}
+{% block meta_description %}Jobbdjungeln är en personlig översikt över jobbansökningar för jobbsökare i Sverige — inte en rekryteringssajt.{% endblock %}
+{% block og_title %}Om Jobbdjungeln{% endblock %}
+{% block og_description %}En personlig översikt över jobbansökningar. Data i EU, gratis, utan annonser.{% endblock %}
+{% block twitter_title %}Om Jobbdjungeln{% endblock %}
+
+{% block content %}
+<main class="privacy-body">
+  <span class="section-kicker">Bakgrund</span>
+  <h1 class="page-title">Om Jobbdjungeln</h1>
+  <p class="lede">
+    Jobbdjungeln är kalkylarket för jobbsök, gjort som en webbapp: status, nästa steg,
+    Platsbanken och CSV-export. Den ersätter inte Arbetsförmedlingen och är inte
+    ansluten till dem.
+  </p>
+
+  <h2>Vem den är till för</h2>
+  <p>
+    Personer som söker jobb i Sverige och behöver hålla flera parallella processer
+    i sär — utan att bygga ett nytt Excel-ark varje vår. Särskilt om du vill ha
+    underlag till aktivitetsrapportering.
+  </p>
+
+  <h2>Vad den inte är</h2>
+  <ul>
+    <li>Ingen rekryteringssajt och ingen jobbfeed du “blir hittad” i.</li>
+    <li>Ingen betaltjänst och inga annonser.</li>
+    <li>Ingen lagring av uppladdade CV-filer.</li>
+  </ul>
+
+  <h2>Så hänger det ihop</h2>
+  <p>
+    På <a href="{{ home_url }}">startsidan</a> finns en kort genomgång. I appen
+    ligger översikt, sparade jobb, ansökningar, Platsbanken och CV i separata
+    flikar. <a href="{{ faq_url }}">Vanliga frågor</a> tar de vanligaste tvivlen.
+    <a href="{{ privacy_url }}">Integritetspolicyn</a> beskriver lagring och radering.
+  </p>
+
+  <p><a class="btn-primary" href="{{ app_url }}">Skapa konto</a></p>
+</main>
+{% endblock %}

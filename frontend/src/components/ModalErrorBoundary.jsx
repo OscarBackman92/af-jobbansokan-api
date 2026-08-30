@@ -1,6 +1,6 @@
 import { Component } from "react";
 
-import { Sentry } from "../sentry.js";
+import { captureException } from "../sentry.js";
 
 // Keeps a broken application modal from taking down the whole board.
 export default class ModalErrorBoundary extends Component {
@@ -11,7 +11,7 @@ export default class ModalErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    Sentry.captureException(error, { extra: info });
+    captureException(error, { extra: info });
   }
 
   render() {

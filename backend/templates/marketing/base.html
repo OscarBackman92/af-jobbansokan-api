@@ -4,57 +4,90 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script>
-      (function () {
-        var valid = { system: 1, command: 1, daylight: 1, signal: 1 };
-        var t = localStorage.getItem("theme");
-        if (!valid[t]) {
-          t = "daylight";
-        }
-        if (t === "system") {
-          t = window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "command"
-            : "daylight";
-        }
-        document.documentElement.dataset.theme = t;
-      })();
-    </script>
-    <title>{% block title %}Jobbdjungeln — översikt över dina jobbansökningar{% endblock %}</title>
+    <meta name="theme-color" content="#f4f4f1" />
+    {% block robots %}{% endblock %}
+    <script src="{% static 'marketing/theme-boot.js' %}"></script>
+    <title>{% block title %}Jobbdjungeln — koll på hela ditt jobbsök{% endblock %}</title>
     <meta
       name="description"
       content="{% block meta_description %}Håll koll på jobbansökningar utan Excel. Platsbanken, påminnelser och export när du vill.{% endblock %}"
     />
     <link rel="canonical" href="{% block canonical %}{{ canonical_url }}{% endblock %}" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="sv_SE" />
-    <meta property="og:title" content="{% block og_title %}Jobbdjungeln — översikt över dina jobbansökningar{% endblock %}" />
+    <meta property="og:site_name" content="Jobbdjungeln" />
+    <meta property="og:title" content="{% block og_title %}Jobbdjungeln — koll på hela ditt jobbsök{% endblock %}" />
     <meta
       property="og:description"
       content="{% block og_description %}Håll koll på ansökningar utan Excel. Platsbanken, påminnelser och export när du vill.{% endblock %}"
     />
     <meta property="og:url" content="{% block og_url %}{{ canonical_url }}{% endblock %}" />
+    <meta property="og:image" content="{{ og_image_url }}" />
+    <meta property="og:image:alt" content="Jobbdjungeln — koll på hela ditt jobbsök" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{% block twitter_title %}Jobbdjungeln — koll på hela ditt jobbsök{% endblock %}" />
+    <meta
+      name="twitter:description"
+      content="{% block twitter_description %}Håll koll på ansökningar utan Excel. Platsbanken, påminnelser och export när du vill.{% endblock %}"
+    />
+    <meta name="twitter:image" content="{{ og_image_url }}" />
     <link rel="stylesheet" href="{% static 'marketing/fonts.css' %}" />
     <link rel="stylesheet" href="{% static 'marketing/marketing.css' %}" />
+    {% if schema_url %}
+    <script type="application/ld+json" src="{{ schema_url }}"></script>
+    {% endif %}
     {% block head_extra %}{% endblock %}
   </head>
   <body>
     <div class="marketing-wrap">
       <header class="marketing-header">
-        <a class="marketing-brand" href="{{ home_url|default:'/' }}">
-          <span class="marketing-logo" aria-hidden="true">J</span>
-          <h1>Jobbdjungeln</h1>
+        <a class="marketing-brand" href="{{ home_url|default:'/' }}" aria-label="Jobbdjungeln, till startsidan">
+          <img
+            class="marketing-logo-img"
+            src="{% static 'marketing/favicon.svg' %}"
+            width="36"
+            height="36"
+            alt=""
+          />
+          <span class="brand-name">Jobbdjungeln</span>
         </a>
         <nav class="marketing-nav" aria-label="Huvudnavigering">
-          <a href="{{ home_url|default:'/' }}">Start</a>
-          <a href="{{ privacy_url }}">Integritet</a>
+          <a href="{{ home_url }}"{% if current_page == "home" %} aria-current="page"{% endif %}>Start</a>
+          <a href="{{ about_url }}"{% if current_page == "about" %} aria-current="page"{% endif %}>Om</a>
+          <a href="{{ faq_url }}"{% if current_page == "faq" %} aria-current="page"{% endif %}>Frågor</a>
+          <a href="{{ privacy_url }}"{% if current_page == "privacy" %} aria-current="page"{% endif %}>Integritet</a>
           <a class="btn-primary" href="{{ app_url }}">Logga in</a>
         </nav>
       </header>
+      {% if breadcrumbs %}
+      <nav class="breadcrumbs" aria-label="Brödsmulor">
+        <ol>
+          {% for crumb in breadcrumbs %}
+          <li>
+            {% if crumb.url %}
+            <a href="{{ crumb.url }}">{{ crumb.name }}</a>
+            {% else %}
+            <span aria-current="page">{{ crumb.name }}</span>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ol>
+      </nav>
+      {% endif %}
       {% block content %}{% endblock %}
       <footer class="marketing-footer">
         <span class="footer-kicker">Jobbdjungeln</span>
         Din data är din — exportera eller radera när du vill.
-        <a href="{{ privacy_url }}">Integritetspolicy</a>
+        <nav class="footer-nav" aria-label="Sidfot">
+          <a href="{{ home_url }}">Start</a>
+          <a href="{{ about_url }}">Om</a>
+          <a href="{{ faq_url }}">Vanliga frågor</a>
+          <a href="{{ privacy_url }}">Integritetspolicy</a>
+          <a href="{{ app_url }}">Logga in</a>
+        </nav>
         <div class="theme-picker" aria-label="Visuellt tema">
           <button type="button" data-theme="system">System</button>
           <button type="button" data-theme="command">Command</button>

@@ -13,6 +13,20 @@ export default defineConfig({
   build: {
     outDir: "dist/app",
     emptyOutDir: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes("node_modules/react-dom") ||
+            id.includes("node_modules/react/")
+          ) {
+            return "react";
+          }
+          return undefined;
+        },
+      },
+    },
   },
   server: {
     proxy: {

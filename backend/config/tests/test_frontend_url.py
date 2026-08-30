@@ -1,6 +1,6 @@
 import pytest
 
-from config.frontend_url import resolve_frontend_url
+from config.frontend_url import public_origin_parts, resolve_frontend_url
 
 
 @pytest.mark.parametrize(
@@ -30,3 +30,15 @@ def test_resolve_frontend_url(monkeypatch, frontend_url, render_host, expected):
     if render_host:
         monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", render_host)
     assert resolve_frontend_url() == expected
+
+
+def test_public_origin_parts():
+    assert public_origin_parts("") == ("", "")
+    assert public_origin_parts("https://jobbdjungeln.se") == (
+        "jobbdjungeln.se",
+        "https://jobbdjungeln.se",
+    )
+    assert public_origin_parts("jobbdjungeln.se") == (
+        "jobbdjungeln.se",
+        "https://jobbdjungeln.se",
+    )

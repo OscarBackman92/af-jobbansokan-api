@@ -3,29 +3,32 @@
 {% block title %}Integritetspolicy — Jobbdjungeln{% endblock %}
 {% block meta_description %}Hur Jobbdjungeln behandlar dina personuppgifter: lagring i EU, ingen CV-fillagring, export och radering.{% endblock %}
 {% block og_title %}Integritetspolicy — Jobbdjungeln{% endblock %}
+{% block og_description %}Hur Jobbdjungeln behandlar dina personuppgifter: lagring i EU, export och radering.{% endblock %}
+{% block twitter_title %}Integritetspolicy — Jobbdjungeln{% endblock %}
 
 {% block content %}
 <main class="privacy-body">
-  <span class="kicker">Data &amp; integritet</span>
-  <h2>Integritetspolicy</h2>
+  <span class="section-kicker">Data &amp; integritet</span>
+  <h1 class="page-title">Integritetspolicy</h1>
   <p>
     Jobbdjungeln är en personlig översikt över dina jobbansökningar. Du äger din data: allt kan
     exporteras som CSV och kontot kan raderas när som helst, med all data.
   </p>
 
-  <h3>Personuppgiftsansvarig</h3>
+  <h2>Personuppgiftsansvarig</h2>
   <p>
     Jobbdjungeln drivs som en privat tjänst och den som driver tjänsten är
     personuppgiftsansvarig.
     {% if contact_email %}
       Kontakta oss om dina personuppgifter på
       <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.
-    {% else %}
-      Kontaktuppgifter för integritetsfrågor publiceras här.
     {% endif %}
   </p>
+  <p>
+    Läs mer om vad tjänsten är på <a href="{{ about_url }}">Om Jobbdjungeln</a>.
+  </p>
 
-  <h3>Vad vi lagrar och varför</h3>
+  <h2>Vad vi lagrar och varför</h2>
   <ul>
     <li>
       Kontouppgifter (e-post, namn) och dina ansökningar, kontakter, anteckningar
@@ -43,7 +46,7 @@
     </li>
   </ul>
 
-  <h3>Vad vi inte lagrar</h3>
+  <h2>Vad vi inte lagrar</h2>
   <ul>
     <li>Uppladdade CV-filer — de tolkas i minnet och sparas aldrig.</li>
     <li>Platsbankens annonser — sökningar görs live och cachas bara kortvarigt.</li>
@@ -53,7 +56,7 @@
     </li>
   </ul>
 
-  <h3>Vilka som behandlar data för vår räkning</h3>
+  <h2>Vilka som behandlar data för vår räkning</h2>
   <ul>
     <li><strong>Render</strong> — serverdrift och databas i Frankfurt (EU).</li>
     <li><strong>Brevo</strong> — verifierings-, återställnings- och påminnelsemejl.</li>
@@ -64,7 +67,7 @@
   </ul>
   <p>Vi säljer aldrig data och delar den inte med arbetsgivare eller annonsörer.</p>
 
-  <h3>Hur länge data sparas</h3>
+  <h2>Hur länge data sparas</h2>
   <ul>
     <li>Ditt konto och din data finns kvar tills du raderar kontot.</li>
     <li>
@@ -73,7 +76,7 @@
     <li>Raderar du kontot försvinner all data direkt och permanent.</li>
   </ul>
 
-  <h3>Dina rättigheter</h3>
+  <h2>Dina rättigheter</h2>
   <ul>
     <li>Se all din data i appen och exportera den som CSV.</li>
     <li>Rätta uppgifter direkt i appen.</li>
@@ -84,7 +87,7 @@
     </li>
   </ul>
 
-  <p class="lede">Senast uppdaterad: juli 2026.</p>
+  <p class="lede">Senast uppdaterad: augusti 2026.</p>
   <p><a class="btn-primary" href="{{ app_url }}">Till appen</a></p>
 </main>
 {% endblock %}

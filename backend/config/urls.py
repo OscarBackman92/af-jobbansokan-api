@@ -4,7 +4,18 @@ from core.auth_views import (
     ThrottledResendEmailVerificationView,
     ThrottledVerifyEmailView,
 )
-from core.marketing_views import landing, privacy_page, robots_txt, sitemap_xml, spa_app
+from core.marketing_views import (
+    about_page,
+    branded_asset,
+    faq_page,
+    json_ld,
+    landing,
+    llms_txt,
+    privacy_page,
+    robots_txt,
+    sitemap_xml,
+    spa_app,
+)
 from core.views import health, runtime_config, security_txt
 from django.contrib import admin
 from django.urls import include, path
@@ -18,8 +29,17 @@ from config.api_docs import DebugOrAdminPermission
 urlpatterns = [
     path("", landing, name="landing"),
     path("integritet/", privacy_page, name="privacy"),
+    path("om/", about_page, name="about"),
+    path("faq/", faq_page, name="faq"),
     path("robots.txt", robots_txt, name="robots"),
     path("sitemap.xml", sitemap_xml, name="sitemap"),
+    path("llms.txt", llms_txt, name="llms"),
+    path("schema/<slug:page>.json", json_ld, name="json-ld"),
+    path("favicon.ico", branded_asset, {"filename": "favicon.ico"}),
+    path("favicon.svg", branded_asset, {"filename": "favicon.svg"}),
+    path("favicon-32.png", branded_asset, {"filename": "favicon-32.png"}),
+    path("apple-touch-icon.png", branded_asset, {"filename": "apple-touch-icon.png"}),
+    path("og-image.jpg", branded_asset, {"filename": "og-image.jpg"}),
     path("app/", spa_app, name="spa-app"),
     path("app/<path:subpath>", spa_app, name="spa-app-catchall"),
     path("admin/", admin.site.urls),
@@ -63,3 +83,5 @@ urlpatterns = [
     ),
     path("api/v1/", include("core.urls")),
 ]
+
+handler404 = "core.marketing_views.page_not_found"

@@ -4,30 +4,37 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#f4f4f1" />
-    <script>
-      (function () {
-        var valid = { system: 1, command: 1, daylight: 1, signal: 1 };
-        var t = localStorage.getItem("theme");
-        if (!valid[t]) {
-          t = "daylight";
-        }
-        if (t === "system") {
-          t = window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "command"
-            : "daylight";
-        }
-        document.documentElement.dataset.theme = t;
-      })();
-    </script>
+    <script src="/app/theme-boot.js"></script>
     <meta
       name="description"
       content="Jobbdjungeln — gratis verktyg som samlar dina jobbansökningar, påminnelser och Platsbanken på ett ställe."
     />
     <title>Jobbdjungeln — koll på hela ditt jobbsök</title>
+    <link rel="canonical" href="/app/" />
     <link rel="icon" type="image/svg+xml" href="/app/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="sv_SE" />
+    <meta property="og:site_name" content="Jobbdjungeln" />
+    <meta property="og:title" content="Logga in — Jobbdjungeln" />
+    <meta
+      property="og:description"
+      content="Logga in för att hålla koll på ansökningar, Platsbanken och CV."
+    />
+    <meta property="og:url" content="/app/" />
+    <meta property="og:image" content="/og-image.jpg" />
+    <meta property="og:image:alt" content="Jobbdjungeln — koll på hela ditt jobbsök" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Logga in — Jobbdjungeln" />
+    <meta
+      name="twitter:description"
+      content="Logga in för att hålla koll på ansökningar, Platsbanken och CV."
+    />
+    <meta name="twitter:image" content="/og-image.jpg" />
+    <meta name="robots" content="noindex, nofollow" />
   </head>
   <body>
     <div id="root"></div>
