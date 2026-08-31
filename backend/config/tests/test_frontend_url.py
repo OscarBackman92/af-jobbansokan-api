@@ -2,23 +2,27 @@ import pytest
 
 from config.frontend_url import public_origin_parts, resolve_frontend_url
 
+CANONICAL = "https://jobbdjungeln.obackman.se"
+
 
 @pytest.mark.parametrize(
     ("frontend_url", "render_host", "expected"),
     [
-        ("https://ansokt.onrender.com", "", "https://jobbjungeln.onrender.com"),
+        ("https://ansokt.onrender.com", "", CANONICAL),
         (
             "https://ansokt.onrender.com",
             "jobbjungeln.onrender.com",
-            "https://jobbjungeln.onrender.com",
+            CANONICAL,
         ),
-        ("", "jobbjungeln.onrender.com", "https://jobbjungeln.onrender.com"),
+        ("", "jobbjungeln.onrender.com", CANONICAL),
         (
             "https://jobbjungeln.onrender.com",
             "jobbjungeln.onrender.com",
-            "https://jobbjungeln.onrender.com",
+            CANONICAL,
         ),
         ("https://jobbsoket.se", "jobbjungeln.onrender.com", "https://jobbsoket.se"),
+        (CANONICAL, "jobbjungeln.onrender.com", CANONICAL),
+        ("", "preview-pr-12.onrender.com", "https://preview-pr-12.onrender.com"),
         ("", "", ""),
     ],
 )

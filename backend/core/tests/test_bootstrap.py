@@ -35,8 +35,8 @@ def test_creates_superuser_idempotently(monkeypatch):
 def test_updates_site_from_frontend_url(monkeypatch, settings):
     from django.contrib.sites.models import Site
 
-    settings.FRONTEND_URL = "https://jobbjungeln.onrender.com"
+    settings.FRONTEND_URL = "https://jobbdjungeln.obackman.se"
     _run()
     site = Site.objects.get(pk=1)
-    assert site.domain == "jobbjungeln.onrender.com"
+    assert site.domain == "jobbdjungeln.obackman.se"
     assert site.name == "Jobbdjungeln"

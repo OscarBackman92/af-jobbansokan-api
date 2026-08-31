@@ -2,7 +2,7 @@
 # Database: Supabase Postgres (set DATABASE_URL manually in Render dashboard).
 # Deploy: push to GitHub -> render.com -> New + Blueprint -> select repo.
 #
-# Production: https://jobbjungeln.onrender.com (Frankfurt / EU).
+# Production: https://jobbdjungeln.obackman.se (Render, Frankfurt / EU).
 # Cron job names still use the ansokt-* prefix from the original deploy.
 #
 # Render runs dockerCommand as argv (no shell). Use one command per cron job —
@@ -59,7 +59,7 @@ services:
         sync: false
       # Base URL for e-mail links and django.contrib.sites (bootstrap).
       - key: FRONTEND_URL
-        value: https://jobbjungeln.onrender.com
+        value: https://jobbdjungeln.obackman.se
       # Google login (optional — the SPA hides the button when unset).
       # Create an OAuth client in Google Cloud Console with the site's
       # URL as authorized redirect URI (with trailing slash).

@@ -29,6 +29,13 @@ def test_register_sends_verification_email(api_client, mailoutbox):
     assert "verify_key=" in mailoutbox[0].body
 
 
+def test_verification_email_uses_public_frontend_url(api_client, mailoutbox, settings):
+    settings.FRONTEND_URL = "https://jobbdjungeln.obackman.se"
+    register_user(api_client)
+    assert "https://jobbdjungeln.obackman.se/app/?verify_key=" in mailoutbox[0].body
+    assert "onrender.com" not in mailoutbox[0].body
+
+
 def test_register_rolls_back_when_verification_mail_fails(api_client, monkeypatch):
     from django.contrib.auth import get_user_model
 
