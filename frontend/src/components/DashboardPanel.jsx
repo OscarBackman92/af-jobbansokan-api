@@ -249,9 +249,10 @@ export default function DashboardPanel({
       <section className="command-hero">
         <div className="command-hero-copy">
           <span className="section-kicker">Översikt</span>
-          <h2>{headlineFromKpis(kpis)}</h2>
+          <h2>Din översikt</h2>
           <p className="muted">
-            En läsvy som länkar vidare till sparade jobb och ansökningar.
+            {headlineFromKpis(kpis)} En läsvy som länkar vidare till sparade
+            jobb och ansökningar.
           </p>
         </div>
         <div

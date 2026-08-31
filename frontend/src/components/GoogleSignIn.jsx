@@ -3,6 +3,22 @@ import { useEffect, useState } from "react";
 import { request } from "../api.js";
 import AuthShell from "./AuthShell.jsx";
 
+const googleOnce = new Map();
+
+function exchangeGoogleCode(code) {
+  if (!googleOnce.has(code)) {
+    googleOnce.set(
+      code,
+      request("/dj-rest-auth/google/", {
+        method: "POST",
+        auth: false,
+        body: { code },
+      })
+    );
+  }
+  return googleOnce.get(code);
+}
+
 // Shown when the user lands back from Google's consent screen
 // (/?code=...&state=...). Exchanges the code for our JWT pair.
 export default function GoogleSignIn({ code, onLogin, onDone }) {
@@ -13,11 +29,7 @@ export default function GoogleSignIn({ code, onLogin, onDone }) {
 
     async function exchange() {
       try {
-        const data = await request("/dj-rest-auth/google/", {
-          method: "POST",
-          auth: false,
-          body: { code },
-        });
+        const data = await exchangeGoogleCode(code);
         if (!cancelled) onLogin({ access: data.access, refresh: data.refresh });
       } catch (err) {
         if (!cancelled) setError(err.message || "Inloggningen misslyckades.");

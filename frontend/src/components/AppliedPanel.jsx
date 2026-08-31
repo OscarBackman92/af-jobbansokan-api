@@ -389,7 +389,7 @@ export default function AppliedPanel({
       <section className="card" ref={listSectionRef}>
         <div className="row-between">
           <div>
-            <h2>Mina ansökningar</h2>
+            <h2>Ansökningar</h2>
             <p className="muted">
               {sought.length === 0
                 ? "Inga sökta jobb än — markera sparade som sökta när du skickat ansökan."
@@ -427,19 +427,15 @@ export default function AppliedPanel({
               har skickat ansökan.
             </p>
             <div className="empty-actions">
+              <button type="button" onClick={() => onNavigate?.("postings")}>
+                Sök annonser
+              </button>
               <button
                 type="button"
                 className="secondary"
                 onClick={() => onNavigate?.("saved")}
               >
-                Öppna Sparade jobb
-              </button>
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => onNavigate?.("postings")}
-              >
-                Sök annonser
+                Visa det du vill söka
               </button>
             </div>
           </div>

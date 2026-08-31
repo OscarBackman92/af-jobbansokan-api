@@ -86,14 +86,11 @@ export default function ResetPassword({ uid, token, onDone }) {
         </div>
         {error && <p className="error">{error}</p>}
         <button disabled={busy}>{busy ? "Sparar…" : "Spara nytt lösenord"}</button>
-        <button
-          type="button"
-          className="linklike"
-          style={{ marginTop: "0.8rem" }}
-          onClick={onDone}
-        >
-          Avbryt
-        </button>
+        <div className="auth-links">
+          <button type="button" className="linklike" onClick={onDone}>
+            Avbryt
+          </button>
+        </div>
       </form>
     </AuthShell>
   );

@@ -183,6 +183,8 @@ export default function SavedPanel({
     });
   }, [saved, locationFilter, goodMatchOnly, query, laneFilter]);
 
+  const hasLiveSaved = saved.some((app) => savedBucket(app) !== "expired");
+
   const groups = useMemo(() => {
     const byLane = Object.fromEntries(LANES.map((lane) => [lane.id, []]));
     for (const app of filtered) {
@@ -578,7 +580,8 @@ export default function SavedPanel({
             <div className="lanes">
               {groups.map((lane) => {
                 const isExpired = lane.id === "expired";
-                const collapsed = isExpired && expiredCollapsed;
+                const canCollapseExpired = isExpired && hasLiveSaved;
+                const collapsed = canCollapseExpired && expiredCollapsed;
                 return (
                   <section key={lane.id} className="lane" data-lane={lane.id}>
                     <div className="lane-head">
@@ -586,17 +589,17 @@ export default function SavedPanel({
                         type="button"
                         className="linklike"
                         onClick={() => {
-                          if (isExpired) {
+                          if (canCollapseExpired) {
                             setExpiredCollapsed((v) => !v);
                             return;
                           }
                           applyLaneFilter(lane.id);
                         }}
-                        aria-expanded={isExpired ? !collapsed : undefined}
+                        aria-expanded={canCollapseExpired ? !collapsed : undefined}
                       >
                         <strong>{lane.label}</strong>
                         <span className="muted"> ({lane.applications.length})</span>
-                        {isExpired && (
+                        {canCollapseExpired && (
                           <span className="muted">
                             {collapsed ? " · visa" : " · dölj"}
                           </span>

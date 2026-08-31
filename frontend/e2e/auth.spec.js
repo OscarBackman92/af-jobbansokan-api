@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { fillPassword, latestVerifyKey } from "./helpers.js";
+import { fillPassword, latestVerifyKey, login } from "./helpers.js";
 
 test("register, verify e-mail from the mail file, and log in", async ({
   page,
@@ -31,4 +31,43 @@ test("register, verify e-mail from the mail file, and log in", async ({
   await expect(
     page.getByRole("heading", { name: "Din översikt" })
   ).toBeVisible();
+});
+
+test("forgot password is only on the logged-out login screen", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Glömt lösenord?" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Glömt lösenord" })
+  ).toBeVisible();
+  await expect(page.getByLabel("Lösenord", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("contentinfo")).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Sidfot" }).getByRole("link", {
+      name: "Logga in",
+    })
+  ).toBeVisible();
+
+  await login(page);
+  await expect(page.getByRole("button", { name: "Glömt lösenord?" })).toHaveCount(
+    0
+  );
+  await page.goto("/app/?reset_uid=abc&reset_token=def");
+  await expect(
+    page.getByRole("heading", { name: "Välj ett nytt lösenord" })
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Din översikt" })
+  ).toBeVisible();
+});
+
+test("reset-password form shows when logged out", async ({ page }) => {
+  await page.goto("/app/?reset_uid=abc&reset_token=def");
+  await expect(
+    page.getByRole("heading", { name: "Välj ett nytt lösenord" })
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Logga ut" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Command" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "command");
 });

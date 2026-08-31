@@ -3,6 +3,22 @@ import { useEffect, useState } from "react";
 import { request } from "../api.js";
 import AuthShell from "./AuthShell.jsx";
 
+const verifyOnce = new Map();
+
+function confirmVerifyKey(verifyKey) {
+  if (!verifyOnce.has(verifyKey)) {
+    verifyOnce.set(
+      verifyKey,
+      request("/dj-rest-auth/registration/verify-email/", {
+        method: "POST",
+        auth: false,
+        body: { key: verifyKey },
+      })
+    );
+  }
+  return verifyOnce.get(verifyKey);
+}
+
 // Shown when the user arrives from the verification e-mail link
 // (/?verify_key=...). Confirms the address via dj-rest-auth, then
 // hands back to the login screen.
@@ -16,16 +32,12 @@ export default function VerifyEmail({ verifyKey, onDone }) {
 
     async function confirm() {
       try {
-        await request("/dj-rest-auth/registration/verify-email/", {
-          method: "POST",
-          auth: false,
-          body: { key: verifyKey },
-        });
+        await confirmVerifyKey(verifyKey);
         if (!cancelled) setDone(true);
       } catch (err) {
         if (!cancelled) {
           setError(
-            err.status === 400
+            err.status === 400 || err.status === 404
               ? "Länken är ogiltig eller har gått ut. Registrera dig igen eller begär ett nytt mejl."
               : err.message
           );

@@ -1,4 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Jobbdjungeln">
   <rect width="32" height="32" rx="8" fill="#312c85"/>
-  <text x="16" y="23" text-anchor="middle" font-family="Georgia, serif" font-size="20" font-weight="700" fill="#f4f4f1">J</text>
+  <g transform="translate(15.7 10.35)">
+    <ellipse transform="rotate(-36)" cx="0" cy="-4.55" rx="2.05" ry="5.05" fill="#9d97e8"/>
+    <ellipse transform="rotate(40)" cx="0" cy="-4.65" rx="2.12" ry="5.2" fill="#f4f4f1"/>
+  </g>
+  <path
+    d="M14.35 10.9v9.15c0 3.6 2.75 5.65 5.95 5.65"
+    fill="none"
+    stroke="#f4f4f1"
+    stroke-width="4.4"
+    stroke-linecap="round"
+  />
 </svg>

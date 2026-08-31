@@ -10,12 +10,25 @@
     return id;
   }
 
+  var THEME_COLOR = {
+    command: "#0c0c09",
+    daylight: "#f4f4f1",
+    signal: "#121614",
+  };
+
   function applyTheme(id) {
     if (!THEMES.includes(id)) return;
-    document.documentElement.dataset.theme = resolveTheme(id);
+    var resolved = resolveTheme(id);
+    document.documentElement.dataset.theme = resolved;
     localStorage.setItem("theme", id);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      meta.setAttribute("content", THEME_COLOR[resolved] || THEME_COLOR.daylight);
+    }
     document.querySelectorAll(".theme-picker [data-theme]").forEach(function (btn) {
-      btn.classList.toggle("active", btn.dataset.theme === id);
+      var on = btn.dataset.theme === id;
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
     });
   }
 
@@ -33,7 +46,7 @@
     .matchMedia("(prefers-color-scheme: dark)")
     .addEventListener("change", function () {
       if (localStorage.getItem("theme") === "system") {
-        document.documentElement.dataset.theme = resolveTheme("system");
+        applyTheme("system");
       }
     });
 })();

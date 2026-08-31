@@ -19,7 +19,7 @@ export default function ReportBanner({ periods, onOpenPeriod }) {
       <p>{period.banner}</p>
       <button
         type="button"
-        className={tone === "danger" ? "primary small" : "secondary small"}
+        className={tone === "danger" ? "small" : "secondary small"}
         onClick={() => onOpenPeriod?.(period.key)}
       >
         Visa perioden

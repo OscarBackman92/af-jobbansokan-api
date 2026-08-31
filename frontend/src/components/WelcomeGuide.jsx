@@ -6,7 +6,7 @@ export default function WelcomeGuide({ onDismiss, onNavigate }) {
           <span className="section-kicker">Ny här?</span>
           <h2 id="welcome-guide-heading">Snabbguide</h2>
           <p className="muted welcome-guide-lede">
-            Tre flikar: ansökningar, Platsbanken och CV. Det räcker för de flesta.
+            Sex flikar: översikt, sparade, ansökningar, rapport, Platsbanken och CV.
           </p>
         </div>
         <button
@@ -23,14 +23,13 @@ export default function WelcomeGuide({ onDismiss, onNavigate }) {
           <h3>Var allt finns</h3>
           <ol className="welcome-steps">
             <li>
-              <strong>Ansökningar</strong> — alla dina jobb. <em>Idag &amp; att göra</em> visar
-              vad som väntar.
+              <strong>Översikt</strong> — vad som ska sökas och vad som väntar.
             </li>
             <li>
-              <strong>Annonser</strong> — sök och spara från Platsbanken.
+              <strong>Sparade &amp; ansökningar</strong> — det du vill söka, och det du redan sökt.
             </li>
             <li>
-              <strong>Profil &amp; CV</strong> — CV och matchning mot annonser.
+              <strong>Annonser &amp; CV</strong> — Platsbanken plus matchning mot ditt CV.
             </li>
           </ol>
         </article>

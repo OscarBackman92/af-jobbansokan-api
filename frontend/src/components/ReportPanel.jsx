@@ -226,22 +226,45 @@ export default function ReportPanel({
 
   if (!selectedKey) {
     return (
-      <section className="card">
-        <h2>Rapportera</h2>
-        <p className="muted">Inga sökta perioder ännu.</p>
-      </section>
+      <div className="stack report-panel">
+        <section className="command-hero command-hero--compact">
+          <div className="command-hero-copy">
+            <span className="section-kicker">Rapportera</span>
+            <h2>Aktivitetsrapport</h2>
+          </div>
+        </section>
+        <section className="card">
+          <div className="empty-state">
+            <div className="empty-icon" aria-hidden="true" />
+            <h3>Inga sökta perioder ännu</h3>
+            <p className="muted">
+              När du markerar jobb som sökta dyker månaderna upp här så du kan
+              kopiera raderna till AF:s formulär.
+            </p>
+          </div>
+        </section>
+      </div>
     );
   }
 
   const missing = detail?.missing_occupation_count || 0;
 
   return (
-    <section className="stack report-panel">
+    <div className="stack report-panel">
+      <section className="command-hero command-hero--compact">
+        <div className="command-hero-copy">
+          <span className="section-kicker">Rapportera</span>
+          <h2>Aktivitetsrapport</h2>
+          <p className="muted">
+            Förbered rapporten här. Appen lämnar inte in åt dig — kopiera
+            raderna till AF:s formulär.
+          </p>
+        </div>
+      </section>
       <div className="card">
-        <h2>Rapportera</h2>
+        <h2>Den här perioden</h2>
         <p className="muted">
-          Förbered aktivitetsrapporten. Appen lämnar inte in åt dig — kopiera
-          raderna till AF:s formulär.
+          Välj månad, kopiera rader eller exportera CSV.
         </p>
         <PeriodStrip
           periods={periods}
@@ -479,6 +502,6 @@ export default function ReportPanel({
           </button>
         </form>
       </div>
-    </section>
+    </div>
   );
 }

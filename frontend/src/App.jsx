@@ -74,6 +74,38 @@ function resolveTheme(id) {
   return id;
 }
 
+const THEME_COLOR = {
+  command: "#0c0c09",
+  daylight: "#f4f4f1",
+  signal: "#121614",
+};
+
+function applyResolvedTheme(id) {
+  const resolved = resolveTheme(id);
+  document.documentElement.dataset.theme = resolved;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    meta.setAttribute("content", THEME_COLOR[resolved] || THEME_COLOR.daylight);
+  }
+}
+
+function stripAuthQueryParams() {
+  const params = new URLSearchParams(window.location.search);
+  let changed = false;
+  for (const key of ["reset_uid", "reset_token", "verify_key"]) {
+    if (params.has(key)) {
+      params.delete(key);
+      changed = true;
+    }
+  }
+  if (!changed) return;
+  const qs = params.toString();
+  const url = qs
+    ? `${window.location.pathname}?${qs}`
+    : window.location.pathname;
+  window.history.replaceState({}, "", url);
+}
+
 function readTheme() {
   const stored = localStorage.getItem("theme");
   if (stored && THEMES.some((theme) => theme.id === stored)) {
@@ -135,9 +167,7 @@ export default function App() {
   } = useApplications(token);
   const { periods, reload: reloadPeriods } = useReportPeriods(token);
 
-  const isLoggedOut = !token;
-  const isGuest =
-    isLoggedOut && !resetCreds && !verifyKey && !googleCode;
+  const isGuest = !token;
 
   useEffect(() => {
     setVisitedTabs((prev) => {
@@ -219,18 +249,26 @@ export default function App() {
   }
 
   useEffect(() => {
-    document.documentElement.dataset.theme = resolveTheme(theme);
+    applyResolvedTheme(theme);
     localStorage.setItem("theme", theme);
 
     if (theme !== "system") return;
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
-      document.documentElement.dataset.theme = resolveTheme("system");
+      applyResolvedTheme("system");
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, [theme]);
+
+  useEffect(() => {
+    if (!token) return;
+    if (!resetCreds && !verifyKey) return;
+    stripAuthQueryParams();
+    setResetCreds(null);
+    setVerifyKey(null);
+  }, [token, resetCreds, verifyKey]);
 
   useEffect(() => {
     localStorage.setItem("tab", tab);
@@ -430,7 +468,7 @@ export default function App() {
         >
           <img
             className="logo-img"
-            src="/app/favicon.svg"
+            src="/app/favicon.svg?v=2"
             width="36"
             height="36"
             alt=""
@@ -446,7 +484,13 @@ export default function App() {
               <a href="/om/">Om</a>
               <a href="/faq/">Frågor</a>
               <a href="/integritet/">Integritet</a>
-              <a className="btn-primary" href="/app/" aria-current="page">
+              <a
+                className="btn-primary"
+                href="/app/"
+                aria-current={
+                  !resetCreds && !verifyKey && !googleCode ? "page" : undefined
+                }
+              >
                 Logga in
               </a>
             </nav>
@@ -523,7 +567,7 @@ export default function App() {
             }}
           />
         )}
-        {verifyKey && !googleCode && (
+        {verifyKey && !token && !googleCode && (
           <VerifyEmail
             verifyKey={verifyKey}
             onDone={() => {
@@ -532,7 +576,7 @@ export default function App() {
             }}
           />
         )}
-        {resetCreds && !verifyKey && (
+        {resetCreds && !token && !verifyKey && !googleCode && (
           <ResetPassword
             uid={resetCreds.uid}
             token={resetCreds.token}
@@ -545,7 +589,7 @@ export default function App() {
         {!resetCreds && !verifyKey && !googleCode && !token && (
           <AuthHero onLogin={login} />
         )}
-        {!resetCreds && !verifyKey && token && (
+        {token && (
           <>
             {(tab === "dash" || tab === "applied" || tab === "report") && (
               <ReportBanner
@@ -720,22 +764,14 @@ export default function App() {
 
       <footer className="footer">
         <span className="footer-kicker">Jobbdjungeln</span>
-        Din data är din — exportera eller radera kontot när du vill.{" "}
-        <a className="footer-link" href="/">
-          Start
-        </a>
-        {" · "}
-        <a className="footer-link" href="/om/">
-          Om
-        </a>
-        {" · "}
-        <a className="footer-link" href="/faq/">
-          Vanliga frågor
-        </a>
-        {" · "}
-        <a className="footer-link" href="/integritet/">
-          Integritetspolicy
-        </a>
+        Din data är din — exportera eller radera när du vill.
+        <nav className="footer-nav" aria-label="Sidfot">
+          <a href="/">Start</a>
+          <a href="/om/">Om</a>
+          <a href="/faq/">Vanliga frågor</a>
+          <a href="/integritet/">Integritetspolicy</a>
+          {!token && <a href="/app/">Logga in</a>}
+        </nav>
         <div className="theme-picker" aria-label="Visuellt tema">
           {THEMES.map((t) => (
             <button

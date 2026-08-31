@@ -1,5 +1,6 @@
 :root {
   /* Minimal — semantic tokens */
+  color-scheme: light;
   --primary: #0c0c09;
   --secondary: #312c85;
   --brand: #0c0c09;
@@ -69,6 +70,7 @@
 /* ---------- Command (dark opt-in) ---------- */
 
 [data-theme="command"] {
+  color-scheme: dark;
   --primary: #f4f4f1;
   --secondary: #9d97e8;
   --brand: #f4f4f1;
@@ -118,6 +120,7 @@
 }
 
 [data-theme="daylight"] {
+  color-scheme: light;
   --primary: #0c0c09;
   --secondary: #312c85;
   --brand: #0c0c09;
@@ -166,6 +169,7 @@
 }
 
 [data-theme="signal"] {
+  color-scheme: dark;
   --brand: #6fcf97;
   --brand-2: #6fcf97;
   --brand-ink: #b8e6c8;
@@ -4669,7 +4673,7 @@ button.chart-col:focus-visible {
 .keys-help {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 50;
   display: grid;
   place-items: center;
   background: color-mix(in srgb, var(--ink) 35%, transparent);
@@ -5310,8 +5314,8 @@ button.chart-col:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--brand);
-  color: var(--surface);
+  background: var(--brand-2);
+  color: #fff;
   border: none;
   border-radius: var(--radius-pill);
   padding: 0.62rem 1.3rem;
@@ -5325,6 +5329,7 @@ button.chart-col:focus-visible {
 }
 
 .btn-primary:hover {
+  color: #fff;
   filter: brightness(1.04);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
@@ -5512,7 +5517,7 @@ button.chart-col:focus-visible {
   left: 50%;
   bottom: 1.25rem;
   transform: translateX(-50%);
-  z-index: 40;
+  z-index: 50;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -5520,7 +5525,7 @@ button.chart-col:focus-visible {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-md);
   color: var(--ink);
   max-width: min(92vw, 28rem);
   animation: toast-in 0.32s var(--ease-out) both;
@@ -5546,6 +5551,24 @@ button.chart-col:focus-visible {
   text-transform: none;
   color: var(--muted);
   margin-bottom: 0.45rem;
+}
+
+.footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 1rem;
+  margin: 0.85rem 0 0;
+}
+
+.footer-nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.footer-nav a:hover {
+  color: var(--ink);
 }
 
 code {
@@ -5729,6 +5752,10 @@ code {
 
   .footer {
     padding-bottom: 0.5rem;
+  }
+
+  .undo-toast {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom));
   }
 
   .theme-picker button {

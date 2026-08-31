@@ -25,7 +25,7 @@ def test_landing_page_is_public_html(client):
     assert "sessionStorage is per-tab" not in body
     assert body.count("Till min översikt") == 2
     assert body.count("Skapa konto") == 2
-    assert "Tre flikar" in body
+    assert "Efter inloggning" in body
     assert "Öppna appen" not in body
     assert 'rel="canonical"' in body
     assert 'property="og:image"' in body

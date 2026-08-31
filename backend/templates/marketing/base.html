@@ -3,7 +3,7 @@
 <html lang="sv">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#f4f4f1" />
     {% block robots %}{% endblock %}
     <script src="{% static 'marketing/theme-boot.js' %}"></script>
@@ -13,9 +13,9 @@
       content="{% block meta_description %}Håll koll på jobbansökningar utan Excel. Platsbanken, påminnelser och export när du vill.{% endblock %}"
     />
     <link rel="canonical" href="{% block canonical %}{{ canonical_url }}{% endblock %}" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png?v=2" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="sv_SE" />
     <meta property="og:site_name" content="Jobbdjungeln" />
@@ -47,7 +47,7 @@
         <a class="marketing-brand" href="{{ home_url|default:'/' }}" aria-label="Jobbdjungeln, till startsidan">
           <img
             class="marketing-logo-img"
-            src="{% static 'marketing/favicon.svg' %}"
+            src="{% static 'marketing/favicon.svg' %}?v=2"
             width="36"
             height="36"
             alt=""
@@ -89,10 +89,10 @@
           <a href="{{ app_url }}">Logga in</a>
         </nav>
         <div class="theme-picker" aria-label="Visuellt tema">
-          <button type="button" data-theme="system">System</button>
-          <button type="button" data-theme="command">Command</button>
-          <button type="button" data-theme="daylight">Daylight</button>
-          <button type="button" data-theme="signal">Signal</button>
+          <button type="button" data-theme="system" aria-pressed="false">System</button>
+          <button type="button" data-theme="command" aria-pressed="false">Command</button>
+          <button type="button" data-theme="daylight" aria-pressed="false">Daylight</button>
+          <button type="button" data-theme="signal" aria-pressed="false">Signal</button>
         </div>
       </footer>
     </div>
