@@ -186,17 +186,32 @@ if not DEBUG:
     SECURE_REFERRER_POLICY = "same-origin"
 
 CSRF_TRUSTED_ORIGINS = [
-    origin
+    origin.strip()
     for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin
+    if origin.strip()
 ]
+
+
+def _trust_public_host(host: str) -> None:
+    host = host.strip().lower()
+    if not host:
+        return
+    if host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
+    origin = f"https://{host}"
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
+
 
 # Render injects the public hostname; trust it automatically so the
 # service works even if the subdomain gets a suffix.
 RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 if RENDER_HOST:
-    ALLOWED_HOSTS.append(RENDER_HOST)
-    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOST}")
+    _trust_public_host(RENDER_HOST)
+
+# Custom domain on the same Render service. Keep the onrender hostname
+# (via RENDER_EXTERNAL_HOSTNAME) as a working alias.
+_trust_public_host("jobbdjungeln.obackman.se")
 
 # Default primary key field type
 

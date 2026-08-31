@@ -32,6 +32,13 @@ def test_resolve_frontend_url(monkeypatch, frontend_url, render_host, expected):
     assert resolve_frontend_url() == expected
 
 
+def test_custom_domain_is_trusted():
+    from django.conf import settings
+
+    assert "jobbdjungeln.obackman.se" in settings.ALLOWED_HOSTS
+    assert "https://jobbdjungeln.obackman.se" in settings.CSRF_TRUSTED_ORIGINS
+
+
 def test_public_origin_parts():
     assert public_origin_parts("") == ("", "")
     assert public_origin_parts("https://jobbdjungeln.se") == (
