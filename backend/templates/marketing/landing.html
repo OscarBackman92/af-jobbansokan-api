@@ -37,11 +37,6 @@
         <li>Ser vilka krav i annonsen som finns i CV:t — inte bara en procentsiffra</li>
         <li>Platsbanken inbyggt — spara jobb du vill söka</li>
       </ul>
-      <p class="hero-cta hero-cta--card" data-session-cta>
-        <a class="btn-primary" href="{{ app_url }}" data-guest-cta>Logga in</a>
-        <a class="btn-secondary" href="{{ app_url }}" data-guest-cta>Skapa konto</a>
-        <a class="btn-primary" href="/app/?tab=dash" data-authed-cta hidden>Till min översikt</a>
-      </p>
       <p class="hero-note muted" style="margin-top: 1rem; margin-bottom: 0">
         Inte en rekryteringssajt. Bara din egen översikt.
       </p>
@@ -117,11 +112,10 @@
   </section>
 
   <section class="marketing-section marketing-cta">
-    <h2>Kom igång gratis</h2>
+    <h2>Gratis, utan annonser</h2>
     <p class="lede">
-      Konto tar en minut. Första gången du loggar in finns en kort förklaring under
-      Ansökningar. <a href="{{ privacy_url }}">Integritetspolicy</a> beskriver hur
-      data hanteras.
+      Konto tar en minut. <a href="{{ privacy_url }}">Integritetspolicy</a>
+      beskriver hur data hanteras.
     </p>
     <p class="hero-cta" data-session-cta>
       <a class="btn-primary" href="{{ app_url }}" data-guest-cta>Skapa konto</a>
@@ -129,9 +123,5 @@
     </p>
   </section>
 </main>
-{#
-  sessionStorage is per-tab: opening "/" in a new tab shows guest CTAs even
-  if another tab is signed in. That is intentional — no auto-redirect from "/".
-#}
 <script src="{% static 'marketing/session-cta.js' %}"></script>
 {% endblock %}

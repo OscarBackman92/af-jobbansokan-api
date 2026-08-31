@@ -74,6 +74,12 @@
   box-sizing: border-box;
 }
 
+/* Class display rules (e.g. .btn-primary { display: inline-flex }) must
+   not un-hide elements that use the HTML hidden attribute. */
+[hidden] {
+  display: none !important;
+}
+
 html {
   background: var(--bg);
 }
@@ -315,10 +321,6 @@ a:focus-visible {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.65rem;
-}
-
-.hero-cta--card {
-  margin: 1.25rem 0 0;
 }
 
 .btn-secondary {
