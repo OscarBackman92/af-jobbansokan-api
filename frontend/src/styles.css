@@ -351,6 +351,7 @@ a:focus-visible {
 .header .brand {
   grid-row: 1;
   grid-column: 1;
+  min-width: 2.5rem;
 }
 
 .header .tabs {
@@ -436,6 +437,8 @@ a:focus-visible {
   font-size: 0.88rem;
   min-height: 0;
   box-shadow: none;
+  background: var(--brand-2);
+  color: #fff;
 }
 
 .header-guest-nav .btn-primary:hover {
@@ -449,6 +452,7 @@ a:focus-visible {
   flex-direction: column;
   gap: 0.1rem;
   min-width: 0;
+  overflow: hidden;
 }
 
 .logo {
@@ -610,6 +614,10 @@ a:focus-visible {
     color 0.22s var(--ease-out),
     background-color 0.22s var(--ease-out),
     transform 0.22s var(--ease-out);
+}
+
+.tab-label-short {
+  display: none;
 }
 
 .tab:focus-visible {
@@ -4788,7 +4796,7 @@ button.chart-col:focus-visible {
 
 @media (max-width: 480px) {
   .dashboard-metric-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -5552,6 +5560,7 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.9rem;
 }
@@ -5606,13 +5615,125 @@ code {
     order: -1;
   }
 
-  .brand-text {
-    display: none;
-  }
-
   .header-actions .secondary.small {
     padding-left: 0.55rem;
     padding-right: 0.55rem;
+  }
+}
+
+/* Phone chrome: sticky top bar + bottom tabs so all six destinations stay on screen. */
+@media (max-width: 760px) {
+  .header-guest-nav {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    gap: 0;
+  }
+
+  .header-guest-nav a:not(.btn-primary) {
+    display: none;
+  }
+
+  .header-guest-nav .btn-primary {
+    padding: 0.5rem 0.95rem;
+    min-height: 44px;
+  }
+
+  .app:not(.app--guest) {
+    padding-top: 0;
+    padding-bottom: calc(5.25rem + env(safe-area-inset-bottom));
+  }
+
+  .app:not(.app--guest) .header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    margin: 0 0 0.85rem;
+    padding: max(0.45rem, env(safe-area-inset-top)) 0 0.55rem;
+    background: var(--bg);
+  }
+
+  .header .tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    width: 100%;
+    max-width: none;
+    justify-content: stretch;
+    gap: 0;
+    margin: 0;
+    padding: 0.2rem 0.2rem calc(0.4rem + env(safe-area-inset-bottom));
+    overflow: hidden;
+    border-radius: 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: 0 -8px 24px color-mix(in srgb, var(--ink) 8%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .tab-indicator {
+    display: none;
+  }
+
+  .tab {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.12rem;
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    padding: 0.35rem 0.12rem;
+    font-size: 0.62rem;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tab-label-full {
+    display: none;
+  }
+
+  .tab-label-short {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tab.active {
+    background: color-mix(in srgb, var(--brand-2) 18%, transparent);
+  }
+
+  .tab-count {
+    position: absolute;
+    top: 0.18rem;
+    right: 0.08rem;
+    min-width: 0.95rem;
+    margin: 0;
+    padding: 0 0.2rem;
+    font-size: 0.58rem;
+    line-height: 1.2;
+  }
+
+  .footer {
+    padding-bottom: 0.5rem;
+  }
+
+  .theme-picker button {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.74rem;
   }
 }
 

@@ -11,6 +11,7 @@ const TABS = [
   { id: "dash", label: "Översikt" },
   { id: "saved", label: "Sparade jobb" },
   { id: "applied", label: "Ansökningar" },
+  { id: "report", label: "Rapportera" },
   { id: "postings", label: "Annonser" },
   { id: "profile", label: "Profil & CV" },
 ];

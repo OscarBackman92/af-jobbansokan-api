@@ -4,12 +4,20 @@ import { login } from "./helpers.js";
 
 test.use({ viewport: { width: 393, height: 852 } });
 
-const TABS = ["Översikt", "Sparade jobb", "Ansökningar", "Annonser", "Profil & CV"];
+const TABS = [
+  "Översikt",
+  "Sparade jobb",
+  "Ansökningar",
+  "Rapportera",
+  "Annonser",
+  "Profil & CV",
+];
 
 const DEEP_LINKS = [
   { tab: "dash", label: "Översikt" },
   { tab: "saved", label: "Sparade jobb" },
   { tab: "applied", label: "Ansökningar" },
+  { tab: "report", label: "Rapportera" },
   { tab: "postings", label: "Annonser" },
   { tab: "profile", label: "Profil & CV" },
 ];
@@ -60,28 +68,36 @@ test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
 
     const metrics = await page.evaluate(() => {
       const doc = document.documentElement;
+      const nav = document.querySelector(".tabs");
       const tabs = Array.from(document.querySelectorAll(".tabs .tab"));
       const pace = document.querySelector(".pace-table");
+      const navBox = nav?.getBoundingClientRect();
       return {
         scrollWidth: doc.scrollWidth,
         clientWidth: doc.clientWidth,
         paceOverflow: pace ? pace.scrollWidth - pace.clientWidth : 0,
-        tabBoxes: tabs.map((tab) => {
-          const box = tab.getBoundingClientRect();
-          return {
-            label: tab.textContent?.trim() || "",
-            width: box.width,
-            scrollWidth: tab.scrollWidth,
-          };
-        }),
+        tabCount: tabs.length,
+        clippedTabs: tabs
+          .filter((tab) => {
+            if (!(navBox instanceof DOMRect) || !(tab instanceof HTMLElement)) {
+              return true;
+            }
+            const box = tab.getBoundingClientRect();
+            return (
+              box.left < navBox.left - 1 ||
+              box.right > navBox.right + 1 ||
+              box.top < navBox.top - 1 ||
+              box.bottom > navBox.bottom + 1
+            );
+          })
+          .map((tab) => tab.getAttribute("aria-label") || tab.textContent?.trim()),
       };
     });
 
     expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
     expect(metrics.paceOverflow).toBeLessThanOrEqual(2);
-    for (const tab of metrics.tabBoxes) {
-      expect(tab.scrollWidth).toBeLessThanOrEqual(Math.ceil(tab.width) + 1);
-    }
+    expect(metrics.tabCount).toBe(6);
+    expect(metrics.clippedTabs, JSON.stringify(metrics.clippedTabs)).toEqual([]);
     await assertActiveTabFullyVisible(page);
     await assertNoRealMainOverflow(page);
   }

@@ -6,6 +6,7 @@ const TABS = [
   { id: "dash", label: "Översikt" },
   { id: "saved", label: "Sparade jobb" },
   { id: "applied", label: "Ansökningar" },
+  { id: "report", label: "Rapportera" },
   { id: "postings", label: "Annonser" },
   { id: "profile", label: "Profil & CV" },
 ];
@@ -47,7 +48,7 @@ for (const viewport of DESKTOP_VIEWPORTS) {
   test.describe(`header tabs @ ${viewport.width}x${viewport.height}`, () => {
     test.use({ viewport });
 
-    test("all five tabs visible on every deep link", async ({ page }) => {
+    test("all six tabs visible on every deep link", async ({ page }) => {
       await login(page);
 
       for (const tab of TABS) {

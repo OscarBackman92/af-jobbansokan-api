@@ -32,12 +32,12 @@ function readVerifyKey() {
 }
 
 const TABS = [
-  { id: "dash", label: "Översikt" },
-  { id: "saved", label: "Sparade jobb" },
-  { id: "applied", label: "Ansökningar" },
-  { id: "report", label: "Rapportera" },
-  { id: "postings", label: "Annonser" },
-  { id: "profile", label: "Profil & CV" },
+  { id: "dash", label: "Översikt", short: "Hem" },
+  { id: "saved", label: "Sparade jobb", short: "Sparat" },
+  { id: "applied", label: "Ansökningar", short: "Sökt" },
+  { id: "report", label: "Rapportera", short: "Rapport" },
+  { id: "postings", label: "Annonser", short: "Annonser" },
+  { id: "profile", label: "Profil & CV", short: "Profil" },
 ];
 
 const TAB_META = {
@@ -459,6 +459,7 @@ export default function App() {
                 key={t.id}
                 href={`/app/?tab=${t.id}`}
                 className={tab === t.id ? "tab active" : "tab"}
+                aria-label={t.label}
                 onClick={(event) => {
                   if (
                     event.metaKey ||
@@ -473,12 +474,19 @@ export default function App() {
                 }}
                 aria-current={tab === t.id ? "page" : undefined}
               >
-                {t.label}
+                <span className="tab-label-full">{t.label}</span>
+                <span className="tab-label-short" aria-hidden="true">
+                  {t.short}
+                </span>
                 {t.id === "saved" && applications && (
-                  <span className="tab-count">{savedCount}</span>
+                  <span className="tab-count" aria-hidden="true">
+                    {savedCount}
+                  </span>
                 )}
                 {t.id === "applied" && applications && (
-                  <span className="tab-count">{appliedCount}</span>
+                  <span className="tab-count" aria-hidden="true">
+                    {appliedCount}
+                  </span>
                 )}
               </a>
             ))}
