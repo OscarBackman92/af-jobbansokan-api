@@ -54,7 +54,6 @@ function PanelFallback() {
 }
 
 const THEMES = [
-  { id: "system", label: "System" },
   { id: "command", label: "Command" },
   { id: "daylight", label: "Daylight" },
   { id: "signal", label: "Signal" },
@@ -65,7 +64,7 @@ function normalizeTab(id) {
   return id;
 }
 
-function resolveTheme(id) {
+function migrateStoredTheme(id) {
   if (id === "system") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "command"
@@ -81,11 +80,10 @@ const THEME_COLOR = {
 };
 
 function applyResolvedTheme(id) {
-  const resolved = resolveTheme(id);
-  document.documentElement.dataset.theme = resolved;
+  document.documentElement.dataset.theme = id;
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) {
-    meta.setAttribute("content", THEME_COLOR[resolved] || THEME_COLOR.daylight);
+    meta.setAttribute("content", THEME_COLOR[id] || THEME_COLOR.daylight);
   }
 }
 
@@ -107,7 +105,7 @@ function stripAuthQueryParams() {
 }
 
 function readTheme() {
-  const stored = localStorage.getItem("theme");
+  const stored = migrateStoredTheme(localStorage.getItem("theme"));
   if (stored && THEMES.some((theme) => theme.id === stored)) {
     return stored;
   }
@@ -251,15 +249,6 @@ export default function App() {
   useEffect(() => {
     applyResolvedTheme(theme);
     localStorage.setItem("theme", theme);
-
-    if (theme !== "system") return;
-
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = () => {
-      applyResolvedTheme("system");
-    };
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
   }, [theme]);
 
   useEffect(() => {
