@@ -55,6 +55,10 @@ def test_create_with_platsbanken_snapshot(api_client, user):
             "apply_url": "https://tillvaxtverket.se/ledigajobb?rmjob=2046",
             "ad_description": "Du driver webbstrategi.",
             "source_job_id": "31258362",
+            "source": "platsbanken",
+            "occupation_concept_id": "BK8D_hZe_dtk",
+            "occupation_label": "Ekonomiassistent",
+            "working_hours_type": "Heltid",
             "status": "wishlist",
         },
     )
@@ -63,6 +67,9 @@ def test_create_with_platsbanken_snapshot(api_client, user):
     assert body["apply_url"] == "https://tillvaxtverket.se/ledigajobb?rmjob=2046"
     assert body["ad_description"] == "Du driver webbstrategi."
     assert body["source_job_id"] == "31258362"
+    assert body["occupation_concept_id"] == "BK8D_hZe_dtk"
+    assert body["occupation_label"] == "Ekonomiassistent"
+    assert body["working_hours_type"] == "Heltid"
 
 
 def test_create_writes_match_snapshot(api_client, user):
@@ -70,9 +77,7 @@ def test_create_writes_match_snapshot(api_client, user):
 
     Resume.objects.create(user=user, skills=["Python", "Django"])
     api_client.force_authenticate(user)
-    long_desc = (
-        "Krav\n- Python\n- Django\n- SQL\n- Excel\n" + ("Beskrivning. " * 40)
-    )
+    long_desc = "Krav\n- Python\n- Django\n- SQL\n- Excel\n" + ("Beskrivning. " * 40)
     response = api_client.post(
         URL,
         {
@@ -94,9 +99,7 @@ def test_status_applied_rewrites_match_snapshot(api_client, user):
     from core.models import Resume
 
     Resume.objects.create(user=user, skills=["Python", "Django", "SQL", "Excel"])
-    long_desc = (
-        "Krav\n- Python\n- Django\n- SQL\n- Excel\n" + ("Beskrivning. " * 40)
-    )
+    long_desc = "Krav\n- Python\n- Django\n- SQL\n- Excel\n" + ("Beskrivning. " * 40)
     app = JobApplication.objects.create(
         owner=user,
         company="Acme",

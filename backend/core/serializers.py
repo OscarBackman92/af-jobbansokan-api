@@ -182,6 +182,9 @@ class JobApplicationListSerializer(_LifecycleMixin, serializers.ModelSerializer)
             "is_stale",
             "followup_overdue",
             "employer_key",
+            "occupation_concept_id",
+            "occupation_label",
+            "working_hours_type",
             "intent",
             "applied_at",
             "deadline",
@@ -277,6 +280,10 @@ class JobApplicationSerializer(_LifecycleMixin, serializers.ModelSerializer):
             "followup_overdue",
             "occupation_concept_id",
             "occupation_label",
+            "occupation_group_label",
+            "working_hours_type",
+            "scope_of_work_min",
+            "scope_of_work_max",
             "report_excluded",
             "report_note",
             "intent",
@@ -315,6 +322,18 @@ class JobApplicationSerializer(_LifecycleMixin, serializers.ModelSerializer):
         extra_kwargs = {
             "company": {"required": False, "allow_blank": True},
             "title": {"required": False, "allow_blank": True},
+            "occupation_group_label": {
+                "required": False,
+                "allow_blank": True,
+                "allow_null": True,
+            },
+            "working_hours_type": {
+                "required": False,
+                "allow_blank": True,
+                "allow_null": True,
+            },
+            "scope_of_work_min": {"required": False, "allow_null": True},
+            "scope_of_work_max": {"required": False, "allow_null": True},
         }
 
     def get_days_until_apply_by(self, obj):

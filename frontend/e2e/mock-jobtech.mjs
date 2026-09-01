@@ -16,6 +16,16 @@ const SEARCH_PAYLOAD = {
       publication_date: "2026-06-20T08:00:00",
       application_deadline: "2026-08-15T23:59:59",
       description: { text: "Vi arbetar med Python och Django i molnet." },
+      occupation: {
+        concept_id: "DJh5_yyF_hEM",
+        label: "Mjukvaru- och systemutvecklare",
+      },
+      occupation_group: {
+        concept_id: "DJh5_yyF_hEM",
+        label: "Mjukvaru- och systemutvecklare m.fl.",
+      },
+      working_hours_type: { concept_id: "6YE1_gAC_R2G", label: "Heltid" },
+      scope_of_work: { min: 100, max: 100 },
       webpage_url: "https://arbetsformedlingen.se/platsbanken/annonser/9001",
       remote_work: true,
     },
@@ -49,6 +59,19 @@ const server = createServer((req, res) => {
     // Shape accepted by jobtech._concepts_from_payload (plain list).
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify([]));
+    return;
+  }
+  if (url.pathname === "/autocomplete") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify([
+        {
+          "taxonomy/id": "DJh5_yyF_hEM",
+          "taxonomy/type": "occupation-name",
+          "taxonomy/preferred-label": "Mjukvaru- och systemutvecklare",
+        },
+      ])
+    );
     return;
   }
   res.writeHead(404, { "Content-Type": "text/plain" });

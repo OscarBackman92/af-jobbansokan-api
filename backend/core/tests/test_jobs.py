@@ -26,6 +26,16 @@ SAMPLE_PAYLOAD = {
             "description": {"text": "Vi arbetar med Python och Django."},
             "webpage_url": "https://arbetsformedlingen.se/annons/1001",
             "remote_work": True,
+            "occupation": {
+                "concept_id": "DJh5_yyF_hEM",
+                "label": "Mjukvaru- och systemutvecklare",
+            },
+            "occupation_group": {
+                "concept_id": "DJh5_yyF_hEM",
+                "label": "Mjukvaru- och systemutvecklare m.fl.",
+            },
+            "working_hours_type": {"concept_id": "6YE1_gAC_R2G", "label": "Heltid"},
+            "scope_of_work": {"min": 100, "max": 100},
         }
     ],
 }
@@ -34,8 +44,7 @@ SAMPLE_PAYLOAD = {
 HIGH_CONFIDENCE_AD = (
     "Krav: Python. Krav: Django. Krav: SQL. Krav: Docker.\n"
     "Vi söker en kollega som utvecklar tjänster, skriver tester och "
-    "samarbetar i teamet. "
-    * 6
+    "samarbetar i teamet. " * 6
 )
 
 
@@ -51,11 +60,13 @@ def _hit(job_id, headline, published, description=HIGH_CONFIDENCE_AD):
 
 
 class FakeResponse:
-    def __init__(self, payload):
+    def __init__(self, payload, status_code=200):
         self._payload = payload
+        self.status_code = status_code
 
     def raise_for_status(self):
-        pass
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"{self.status_code}")
 
     def json(self):
         return self._payload
@@ -186,6 +197,9 @@ def test_search_maps_hits(api_client, user, mock_jobtech):
     assert job["application_deadline"] == "2026-07-10"
     assert job["remote"] is True
     assert job["application_url"] == ""
+    assert job["occupation_concept_id"] == "DJh5_yyF_hEM"
+    assert job["occupation_label"] == "Mjukvaru- och systemutvecklare"
+    assert job["working_hours_type"] == "Heltid"
     assert mock_jobtech[0]["q"] == "python"
 
 
@@ -230,6 +244,98 @@ def test_hit_to_job_omits_application_url_when_via_af():
         },
     }
     assert jobtech.hit_to_job(hit)["application_url"] == ""
+
+
+OCCUPATION_HIT = {
+    "id": "31419416",
+    "headline": "Vi söker en ekonomiassistent till teamet",
+    "employer": {
+        "name": "Acme AB",
+        "workplace": "Stockholm",
+        "organization_number": "1",
+    },
+    "workplace_address": {
+        "municipality": "Stockholm",
+        "city": "Kista",
+        "region": "Stockholms län",
+    },
+    "occupation": {
+        "concept_id": "BK8D_hZe_dtk",
+        "label": "Ekonomiassistent",
+        "legacy_ams_taxonomy_id": "6024",
+    },
+    "occupation_group": {
+        "concept_id": "ij8k_EwC_zyB",
+        "label": "Ekonomiassistenter m.fl.",
+    },
+    "working_hours_type": {"concept_id": "6YE1_gAC_R2G", "label": "Heltid"},
+    "scope_of_work": {"min": 100, "max": 100},
+    "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31419416",
+    "description": {"text": "Du hanterar löpande bokföring."},
+}
+
+
+def test_hit_to_job_maps_occupation_object_not_headline():
+    job = jobtech.hit_to_job(OCCUPATION_HIT)
+    assert job["occupation_concept_id"] == "BK8D_hZe_dtk"
+    assert job["occupation_label"] == "Ekonomiassistent"
+    assert job["occupation_group_label"] == "Ekonomiassistenter m.fl."
+    assert job["working_hours_type"] == "Heltid"
+    assert job["scope_of_work_min"] == 100
+    assert job["scope_of_work_max"] == 100
+    assert job["location"] == "Stockholm"
+    assert job["title"] == "Vi söker en ekonomiassistent till teamet"
+
+
+def test_hit_to_job_does_not_guess_occupation_from_headline():
+    hit = {
+        "id": "1",
+        "headline": "Ekonomiassistent",
+        "employer": {"name": "Acme"},
+        "workplace_address": {"city": "Uppsala"},
+        "description": {"text": ""},
+        "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/1",
+    }
+    job = jobtech.hit_to_job(hit)
+    assert job["occupation_concept_id"] == ""
+    assert job["occupation_label"] == ""
+    assert job["occupation_group_label"] is None
+    assert job["working_hours_type"] is None
+    assert job["scope_of_work_min"] is None
+    assert job["location"] == "Uppsala"
+
+
+def test_hit_to_job_accepts_occupation_list_payload():
+    hit = {
+        **OCCUPATION_HIT,
+        "occupation": [OCCUPATION_HIT["occupation"]],
+    }
+    job = jobtech.hit_to_job(hit)
+    assert job["occupation_concept_id"] == "BK8D_hZe_dtk"
+    assert job["occupation_label"] == "Ekonomiassistent"
+
+
+def test_suggest_occupation_names_uses_autocomplete(monkeypatch):
+    calls = []
+
+    def fake_get(url, params=None, timeout=None):
+        calls.append({"url": url, "params": dict(params or {})})
+        return FakeResponse(
+            [
+                {
+                    "taxonomy/id": "KVVN_sqH_Wpz",
+                    "taxonomy/type": "occupation-name",
+                    "taxonomy/preferred-label": "Inköpare",
+                }
+            ]
+        )
+
+    monkeypatch.setattr(jobtech.requests, "get", fake_get)
+    results = jobtech.suggest_occupation_names("inköpare")
+    assert results == [{"id": "KVVN_sqH_Wpz", "label": "Inköpare"}]
+    assert "suggesters/autocomplete" in calls[0]["url"]
+    assert calls[0]["params"]["query-string"] == "inköpare"
+    assert calls[0]["params"]["type"] == "occupation-name"
 
 
 def test_job_detail_endpoint(api_client, user, monkeypatch):
@@ -362,10 +468,11 @@ def test_search_adds_cv_match(api_client, user, mock_jobtech):
 
 
 def test_search_match_cv_filter(api_client, user, monkeypatch):
-    Resume.objects.create(
-        user=user, skills=["Python", "Django", "SQL", "Docker"]
-    )
-    payload = {"total": {"value": 1}, "hits": [_hit("1001", "Python", "2026-06-10T08:00:00")]}
+    Resume.objects.create(user=user, skills=["Python", "Django", "SQL", "Docker"])
+    payload = {
+        "total": {"value": 1},
+        "hits": [_hit("1001", "Python", "2026-06-10T08:00:00")],
+    }
 
     def fake_get(url, params=None, timeout=None):
         return FakeResponse(payload)
@@ -415,9 +522,7 @@ def test_search_min_match_returns_200(api_client, user, mock_jobtech):
 
 
 def test_min_match_newest_sorts_by_publication_date(api_client, user, monkeypatch):
-    Resume.objects.create(
-        user=user, skills=["Python", "Django", "SQL", "Docker"]
-    )
+    Resume.objects.create(user=user, skills=["Python", "Django", "SQL", "Docker"])
     payload = {
         "total": {"value": 2},
         "hits": [
@@ -479,7 +584,9 @@ def test_passes_cv_match_requires_score_at_threshold():
     assert _passes_cv_match({"score": 59, "must_covered": 3, "must_total": 5}) is False
     # 50 % with several hits used to pass via min_terms=2.
     assert _passes_cv_match({"score": 50, "must_covered": 2, "must_total": 4}) is False
-    assert _passes_cv_match({"score": None, "must_covered": 5, "must_total": 5}) is False
+    assert (
+        _passes_cv_match({"score": None, "must_covered": 5, "must_total": 5}) is False
+    )
     assert _passes_cv_match({"count": 3, "total": 24}) is False
     assert _passes_cv_match({}) is False
     assert _passes_cv_match(None) is False
@@ -574,14 +681,10 @@ def test_cached_search_still_applies_cv_match(api_client, user, mock_jobtech):
 def test_min_match_scan_is_deterministic_and_reports_upstream_total(
     api_client, user, monkeypatch
 ):
-    Resume.objects.create(
-        user=user, skills=["Python", "Django", "SQL", "Docker"]
-    )
+    Resume.objects.create(user=user, skills=["Python", "Django", "SQL", "Docker"])
     monkeypatch.setattr(views, "MATCH_CV_SCAN_LIMIT", 25)
     monkeypatch.setattr(views, "MATCH_CV_BATCH_SIZE", 25)
-    hits = [
-        _hit(f"job-{i}", "Python", "2026-08-18T08:00:00") for i in range(25)
-    ]
+    hits = [_hit(f"job-{i}", "Python", "2026-08-18T08:00:00") for i in range(25)]
     payload = {"total": {"value": 80}, "hits": hits}
 
     def fake_get(url, params=None, timeout=None):
@@ -589,12 +692,8 @@ def test_min_match_scan_is_deterministic_and_reports_upstream_total(
 
     monkeypatch.setattr(jobtech.requests, "get", fake_get)
     api_client.force_authenticate(user)
-    first = api_client.get(
-        SEARCH_URL, {"q": "python", "min_match": "60"}
-    ).json()
-    second = api_client.get(
-        SEARCH_URL, {"q": "python", "min_match": "60"}
-    ).json()
+    first = api_client.get(SEARCH_URL, {"q": "python", "min_match": "60"}).json()
+    second = api_client.get(SEARCH_URL, {"q": "python", "min_match": "60"}).json()
     assert first["match_cv_scanned"] == 25
     assert first["match_cv_upstream_total"] == 80
     assert first["truncated"] is True

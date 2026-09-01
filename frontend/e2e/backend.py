@@ -30,6 +30,9 @@ os.environ["DB_NAME"] = str(DB_PATH)
 os.environ["EMAIL_FILE_PATH"] = str(MAIL_DIR)
 os.environ["JOBTECH_SEARCH_URL"] = f"{MOCK_JOBTECH}/search"
 os.environ["JOBTECH_TAXONOMY_URL"] = f"{MOCK_JOBTECH}/taxonomy"
+os.environ["JOBTECH_TAXONOMY_AUTOCOMPLETE_URL"] = f"{MOCK_JOBTECH}/autocomplete"
+os.environ["JOBTECH_HISTORICAL_AD_URL"] = f"{MOCK_JOBTECH}/ad"
+os.environ["JOBTECH_AD_URL"] = f"{MOCK_JOBTECH}/ad"
 os.environ["FRONTEND_URL"] = FRONTEND_ORIGIN
 # The suite logs in once per spec from the same IP; the production rate
 # (5/min) would throttle legitimate test traffic.

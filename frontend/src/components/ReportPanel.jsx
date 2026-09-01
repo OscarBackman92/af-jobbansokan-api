@@ -22,40 +22,54 @@ const STATUS_LABEL = {
   forsenad: "Försenad",
 };
 
-function clipboardLine(row) {
-  return [row.datum, row.yrke, row.arbetsgivare, row.ort, row.lank]
+export function clipboardLine(row) {
+  return [
+    row.yrke,
+    row.arbetsgivare,
+    row.omfattning,
+    row.ort,
+    row.svarade,
+    row.datum,
+  ]
     .map((part) => part || "")
     .join("\t");
 }
 
+export function answeredAd(job) {
+  return job.source === "platsbanken" ? "Ja" : "Nej";
+}
+
 function jobToClip(job) {
   return clipboardLine({
-    datum: job.applied_at,
     yrke: job.occupation_label,
     arbetsgivare: job.company,
+    omfattning: job.working_hours_type,
     ort: job.location,
-    lank: job.ad_url,
+    svarade: answeredAd(job),
+    datum: job.applied_at,
   });
 }
 
 function eventToClip(event, jobsById) {
   const job = jobsById.get(event.application_id) || {};
   return clipboardLine({
-    datum: event.occurred_at,
     yrke: job.occupation_label,
     arbetsgivare: job.company,
+    omfattning: job.working_hours_type,
     ort: job.location,
-    lank: job.ad_url,
+    svarade: answeredAd(job),
+    datum: event.occurred_at,
   });
 }
 
 function activityToClip(activity) {
   return clipboardLine({
-    datum: activity.occurred_on,
     yrke: "",
     arbetsgivare: activity.organisation,
+    omfattning: "",
     ort: "",
-    lank: "",
+    svarade: "",
+    datum: activity.occurred_on,
   });
 }
 
@@ -318,6 +332,7 @@ export default function ReportPanel({
                 <tr>
                   <th>Datum</th>
                   <th>Yrke</th>
+                  <th>Omfattning</th>
                   <th>Arbetsgivare</th>
                   <th>Ort</th>
                   <th />
@@ -328,19 +343,23 @@ export default function ReportPanel({
                   <tr
                     key={job.id}
                     className={
-                      job.occupation_label ? undefined : "report-row--warn"
+                      job.occupation_concept_id ? undefined : "report-row--warn"
                     }
                   >
                     <td>{job.applied_at || "—"}</td>
                     <td>
-                      {job.occupation_label || (
+                      {job.occupation_concept_id ? (
+                        job.occupation_label
+                      ) : (
                         <OccupationPicker
                           label=""
-                          value=""
+                          value={job.occupation_label || ""}
+                          conceptId={job.occupation_concept_id || ""}
                           onChange={(fields) => saveOccupation(job, fields)}
                         />
                       )}
                     </td>
+                    <td>{job.working_hours_type || "—"}</td>
                     <td>
                       {job.company}
                       <div className="muted">{job.title}</div>

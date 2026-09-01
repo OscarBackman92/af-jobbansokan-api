@@ -182,7 +182,9 @@ def serialize_period(
         ),
         "job_count": job_count,
         "activity_count": activity_count,
-        "missing_occupation_count": included_jobs.filter(occupation_label="").count(),
+        "missing_occupation_count": included_jobs.filter(
+            occupation_concept_id=""
+        ).count(),
         "note": period.note,
     }
     payload["banner"] = banner_text(
@@ -202,6 +204,8 @@ def serialize_period(
         "location",
         "occupation_label",
         "occupation_concept_id",
+        "working_hours_type",
+        "source",
         "ad_url",
         "status",
         "report_excluded",
@@ -295,16 +299,24 @@ def get_or_create_period(user, year: int, month: int) -> ReportPeriod:
 
 
 REPORT_COLUMNS = [
-    "Datum",
-    "Typ",
-    "Yrke",
-    "Arbetsgivare",
+    "Yrkesroll",
+    "Arbetsgivaren",
+    "Omfattning",
     "Ort",
-    "Länk",
-    "Anteckning",
+    "Svarade på annons",
+    "Datum",
 ]
 
 _ACTIVITY_LABELS = dict(Activity.TYPE_CHOICES)
+
+
+def answered_ad_label(source: str) -> str:
+    """AF form: 'Svarade du på en annons?' — Ja only for Platsbanken ads."""
+    return "Ja" if source == JobApplication.SOURCE_PLATSBANKEN else "Nej"
+
+
+def missing_occupation(job) -> bool:
+    return not bool(getattr(job, "occupation_concept_id", ""))
 
 
 def report_rows(period) -> list[dict]:
@@ -322,10 +334,12 @@ def report_rows(period) -> list[dict]:
                 "typ": "Sökt jobb",
                 "yrke": job.occupation_label,
                 "arbetsgivare": job.company,
+                "omfattning": job.working_hours_type or "",
                 "ort": job.location,
+                "svarade": answered_ad_label(job.source),
                 "lank": job.ad_url,
                 "anteckning": job.title,
-                "missing_occupation": not bool(job.occupation_label),
+                "missing_occupation": missing_occupation(job),
             }
         )
     events = _reportable_event_qs(period.user, period.year, period.month)
@@ -339,7 +353,9 @@ def report_rows(period) -> list[dict]:
                 "typ": "Intervju" if event.event_type == "intervju" else "Händelse",
                 "yrke": app.occupation_label,
                 "arbetsgivare": app.company,
+                "omfattning": app.working_hours_type or "",
                 "ort": app.location,
+                "svarade": answered_ad_label(app.source),
                 "lank": app.ad_url,
                 "anteckning": event.note,
                 "missing_occupation": False,
@@ -357,7 +373,9 @@ def report_rows(period) -> list[dict]:
                 "typ": _ACTIVITY_LABELS.get(activity.type, activity.type),
                 "yrke": "",
                 "arbetsgivare": activity.organisation,
+                "omfattning": "",
                 "ort": "",
+                "svarade": "",
                 "lank": "",
                 "anteckning": activity.title,
                 "missing_occupation": False,
@@ -367,14 +385,15 @@ def report_rows(period) -> list[dict]:
 
 
 def clipboard_line(row: dict) -> str:
-    """AF form field order: date, occupation, employer, location, link."""
+    """AF form field order: occupation, employer, hours, location, answered, date."""
     return "\t".join(
         [
-            str(row.get("datum") or ""),
             str(row.get("yrke") or ""),
             str(row.get("arbetsgivare") or ""),
+            str(row.get("omfattning") or ""),
             str(row.get("ort") or ""),
-            str(row.get("lank") or ""),
+            str(row.get("svarade") or ""),
+            str(row.get("datum") or ""),
         ]
     )
 
@@ -386,13 +405,12 @@ def export_csv_bytes(period) -> bytes:
     for row in report_rows(period):
         writer.writerow(
             [
-                sanitize_csv_cell(row["datum"]),
-                sanitize_csv_cell(row["typ"]),
                 sanitize_csv_cell(row["yrke"]),
                 sanitize_csv_cell(row["arbetsgivare"]),
+                sanitize_csv_cell(row["omfattning"]),
                 sanitize_csv_cell(row["ort"]),
-                sanitize_csv_cell(row["lank"]),
-                sanitize_csv_cell(row["anteckning"]),
+                sanitize_csv_cell(row["svarade"]),
+                sanitize_csv_cell(row["datum"]),
             ]
         )
     return ("\ufeff" + buf.getvalue()).encode("utf-8")

@@ -2,7 +2,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { request } from "../api.js";
-import ReportPanel, { selectPeriodKey } from "./ReportPanel.jsx";
+import ReportPanel, {
+  answeredAd,
+  clipboardLine,
+  selectPeriodKey,
+} from "./ReportPanel.jsx";
 
 vi.mock("../api.js", () => ({
   request: vi.fn(() =>
@@ -40,6 +44,26 @@ describe("selectPeriodKey", () => {
 
   it("returns empty when there are no periods", () => {
     expect(selectPeriodKey([], "", "")).toBe("");
+  });
+});
+
+describe("AF clipboard fields", () => {
+  it("orders occupation, employer, hours, location, answered, date", () => {
+    expect(
+      clipboardLine({
+        yrke: "Ekonomiassistent",
+        arbetsgivare: "Acme AB",
+        omfattning: "Heltid",
+        ort: "Stockholm",
+        svarade: "Ja",
+        datum: "2026-08-05",
+      })
+    ).toBe("Ekonomiassistent\tAcme AB\tHeltid\tStockholm\tJa\t2026-08-05");
+  });
+
+  it("marks Platsbanken rows as answered ads", () => {
+    expect(answeredAd({ source: "platsbanken" })).toBe("Ja");
+    expect(answeredAd({ source: "linkedin" })).toBe("Nej");
   });
 });
 

@@ -21,9 +21,16 @@ JOBTECH_SEARCH_URL = os.getenv(
     "JOBTECH_SEARCH_URL", "https://jobsearch.api.jobtechdev.se/search"
 )
 JOBTECH_AD_URL = os.getenv("JOBTECH_AD_URL", "https://jobsearch.api.jobtechdev.se/ad")
+JOBTECH_HISTORICAL_AD_URL = os.getenv(
+    "JOBTECH_HISTORICAL_AD_URL", "https://historical.api.jobtechdev.se/ad"
+)
 JOBTECH_TAXONOMY_CONCEPTS_URL = os.getenv(
     "JOBTECH_TAXONOMY_URL",
     "https://taxonomy.api.jobtechdev.se/v1/taxonomy/main/concepts",
+)
+JOBTECH_TAXONOMY_AUTOCOMPLETE_URL = os.getenv(
+    "JOBTECH_TAXONOMY_AUTOCOMPLETE_URL",
+    "https://taxonomy.api.jobtechdev.se/v1/taxonomy/suggesters/autocomplete",
 )
 MAX_LIMIT = 50
 
@@ -211,19 +218,26 @@ def _taxonomy_concepts(params: dict[str, str]) -> list[dict]:
 def suggest_occupation_names(query: str, *, limit: int = 8) -> list[dict[str, str]]:
     """AF activity-report occupations are JobTech ``occupation-name`` concepts.
 
-    Job ads already carry that type on ``occupation.concept_id`` / ``label``,
-    so the same ids can be stored on manually added jobs. No mapping table.
+    Uses the same autocomplete suggester as AF's form. Job ads already
+    carry that type on ``occupation.concept_id`` / ``label``.
     """
     text = (query or "").strip()
     if len(text) < 2:
         return []
-    concepts = _taxonomy_concepts(
-        {
-            "type": "occupation-name",
-            "text": text,
-            "limit": str(max(1, min(limit, 20))),
-        }
-    )
+    try:
+        response = requests.get(
+            JOBTECH_TAXONOMY_AUTOCOMPLETE_URL,
+            params={
+                "query-string": text,
+                "type": "occupation-name",
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except requests.RequestException as exc:
+        raise JobTechError(str(exc)) from exc
+    concepts = _concepts_from_payload(payload)
     options: list[dict[str, str]] = []
     seen: set[str] = set()
     for concept in concepts:
@@ -357,17 +371,72 @@ def _application_url(hit: dict) -> str:
     return ""
 
 
+def _concept_dict(value) -> dict:
+    """JobTech returns occupation concepts as objects; tolerate a one-item list."""
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, list) and value and isinstance(value[0], dict):
+        return value[0]
+    return {}
+
+
+def _optional_int(value) -> int | None:
+    if value is None or value is False:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def occupation_snapshot(hit: dict) -> dict:
+    """Map JobTech occupation/hours fields. Never derive them from headline."""
+    occupation = _concept_dict(hit.get("occupation"))
+    group = _concept_dict(hit.get("occupation_group"))
+    hours = _concept_dict(hit.get("working_hours_type"))
+    scope = hit.get("scope_of_work")
+    scope = scope if isinstance(scope, dict) else {}
+    return {
+        "occupation_concept_id": str(occupation.get("concept_id") or ""),
+        "occupation_label": occupation.get("label") or "",
+        "occupation_group_label": group.get("label") or None,
+        "working_hours_type": hours.get("label") or None,
+        "scope_of_work_min": _optional_int(scope.get("min")),
+        "scope_of_work_max": _optional_int(scope.get("max")),
+    }
+
+
+SNAPSHOT_KEYS = (
+    "occupation_concept_id",
+    "occupation_label",
+    "occupation_group_label",
+    "working_hours_type",
+    "scope_of_work_min",
+    "scope_of_work_max",
+)
+
+
+def empty_snapshot_updates(job, snapshot: dict) -> dict:
+    """Copy empty occupation fields from a mapped snapshot. Never overwrite."""
+    updates = {}
+    for key in SNAPSHOT_KEYS:
+        incoming = snapshot.get(key)
+        if incoming in (None, ""):
+            continue
+        current = getattr(job, key, None)
+        if current in (None, ""):
+            updates[key] = incoming
+    return updates
+
+
 def hit_to_job(hit: dict) -> dict:
     """Map a JobTech search hit to the shape the frontend consumes."""
     employer = (hit.get("employer") or {}).get("name") or ""
     workplace = hit.get("workplace_address") or {}
-    location = workplace.get("municipality") or workplace.get("region") or ""
+    location = workplace.get("municipality") or workplace.get("city") or ""
     webpage_url = (hit.get("webpage_url") or "")[:500]
     application_url = _application_url(hit)
-    occupation = hit.get("occupation") or []
-    first_occ = occupation[0] if isinstance(occupation, list) and occupation else {}
-    if not isinstance(first_occ, dict):
-        first_occ = {}
+    snapshot = occupation_snapshot(hit)
     return {
         "id": str(hit.get("id") or ""),
         "title": hit.get("headline") or "",
@@ -379,8 +448,7 @@ def hit_to_job(hit: dict) -> dict:
         "published_at": (hit.get("publication_date") or "")[:10] or None,
         "application_deadline": (hit.get("application_deadline") or "")[:10] or None,
         "remote": bool(hit.get("remote_work")),
-        "occupation_concept_id": str(first_occ.get("concept_id") or ""),
-        "occupation_label": first_occ.get("label") or "",
+        **snapshot,
     }
 
 
@@ -391,6 +459,24 @@ def fetch_ad(job_id: str) -> dict:
         raise JobTechError("invalid job id")
     try:
         response = requests.get(f"{JOBTECH_AD_URL}/{job_id}", timeout=15)
+        response.raise_for_status()
+        return hit_to_job(response.json())
+    except requests.RequestException as exc:
+        raise JobTechError(str(exc)) from exc
+
+
+def fetch_historical_ad(job_id: str) -> dict | None:
+    """Fetch a possibly expired ad from JobTech historical API.
+
+    Returns a mapped job dict, or None when the ad is gone (404).
+    """
+    job_id = str(job_id or "").strip()
+    if not job_id or not job_id.isdigit():
+        raise JobTechError("invalid job id")
+    try:
+        response = requests.get(f"{JOBTECH_HISTORICAL_AD_URL}/{job_id}", timeout=15)
+        if response.status_code == 404:
+            return None
         response.raise_for_status()
         return hit_to_job(response.json())
     except requests.RequestException as exc:

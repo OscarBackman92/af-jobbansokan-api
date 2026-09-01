@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 from core.models import Activity, JobApplication, ReportPeriod
-from core.periods import status_for, submit_period, window
+from core.periods import clipboard_line, report_rows, status_for, submit_period, window
 from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
@@ -177,17 +177,60 @@ def test_period_csv_is_excel_swedish(api_client, user):
     text = raw.decode("utf-8-sig")
     assert ";" in text.splitlines()[0]
     assert "Järfälla" in text
-    assert "Datum;Typ;Yrke" in text.replace(" ", "") or "Datum;Typ" in text
+    assert "Yrkesroll;Arbetsgivaren;Omfattning" in text.replace(" ", "")
 
 
-def test_missing_occupation_is_counted(api_client, user):
+def test_missing_occupation_is_counted_by_concept_id(api_client, user):
     app = _applied(user, company="Acme", applied_at=date(2026, 6, 10))
-    app.occupation_label = ""
-    app.save(update_fields=["occupation_label"])
+    app.occupation_label = "Ekonomiassistent"
+    app.occupation_concept_id = ""
+    app.save(update_fields=["occupation_label", "occupation_concept_id"])
     api_client.force_authenticate(user)
     body = api_client.get(f"{URL}2026-06/").json()
     assert body["missing_occupation_count"] == 1
-    assert body["jobs"][0]["occupation_label"] == ""
+    assert body["jobs"][0]["occupation_label"] == "Ekonomiassistent"
+    assert body["jobs"][0]["occupation_concept_id"] == ""
+
+
+def test_report_row_includes_occupation_and_hours(api_client, user):
+    JobApplication.objects.create(
+        owner=user,
+        company="Acme AB",
+        title="Ekonomiassistent",
+        location="Stockholm",
+        status="applied",
+        source="platsbanken",
+        occupation_label="Ekonomiassistent",
+        occupation_concept_id="BK8D_hZe_dtk",
+        working_hours_type="Heltid",
+        applied_at=date(2026, 8, 5),
+    )
+    api_client.force_authenticate(user)
+    body = api_client.get(f"{URL}2026-08/").json()
+    assert body["missing_occupation_count"] == 0
+    job = body["jobs"][0]
+    assert job["occupation_label"] == "Ekonomiassistent"
+    assert job["occupation_concept_id"] == "BK8D_hZe_dtk"
+    assert job["working_hours_type"] == "Heltid"
+    assert job["source"] == "platsbanken"
+
+    period = ReportPeriod.objects.get(user=user, year=2026, month=8)
+    row = report_rows(period)[0]
+    assert row["yrke"] == "Ekonomiassistent"
+    assert row["arbetsgivare"] == "Acme AB"
+    assert row["omfattning"] == "Heltid"
+    assert row["ort"] == "Stockholm"
+    assert row["svarade"] == "Ja"
+    assert row["datum"] == "2026-08-05"
+    assert row["missing_occupation"] is False
+    assert clipboard_line(row) == (
+        "Ekonomiassistent\tAcme AB\tHeltid\tStockholm\tJa\t2026-08-05"
+    )
+
+    csv_text = api_client.get(f"{URL}2026-08/export/").content.decode("utf-8-sig")
+    header = csv_text.splitlines()[0]
+    assert header == "Yrkesroll;Arbetsgivaren;Omfattning;Ort;Svarade på annons;Datum"
+    assert "Ekonomiassistent;Acme AB;Heltid;Stockholm;Ja;2026-08-05" in csv_text
 
 
 def test_activity_crud(api_client, user):
