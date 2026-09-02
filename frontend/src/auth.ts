@@ -47,6 +47,30 @@ export function clearTokens(): void {
   localStorage.removeItem(REFRESH_KEY);
 }
 
+export async function logout(): Promise<void> {
+  const refresh = getRefresh();
+  const access = getAccess();
+  try {
+    if (refresh) {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (access) {
+        headers.Authorization = `Bearer ${access}`;
+      }
+      await fetch("/dj-rest-auth/logout/", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ refresh }),
+      });
+    }
+  } catch {
+    // Best-effort: local logout must succeed even if the server is down.
+  } finally {
+    clearTokens();
+  }
+}
+
 type RefreshResponse = {
   access?: string;
   refresh?: string;

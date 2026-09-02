@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { request } from "./api.js";
-import { clearTokens, getAccess, setTokens } from "./auth.js";
+import { clearTokens, getAccess, setTokens, logout as revokeSession } from "./auth.js";
 import AuthHero from "./components/AuthHero.jsx";
 import GoogleSignIn from "./components/GoogleSignIn.jsx";
 import ReportBanner from "./components/ReportBanner.jsx";
@@ -246,6 +246,27 @@ export default function App() {
     apply();
   }
 
+  function login(tokens) {
+    setTokens(tokens);
+    setToken(tokens.access);
+  }
+
+  function clearSession() {
+    clearTokens();
+    setToken(null);
+    setMe(null);
+    setTab("dash");
+    syncTabToUrl("dash");
+  }
+
+  async function logout() {
+    await revokeSession();
+    setToken(null);
+    setMe(null);
+    setTab("dash");
+    syncTabToUrl("dash");
+  }
+
   useEffect(() => {
     applyResolvedTheme(theme);
     localStorage.setItem("theme", theme);
@@ -405,29 +426,16 @@ export default function App() {
       .catch((err) => {
         // True expiry is handled by auth-expired. A 5xx/timeout must not
         // wipe a still-valid refresh token just because /me/ failed.
-        if (err?.status === 401) logout();
+        if (err?.status === 401) clearSession();
       });
   }, [token]);
 
   // The api layer fires this when a refresh fails (session truly expired).
   useEffect(() => {
-    const handler = () => logout();
+    const handler = () => clearSession();
     window.addEventListener("auth-expired", handler);
     return () => window.removeEventListener("auth-expired", handler);
   }, []);
-
-  function login(tokens) {
-    setTokens(tokens);
-    setToken(tokens.access);
-  }
-
-  function logout() {
-    clearTokens();
-    setToken(null);
-    setMe(null);
-    setTab("dash");
-    syncTabToUrl("dash");
-  }
 
   let pageHeading = "Logga in";
   if (verifyKey) pageHeading = "Bekräfta e-post";

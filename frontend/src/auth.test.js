@@ -4,6 +4,7 @@ import {
   clearTokens,
   getAccess,
   getRefresh,
+  logout,
   refreshAccess,
   setTokens,
 } from "./auth.js";
@@ -95,5 +96,42 @@ describe("auth storage", () => {
     expect(result).toEqual({ ok: true, access: "new-access" });
     expect(getAccess()).toBe("new-access");
     expect(getRefresh()).toBe("new-refresh");
+  });
+
+  it("posts the refresh token on logout and clears storage", async () => {
+    setTokens({ access: "access-token", refresh: "refresh-token" });
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(new Response("{}", { status: 200 }))
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await logout();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/dj-rest-auth/logout/",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer access-token",
+        },
+        body: JSON.stringify({ refresh: "refresh-token" }),
+      })
+    );
+    expect(getAccess()).toBeNull();
+    expect(getRefresh()).toBeNull();
+  });
+
+  it("clears tokens even when logout fetch is rejected", async () => {
+    setTokens({ access: "access-token", refresh: "refresh-token" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.reject(new Error("network")))
+    );
+
+    await logout();
+
+    expect(getAccess()).toBeNull();
+    expect(getRefresh()).toBeNull();
   });
 });
