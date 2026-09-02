@@ -19,11 +19,11 @@ def test_landing_page_is_public_html(client):
     assert "Skapa konto" in body
     assert "Logga in" in body
     assert "Kom igång" in body
-    assert "Till min översikt" in body
-    assert 'data-authed-cta hidden' in body
+    assert "Till min översikt" not in body
+    assert "data-authed-cta" not in body
+    assert "session-cta.js" not in body
     assert "{#" not in body
     assert "sessionStorage is per-tab" not in body
-    assert body.count("Till min översikt") == 2
     assert body.count("Skapa konto") == 2
     assert "Efter inloggning" in body
     assert "Öppna appen" not in body

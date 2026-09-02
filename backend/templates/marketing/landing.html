@@ -1,5 +1,4 @@
 {% extends "marketing/base.html" %}
-{% load static %}
 
 {% block title %}Jobbdjungeln — koll på hela ditt jobbsök{% endblock %}
 {% block meta_description %}Gratis översikt över dina jobbansökningar. Platsbanken, påminnelser, CV-matchning och CSV-export — utan Excel.{% endblock %}
@@ -20,9 +19,8 @@
         och när man tänkte höra av sig. Här har du allt samlat — plus sök i
         Platsbanken när du vill fylla på.
       </p>
-      <p class="hero-cta" data-session-cta>
-        <a class="btn-primary" href="{{ app_url }}" data-guest-cta>Skapa konto</a>
-        <a class="btn-primary" href="/app/?tab=dash" data-authed-cta hidden>Till min översikt</a>
+      <p class="hero-cta">
+        <a class="btn-primary" href="{{ app_url }}">Skapa konto</a>
       </p>
       <p class="hero-note muted">
         Gratis. Inga annonser. Läs <a href="{{ about_url }}">om tjänsten</a>
@@ -122,11 +120,9 @@
       Konto tar en minut. <a href="{{ privacy_url }}">Integritetspolicy</a>
       beskriver hur data hanteras.
     </p>
-    <p class="hero-cta" data-session-cta>
-      <a class="btn-primary" href="{{ app_url }}" data-guest-cta>Skapa konto</a>
-      <a class="btn-primary" href="/app/?tab=dash" data-authed-cta hidden>Till min översikt</a>
+    <p class="hero-cta">
+      <a class="btn-primary" href="{{ app_url }}">Skapa konto</a>
     </p>
   </section>
 </main>
-<script src="{% static 'marketing/session-cta.js' %}"></script>
 {% endblock %}
