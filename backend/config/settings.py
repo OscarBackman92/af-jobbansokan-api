@@ -235,6 +235,9 @@ REST_FRAMEWORK = {
             "rest_framework.renderers.BrowsableAPIRenderer",
         )
     ),
+    # Exactly one proxy (Render) sits in front of the app; use the last
+    # address in X-Forwarded-For so clients cannot rotate the throttle key.
+    "NUM_PROXIES": 1,
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",

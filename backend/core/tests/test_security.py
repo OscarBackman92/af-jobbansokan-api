@@ -66,6 +66,10 @@ def test_auth_throttle_scope_configured():
     assert settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["token_refresh"] == "30/min"
 
 
+def test_auth_throttle_trusts_single_proxy():
+    assert settings.REST_FRAMEWORK["NUM_PROXIES"] == 1
+
+
 def test_login_throttled_after_repeated_failures(api_client, mailoutbox):
     register_user(api_client)
     verify_latest_email(api_client, mailoutbox)
@@ -81,6 +85,22 @@ def test_login_throttled_after_repeated_failures(api_client, mailoutbox):
         {"email": "anna@example.com", "password": "wrong-password"},
     )
     assert blocked.status_code == 429
+
+
+def test_login_throttled_despite_rotating_forwarded_for(api_client, mailoutbox):
+    register_user(api_client)
+    verify_latest_email(api_client, mailoutbox)
+
+    statuses = []
+    for i in range(8):
+        response = api_client.post(
+            LOGIN_URL,
+            {"email": "anna@example.com", "password": "wrong-password"},
+            HTTP_X_FORWARDED_FOR=f"10.0.0.{i}, 203.0.113.9",
+        )
+        statuses.append(response.status_code)
+
+    assert 429 in statuses
 
 
 def test_security_txt_serves_contact(client, settings):
