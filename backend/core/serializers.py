@@ -539,7 +539,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "email", "first_name", "last_name", "operator_id"]
-        read_only_fields = ["id", "username", "operator_id"]
+        read_only_fields = ["id", "username", "email", "operator_id"]
 
 
 class ResumeSerializer(serializers.ModelSerializer):

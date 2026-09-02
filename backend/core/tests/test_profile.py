@@ -24,13 +24,24 @@ def test_patch_updates_contact_details(api_client, user):
     api_client.force_authenticate(user)
     response = api_client.patch(
         URL,
-        {"email": "anna@example.com", "first_name": "Anna", "last_name": "Svensson"},
+        {"email": "ny@example.com", "first_name": "Anna", "last_name": "Svensson"},
     )
     assert response.status_code == 200
 
     user.refresh_from_db()
-    assert user.email == "anna@example.com"
+    assert user.email == "anna@example.com"  # read-only field silently ignored
     assert user.first_name == "Anna"
+    assert user.last_name == "Svensson"
+
+
+def test_patch_does_not_lock_out_session(api_client, user):
+    api_client.force_authenticate(user)
+    patched = api_client.patch(URL, {"email": "ny@example.com", "first_name": "Anna"})
+    assert patched.status_code == 200
+
+    followup = api_client.get(URL)
+    assert followup.status_code == 200
+    assert followup.json()["email"] == "anna@example.com"
 
 
 def test_patch_cannot_change_username(api_client, user):

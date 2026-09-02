@@ -64,7 +64,7 @@ export default function ProfilePanel({
 
 function ProfileCard({ me, onMeChange, onLogout, showDelete = false }) {
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ email: "", first_name: "", last_name: "" });
+  const [form, setForm] = useState({ first_name: "", last_name: "" });
   const [message, setMessage] = useState(null);
   const [discardPrompt, setDiscardPrompt] = useState(null);
   const initialFormRef = useRef("");
@@ -81,7 +81,6 @@ function ProfileCard({ me, onMeChange, onLogout, showDelete = false }) {
 
   function startEdit() {
     const next = {
-      email: me.email,
       first_name: me.first_name,
       last_name: me.last_name,
     };
@@ -164,10 +163,6 @@ function ProfileCard({ me, onMeChange, onLogout, showDelete = false }) {
             <label>
               Efternamn
               <input {...field("last_name")} />
-            </label>
-            <label>
-              E-post
-              <input type="email" {...field("email")} />
             </label>
           </div>
           <div className="row">
