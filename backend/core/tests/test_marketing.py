@@ -24,7 +24,7 @@ def test_landing_page_is_public_html(client):
     assert "session-cta.js" not in body
     assert "{#" not in body
     assert "sessionStorage is per-tab" not in body
-    assert body.count("Skapa konto") == 2
+    assert body.count("Skapa konto") == 1
     assert "Efter inloggning" in body
     assert "Öppna appen" not in body
     assert 'rel="canonical"' in body
