@@ -6,6 +6,20 @@ from django.core.checks import Error, Warning, register
 from core.email_config import email_is_configured
 
 _WEAK_ADMIN_USERNAMES = frozenset({"admin", "administrator", "root", "superuser"})
+_INSECURE_SECRET_KEY = "dev-insecure-secret-key"
+
+
+@register(deploy=True)
+def secret_key_not_insecure(**kwargs):
+    if settings.DEBUG or settings.SECRET_KEY != _INSECURE_SECRET_KEY:
+        return []
+    return [
+        Error(
+            "DJANGO_SECRET_KEY is the insecure development fallback.",
+            hint="Set a unique DJANGO_SECRET_KEY in Render → Environment.",
+            id="core.E003",
+        )
+    ]
 
 
 @register(deploy=True)

@@ -10,6 +10,18 @@ def test_runtime_config_js(client):
 
 
 @pytest.mark.django_db
+def test_deploy_checks_error_on_insecure_secret_key(settings):
+    settings.DEBUG = False
+    settings.SECRET_KEY = "dev-insecure-secret-key"
+
+    from django.core import checks
+
+    errors = checks.run_checks(include_deployment_checks=True)
+    ids = {item.id for item in errors}
+    assert "core.E003" in ids
+
+
+@pytest.mark.django_db
 def test_deploy_checks_warn_without_email_and_sentry(settings, monkeypatch):
     monkeypatch.delenv("EMAIL_HOST", raising=False)
     monkeypatch.delenv("BREVO_API_KEY", raising=False)
