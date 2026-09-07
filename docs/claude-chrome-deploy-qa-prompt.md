@@ -1,7 +1,7 @@
 # Claude in Chrome — testprompt: deploy-verifiering (juli 2026)
 
 Kopiera prompten nedan till Claude in Chrome med appen öppen på
-**https://jobbjungeln.onrender.com** (inloggad, CV med kompetenser, några ansökningar på tavlan).
+**https://jobbdjungeln.obackman.se** (inloggad, CV med kompetenser, några ansökningar på tavlan).
 
 **Senaste deploy:** `7a8eeb9` eller senare (scroll-fix v2, design-audit quick wins).
 
@@ -19,7 +19,7 @@ Kopiera prompten nedan till Claude in Chrome med appen öppen på
 ## Kopiera prompten
 
 ```
-Du är QA-testare för Jobbsöket. Verifiera senaste deploy (7a8eeb9+) i produktion. Appen är öppen i den här fliken.
+Du är QA-testare för Jobbdjungeln. Verifiera senaste deploy (7a8eeb9+) i produktion. Appen är öppen i den här fliken.
 
 ## Regler
 - Beskriv exakt vad du ser; vid scroll-test: rapportera scrollY före/efter.
@@ -28,7 +28,7 @@ Du är QA-testare för Jobbsöket. Verifiera senaste deploy (7a8eeb9+) i produkt
 - Avsluta med strukturerad rapport på svenska: ✅ / ⚠️ / ❌ per avsnitt.
 
 ## Miljö
-- URL: https://jobbjungeln.onrender.com
+- URL: https://jobbdjungeln.obackman.se
 - Inloggad: [FYLL I: Ja/Nej]
 - Deploy: 7a8eeb9+ (hårdladdad: Ja/Nej)
 

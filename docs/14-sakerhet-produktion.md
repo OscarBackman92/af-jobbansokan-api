@@ -12,7 +12,7 @@ Senaste säkerhetsaudit: [19-sakerhetsaudit-2026-07-10.md](19-sakerhetsaudit-202
 | `DATABASE_URL` | **Ja** | Utan den startar inte appen i prod (`DJANGO_DEBUG=0`) |
 | `DJANGO_SECRET_KEY` | Ja | Genereras i blueprint |
 | `DJANGO_DEBUG` | `0` | |
-| `FRONTEND_URL` | Ja | `https://jobbjungeln.onrender.com` eller egen domän |
+| `FRONTEND_URL` | Ja | `https://jobbdjungeln.obackman.se` |
 | `BREVO_API_KEY` | Ja* | *Mejl fungerar inte utan |
 | `DEFAULT_FROM_EMAIL` | Ja* | Verifierad avsändardomän i Brevo |
 | `CONTACT_EMAIL` | Ja | Integritetspolicy + `/.well-known/security.txt` |
@@ -54,8 +54,9 @@ annars användas för att spamma er Sentry med falska fel.
 
 1. [sentry.io](https://sentry.io) → ert projekt → **Settings** → **Security**
    → **Allowed Domains**.
-2. Lägg till bara er produktionsdomän, t.ex. `jobbjungeln.onrender.com` (och er
-   egna domän när den finns).
+2. Lägg till bara era produktionsdomäner:
+   `jobbdjungeln.obackman.se` (kanonisk) och ev. `jobbjungeln.onrender.com`
+   (legacy).
 3. Ta bort `*` om det finns.
 
 Deploy-check `core.W003` påminner om detta när `SENTRY_DSN` är satt.
@@ -148,10 +149,10 @@ fortfarande först vid faktiskt utskick — testa med
 python backend/manage.py check --deploy
 
 # CSP-header (ersätt med er URL)
-curl -sI https://jobbjungeln.onrender.com/ | findstr /i content-security
+curl -sI https://jobbdjungeln.obackman.se/ | findstr /i content-security
 
 # Swagger ska ge 403 utan admin-inloggning
-curl -s -o NUL -w "%{http_code}" https://jobbjungeln.onrender.com/api/docs/
+curl -s -o NUL -w "%{http_code}" https://jobbdjungeln.obackman.se/api/docs/
 ```
 
 Förväntat: `403` på `/api/docs/` för anonyma anrop i produktion.

@@ -1,4 +1,4 @@
-# Claude in Chrome — skapa cron-jobb på Render (Jobbsöket)
+# Claude in Chrome — skapa cron-jobb på Render (Jobbdjungeln)
 
 Kopiera hela prompten i rutan **“Kopiera prompten”** nedan och klistra in i
 Claude in Chrome med [dashboard.render.com](https://dashboard.render.com) öppet.
@@ -17,7 +17,7 @@ Claude in Chrome med [dashboard.render.com](https://dashboard.render.com) öppet
 ## Kopiera prompten
 
 ```
-Du hjälper mig skapa och verifiera Render cron-jobb för Jobbsöket (Django-appen **jobbjungeln**, region Frankfurt, databas Supabase via DATABASE_URL på web).
+Du hjälper mig skapa och verifiera Render cron-jobb för Jobbdjungeln (Django-appen **jobbjungeln**, region Frankfurt, databas Supabase via DATABASE_URL på web).
 
 ## Regler
 - Be mig ALDRIG klistra in BREVO_API_KEY, DATABASE_URL, DJANGO_SECRET_KEY eller lösenord i chatten.
@@ -26,7 +26,7 @@ Du hjälper mig skapa och verifiera Render cron-jobb för Jobbsöket (Django-app
 - Avsluta med checklista + hur jag testar med Trigger Run.
 
 ## Bakgrund
-Repot `af-jobbansokan-api` definierar tre cron-jobb i render.yaml. Webbtjänsten **jobbjungeln** finns på https://jobbjungeln.onrender.com.
+Repot `af-jobbansokan-api` definierar tre cron-jobb i render.yaml. Webbtjänsten **jobbjungeln** finns på https://jobbdjungeln.obackman.se.
 
 Render kör Docker Command som argv **utan shell** — använd **ett kommando per cron**, inte `sh -c "... && ..."`.
 
@@ -48,7 +48,7 @@ Render kör Docker Command som argv **utan shell** — använd **ett kommando pe
    - DJANGO_SECRET_KEY
    - BREVO_API_KEY (eller EMAIL_HOST)
    - DEFAULT_FROM_EMAIL
-   - FRONTEND_URL (https://jobbjungeln.onrender.com)
+   - FRONTEND_URL (https://jobbdjungeln.obackman.se)
 3. Notera om Blueprint finns under **Blueprints** (för alternativ sync i DEL 2A).
 
 ---
@@ -88,7 +88,7 @@ Render → **Cron Jobs** → **New Cron Job**:
 | DJANGO_SECRET_KEY | *(samma som web)* |
 | BREVO_API_KEY | *(samma som web)* |
 | DEFAULT_FROM_EMAIL | *(samma som web)* |
-| FRONTEND_URL | `https://jobbjungeln.onrender.com` |
+| FRONTEND_URL | `https://jobbdjungeln.obackman.se` |
 | EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS, EMAIL_USE_SSL, EMAIL_TIMEOUT | *(samma som web, om satta)* |
 | SENTRY_DSN | *(valfritt, samma som web)* |
 | SENTRY_ENVIRONMENT | `production` |
@@ -134,7 +134,7 @@ För **alla tre** cron-jobb:
 1. Öppna jobbet → **Environment**.
 2. Bekräfta att DATABASE_URL pekar på Supabase (host innehåller `supabase`, inte `dpg-` Render).
 3. Bekräfta att BREVO_API_KEY är satt om mejl ska fungera.
-4. Bekräfta FRONTEND_URL = `https://jobbjungeln.onrender.com`.
+4. Bekräfta FRONTEND_URL = `https://jobbdjungeln.obackman.se`.
 
 ---
 
@@ -148,7 +148,7 @@ För **alla tre** cron-jobb:
    - `send_reminders` kördes (kan vara "Sent 0" / "No follow-ups due" — OK)
 3. Om `E-post är inte konfigurerad` → BREVO_API_KEY saknas på cron; kopiera från web.
 
-**Valfritt funktionstest:** I appen, sätt en ansöknings **Nästa steg** till idag → Trigger Run igen → kolla inkorg (*"Jobbsöket — dags att följa upp"*).
+**Valfritt funktionstest:** I appen, sätt en ansöknings **Nästa steg** till idag → Trigger Run igen → kolla inkorg (*"Jobbdjungeln — dags att följa upp"*).
 
 ## ansokt-prune
 

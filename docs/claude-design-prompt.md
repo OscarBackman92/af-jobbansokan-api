@@ -1,10 +1,10 @@
-# Claude — designprompt för Jobbsöket
+# Claude — designprompt för Jobbdjungeln
 
 Använd denna prompt med **Claude in Chrome** (appen öppen i fliken) eller i vanlig
 Claude-chatt med skärmdumpar. Målet är en **konkret design- och UX-granskning** —
 inte generisk inspiration, utan prioriterade förbättringar som går att implementera.
 
-**Produktion:** https://jobbjungeln.onrender.com  
+**Produktion:** https://jobbdjungeln.obackman.se  
 **Stack:** React + Vite, en CSS-fil (`frontend/src/styles.css`), inget Tailwind/shadcn.
 
 ---
@@ -22,7 +22,7 @@ inte generisk inspiration, utan prioriterade förbättringar som går att implem
 ## Kopiera prompten
 
 ```
-Du är senior produktdesigner och UX-granskare för den svenska webbappen Jobbsöket — en jobbsöknings-tavla med Platsbanken-integration, CV-matchning och GDPR-fokus. Jag har appen öppen [i den här fliken / bifogar skärmdumpar].
+Du är senior produktdesigner och UX-granskare för den svenska webbappen Jobbdjungeln — en jobbsöknings-tavla med Platsbanken-integration, CV-matchning och GDPR-fokus. Jag har appen öppen [i den här fliken / bifogar skärmdumpar].
 
 ## Din uppgift
 Gör en strukturerad designaudit. Var ärlig och specifik. Undvik fluff ("snyggt", "modernt") utan förklaring. Varje rekommendation ska ha: **var** (skärm/komponent), **problem**, **förslag**, **prioritet** (Hög/Medel/Låg).
@@ -165,7 +165,7 @@ Börja med DEL 1 vy 1 (Header). Fråga om inloggning om du behöver se Tavlan.
 Om du vill granska **en** vy (snabbare):
 
 ```
-Designgranska endast [Tavlan / Annonser / Profil & CV / Auth] i Jobbsöket på https://jobbjungeln.onrender.com.
+Designgranska endast [Tavlan / Annonser / Profil & CV / Auth] i Jobbdjungeln på https://jobbdjungeln.obackman.se.
 Tema: [command / daylight / signal]. Enhet: [desktop / 390px mobil].
 Leverera: första intryck, 5 problem, 5 konkreta CSS-vänliga fixes med prioritet. Svenska.
 ```

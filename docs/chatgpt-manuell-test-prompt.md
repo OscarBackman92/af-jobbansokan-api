@@ -1,11 +1,11 @@
-# ChatGPT — fullständig manuell test suite (Jobbsöket)
+# ChatGPT — fullständig manuell test suite (Jobbdjungeln)
 
 Kopiera **hela prompten** i rutan nedan till ChatGPT (eller Claude).  
 Testaren utför stegen i webbläsaren och fyller i rapporten **exakt** enligt mallen —  
 rapporten klistras sedan in i **Cursor** till utvecklingsagenten.
 
-**Produktion:** https://jobbjungeln.onrender.com  
-**Appnamn:** Jobbsöket — svensk jobbsöknings-tavla med Platsbanken, CV-matchning och GDPR.
+**Produktion:** https://jobbdjungeln.obackman.se  
+**Appnamn:** Jobbdjungeln — svensk jobbsöknings-tavla med Platsbanken, CV-matchning och GDPR.
 
 ---
 
@@ -22,7 +22,7 @@ rapporten klistras sedan in i **Cursor** till utvecklingsagenten.
 ## Kopiera prompten (hela blocket)
 
 ```
-Du är senior QA-testare för webbappen Jobbsöket. Din uppgift är att guida mig genom en FULLSTÄNDIG manuell test suite, steg för steg, och producera en strukturerad rapport som jag ska klistra in till en utvecklare i Cursor.
+Du är senior QA-testare för webbappen Jobbdjungeln. Din uppgift är att guida mig genom en FULLSTÄNDIG manuell test suite, steg för steg, och producera en strukturerad rapport som jag ska klistra in till en utvecklare i Cursor.
 
 ## Din roll
 - Led mig genom testerna i logisk ordning (inte hoppa över avsnitt utan att markera HOPPAT + orsak).
@@ -33,7 +33,7 @@ Du är senior QA-testare för webbappen Jobbsöket. Din uppgift är att guida mi
 - Skriv på svenska.
 
 ## Testmiljö (jag fyller i)
-- URL: https://jobbjungeln.onrender.com
+- URL: https://jobbdjungeln.obackman.se
 - Datum: [IDAG]
 - Enhet dator: [t.ex. Windows Chrome / Mac Safari]
 - Enhet mobil: [telefon + webbläsare, eller HOPPAT]
@@ -57,18 +57,18 @@ Du är senior QA-testare för webbappen Jobbsöket. Din uppgift är att guida mi
 ## MODUL 0 — Förberedelse & infrastruktur
 
 ### 0.1 Health check
-1. Öppna ny flik: `https://jobbjungeln.onrender.com/health/`
+1. Öppna ny flik: `https://jobbdjungeln.obackman.se/health/`
 2. Notera hela JSON-svaret.
 
 **Förväntat:** `{"status":"ok"}` utan `warnings`, eller med tydliga warnings (t.ex. `email_not_configured`).
 
 ### 0.2 security.txt
-1. Öppna `https://jobbjungeln.onrender.com/.well-known/security.txt`
+1. Öppna `https://jobbdjungeln.obackman.se/.well-known/security.txt`
 
 **Förväntat:** HTTP 200 med `Contact: mailto:…` ELLER 404 om CONTACT_EMAIL ej satt.
 
 ### 0.3 Swagger (säkerhet)
-1. Utloggad: öppna `https://jobbjungeln.onrender.com/api/docs/`
+1. Utloggad: öppna `https://jobbdjungeln.obackman.se/api/docs/`
 
 **Förväntat:** 401 eller 403 (inte öppen API-dokumentation för alla).
 
@@ -76,7 +76,7 @@ Du är senior QA-testare för webbappen Jobbsöket. Din uppgift är att guida mi
 1. Öppna appens rot-URL utloggad.
 2. Notera: rubrik, checklista, inloggningskort, footer med teman.
 
-**Förväntat:** "Jobbsöket", tre flikar syns INTE, auth-formulär synligt.
+**Förväntat:** "Jobbdjungeln", inloggningsflikar syns INTE, auth-formulär synligt.
 
 ---
 
@@ -91,7 +91,7 @@ Du är senior QA-testare för webbappen Jobbsöket. Din uppgift är att guida mi
 
 ### 1.2 Verifieringsmejl 📧 MANUELLT
 1. Jag kollar inkorg + skräppost inom 5 min.
-2. Ämne ungefär: "Bekräfta din e-postadress — Jobbsöket".
+2. Ämne ungefär: "Bekräfta din e-postadress — Jobbdjungeln".
 3. Jag klickar länken (`verify_key=…`) eller klistrar in URL.
 
 **Förväntat:** Mejl kommer; verifiering lyckas; meddelande om bekräftad e-post.
@@ -363,7 +363,7 @@ Testa var för sig (rensa mellan om behövs):
 ### 8.1 Daglig påminnelse
 1. Sätt nästa steg = igår på aktiv ansökan.
 2. Trigger `ansokt-reminders` på Render ELLER vänta till 06:00 UTC.
-3. Mejl: "Jobbsöket — dags att följa upp"?
+3. Mejl: "Jobbdjungeln — dags att följa upp"?
 
 ### 8.2 Veckosammanfattning
 1. Trigger `ansokt-weekly-summary` med --force ELLER vänta måndag 07:00 UTC.
@@ -388,7 +388,7 @@ När alla moduler är klara, skriv rapporten EXAKT i detta format:
 
 ---
 
-## RAPPORT TILL CURSOR — Jobbsöket manuell test
+## RAPPORT TILL CURSOR — Jobbdjungeln manuell test
 
 **Datum:** [YYYY-MM-DD]
 **URL:** [url]

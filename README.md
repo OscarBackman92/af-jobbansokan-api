@@ -9,12 +9,14 @@
 track applications — statuses, recruiter calls, interviews, next steps.
 Jobbdjungeln (formerly "Ansökt") is that sheet, done right: a kanban board
 over your applications, a timeline per application, search over
-Platsbanken's job ads, and CSV export because the data is yours.
+Platsbanken's job ads, monthly AF-style reporting, and CSV export because
+the data is yours.
 
-> Production: [jobbjungeln.onrender.com](https://jobbjungeln.onrender.com)
-> (Frankfurt). The product name is **Jobbdjungeln** (with a d); the live
-> host is the original Render service name. Cron jobs still use the
-> `ansokt-*` service names from the original deploy.
+> Production: [jobbdjungeln.obackman.se](https://jobbdjungeln.obackman.se)
+> (Render Frankfurt, custom domain). The SPA lives at `/app/`. The Render
+> web service is still named `jobbjungeln`; cron jobs keep the `ansokt-*`
+> names from the original deploy. Legacy `jobbjungeln.onrender.com` is
+> rewritten to the canonical origin for e-mail links.
 
 > Pivoted 2026-06-12 from the earlier "verifiable job application events
 > for A-kassa" concept — see [docs/10-pivot-ansokt.md](docs/10-pivot-ansokt.md)
@@ -30,6 +32,9 @@ Platsbanken's job ads, and CSV export because the data is yours.
 - **Ansökningar** — enbart sökta rader (allt utom wishlist), grupperade
   efter väntetid och dialog: Väntar för länge → Nyligen sökta → I dialog →
   Erbjudande → Avslutade. Statusbyte loggas automatiskt i tidslinjen
+- **Rapportera** — månadsvis AF-aktivitetsrapport (sökta jobb,
+  sidoaktiviteter, exkludera rader, CSV). Personligt hjälpmedel, ingen
+  myndighetskoppling
 - **Timeline per application** — notes, calls and interviews; status
   changes are logged automatically
 - **Free-text rows** — track applications from anywhere (LinkedIn,
@@ -45,12 +50,12 @@ Platsbanken's job ads, and CSV export because the data is yours.
   doesn't match "Django")
 - **Statistics** — applications per month and how many reached a
   call/interview or further (on Översikt)
-- **CSV export** (data portability)
+- **CSV export** (data portability) and **ICS** for follow-ups / deadlines
 - **Password reset by e-mail** and transparent JWT refresh, so a session
   never drops mid-task
-- **E-mail based accounts** (registration + login via dj-rest-auth),
-  with transparent JWT refresh so a session never drops mid-task;
-  OpenAPI 3 schema with Swagger UI, modern admin
+- **E-mail based accounts** (registration + login via dj-rest-auth);
+  no JWT until the address is verified. OpenAPI 3 schema with Swagger UI
+  (debug or staff in production), modern admin
   ([django-unfold](https://unfoldadmin.com/))
 
 ## Architecture
@@ -66,14 +71,16 @@ flowchart LR
 | --- | --- |
 | API | Django 5.2 + Django REST Framework 3.16 |
 | Auth | dj-rest-auth + allauth (e-mail login) + SimpleJWT (15 min access, 7 d refresh, rotation + blacklist); SPA refreshes the access token on 401 |
-| Database | SQLite (local dev) / PostgreSQL via `DATABASE_URL` (prod, required when `DJANGO_DEBUG=0`) |
-| API docs | drf-spectacular (OpenAPI 3 + Swagger UI) |
-| Frontend | React 19 + Vite (in `frontend/`) |
-| Quality | pytest, ruff, black — enforced in GitHub Actions CI |
+| Database | SQLite (local debug without `DB_*`) / PostgreSQL via `DB_*` or `DATABASE_URL` (prod, required when `DJANGO_DEBUG=0`) |
+| API docs | drf-spectacular (OpenAPI 3 + Swagger UI), version 0.2.0 |
+| Frontend | React 19 + Vite 7 (in `frontend/`, base `/app/`) |
+| Quality | pytest (cov ≥70 %), ruff, black, ESLint, Vitest, Playwright — GitHub Actions CI |
 
 ## API overview
 
-Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
+Domain API: `/api/v1/`. Interactive docs at `/api/docs/` (open in local
+debug; staff-only in production). Full list:
+[docs/05-api-spec.md](docs/05-api-spec.md).
 
 | Endpoint | Method | Notes |
 | --- | --- | --- |
@@ -81,27 +88,32 @@ Base path: `/api/v1/` — full interactive docs at `/api/docs/`.
 | `/dj-rest-auth/registration/` | POST | Create account by e-mail; sends verification mail (no JWT until verified) |
 | `/dj-rest-auth/login/` | POST | Log in by e-mail; returns access + refresh token |
 | `/dj-rest-auth/token/refresh/` | POST | Exchange the refresh token for a new access (+ rotated refresh) token |
-| `/api/v1/me/` | GET, PATCH, DELETE | Own profile; DELETE = GDPR erasure |
-| `/api/v1/me/resume/` | GET, PUT, DELETE | Structured CV |
-| `/api/v1/me/resume/parse/` | POST | Parse uploaded CV to a draft — file never stored |
 | `/dj-rest-auth/google/` | POST | Google login (optional; button hidden when `GOOGLE_CLIENT_ID` unset) |
+| `/api/v1/me/` | GET, PATCH, DELETE | Own profile; DELETE = GDPR erasure |
+| `/api/v1/me/resume/` | GET, PUT, PATCH, DELETE | Structured CV |
+| `/api/v1/me/resume/parse/` | POST | Parse uploaded CV to a draft — file never stored |
 | `/api/v1/dashboard/` | GET | Översikt KPIs, funnel, next actions, monthly, pace |
+| `/api/v1/insights/skills/` | GET | Aggregated skill hits/gaps from match snapshots |
 | `/api/v1/applications/` | GET, POST | Tracker rows; `?status=&search=&from=&to=&archived=1&page_size=` (list omits `events`; archived hidden by default) |
 | `/api/v1/applications/{id}/` | GET, PATCH, DELETE | Edit status, apply_by, intent, notes, contacts — fully mutable; includes `events` |
 | `/api/v1/applications/{id}/events/` | POST | Append a timeline event |
 | `/api/v1/applications/tracked-urls/` | GET | All ad URLs including archived (duplicate protection) |
 | `/api/v1/applications/saved-summary/` | GET | Lane counts for Sparade jobb |
 | `/api/v1/applications/bulk/` | POST | Bulk mark_applied / archive / pause / activate / set_apply_by |
+| `/api/v1/applications/similar/` | GET | Notice-only duplicates (`company`, `title`, `source_job_id`) |
 | `/api/v1/applications/export/` | GET | CSV download (filters apply; includes intent + apply_by) |
 | `/api/v1/jobs/` | GET | **Live Platsbanken search**; `?q=&region=&field=&remote=&offset=&limit=`; CV match per hit; identical searches cached 3 min |
 | `/api/v1/jobs/filters/` | GET | Region + occupation-field options for the search dropdowns |
-| `/api/v1/jobs/groups/` | GET | Occupation groups for a selected field |
-| `/api/v1/jobs/municipalities/` | GET | Municipalities for a selected region |
+| `/api/v1/jobs/occupations/` | GET | Occupation-name autocomplete (`?q=`) |
+| `/api/v1/jobs/{job_id}/` | GET | One Platsbanken ad by JobTech id |
 | `/api/v1/me/saved-searches/` | GET, POST | Saved Platsbanken search presets |
+| `/api/v1/periods/` | GET | AF report months |
+| `/api/v1/periods/{YYYY-MM}/` | GET | Month detail; `submit/`, `reopen/`, `export/`, `exclude/` as subpaths |
+| `/api/v1/activities/` | GET, POST | Side activities for the AF report |
 
 ## Getting started
 
-Requirements: Python 3.13+ (3.14 works), git.
+Requirements: Python 3.13+ (3.14 works), git, Node 22 for the frontend.
 
 ```bash
 git clone https://github.com/OscarBackman92/af-jobbansokan-api.git
@@ -111,7 +123,10 @@ python -m venv .venv
 .venv/Scripts/activate          # Windows  (source .venv/bin/activate on Unix)
 pip install -r requirements.txt
 
-cp .env.example .env            # set DJANGO_DEBUG=1 for local development
+cp .env.example .env            # DJANGO_DEBUG=1
+# SQLite (simplest): comment out the DB_* block in .env
+# Docker Postgres: keep DB_* (host port 5433) and start compose first:
+#   docker compose -f infra/docker-compose.yml up -d
 
 python backend/manage.py migrate
 python backend/manage.py createsuperuser
@@ -123,19 +138,21 @@ import or local ad database is required.
 
 Then open:
 
+- Marketing landing: <http://127.0.0.1:8000/>
 - Swagger UI: <http://127.0.0.1:8000/api/docs/>
 - Admin: <http://127.0.0.1:8000/admin/>
 - Health check: <http://127.0.0.1:8000/health/>
 
 ### Frontend
 
-The React/Vite app lives in `frontend/`: login/registration, the board,
-ad search and profile/CV.
+The React/Vite app lives in `frontend/` (dev URL
+`http://localhost:5173/app/`): login/registration, Översikt, board,
+Rapportera, ad search and profile/CV.
 
 ```bash
 cd frontend
 npm install
-npm run dev          # http://localhost:5173 — Django must run on :8000
+npm run dev          # http://localhost:5173/app/ — Django must run on :8000
 ```
 
 API calls are proxied by the Vite dev server, so no CORS configuration
@@ -152,23 +169,37 @@ host port **5433**) and run `migrate` again.
 
 ### A quick end-to-end tour
 
+Registration does not return JWT. In development the verification e-mail
+is printed to the Django console (`EMAIL_BACKEND` console). Copy the
+`verify_key` from the log, confirm, then log in.
+
 ```bash
-# 1. Register by e-mail (returns access + refresh JWT immediately)
+# 1. Register by e-mail (201; verification mail, no tokens)
 curl -X POST http://127.0.0.1:8000/dj-rest-auth/registration/ \
   -H "Content-Type: application/json" \
   -d '{"email": "anna@example.com", "password1": "Testpass123!", "password2": "Testpass123!"}'
 
-# 2. Add a free-text tracker row with a deadline
+# 2. Confirm the address (key from the console e-mail)
+curl -X POST http://127.0.0.1:8000/dj-rest-auth/registration/verify-email/ \
+  -H "Content-Type: application/json" \
+  -d '{"key": "<verify key>"}'
+
+# 3. Log in
+curl -X POST http://127.0.0.1:8000/dj-rest-auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "anna@example.com", "password": "Testpass123!"}'
+
+# 4. Add a free-text tracker row with a deadline
 curl -X POST http://127.0.0.1:8000/api/v1/applications/ \
   -H "Authorization: Bearer <access token>" -H "Content-Type: application/json" \
   -d '{"company": "Acme AB", "title": "Backendutvecklare", "applied_at": "2026-06-09", "deadline": "2026-06-30"}'
 
-# 3. Move it forward (auto-logs a timeline event)
+# 5. Move it forward (auto-logs a timeline event)
 curl -X PATCH http://127.0.0.1:8000/api/v1/applications/1/ \
   -H "Authorization: Bearer <access token>" -H "Content-Type: application/json" \
   -d '{"status": "screening"}'
 
-# 4. When the access token expires, mint a new one with the refresh token
+# 6. When the access token expires, mint a new one with the refresh token
 curl -X POST http://127.0.0.1:8000/dj-rest-auth/token/refresh/ \
   -H "Content-Type: application/json" \
   -d '{"refresh": "<refresh token>"}'
@@ -181,17 +212,18 @@ host):
 
 - **One service serves everything**: the `Dockerfile` builds the frontend
   (Node stage), collects static files, and gunicorn + WhiteNoise serve
-  the SPA at `/`, hashed assets, the API and the admin
+  marketing pages at `/`, the SPA at `/app/`, hashed assets, the API and
+  the admin
 - **`render.yaml` blueprint**: web service + cron jobs on Render; **Supabase**
   Postgres in production (`DATABASE_URL` set manually in Render dashboard)
 - **Production hardening** activates when `DJANGO_DEBUG=0`: HSTS,
   SSL redirect (behind proxy header), secure cookies, manifest static
   storage, referrer policy
-- **Env-driven bootstrap on boot** (free tier has no shell): creates the
+- **Env-driven bootstrap on boot** (no shell required): creates the
   superuser (`DJANGO_SUPERUSER_USERNAME`/`_PASSWORD`) and syncs the
   public site domain from `FRONTEND_URL` — idempotent
 - CI runs the backend tests against **Postgres 16** (same engine as
-  production) plus the frontend build
+  production) plus the frontend build, typecheck and Playwright e2e
 
 Quick start: push to GitHub → render.com → **New → Blueprint** → select
 the repo → **Apply**. Prefer to host the frontend on Vercel's CDN with
@@ -200,25 +232,25 @@ for the split (frontend on Vercel, backend on Render).
 
 ### E-mail & password reset
 
-Password reset sends an e-mail with a link back to the app. **In
+Password reset sends an e-mail with a link back to `/app/`. **In
 development** no configuration is needed — Django's console backend
-prints the e-mail (including the reset link) to the server log. **In
-production the reset e-mail is only actually sent when SMTP is
-configured**; without `EMAIL_HOST` set, reset silently no-ops from the
-user's point of view.
+prints the e-mail (including the reset link) to the server log.
 
-Set these env vars in production (any SMTP provider — Brevo, Resend,
-Postmark, …; the free tiers are enough):
+**In production on Render**, set `BREVO_API_KEY` (HTTP API — SMTP ports
+are often blocked). Classic SMTP (`EMAIL_HOST`) is a fallback on other
+hosts. Without either, reset and verification silently no-op from the
+user's point of view.
 
 | Variable | Purpose |
 | --- | --- |
-| `EMAIL_HOST` | SMTP host — **its presence switches on real e-mail** |
+| `BREVO_API_KEY` | Production e-mail on Render (switches on Anymail/Brevo) |
+| `EMAIL_HOST` | SMTP host — fallback when Brevo is unset |
 | `EMAIL_PORT` | SMTP port (default `587`) |
 | `EMAIL_HOST_USER` | SMTP username |
 | `EMAIL_HOST_PASSWORD` | SMTP password / API key |
 | `EMAIL_USE_TLS` | `1` (default) or `0` |
 | `DEFAULT_FROM_EMAIL` | From address, e.g. `Jobbdjungeln <no-reply@dindomän.se>` |
-| `FRONTEND_URL` | Base URL the reset link points at (e.g. `https://jobbjungeln.onrender.com`). Defaults to the request origin, which is correct for the single-service Render deploy; set it explicitly when the frontend is hosted separately (e.g. Vercel). |
+| `FRONTEND_URL` | Public origin for e-mail links (canonical: `https://jobbdjungeln.obackman.se`). Defaults to the request origin locally. Set explicitly when the frontend is hosted separately (e.g. Vercel). |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. Enables "Fortsätt med Google": create an OAuth client in Google Cloud Console with the site URL (trailing slash) as authorized redirect URI. The login button is hidden while unset. |
 | `CONTACT_EMAIL` | Public contact for privacy questions and vulnerability reports. Shown in the in-app privacy policy and served at `/.well-known/security.txt` (404 while unset). |
 
@@ -235,6 +267,7 @@ black --check .
 cd frontend
 npm test          # Vitest unit tests
 npm run lint      # ESLint
+npm run typecheck
 npm run test:e2e  # Playwright smoke tests (starts backend + frontend itself)
 ```
 
@@ -257,35 +290,39 @@ python backend/manage.py spectacular --validate --fail-on-warn
 backend/
   config/              # Django settings, root URLconf, WSGI/ASGI
   core/                # The single domain app
-    management/        #   bootstrap command
+    management/        #   bootstrap, reminders, prune, weekly summary, …
     migrations/
-    tests/             #   pytest suite (applications, auth, jobs, resume, ...)
-    models.py          #   JobApplication, ApplicationEvent, JobPosting, Resume
+    tests/             #   pytest suite
+    models.py          #   JobApplication, ApplicationEvent, Resume,
+                       #   SavedJobSearch, OperatorProfile, ReportPeriod,
+                       #   Activity, JobPosting (legacy)
     jobtech.py         #   live Platsbanken search + region/field taxonomy
     matching.py        #   boundary-aware CV skill matching
+    periods.py         #   AF report month packing
     resume.py          #   CV extraction (pypdf layout mode) + parsing
     serializers.py     #   incl. Email register + password-reset serializers
-    views.py
+    views.py / period_views.py
+  templates/           #   marketing pages + account e-mails
 frontend/
   src/
-    api.js             #   fetch wrapper with refresh-on-401
-    auth.js            #   token storage + JWT refresh
-    statuses.js        #   status pipeline shared with the backend
+    api.ts             #   fetch wrapper with refresh-on-401
+    auth.ts            #   token storage + JWT refresh
+    statuses.ts        #   status pipeline shared with the backend
     components/        #   AuthHero, DashboardPanel, SavedPanel,
-                       #   AppliedPanel, ApplicationModal,
+                       #   AppliedPanel, ReportPanel, ApplicationModal,
                        #   PostingsPanel, ProfilePanel, ResetPassword
                        #   board/ MetricTile, ApplicationRow, …
   vercel.json          #   optional: proxy /api to the backend on Vercel
-docs/                  # Vision, architecture, GDPR, pivot, deploy guides
+docs/                  # Vision, architecture, API, GDPR, pivot, deploy
 infra/                 # docker-compose for local PostgreSQL
-.github/               # CI workflow, issue/PR templates
+.github/               # CI workflow, Dependabot, issue/PR templates
 ```
 
 ## Privacy
 
 - Users see only their own data; deletion of the account cascades to
   everything it owns (GDPR right to erasure)
-- CSV export doubles as data portability
+- CSV export doubles as data portability (applications and monthly reports)
 - Uploaded CV files are parsed in memory and never stored
 - Notes may contain third-party contact details (recruiters) — covered
   in the privacy policy, removed with the account
@@ -308,11 +345,12 @@ and [docs/17-registerforteckning.md](docs/17-registerforteckning.md)
 ## Roadmap
 
 The product is feature-complete for personal use and live at
-<https://jobbjungeln.onrender.com>. The current focus is
+<https://jobbdjungeln.obackman.se>. The current focus is
 [docs/15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md)
-and [docs/13-lanseringsplan.md](docs/13-lanseringsplan.md): EU hosting,
-e-mail deliverability, retention, then mobile stores when the web app is stable.
-Google login is prepared in code but not enabled in production (July 2026).
+and [docs/13-lanseringsplan.md](docs/13-lanseringsplan.md): e-mail
+deliverability, uptime monitoring, then mobile stores when the web app is
+stable. Google login is prepared in code but not enabled in production
+(September 2026).
 
 - [x] Live JobTech search with region/occupation/remote filters
 - [x] Password reset by e-mail (Brevo HTTP API in production)
@@ -320,13 +358,15 @@ Google login is prepared in code but not enabled in production (July 2026).
 - [x] Reminders for `next_action_at` (daily cron e-mail)
 - [x] Saved JobTech searches
 - [x] Duplicate detection for tracked ads
-- [x] Privacy policy page
-- [x] Calendar export (ICS) for follow-ups and deadlines (Idag-panel)
+- [x] Privacy policy page (`/integritet/`)
+- [x] Calendar export (ICS) for follow-ups and deadlines
 - [x] Playwright E2E smoke tests in CI
 - [x] Google login (code ready — needs OAuth client + env vars)
 - [x] EU hosting: Render Frankfurt + Supabase Postgres (EU)
-- [ ] Custom domain, uptime check and verified e-mail sender domain
+- [x] Custom domain (`jobbdjungeln.obackman.se`)
+- [ ] Uptime check and verified e-mail sender domain
 - [x] Weekly summary e-mail (applications, follow-ups, saved-search digest)
+- [x] AF-style monthly reporting (Rapportera)
 - [ ] XLSX export alongside CSV
 - [ ] JobStream API for continuous ad updates
 
@@ -334,26 +374,26 @@ Google login is prepared in code but not enabled in production (July 2026).
 
 | Document | Contents |
 | --- | --- |
-| [18-manuell-test-och-cron.md](docs/18-manuell-test-och-cron.md) | **Cron on Render + manual test checklist (desktop & mobile)** |
-| [claude-chrome-testprompt.md](docs/claude-chrome-testprompt.md) | Copy-paste prompt for Claude in Chrome QA testing |
-| [claude-chrome-verification-email-prompt.md](docs/claude-chrome-verification-email-prompt.md) | Claude in Chrome prompt to test signup verification e-mail |
-| [claude-chrome-render-cron-prompt.md](docs/claude-chrome-render-cron-prompt.md) | Claude in Chrome prompt to create Render cron jobs (reminders + weekly summary) |
-| [claude-chrome-supabase-prompt.md](docs/claude-chrome-supabase-prompt.md) | Claude in Chrome prompt to set up Supabase + migrate from Render Postgres |
-| [claude-chrome-fix-email-prompt.md](docs/claude-chrome-fix-email-prompt.md) | Claude in Chrome prompt to fix Brevo/Render e-mail (no API keys in chat) |
-| [claude-chrome-sprint1-2-qa-prompt.md](docs/claude-chrome-sprint1-2-qa-prompt.md) | Claude in Chrome QA for Sprint 1 & 2 UX (scroll, CV, board filters, match) |
-| [claude-design-prompt.md](docs/claude-design-prompt.md) | Claude design/UX audit prompt (visual hierarchy, themes, mobile, top 5 fixes) |
-| [claude-chrome-deploy-qa-prompt.md](docs/claude-chrome-deploy-qa-prompt.md) | Claude in Chrome QA for latest deploy (scroll, sprint 1–2, design fixes) |
-| [chatgpt-manuell-test-prompt.md](docs/chatgpt-manuell-test-prompt.md) | Full manual test suite prompt for ChatGPT → structured report for Cursor |
-| [19-sakerhetsaudit-2026-07-10.md](docs/19-sakerhetsaudit-2026-07-10.md) | **Security audit (July 2026)** |
-| [14-sakerhet-produktion.md](docs/14-sakerhet-produktion.md) | Production security checklist (Render, Sentry, Brevo) |
-| [15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md) | **Master checklist: drift, kvalitet, retention, mobil (pausat)** |
-| [13-lanseringsplan.md](docs/13-lanseringsplan.md) | Launch plan: hosting, go-public checklist, retention |
-| [12-utvecklingsplan.md](docs/12-utvecklingsplan.md) | Earlier development plan (Phases 1–3, mostly done) |
-| [10-pivot-ansokt.md](docs/10-pivot-ansokt.md) | **The pivot: rationale, product, legal, what changed** |
-| [11-deploy-vercel.md](docs/11-deploy-vercel.md) | Deploy guide: frontend on Vercel, backend on Render |
-| [08-identity-bankid.md](docs/08-identity-bankid.md) | Archived note: identity verification is out of scope |
-| [01-vision-scope.md](docs/01-vision-scope.md) | Original vision (pre-pivot) |
+| [01-vision-scope.md](docs/01-vision-scope.md) | Current vision and scope |
 | [02-architecture.md](docs/02-architecture.md) | Components and data flows |
-| [04-data-model.md](docs/04-data-model.md) | Entities and PII classification (pre-pivot) |
+| [03-security-threat-model.md](docs/03-security-threat-model.md) | Threats and mitigations |
+| [04-data-model.md](docs/04-data-model.md) | Entities and PII classification |
+| [05-api-spec.md](docs/05-api-spec.md) | HTTP API |
 | [06-gdpr-privacy.md](docs/06-gdpr-privacy.md) | GDPR considerations |
-| [07-devops-ci-cd.md](docs/07-devops-ci-cd.md) | CI/CD setup |
+| [07-devops-ci-cd.md](docs/07-devops-ci-cd.md) | Local, CI, Render |
+| [08-identity-bankid.md](docs/08-identity-bankid.md) | Archived: identity verification is out of scope |
+| [09-master-plan.md](docs/09-master-plan.md) | Historical master plan |
+| [10-pivot-ansokt.md](docs/10-pivot-ansokt.md) | **The pivot: rationale, product, legal** |
+| [11-deploy-vercel.md](docs/11-deploy-vercel.md) | Optional: frontend on Vercel, backend on Render |
+| [12-utvecklingsplan.md](docs/12-utvecklingsplan.md) | Earlier development plan (mostly done) |
+| [13-lanseringsplan.md](docs/13-lanseringsplan.md) | Launch plan: hosting, go-public, remaining ops |
+| [14-sakerhet-produktion.md](docs/14-sakerhet-produktion.md) | Production security checklist (Render, Sentry, Brevo) |
+| [15-vag-till-fardig-webapp.md](docs/15-vag-till-fardig-webapp.md) | Master checklist: drift, kvalitet, retention, mobil (pausat) |
+| [16-incidentrutin.md](docs/16-incidentrutin.md) | Incident response |
+| [17-registerforteckning.md](docs/17-registerforteckning.md) | Records of processing |
+| [18-manuell-test-och-cron.md](docs/18-manuell-test-och-cron.md) | Cron on Render + manual test checklist |
+| [19-sakerhetsaudit-2026-07-10.md](docs/19-sakerhetsaudit-2026-07-10.md) | Security audit (July 2026) |
+
+Copy-paste QA prompts (`docs/claude-*.md`, `docs/chatgpt-manuell-test-prompt.md`)
+are operational checklists, not product spec. Dated test reports stay as
+historical records.

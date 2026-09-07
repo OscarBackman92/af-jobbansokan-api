@@ -3,7 +3,7 @@
 This document is intentionally archived. Identity verification is no longer part
 of the active product direction.
 
-The current product is a personal job-application tracker:
+The current product (**Jobbdjungeln**) is a personal job-application tracker:
 
 - Email/password accounts.
 - User-owned application data.

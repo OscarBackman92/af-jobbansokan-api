@@ -2,7 +2,7 @@
 
 Steg-för-steg för att sätta upp bakgrundsjobben i produktion och verifiera
 alla funktioner på dator och telefon. Produktions-URL i exemplen:
-**https://jobbjungeln.onrender.com** — byt om du har egen domän.
+**https://jobbdjungeln.obackman.se** (SPA: `/app/`).
 
 ---
 
@@ -35,7 +35,7 @@ utan den kraschar migrering vid `DJANGO_DEBUG=0`.
 6. Öppna varje cron → **Environment** — verifiera att dessa finns (ärvs från web):
    - `BREVO_API_KEY` eller `EMAIL_HOST` (mejl måste fungera)
    - `DEFAULT_FROM_EMAIL`
-   - `FRONTEND_URL` (t.ex. `https://jobbjungeln.onrender.com`)
+   - `FRONTEND_URL` (t.ex. `https://jobbdjungeln.obackman.se`)
    - `DATABASE_URL`, `DJANGO_SECRET_KEY`
 
 ### B. Lägg till veckocron manuellt (om du inte vill deploya om hela blueprint)
@@ -93,7 +93,7 @@ python backend/manage.py send_weekly_summary --dry-run --force
 
 1. I appen: skapa en ansökan med **Nästa steg** = igår eller idag.
 2. På Render: öppna `ansokt-reminders` → **Trigger Run** (eller vänta till 06:00 UTC).
-3. Kontrollera inkorgen — ämne: *"Jobbsöket — dags att följa upp"*.
+3. Kontrollera inkorgen — ämne: *"Jobbdjungeln — dags att följa upp"*.
 
 ### E. Felsökning cron
 
@@ -114,7 +114,7 @@ Använd **Chrome** eller **Edge**. Ha DevTools (F12) öppet vid inloggning om n�
 
 ### Förberedelse
 
-- **Produktion:** https://jobbjungeln.onrender.com
+- **Produktion:** https://jobbdjungeln.obackman.se (SPA: `/app/`)
 - **Lokalt:** `npm run dev` i `frontend/` + Django på port 8000 (se README)
 - Testkonto: använd en riktig e-post du kan läsa (för verifiering och mejl)
 
@@ -124,12 +124,12 @@ Använd **Chrome** eller **Edge**. Ha DevTools (F12) öppet vid inloggning om n�
 |------|------------|-----------|
 | Registrera | Skapa konto med e-post + lösenord | Bekräftelsemejl skickas |
 | Verifiera | Klicka länk i mejlet (eller klistra in `verify_key` i appen) | Kan logga in |
-| Logga in | E-post + lösenord | Tavlan visas |
+| Logga in | E-post + lösenord | Översikt visas |
 | Google (om aktivt) | “Fortsätt med Google” | Inloggning utan lösenord |
 | Lösenordsåterställning | “Glömt lösenord?” → mejl → nytt lösenord | Nytt lösenord fungerar; gamla sessioner utloggade |
 | Logga ut | Profil → logga ut | Tillbaka till startsidan |
 
-### 2. Tavlan
+### 2. Tavlan (Sparade jobb + Ansökningar)
 
 | Steg | Gör så här | Förväntat |
 |------|------------|-----------|
@@ -141,6 +141,15 @@ Använd **Chrome** eller **Edge**. Ha DevTools (F12) öppet vid inloggning om n�
 | Kalender | “Lägg alla i kalender” / per rad | `.ics`-fil laddas ner |
 | Exportera | Exportera CSV | Fil med dina ansökningar |
 | Ladda om sidan | F5 | Samma flik som innan (t.ex. Profil) |
+
+### 2b. Rapportera
+
+| Steg | Gör så här | Förväntat |
+|------|------------|-----------|
+| Månad | Öppna fliken Rapportera | Aktuell månad med sökta jobb |
+| Aktivitet | Lägg till sidoaktivitet | Rad i perioden |
+| Exkludera | Markera en rad som undantagen | Räknas inte med i CSV |
+| Export | Exportera månaden | CSV `aktivitetsrapport-YYYY-MM.csv` |
 
 ### 3. Annonser (Platsbanken)
 
@@ -174,7 +183,7 @@ Använd **Chrome** eller **Edge**. Ha DevTools (F12) öppet vid inloggning om n�
 
 | Mejl | Hur du triggar | Ämnesrad (ungefär) |
 |------|----------------|---------------------|
-| Verifiering | Registrering | Jobbsöket + verify |
+| Verifiering | Registrering | Jobbdjungeln + verify |
 | Återställ lösenord | Glömt lösenord | reset |
 | Daglig påminnelse | `next_action_at` ≤ idag + cron | *dags att följa upp* |
 | Veckosammanfattning | Måndag + aktivitet på tavlan / sparad sökning | *din veckosammanfattning* |
@@ -190,10 +199,10 @@ Samma URL som på dator. Testa i **Safari** (iPhone) och **Chrome** (Android).
 
 ### Layout & navigation
 
-1. Öppna https://jobbjungeln.onrender.com i mobilwebbläsaren.
+1. Öppna https://jobbdjungeln.obackman.se i mobilwebbläsaren.
 2. Logga in med samma konto.
 3. Kontrollera:
-   - Navigeringen (Tavla, Annonser, Profil) går att trycka utan att träffa fel knapp.
+   - Navigeringen (Översikt, Sparade, Ansökningar, Rapportera, Annonser, Profil) går att trycka utan att träffa fel knapp.
    - Inget viktigt klipps av i sidled (scrolla om det behövs).
    - Text är läsbar utan zoom.
 

@@ -1,4 +1,4 @@
-# Claude in Chrome — Supabase-uppsättning för Jobbsöket
+# Claude in Chrome — Supabase-uppsättning för Jobbdjungeln
 
 Kopiera hela prompten i rutan **“Kopiera prompten”** nedan och klistra in i
 Claude in Chrome. Ha **supabase.com** och **dashboard.render.com** tillgängliga
@@ -20,7 +20,7 @@ Claude in Chrome. Ha **supabase.com** och **dashboard.render.com** tillgängliga
 ## Kopiera prompten
 
 ```
-Du hjälper mig flytta Jobbsökets produktionsdatabas från Render Postgres till Supabase (EU). Appen är Django på Render (tjänsten **ansokt**), region Frankfurt. Databasen används bara som Postgres — vi använder INTE Supabase Auth eller Storage.
+Du hjälper mig flytta Jobbdjungelns produktionsdatabas från Render Postgres till Supabase (EU). Appen är Django på Render (tjänsten **jobbjungeln**), region Frankfurt. Databasen används bara som Postgres — vi använder INTE Supabase Auth eller Storage.
 
 ## Regler
 - Be mig aldrig klistra in fullständiga lösenord eller API-nycklar i chatten. Säg var jag ska klistra in dem (Render env, Supabase dashboard, terminal).
@@ -32,7 +32,7 @@ Du hjälper mig flytta Jobbsökets produktionsdatabas från Render Postgres till
 - Supabase-projekt i **EU** (Frankfurt / eu-central-1 eller närmaste EU-region).
 - `DATABASE_URL` på Render-webbtjänsten **jobbjungeln** pekar på Supabase Session pooler (port **5432**).
 - Cron-jobb **ansokt-reminders**, **ansokt-prune** och **ansokt-weekly-summary** ärver `DATABASE_URL` från web om blueprint länkar dem.
-- All befintlig data migrerad; appen fungerar på https://jobbjungeln.onrender.com/app/
+- All befintlig data migrerad; appen fungerar på https://jobbdjungeln.obackman.se/app/
 
 ---
 
@@ -101,7 +101,7 @@ Markera DEL 1 som klar när jag har en fungerande Session pooler URI.
    - **ansokt-reminders**, **ansokt-prune** och **ansokt-weekly-summary** → Environment
    - `DATABASE_URL` ska **ärvda** från web (fromService) eller ha samma värde
 
-3. Efter deploy: öppna `https://jobbjungeln.onrender.com/health/` — ska returnera `{"status":"ok",...}`
+3. Efter deploy: öppna `https://jobbdjungeln.obackman.se/health/` — ska returnera `{"status":"ok",...}`
 
 ---
 
@@ -109,7 +109,7 @@ Markera DEL 1 som klar när jag har en fungerande Session pooler URI.
 
 Be mig testa (jag rapporterar resultat):
 
-- [ ] `https://jobbjungeln.onrender.com/health/` → status ok
+- [ ] `https://jobbdjungeln.obackman.se/health/` → status ok
 - [ ] Logga in på `/app/` med befintligt konto
 - [ ] Tavlan visar tidigare ansökningar (data migrerad)
 - [ ] Skapa en testansökan och ladda om sidan — den finns kvar

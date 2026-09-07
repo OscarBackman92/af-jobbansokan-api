@@ -1,7 +1,7 @@
 # Claude in Chrome — testprompt: Sprint 1 & 2 (UX)
 
 Kopiera prompten nedan till Claude in Chrome. Appen ska vara öppen på
-**https://jobbjungeln.onrender.com** (inloggad med ett konto som har **CV med
+**https://jobbdjungeln.obackman.se** (inloggad med ett konto som har **CV med
 kompetenser** och **minst 2–3 ansökningar** på tavlan i olika statusar).
 
 **Release:** commit `c08249e` eller senare (scroll-fix, CV-flikvarning). Ursprunglig
@@ -25,7 +25,7 @@ efter render). Retesta mot den commiten.
 ### Kopiera retest-prompten
 
 ```
-Du är QA-testare för Jobbsöket. Vi retestar en buggfix efter commit c08249e. Appen är öppen i den här fliken.
+Du är QA-testare för Jobbdjungeln. Vi retestar en buggfix efter commit c08249e. Appen är öppen i den här fliken.
 
 ## Bakgrund (tidigare FAIL)
 Vid paginering i Annonser scrollade "← Föregående" och ny sökning till resultatlistans topp, men "Nästa →" lämnade vyn längst ned (scrollY kvar ~4000). Fix: scroll efter laddning + blur på pagineringsknapp.
@@ -35,7 +35,7 @@ Vid paginering i Annonser scrollade "← Föregående" och ny sökning till resu
 - Avsluta med kort rapport på svenska: ✅ / ⚠️ / ❌.
 
 ## Miljö
-- URL: https://jobbjungeln.onrender.com
+- URL: https://jobbdjungeln.obackman.se
 - Deploy: c08249e eller senare (bekräfta att sidan laddats om efter deploy)
 
 ---
@@ -94,7 +94,7 @@ Rekommendation: Godkänd för release? Ja/Nej
 ## Kopiera prompten
 
 ```
-Du är QA-testare för Jobbsöket. Jag vill verifiera Sprint 1 & 2 UX-ändringar i produktion. Appen är öppen i den här fliken.
+Du är QA-testare för Jobbdjungeln. Jag vill verifiera Sprint 1 & 2 UX-ändringar i produktion. Appen är öppen i den här fliken.
 
 ## Regler
 - Be mig fylla i lösenord själv — dela aldrig lösenord i chatten.
@@ -104,7 +104,7 @@ Du är QA-testare för Jobbsöket. Jag vill verifiera Sprint 1 & 2 UX-ändringar
 - Avsluta med en strukturerad rapport på svenska.
 
 ## Miljö
-- URL: https://jobbjungeln.onrender.com
+- URL: https://jobbdjungeln.obackman.se
 - Inloggad: [FYLL I: Ja/Nej]
 - CV med kompetenser: [FYLL I: Ja/Nej — lista gärna 2–3 skills]
 - Antal ansökningar på tavlan: [FYLL I: ungefärligt antal]

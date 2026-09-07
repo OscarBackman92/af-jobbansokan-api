@@ -11,10 +11,10 @@ Claude ska be dig klistra in nyckeln **direkt i Render/Brevo** — inte i chatte
 ## Kopiera prompten
 
 ```
-Du hjälper mig felsöka och åtgärda att Jobbsöket INTE kan skicka verifieringsmejl i produktion.
+Du hjälper mig felsöka och åtgärda att Jobbdjungeln INTE kan skicka verifieringsmejl i produktion.
 
 ## Känt läge (QA redan körd)
-- URL: https://jobbjungeln.onrender.com
+- URL: https://jobbdjungeln.obackman.se
 - GET /health/ → {"status":"ok"} (inga warnings före senaste deploy)
 - POST /dj-rest-auth/registration/ → HTTP 400
 - Fel i UI: "Vi kunde inte skicka verifieringsmejlet just nu. Försök igen om en stund."
@@ -37,11 +37,11 @@ Avsluta med verifiering att registrering fungerar.
 
 # STEG 1 — Bekräfta felet (snabbcheck)
 
-1. Öppna https://jobbjungeln.onrender.com/health/ — rapportera JSON.
+1. Öppna https://jobbdjungeln.obackman.se/health/ — rapportera JSON.
    - `email_not_configured` → BREVO_API_KEY saknas helt
    - `email_delivery_unavailable:brevo_api_key_rejected` → nyckeln ogiltig (efter senaste kod-deploy)
    - Bara `ok` → nyckeln finns men utskick kan ändå fallera (ofta avsändare)
-2. Öppna https://jobbjungeln.onrender.com utloggad → försök registrera med engångs-testmejl (be mig fylla i lösenord själv) — bekräfta fortfarande 400?
+2. Öppna https://jobbdjungeln.obackman.se utloggad → försök registrera med engångs-testmejl (be mig fylla i lösenord själv) — bekräfta fortfarande 400?
 
 ---
 
@@ -55,7 +55,7 @@ Kontrollera att dessa **finns** (ja/nej — inte visa värdena):
 |----------|--------|-----------|
 | BREVO_API_KEY | | Ska vara satt (v3-nyckel från Brevo) |
 | DEFAULT_FROM_EMAIL | | Måste matcha verifierad avsändare i Brevo |
-| FRONTEND_URL | | t.ex. https://jobbjungeln.onrender.com |
+| FRONTEND_URL | | t.ex. https://jobbdjungeln.obackman.se |
 | DJANGO_DEBUG | | Ska vara 0 |
 
 Om BREVO_API_KEY saknas eller är gammal:
@@ -109,7 +109,7 @@ Be mig köra (jag skriver kommandot i Shell, inte här med hemligheter):
 **B) Registrering i appen:**
 1. Utloggad → Skapa konto med test-e-post (jag fyller lösenord)
 2. Förväntat: skärm **"Bekräfta din e-post"** + POST /registration/ **201** (inte 400)
-3. Jag kollar inkorg — mejl med ämne *"Bekräfta din e-postadress — Jobbsöket"* och länk `verify_key=`
+3. Jag kollar inkorg — mejl med ämne *"Bekräfta din e-postadress — Jobbdjungeln"* och länk `verify_key=`
 4. Öppna länken → "E-post bekräftad!" → logga in
 
 **C) /health/ igen** — inga email-warnings (eller bara ok)

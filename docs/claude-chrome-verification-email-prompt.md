@@ -1,7 +1,7 @@
 # Claude in Chrome — testprompt: verifieringsmejl
 
 Kopiera prompten nedan till Claude in Chrome. Appen ska vara öppen på
-**https://jobbjungeln.onrender.com** (utloggad om du ska registrera nytt konto).
+**https://jobbdjungeln.obackman.se** (utloggad om du ska registrera nytt konto).
 
 **Viktigt:** Claude kan **inte** läsa din Gmail/Outlook. Du måste själv kolla
 inkorgen och antingen klicka länken eller klistra in länktexten i chatten.
@@ -11,7 +11,7 @@ inkorgen och antingen klicka länken eller klistra in länktexten i chatten.
 ## Innan du startar
 
 1. Bestäm en **test-e-post** du kan läsa (gärna inte samma som ditt vanliga
-   Jobbsöket-konto om det redan är verifierat).
+   Jobbdjungeln-konto om det redan är verifierat).
 2. Ha ett **lösenord** redo (minst 8 tecken) — fyll i det själv när Claude ber;
    dela det inte i chatten.
 3. Om du är inloggad med ett annat konto: **logga ut först** innan registreringstest.
@@ -21,7 +21,7 @@ inkorgen och antingen klicka länken eller klistra in länktexten i chatten.
 ## Kopiera prompten
 
 ```
-Du är QA-testare för Jobbsöket. Jag vill verifiera att registreringsmejl (e-postverifiering) fungerar i produktion. Appen är öppen i den här fliken.
+Du är QA-testare för Jobbdjungeln. Jag vill verifiera att registreringsmejl (e-postverifiering) fungerar i produktion. Appen är öppen i den här fliken.
 
 ## Regler
 - Be mig fylla i lösenord själv — gissa eller upprepa aldrig lösenord i chatten.
@@ -31,7 +31,7 @@ Du är QA-testare för Jobbsöket. Jag vill verifiera att registreringsmejl (e-p
 - Avsluta med en strukturerad rapport på svenska.
 
 ## Miljö
-- URL: https://jobbjungeln.onrender.com
+- URL: https://jobbdjungeln.obackman.se
 - Test-e-post (jag fyller i): [FYLL I eller säg "jag anger i formuläret"]
 - Jag är utloggad: [Ja/Nej]
 
@@ -39,7 +39,7 @@ Du är QA-testare för Jobbsöket. Jag vill verifiera att registreringsmejl (e-p
 
 # STEG 0 — E-post konfigurerad på servern?
 
-1. Öppna i ny flik: https://jobbjungeln.onrender.com/health/
+1. Öppna i ny flik: https://jobbdjungeln.obackman.se/health/
 2. Rapportera hela JSON-svaret.
 3. Om `"warnings": ["email_not_configured"]` → STOPP, markera BLOCKERAT (BREVO/EMAIL saknas i Render).
 3b. Om `"warnings": ["email_delivery_unavailable:..."]` → STOPP, markera BLOCKERAT (Brevo-nyckel eller API fel — se felsökning i slutet av prompt-dokumentet).
@@ -64,7 +64,7 @@ Du är QA-testare för Jobbsöket. Jag vill verifiera att registreringsmejl (e-p
 
 Be mig:
 1. Kolla inkorg + skräppost för test-e-posten inom 2–5 minuter.
-2. Leta efter ämne ungefär: **"Bekräfta din e-postadress — Jobbsöket"**.
+2. Leta efter ämne ungefär: **"Bekräfta din e-postadress — Jobbdjungeln"**.
 3. Rapportera till dig:
    - Kom mejlet? Ja/Nej
    - Avsändare (from-adress)
@@ -153,9 +153,9 @@ Börja med STEG 0. Fråga om jag är utloggad och vilken test-e-post jag ska anv
 ## Efter mejlet kommit (klistra in till Claude)
 
 ```
-Mejlet kom. Ämne: "Bekräfta din e-postadress — Jobbsöket"
+Mejlet kom. Ämne: "Bekräfta din e-postadress — Jobbdjungeln"
 Avsändare: [t.ex. no-reply@...]
-Länk: https://jobbjungeln.onrender.com/?verify_key=XXXX
+Länk: https://jobbdjungeln.obackman.se/app/?verify_key=XXXX
 
 Fortsätt med STEG 3–4 i testplanen.
 ```

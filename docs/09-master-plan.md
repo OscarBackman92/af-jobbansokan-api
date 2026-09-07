@@ -1,5 +1,10 @@
 # Master Plan - Ansokt
 
+> Historical planning note (product name then: Ansokt). Current product
+> is **Jobbdjungeln**. See [README](../README.md),
+> [01-vision-scope.md](01-vision-scope.md) and
+> [10-pivot-ansokt.md](10-pivot-ansokt.md).
+
 ## Thesis
 
 Ansokt should be the daily workspace for a job seeker: the place where every

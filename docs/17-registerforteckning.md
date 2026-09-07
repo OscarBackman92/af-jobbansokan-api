@@ -1,15 +1,15 @@
 # Registerförteckning (art. 30 GDPR)
 
-Personuppgiftsansvarig: den som driver Jobbsöket (kontakt: se
-`CONTACT_EMAIL` i produktionsmiljön). Senast uppdaterad: juli 2026.
+Personuppgiftsansvarig: den som driver Jobbdjungeln (kontakt: se
+`CONTACT_EMAIL` i produktionsmiljön). Senast uppdaterad: september 2026.
 
 ## Behandling 1: Användarkonton och ansökningsdata
 
 | | |
 | --- | --- |
-| Ändamål | Tillhandahålla ansökningsöversikten: konto, ansökningar, CV-matchning, påminnelser |
+| Ändamål | Tillhandahålla ansökningsöversikten: konto, ansökningar, CV-matchning, påminnelser, AF-aktivitetsrapport |
 | Kategorier av registrerade | Registrerade användare (arbetssökande) |
-| Kategorier av uppgifter | E-post, namn, ansökningar (företag, roll, status, datum, kontakter, anteckningar), strukturerat CV (kompetenser, erfarenhet, utbildning) |
+| Kategorier av uppgifter | E-post, namn, operator-id, ansökningar (företag, roll, status, datum, kontakter, anteckningar, sparad annonstext), strukturerat CV (kompetenser, profiler, erfarenhet, utbildning), sparade sökningar, rapportperioder och sidoaktiviteter |
 | Rättslig grund | Avtal (art. 6.1 b) |
 | Mottagare/biträden | Render (applikationsdrift, Frankfurt/EU), Supabase (Postgres, EU), Brevo (transaktionsmejl, EU) |
 | Tredjelandsöverföring | Nej för lagrad data (EU-region). Sentry (felrapportering) kan innebära överföring till USA — konfigurerad utan personuppgifter (`send_default_pii=False`) |
@@ -19,7 +19,7 @@ Personuppgiftsansvarig: den som driver Jobbsöket (kontakt: se
 ## Behandling 2: Google-inloggning (valfritt — endast om konfigurerat)
 
 Aktivt endast när `GOOGLE_CLIENT_ID` och `GOOGLE_CLIENT_SECRET` är satta.
-I produktion juli 2026 används mejl + lösenord; OAuth är förberett i kod men
+I produktion september 2026 används mejl + lösenord; OAuth är förberett i kod men
 ej aktiverat.
 
 | | |

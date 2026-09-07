@@ -1,7 +1,12 @@
 # Pivot: Ansökt — en personlig ansökningstracker
 
-*Beslutad 2026-06-12. Ersätter vision och scope i docs/01 samt
-A-kassa/arbetsgivar-flödena i docs/02–09 där de står i konflikt.*
+*Beslutad 2026-06-12. Dokumenterar pivoten bort från A-kassa/arbetsgivar-
+flöden. Nuvarande produktbeskrivning: [01-vision-scope.md](01-vision-scope.md).*
+
+Varumärket är idag **Jobbdjungeln**. Fliken Rapportera (månadsvis
+AF-aktivitetsrapport) tillkom senare som ett **personligt** hjälpmedel —
+inte en myndighetsintegration. Se [01-vision-scope.md](01-vision-scope.md)
+och [04-data-model.md](04-data-model.md).
 
 ## Varför
 

@@ -1,4 +1,4 @@
-# Claude in Chrome — full QA & utvärdering av Jobbsöket
+# Claude in Chrome — full QA & utvärdering av Jobbdjungeln
 
 Kopiera **hela** rutan under **“Kopiera prompten”** och klistra in i Claude in
 Chrome med appen öppen. Prompten ska gå igenom **alla användarfunktioner** och
@@ -6,11 +6,11 @@ ge både checklista och kvalitetsutvärdering.
 
 ## Innan du startar
 
-1. Öppna **https://jobbjungeln.onrender.com** (eller lokal URL).
+1. Öppna **https://jobbdjungeln.obackman.se** (eller lokal URL).
 2. Ha ett **testkonto** redo (e-post du kan läsa). Dela **aldrig** lösenord i
    chatten — fyll i lösenord själv när Claude ber dig.
-3. **Render Free** kan sova: första laddningen efter inaktivitet kan ta
-   ~30–60 sekunder. Vänta och försök igen innan du markerar FAIL.
+3. **Render Starter** (Frankfurt) sover inte som Free-tier; första laddningen
+   kan ändå ta några sekunder. Vänta innan du markerar FAIL.
 4. **Mejl** (verifiering, återställning) och **Google OAuth** kan Claude ofta
    inte slutföra — markera *MANUELLT* / *BLOCKERAT*.
 5. Skapa gärna testdata med tydligt prefix (**QA-**) så det är lätt att städa.
@@ -21,7 +21,7 @@ ge både checklista och kvalitetsutvärdering.
 ## Kopiera prompten
 
 ```
-Du är QA-testare och produktutvärderare för webbappen Jobbsöket (jobbsökningstavla).
+Du är QA-testare och produktutvärderare för webbappen Jobbdjungeln (jobbsökningstavla).
 Jag har appen öppen i den här Chrome-fliken. Gå igenom ALLT du kan nå i UI:t —
 inte bara “happy path”. Avsluta med en tydlig rapport på svenska enligt
 rapportstrukturen längst ner.
@@ -40,7 +40,7 @@ rapportstrukturen längst ner.
   (inga trasiga engelska strängar), tillgänglighet (fokus, aria där det syns).
 
 ## Miljö (fyll i tillsammans med mig innan du börjar)
-- URL: [FYLL I: t.ex. https://jobbjungeln.onrender.com]
+- URL: [FYLL I: t.ex. https://jobbdjungeln.obackman.se]
 - Inloggad: [Ja/Nej — om ja, e-post utan lösenord]
 - Dataset: [ungefär antal ansökningar / om tomt konto]
 - Enhet denna körning: [Dator / DevTools mobil]
@@ -58,7 +58,7 @@ plus 1–3 rader bevis. Samla UX-betyg 1–5 per huvudområde (1=dåligt, 5=utm�
 
 ### A1. Marketing-startsida `/`
 - [ ] Sidan laddar (hantera kallstart utan att markera FAIL för tidig timeout)
-- [ ] Varumärke **Jobbsöket** syns tydligt
+- [ ] Varumärke **Jobbdjungeln** syns tydligt
 - [ ] CTA: **Skapa konto** / **Logga in**
 - [ ] Nav/footer: **Integritet** / **Integritetspolicy**
 - [ ] Sektioner om produktvärde läsbara (status, CV-match, Platsbanken m.m.)

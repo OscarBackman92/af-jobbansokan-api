@@ -1,28 +1,28 @@
-# Väg till färdig webapp – Jobbsöket
+# Väg till färdig webapp – Jobbdjungeln
 
-Samlad checklista för att ta Jobbsöket (f.d. "Ansökt") från “funktionellt
-komplett” till en trygg, polerad webapp som kan delas brett. **Google Play / App Store är
-avsiktligt pausat** tills webben känns stabil i veckor med riktiga
-användare.
+Samlad checklista för att ta Jobbdjungeln (f.d. "Ansökt") från
+“funktionellt komplett” till en trygg, polerad webapp som kan delas
+brett. **Google Play / App Store är avsiktligt pausat** tills webben
+känns stabil i veckor med riktiga användare.
 
 Se även [13-lanseringsplan.md](13-lanseringsplan.md) (drift & retention)
 och [12-utvecklingsplan.md](12-utvecklingsplan.md) (historik).
 
 ---
 
-## Lägesbild (juni 2026)
+## Lägesbild (september 2026)
 
 | Område | Status |
 |--------|--------|
-| Kärnfunktioner (tavla, tidslinje, Platsbanken, CV, export) | Klart |
+| Kärnfunktioner (Översikt, Sparade, Ansökningar, Rapportera, Platsbanken, CV, export) | Klart |
 | Säkerhet (rate limits, CSP, throttling, Sentry) | Klart |
-| Tester (pytest, Vitest, ESLint, CI) | Klart |
+| Tester (pytest, Vitest, ESLint, typecheck, Playwright, CI) | Klart |
 | CV-parser (tvåkolumns-PDF) | Klart |
 | Legacy `/api/v1/postings/` + `import_postings` | **Borttaget** — live `/jobs/` är enda annonskällan |
 | Oanvänd `/api/v1/applications/stats/` | **Borttaget** |
-| Produktionsdrift (EU-DB, domän, e-post) | Delvis — jobbjungeln live, Supabase EU; domän/e-post kvar |
+| Produktionsdrift (EU-DB, domän, e-post) | Render Frankfurt + Supabase + `jobbdjungeln.obackman.se`; Brevo-domän/uptime kvar |
 | Retention (veckomejl, kalender) | Veckomejl + ICS-export klart |
-| Google-inloggning | Kod klar — **ej aktiverad i prod** (juli 2026) |
+| Google-inloggning | Kod klar — **ej aktiverad i prod** (september 2026) |
 
 **Tumregel:** ni är ~**90 %** på produktfunktioner men ~**75 %** på
 “redo att dela brett” p.g.a. drift och onboarding.
@@ -36,18 +36,18 @@ Utan detta ska appen inte marknadsföras hårt.
 ### Hosting & data
 
 - [x] **Render Frankfurt** + Supabase Postgres EU (`DATABASE_URL` på web).
-- [ ] Verifiera att `render.yaml` deployas med `region: frankfurt` och
+- [x] Verifiera att `render.yaml` har `region: frankfurt` och
       `plan: starter` (eller högre).
 - [ ] **Backup-rutin** för Postgres (`pg_dump` schema + regelbunden export).
 - [ ] Dokumentera återställningssteg (se [14-sakerhet-produktion.md](14-sakerhet-produktion.md)).
 
 ### Domän & tillgänglighet
 
-- [ ] **Egen domän** (t.ex. `jobbsoket.se`) kopplad till Render eller Vercel+Render.
-- [ ] Sätt `FRONTEND_URL` till den publika URL:en (lösenordsåterställning,
+- [x] **Egen domän** (`jobbdjungeln.obackman.se`) kopplad till Render.
+- [x] Sätt `FRONTEND_URL` till den publika URL:en (lösenordsåterställning,
       e-postlänkar, `django.contrib.sites`).
 - [ ] **Uptime-check** (UptimeRobot, Better Stack eller Render alerts).
-- [ ] SSL och `DJANGO_DEBUG=0` i produktion.
+- [x] SSL och `DJANGO_DEBUG=0` i produktion.
 
 ### E-post
 
@@ -59,8 +59,8 @@ Utan detta ska appen inte marknadsföras hårt.
 
 ### Juridik & transparens
 
-- [ ] Publik integritetspolicy-URL (inte bara modal i appen).
-- [ ] Tydlig information om datalagring i EU.
+- [x] Publik integritetspolicy-URL (`/integritet/`).
+- [x] Tydlig information om datalagring i EU (integritetssidan).
 - [ ] Cookie-/lagringspolicy om analytics läggs till senare (idag: JWT i
       localStorage, ingen tredjepartsanalytics).
 
@@ -110,10 +110,10 @@ fungerande e-post och övervakad uppetid.
 
 Prioritera efter Fas 1–2.
 
-- [ ] **Veckosammanfattning** per mejl: nya ansökningar, förfallna
+- [x] **Veckosammanfattning** per mejl: nya ansökningar, förfallna
       uppföljningar, kommande deadlines/intervjuer.
-- [ ] **ICS/kalenderexport** för `next_action_at` och intervjuhändelser.
-- [ ] **Digest** för sparade Platsbanken-sökningar (nya träffar).
+- [x] **ICS/kalenderexport** för `next_action_at` och intervjuhändelser.
+- [x] **Digest** för sparade Platsbanken-sökningar (nya träffar).
 - [ ] Föreslå söktermer utifrån CV-kompetenser.
 - [ ] Märk kompetenser: måste ha / bra att ha / lär mig.
 
@@ -173,12 +173,11 @@ När det är dags:
 ## Rekommenderad ordning
 
 ```text
-1. Fas 1  – EU-DB, domän, e-post, uptime          (1–3 dagar infra)
-2. Fas 2  – E2E-tester + Google-inloggning        (3–5 dagar dev)
-3. Fas 3  – Veckomejl, sedan kalenderexport       (1–2 sprintar)
-4. Fas 4  – Polish efter användarfeedback
-5. Fas 5  – Skala vid behov
-6. Mobil  – först när webben känns “99 %”
+1. Fas 1  – Brevo-domän, uptime, backup           (kvarvarande infra)
+2. Fas 2  – Google-inloggning i prod när OAuth finns
+3. Fas 4  – Polish efter användarfeedback
+4. Fas 5  – Skala vid behov
+5. Mobil  – först när webben känns “99 %”
 ```
 
 ---

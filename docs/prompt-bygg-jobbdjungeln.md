@@ -4,7 +4,7 @@ Kopiera **hela** rutan under **“Kopiera prompten”** till Claude, Cursor elle
 liknande. Prompten beskriver produkten **Jobbdjungeln** så att en agent kan
 återskapa motsvarande webbapp med alla viktiga funktioner.
 
-Referensproduktion (om du får titta): https://jobbjungeln.onrender.com  
+Referensproduktion (om du får titta): https://jobbdjungeln.obackman.se  
 (SPA under `/app/`, marketing på `/`.)
 
 ---
@@ -297,6 +297,6 @@ Fråga innan du introducerar andra molntjänster än Render/Supabase/Brevo/JobTe
 
 | Syfte | Tips |
 |-------|------|
-| Jämför mot live | Låt agenten titta på https://jobbjungeln.onrender.com parallellt |
+| Jämför mot live | Låt agenten titta på https://jobbdjungeln.obackman.se parallellt |
 | Begränsa scope | Be den bygga bara steg 1–3 först |
 | Undvik hemligheter | Ge aldrig API-nycklar i prompten — peka på `.env.example` |

@@ -2,7 +2,8 @@
 
 ## Assumptions
 
-- Application rows, notes and CV data are personal data.
+- Application rows, notes, CV data, saved searches, report periods and
+  activities are personal data.
 - Users should only ever see their own data.
 - Uploaded CV files are processed in memory and are not stored.
 - The public API is exposed to browsers and should be hardened for abuse.
@@ -24,10 +25,11 @@
 
 - DRF endpoints default to authenticated access.
 - Querysets filter by `request.user`.
-- Account deletion cascades to owned application and CV data.
+- Account deletion cascades to owned application, CV, search, period and
+  activity data.
 - CV files are parsed in memory and never persisted.
 - Production settings enable secure cookies, HSTS and SSL redirect when debug is
-  off.
+  off. Canonical public origin is `https://jobbdjungeln.obackman.se`.
 - JobTech requests have a timeout and return a friendly 502 on upstream failure.
 - Password reset avoids account enumeration.
 - Rate limiting on API, auth (`dj_rest_auth` 5/min), uploads and JobTech proxy.
@@ -48,6 +50,7 @@
 - `pip-audit` and `npm audit` in CI (`.github/workflows/ci.yml`, audit job).
 - Production requires `DATABASE_URL` when `DEBUG=0` (`settings.py`).
 - Docker: `collectstatic` at container start, not image build (`Dockerfile`).
+- Render cron for reminders, inactive-account pruning and weekly summary.
 
 ## Audit log
 

@@ -1,4 +1,4 @@
-# Claude in Chrome — testprompt för Jobbsöket
+# Claude in Chrome — testprompt för Jobbdjungeln
 
 För **full** genomgång av hela sajten (alla flikar, månadsfilter, CV-match,
 utvärdering + rapportmall), använd:
@@ -10,10 +10,10 @@ om du bara vill snabbkolla dator + mobil.
 
 ## Innan du startar
 
-1. Öppna **https://jobbjungeln.onrender.com** i Chrome (eller din lokala URL).
+1. Öppna **https://jobbdjungeln.obackman.se** i Chrome (eller din lokala URL).
 2. Ha ett **testkonto** redo. Dela **aldrig** lösenord i chatten.
 3. **Mejl** och **Google OAuth** → markera MANUELLT om Claude inte kan slutföra.
-4. **Render Free** kan sova (~30–60 s kallstart) — vänta innan FAIL.
+4. Första laddningen kan ta några sekunder — vänta innan FAIL.
 5. Schemalagda cron-jobb finns **inte** i produktion; påminnelser/gallring är manuella.
 
 ---
@@ -21,7 +21,7 @@ om du bara vill snabbkolla dator + mobil.
 ## Kopiera prompten (kort smoke)
 
 ```
-Du är QA-testare för webbappen Jobbsöket. Jag har appen öppen i den här fliken.
+Du är QA-testare för webbappen Jobbdjungeln. Jag har appen öppen i den här fliken.
 Gör en snabb men strukturerad smoke-test på svenska. Avsluta med kort rapport.
 
 ## Regler
@@ -39,7 +39,7 @@ Efter varje punkt: ✅ / ⚠️ / ❌ / ⏭️ / 🔒 MANUELLT
 
 ### 1. Skal
 - [ ] Laddar (hantera kallstart)
-- [ ] Jobbsöket syns; flikar Ansökningar | Annonser | Profil & CV
+- [ ] Jobbdjungeln syns; flikar Översikt | Sparade jobb | Ansökningar | Rapportera | Annonser | Profil & CV
 - [ ] Footer: tema + Integritetspolicy
 
 ### 2. Auth (om ej inloggad)

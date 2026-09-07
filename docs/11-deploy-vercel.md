@@ -14,7 +14,8 @@ oförändrat.
 ## 1. Backend på Render (gör detta först)
 
 Följ README:s deploy-avsnitt (Render → New → Blueprint → välj repot).
-När det är klart har du en URL, t.ex. `https://jobbjungeln.onrender.com`.
+När det är klart har du en URL, t.ex. `https://jobbdjungeln.obackman.se`
+(Render-hostnamnet `jobbjungeln.onrender.com` kan fortfarande svara).
 Verifiera att `https://<din-backend>/health/` svarar `{"status":"ok"}`.
 
 ## 2. Peka vercel.json mot backend
@@ -47,11 +48,11 @@ på rätt host och att backenden svarar på `/health/`.
 ## Alternativ: allt på Render (enklast)
 
 `render.yaml` bygger redan frontend + backend i en enda tjänst
-(Dockerfile + WhiteNoise serverar SPA:n på `/`). Vill du slippa två
-plattformar räcker det att deploya blueprinten — då behövs varken Vercel
-eller `vercel.json`. Vercel-vägen är värd det främst om du vill ha
-Vercels CDN, preview-deploys per pull request och snabbare frontend-
-iterationer.
+(Dockerfile + WhiteNoise serverar marknadsidor på `/` och SPA:n på
+`/app/`). Vill du slippa två plattformar räcker det att deploya
+blueprinten — då behövs varken Vercel eller `vercel.json`. Vercel-vägen
+är värd det främst om du vill ha Vercels CDN, preview-deploys per pull
+request och snabbare frontend-iterationer.
 
 ## Varför inte hela appen på Vercel?
 

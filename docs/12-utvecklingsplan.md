@@ -1,10 +1,16 @@
-# Utvecklingsplan – Jobbsöket (f.d. Ansökt)
+# Utvecklingsplan – Jobbdjungeln (f.d. Ansökt)
 
-Konkret, prioriterad plan för vidareutveckling av Jobbsöket. Kompletterar den
+Konkret, prioriterad plan för vidareutveckling. Kompletterar den
 strategiska `09-master-plan.md` med faktiska uppgifter, kodkopplingar och
-föreslagen ordning. Uppdaterad efter command center-redesignen av frontend.
+föreslagen ordning.
 
-## Nuläge (juni 2026)
+> **Läge september 2026:** Fas 1–2 är i praktiken klara (E2E i CI, cron,
+> sparade sökningar, påminnelser, veckosammanfattning + digest, ICS,
+> JobTech-cache). Kvar: XLSX, sökförslag från CV, kompetensmärkning
+> “måste ha / bra att ha”, anteckningsmallar. Se även
+> [15-vag-till-fardig-webapp.md](15-vag-till-fardig-webapp.md).
+
+## Nuläge (juni 2026, historisk snapshot)
 
 **Fungerar och är i drift:**
 
@@ -42,11 +48,11 @@ Planen delas i fem spår som kan löpa delvis parallellt.
 Fokus: gör appen trygg att släppa till riktiga användare.
 
 ### A. Driftsäkerhet
-- [ ] Konfigurera och verifiera produktions-SMTP så lösenordsåterställning fungerar
-      (`backend/config/settings.py`, `render.yaml`). Lägg till ett röktest som
-      larmar om `EMAIL_HOST` saknas i prod.
+- [x] Produktionsmejl via Brevo HTTP API (`BREVO_API_KEY`). Health varnar
+      om varken Brevo eller SMTP är satt. Kvar: verifierad avsändardomän.
 - [x] Lägg till Sentry (backend + frontend) för felrapportering.
-- [ ] Uptime-check och custom domän på Render.
+- [x] Custom domän (`jobbdjungeln.obackman.se`).
+- [ ] Uptime-check.
 - [x] Integritetspolicy-sida + kort datahanteringssammanfattning (länkas i footern).
 - [x] Health-endpoint varnar om `EMAIL_HOST` saknas i produktion.
 - [x] Deploy-checks (`core.E001`, `core.W001`) vid `manage.py check --deploy`.
@@ -80,7 +86,7 @@ Fokus: gör appen till ett dagligt verktyg.
 ### B. Kvalitet (städning)
 - [x] Ta bort legacy `/api/v1/postings/`, `import_postings` och bootstrap-import.
 - [x] Ta bort oanvänd `/api/v1/applications/stats/`.
-- [ ] 2–3 E2E-röktester i CI.
+- [x] 2–3 E2E-röktester i CI.
 - [ ] XLSX-export vid sidan av CSV.
 
 ---
@@ -94,7 +100,7 @@ Fokus: gör matchningen till en verklig konkurrensfördel.
 - [x] Visa saknade kompetenser, inte bara matchade (`backend/core/matching.py`).
 - [ ] Föreslå söktermer utifrån användarens CV.
 - [ ] Låt användaren märka kompetenser som "måste ha" / "bra att ha" / "lär mig".
-- [ ] Digest-mejl för sparade sökningar.
+- [x] Digest-mejl för sparade sökningar (del av `send_weekly_summary`).
 
 ---
 
@@ -103,13 +109,13 @@ Fokus: gör matchningen till en verklig konkurrensfördel.
 ### E. UX-polish
 - [x] Tillgänglighetsförbättringar i modaler: fokus, Escape, `role="dialog"`, `aria-modal`.
 - [x] Mobil-polish: safe areas, touch targets, bottom sheets, horisontell scroll.
-- [ ] Kalenderexport (ICS) för intervjuer och uppföljningar.
+- [x] Kalenderexport (ICS) för intervjuer och uppföljningar.
 - [ ] Mallar för anteckningar, rekryterarsamtal och intervjuförberedelse.
-- [ ] Veckosammanfattning: skickade ansökningar, uppföljningar, bokade intervjuer.
+- [x] Veckosammanfattning: skickade ansökningar, uppföljningar, bokade intervjuer.
 
 ### Skala (vid behov)
-- [ ] Bakgrundsjobb för påminnelser och digests (Render cron eller Celery/RQ).
-- [ ] Kortlivad cache för JobTech-sökningar.
+- [x] Bakgrundsjobb för påminnelser och digests (Render cron).
+- [x] Kortlivad cache för JobTech-sökningar.
 - [ ] Postgres fulltextsök om lokal annonsdata växer.
 - [ ] Strukturerad loggning, mätvärden och larm.
 

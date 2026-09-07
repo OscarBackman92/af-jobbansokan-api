@@ -5,8 +5,8 @@ texten för användare finns i appen och på `/integritet/`.
 
 ## Principer
 
-- **Dataminimering** — bara det användaren sparar (ansökningar, strukturerat CV).
-  Uppladdade CV-filer lagras inte.
+- **Dataminimering** — bara det användaren sparar (ansökningar, CV-fält,
+  sökningar, rapportperioder). Uppladdade CV-filer lagras inte.
 - **Ändamålsbegränsning** — tjänsten är en personlig översikt, inte rekrytering
   eller marknadsföring mot arbetsgivare.
 - **Lagringsbegränsning** — konto kvar tills användaren raderar det; inaktiva
@@ -18,16 +18,19 @@ texten för användare finns i appen och på `/integritet/`.
 
 | Data | Varför | Rättslig grund |
 |------|--------|----------------|
-| E-post, namn | Konto och inloggning | Avtal (art. 6.1 b) |
-| Ansökningar (företag, roll, status, datum, kontakter, anteckningar) | Ansökningar | Avtal |
-| Strukturerat CV (kompetenser användaren markerat, erfarenhet, utbildning) | Matchning mot annonser | Avtal |
+| E-post, namn, operator-id | Konto och inloggning | Avtal (art. 6.1 b) |
+| Ansökningar (företag, roll, status, datum, kontakter, anteckningar, sparad annonstext) | Ansökningsspårning | Avtal |
+| Strukturerat CV (kompetenser, profiler, erfarenhet, utbildning) | Matchning mot annonser | Avtal |
 | Sparade Platsbanken-sökningar | Veckodigest och snabb sök | Avtal |
+| Rapportperioder och sidoaktiviteter | Personlig AF-aktivitetsrapport | Avtal |
 | Tekniska loggar (IP i Render-loggar) | Drift och missbruksskydd | Berättigat intresse (art. 6.1 f) |
 
 ## Vad som inte lagras
 
 - Uppladdade CV-filer (PDF/DOCX/TXT) — tolkas i minne
-- Platsbankens annonstext som permanent kopia (live-sök + kort cache)
+- Hela Platsbanken som lokal kopia (live-sök + 3 min cache). En
+  **snapshot** av annonstext (`ad_description`) sparas bara när
+  användaren själv lägger annonsen på tavlan.
 - Analytics eller beteendespårning
 - Försäljning till arbetsgivare eller annonsörer
 
@@ -48,7 +51,7 @@ Fullständig registerförteckning: [17-registerforteckning.md](17-registerfortec
 | Rättighet | Hur |
 |-----------|-----|
 | Tillgång | All data synlig i appen |
-| Portabilitet | Exportera ansökningar som CSV |
+| Portabilitet | Exportera ansökningar som CSV; månadsrapport som CSV |
 | Rättelse | Redigera profil, ansökningar, CV i appen |
 | Radering | Radera konto under Profil & CV (omedelbar kaskad) |
 | Invändning / begränsning | Kontakta `CONTACT_EMAIL` |
