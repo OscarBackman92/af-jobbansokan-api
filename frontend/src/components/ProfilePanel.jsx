@@ -38,7 +38,6 @@ export default function ProfilePanel({
     <div className="stack">
       <section className="command-hero command-hero--compact">
         <div className="command-hero-copy">
-          <span className="section-kicker">Profil och CV</span>
           <h2>Dina uppgifter</h2>
           <p className="muted">
             Kontaktuppgifter, CV och kompetenser som räknas mot annonser.

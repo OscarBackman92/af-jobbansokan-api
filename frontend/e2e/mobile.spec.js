@@ -8,7 +8,6 @@ const TABS = [
   "Översikt",
   "Sparade jobb",
   "Ansökningar",
-  "Rapportera",
   "Annonser",
   "Profil & CV",
 ];
@@ -17,7 +16,6 @@ const DEEP_LINKS = [
   { tab: "dash", label: "Översikt" },
   { tab: "saved", label: "Sparade jobb" },
   { tab: "applied", label: "Ansökningar" },
-  { tab: "report", label: "Rapportera" },
   { tab: "postings", label: "Annonser" },
   { tab: "profile", label: "Profil & CV" },
 ];
@@ -76,12 +74,14 @@ test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
         scrollWidth: doc.scrollWidth,
         clientWidth: doc.clientWidth,
         paceOverflow: pace ? pace.scrollWidth - pace.clientWidth : 0,
-        tabCount: tabs.length,
+        tabCount: tabs.filter((tab) => !tab.classList.contains("tab--desktop-only"))
+          .length,
         clippedTabs: tabs
           .filter((tab) => {
             if (!(navBox instanceof DOMRect) || !(tab instanceof HTMLElement)) {
               return true;
             }
+            if (tab.classList.contains("tab--desktop-only")) return false;
             const box = tab.getBoundingClientRect();
             return (
               box.left < navBox.left - 1 ||
@@ -96,7 +96,7 @@ test("mobile layout: no overflow and tabs stay readable", async ({ page }) => {
 
     expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
     expect(metrics.paceOverflow).toBeLessThanOrEqual(2);
-    expect(metrics.tabCount).toBe(6);
+    expect(metrics.tabCount).toBe(5);
     expect(metrics.clippedTabs, JSON.stringify(metrics.clippedTabs)).toEqual([]);
     await assertActiveTabFullyVisible(page);
     await assertNoRealMainOverflow(page);

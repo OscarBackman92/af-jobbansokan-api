@@ -15,6 +15,8 @@ import MetricTile from "./board/MetricTile.jsx";
 import ConfirmDialog from "./ConfirmDialog.jsx";
 import MatchScore from "./MatchScore.jsx";
 import ProfileFitRow from "./ProfileFitRow.jsx";
+import LaneRowToggle from "./LaneRowToggle.jsx";
+import RowOverflowMenu from "./RowOverflowMenu.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
 import { countSummary } from "../plural.js";
 
@@ -149,6 +151,7 @@ export default function SavedPanel({
   }, []);
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [openRowIds, setOpenRowIds] = useState(() => new Set());
 
   useEffect(() => {
     if (initialFilter) setLaneFilter(initialFilter);
@@ -420,11 +423,19 @@ export default function SavedPanel({
     setLaneFilter(null);
   }
 
+  function toggleRowOpen(id) {
+    setOpenRowIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   return (
     <div className="stack">
       <section className="command-hero command-hero--compact">
         <div className="command-hero-copy">
-          <span className="section-kicker">Sparade jobb</span>
           <h2>Det du vill söka</h2>
         </div>
         <div className="metric-grid" aria-label="Sparade jobb">
@@ -723,8 +734,19 @@ export default function SavedPanel({
                             .filter(Boolean)
                             .join(" · ");
 
+                          const rowOpen =
+                            openRowIds.has(app.id) ||
+                            planningId === app.id ||
+                            (applyPrompt?.source === "row" &&
+                              applyPrompt.ids[0] === app.id);
+
                           return (
-                            <div key={app.id} className={rowClass}>
+                            <div
+                              key={app.id}
+                              className={`${rowClass}${
+                                rowOpen ? " lane-row--open" : ""
+                              }`}
+                            >
                               <label className="lane-select">
                                 <input
                                   type="checkbox"
@@ -775,6 +797,12 @@ export default function SavedPanel({
                                 )}
                               </div>
 
+                              <LaneRowToggle
+                                open={rowOpen}
+                                onToggle={() => toggleRowOpen(app.id)}
+                                label={app.title}
+                              />
+
                               <div className="lane-actions">
                                 {isExpired ? (
                                   <>
@@ -788,14 +816,16 @@ export default function SavedPanel({
                                     >
                                       Sökte ändå
                                     </button>
-                                    <button
-                                      type="button"
-                                      className="secondary small"
+                                    <RowOverflowMenu
                                       disabled={busy}
-                                      onClick={() => requestArchive([app.id])}
-                                    >
-                                      Släpp (arkivera)
-                                    </button>
+                                      items={[
+                                        {
+                                          label: "Släpp (arkivera)",
+                                          onClick: () =>
+                                            requestArchive([app.id]),
+                                        },
+                                      ]}
+                                    />
                                   </>
                                 ) : (
                                   <>
@@ -808,23 +838,28 @@ export default function SavedPanel({
                                     >
                                       Ansök ↗
                                     </button>
+                                    <RowOverflowMenu
+                                      disabled={busy}
+                                      items={[
+                                        {
+                                          label: "Planera",
+                                          onClick: () => startPlanning(app),
+                                        },
+                                        {
+                                          label: "Släpp",
+                                          onClick: () =>
+                                            requestArchive([app.id]),
+                                        },
+                                      ]}
+                                    />
                                     <button
                                       type="button"
-                                      className="secondary small"
-                                      disabled={busy}
+                                      className="sr-only"
                                       data-shortcut="plan"
+                                      tabIndex={-1}
                                       onClick={() => startPlanning(app)}
-                                      aria-expanded={planningId === app.id}
                                     >
                                       Planera
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="secondary small"
-                                      disabled={busy}
-                                      onClick={() => requestArchive([app.id])}
-                                    >
-                                      Släpp
                                     </button>
                                   </>
                                 )}

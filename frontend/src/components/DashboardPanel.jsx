@@ -160,7 +160,6 @@ export default function DashboardPanel({
       <div className="stack">
         <section className="command-hero command-hero--compact">
           <div className="command-hero-copy">
-            <span className="section-kicker">Översikt</span>
             <h2>Din översikt</h2>
           </div>
         </section>
@@ -177,7 +176,6 @@ export default function DashboardPanel({
       <div className="stack">
         <section className="command-hero command-hero--compact">
           <div className="command-hero-copy">
-            <span className="section-kicker">Översikt</span>
             <h2>Din översikt</h2>
           </div>
         </section>
@@ -248,7 +246,6 @@ export default function DashboardPanel({
     <div className="stack">
       <section className="command-hero">
         <div className="command-hero-copy">
-          <span className="section-kicker">Översikt</span>
           <h2>Din översikt</h2>
           <p className="muted">
             {headlineFromKpis(kpis)} En läsvy som länkar vidare till sparade

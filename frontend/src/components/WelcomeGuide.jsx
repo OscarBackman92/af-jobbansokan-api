@@ -3,10 +3,10 @@ export default function WelcomeGuide({ onDismiss, onNavigate }) {
     <section className="welcome-guide card" aria-labelledby="welcome-guide-heading">
       <div className="welcome-guide-head">
         <div>
-          <span className="section-kicker">Ny här?</span>
           <h2 id="welcome-guide-heading">Snabbguide</h2>
           <p className="muted welcome-guide-lede">
-            Sex flikar: översikt, sparade, ansökningar, rapport, Platsbanken och CV.
+            Översikt, sparade jobb, ansökningar, Platsbanken och CV. Rapportering
+            finns under Ansökningar och på översikten.
           </p>
         </div>
         <button

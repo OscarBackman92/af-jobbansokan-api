@@ -20,6 +20,7 @@ import { matchesApplicationSearch } from "../text.js";
 import ApplicationModal from "./ApplicationModal.jsx";
 import MetricTile from "./board/MetricTile.jsx";
 import ApplicationRow from "./board/ApplicationRow.jsx";
+import LaneRowToggle from "./LaneRowToggle.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
 import ModalCloseButton from "./ModalCloseButton.jsx";
 import ModalOverlay, { useModalClose } from "./ModalOverlay.jsx";
@@ -109,6 +110,7 @@ export default function AppliedPanel({
   const [pendingMove, setPendingMove] = useState(null);
   const [pendingDate, setPendingDate] = useState(() => localISODate());
   const [savingMove, setSavingMove] = useState(false);
+  const [openRowIds, setOpenRowIds] = useState(() => new Set());
   const listSectionRef = useRef(null);
 
   useEffect(() => {
@@ -289,6 +291,15 @@ export default function AppliedPanel({
     });
   }
 
+  function toggleRowOpen(id) {
+    setOpenRowIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   function toggleSelected(id) {
     setSelectedIds((current) => {
       const next = new Set(current);
@@ -315,8 +326,18 @@ export default function AppliedPanel({
     <div className="stack">
       <section className="command-hero command-hero--compact">
         <div className="command-hero-copy">
-          <span className="section-kicker">Ansökningar</span>
           <h2>Sökta jobb</h2>
+          <p className="muted">
+            Status, uppföljning och{" "}
+            <button
+              type="button"
+              className="linklike"
+              onClick={() => onNavigate?.("report")}
+            >
+              aktivitetsrapport
+            </button>
+            .
+          </p>
         </div>
         <div className="metric-grid" aria-label="Översikt sökta">
           <MetricTile
@@ -624,7 +645,11 @@ export default function AppliedPanel({
                         visibleApps.map((application) => (
                           <div
                             key={application.id}
-                            className={`lane-row lane-row--${group.id}`}
+                            className={`lane-row lane-row--${group.id}${
+                              openRowIds.has(application.id)
+                                ? " lane-row--open"
+                                : ""
+                            }`}
                           >
                             <label className="lane-select">
                               <span className="sr-only">
@@ -650,47 +675,45 @@ export default function AppliedPanel({
                                 setModalFocus(null);
                                 setSelected(application);
                               }}
-                              onLog={() => {
-                                setModalFocus("timeline");
-                                setSelected(application);
-                              }}
                               onMove={(next) =>
                                 requestMove(application.id, next)
                               }
+                              primaryAction={{
+                                label: "Följ upp",
+                                className: "small",
+                                onClick: () => followUpIds([application.id]),
+                              }}
+                              overflowActions={[
+                                {
+                                  label: "Kalender",
+                                  onClick: () =>
+                                    downloadSingleActionIcs(
+                                      followUpIcsItem(
+                                        application,
+                                        application.next_action_at ||
+                                          localISODate()
+                                      )
+                                    ),
+                                },
+                                {
+                                  label: "Avsluta",
+                                  onClick: () =>
+                                    requestMove(application.id, "no_response"),
+                                },
+                                {
+                                  label: "Logga händelse",
+                                  onClick: () => {
+                                    setModalFocus("timeline");
+                                    setSelected(application);
+                                  },
+                                },
+                              ]}
                             />
-                            <div className="lane-actions">
-                              <button
-                                type="button"
-                                className="secondary small"
-                                onClick={() => followUpIds([application.id])}
-                              >
-                                Följ upp
-                              </button>
-                              <button
-                                type="button"
-                                className="secondary small"
-                                onClick={() =>
-                                  downloadSingleActionIcs(
-                                    followUpIcsItem(
-                                      application,
-                                      application.next_action_at ||
-                                        localISODate()
-                                    )
-                                  )
-                                }
-                              >
-                                Kalender
-                              </button>
-                              <button
-                                type="button"
-                                className="secondary small"
-                                onClick={() =>
-                                  requestMove(application.id, "no_response")
-                                }
-                              >
-                                Avsluta
-                              </button>
-                            </div>
+                            <LaneRowToggle
+                              open={openRowIds.has(application.id)}
+                              onToggle={() => toggleRowOpen(application.id)}
+                              label={application.title}
+                            />
                           </div>
                         ))
                       )}

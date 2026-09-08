@@ -16,7 +16,6 @@ const HIGHLIGHTS = [
 export default function AuthIntro() {
   return (
     <aside className="auth-intro" aria-label="Om Jobbdjungeln">
-      <span className="section-kicker">Jobbdjungeln</span>
       <h1>
         Dina ansökningar,
         <span className="grad"> inte en jobbsajt.</span>

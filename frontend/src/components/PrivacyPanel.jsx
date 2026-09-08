@@ -5,7 +5,6 @@ export default function PrivacyPanel({ onClose }) {
     <section className="card privacy-panel">
       <div className="row-between">
         <div>
-          <span className="section-kicker">Data & integritet</span>
           <h2>Integritetspolicy</h2>
         </div>
         <button type="button" className="secondary small" onClick={onClose}>

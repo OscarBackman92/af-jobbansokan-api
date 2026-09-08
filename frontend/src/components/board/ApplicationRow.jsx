@@ -3,6 +3,7 @@ import { STATUS_LABELS, statusChoicesFor } from "../../statuses.js";
 import MatchScore from "../MatchScore.jsx";
 import DeadlineBadge from "./DeadlineBadge.jsx";
 import ProfileFitRow from "../ProfileFitRow.jsx";
+import RowOverflowMenu from "../RowOverflowMenu.jsx";
 
 export default function ApplicationRow({
   application,
@@ -10,7 +11,8 @@ export default function ApplicationRow({
   saving = false,
   onOpen,
   onMove,
-  onLog,
+  primaryAction,
+  overflowActions = [],
 }) {
   const meta = [
     application.company,
@@ -73,10 +75,18 @@ export default function ApplicationRow({
         )}
       </div>
       <div className="pipeline-row-actions">
+        {primaryAction && (
+          <button
+            type="button"
+            className={primaryAction.className || "small"}
+            disabled={saving || primaryAction.disabled}
+            onClick={primaryAction.onClick}
+          >
+            {primaryAction.label}
+          </button>
+        )}
         <label className="status-chip">
-          <span className="status-chip-current">
-            {displayLabel}
-          </span>
+          <span className="status-chip-current">{displayLabel}</span>
           <select
             value={displayStatus}
             onChange={(e) => onMove(e.target.value)}
@@ -91,15 +101,7 @@ export default function ApplicationRow({
             ))}
           </select>
         </label>
-        {onLog && (
-          <button
-            type="button"
-            className="secondary small"
-            onClick={onLog}
-          >
-            Logga händelse
-          </button>
-        )}
+        <RowOverflowMenu items={overflowActions} disabled={saving} />
       </div>
     </div>
   );

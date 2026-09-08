@@ -73,9 +73,15 @@ test.describe("responsive widths", () => {
 
       for (const tab of TABS) {
         await page.goto(`/app/?tab=${tab.id}`);
-        await expect(
-          page.getByRole("link", { name: tab.label, exact: true })
-        ).toHaveAttribute("aria-current", "page");
+        if (width < 640 && tab.id === "report") {
+          await expect(
+            page.getByRole("heading", { name: "Aktivitetsrapport" })
+          ).toBeVisible();
+        } else {
+          await expect(
+            page.getByRole("link", { name: tab.label, exact: true })
+          ).toHaveAttribute("aria-current", "page");
+        }
         await assertResponsiveLayout(page);
       }
     });

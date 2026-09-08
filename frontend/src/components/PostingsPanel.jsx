@@ -816,7 +816,6 @@ export default function PostingsPanel({ onNavigate, upsert, active = true }) {
     <div className="stack">
       <section className="command-hero command-hero--compact">
         <div className="command-hero-copy">
-          <span className="section-kicker">Platsbanken</span>
           <h2>Sök jobb</h2>
           <p className="muted">
             Platsbanken — filtrera på ort och yrke, spara ansökningar du vill följa upp.

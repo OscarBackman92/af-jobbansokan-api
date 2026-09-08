@@ -5,6 +5,7 @@ import { clearTokens, getAccess, setTokens, logout as revokeSession } from "./au
 import AuthHero from "./components/AuthHero.jsx";
 import GoogleSignIn from "./components/GoogleSignIn.jsx";
 import ReportBanner from "./components/ReportBanner.jsx";
+import TabIcon from "./components/TabIcon.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
 import VerifyEmail from "./components/VerifyEmail.jsx";
 import { encodeMonthFilter } from "./dates.js";
@@ -499,7 +500,9 @@ export default function App() {
               <a
                 key={t.id}
                 href={`/app/?tab=${t.id}`}
-                className={tab === t.id ? "tab active" : "tab"}
+                className={`${tab === t.id ? "tab active" : "tab"}${
+                  t.id === "report" ? " tab--desktop-only" : ""
+                }`}
                 aria-label={t.label}
                 onClick={(event) => {
                   if (
@@ -515,6 +518,7 @@ export default function App() {
                 }}
                 aria-current={tab === t.id ? "page" : undefined}
               >
+                <TabIcon id={t.id} />
                 <span className="tab-label-full">{t.label}</span>
                 <span className="tab-label-short" aria-hidden="true">
                   {t.short}

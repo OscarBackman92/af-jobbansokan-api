@@ -243,7 +243,6 @@ export default function ReportPanel({
       <div className="stack report-panel">
         <section className="command-hero command-hero--compact">
           <div className="command-hero-copy">
-            <span className="section-kicker">Rapportera</span>
             <h2>Aktivitetsrapport</h2>
           </div>
         </section>
@@ -267,7 +266,6 @@ export default function ReportPanel({
     <div className="stack report-panel">
       <section className="command-hero command-hero--compact">
         <div className="command-hero-copy">
-          <span className="section-kicker">Rapportera</span>
           <h2>Aktivitetsrapport</h2>
           <p className="muted">
             Förbered rapporten här. Appen lämnar inte in åt dig — kopiera
