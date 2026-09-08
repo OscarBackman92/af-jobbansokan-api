@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   changedApplicationFields,
   normalizeApplicationPayload,
+  salaryClaimRequired,
 } from "./applicationPayload.js";
 
 const base = {
@@ -23,6 +24,7 @@ const base = {
   contact_info: "",
   next_action_at: "",
   notes: "",
+  salary_claim: "45 000 kr/mån",
 };
 
 describe("applicationPayload", () => {
@@ -46,5 +48,13 @@ describe("applicationPayload", () => {
     const body = normalizeApplicationPayload(base);
     expect(body.deadline).toBeNull();
     expect(body.applied_at).toBe("2026-08-01");
+    expect(body.salary_claim).toBe("45 000 kr/mån");
+  });
+
+  it("requires a salary claim once the job is applied", () => {
+    expect(salaryClaimRequired("applied")).toBe(true);
+    expect(salaryClaimRequired("interview")).toBe(true);
+    expect(salaryClaimRequired("wishlist")).toBe(false);
+    expect(salaryClaimRequired("withdrawn")).toBe(false);
   });
 });

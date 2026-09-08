@@ -21,7 +21,16 @@ from .job_profiles import (
     normalize_job_profiles,
     profiles_from_skill_groups,
 )
-from .lifecycle import allowed_next_statuses, followup_overdue, is_overdue, is_stale
+from .lifecycle import (
+    SALARY_CLAIM_REQUIRED_MESSAGE,
+    allowed_next_statuses,
+    followup_overdue,
+    is_overdue,
+    is_stale,
+    normalize_salary_claim,
+    requires_salary_claim,
+    salary_claim_missing_on_apply,
+)
 from .matching import match_application, match_application_evidence
 from .models import (
     Activity,
@@ -188,6 +197,7 @@ class JobApplicationListSerializer(_LifecycleMixin, serializers.ModelSerializer)
             "intent",
             "applied_at",
             "deadline",
+            "salary_claim",
             "apply_by",
             "apply_by_is_auto",
             "days_until_apply_by",
@@ -289,6 +299,7 @@ class JobApplicationSerializer(_LifecycleMixin, serializers.ModelSerializer):
             "intent",
             "applied_at",
             "deadline",
+            "salary_claim",
             "apply_by",
             "apply_by_is_auto",
             "days_until_apply_by",
@@ -385,6 +396,9 @@ class JobApplicationSerializer(_LifecycleMixin, serializers.ModelSerializer):
             application.save(update_fields=["reported_in", "updated_at"])
         return application
 
+    def validate_salary_claim(self, value):
+        return normalize_salary_claim(value)
+
     def validate_apply_url(self, value):
         # Platsbanken sometimes returns mailto:/relative/junk — blank those
         # instead of blocking the whole save.
@@ -460,6 +474,32 @@ class JobApplicationSerializer(_LifecycleMixin, serializers.ModelSerializer):
         # Manual apply_by edits flip the auto flag unless the client sets it.
         if "apply_by" in attrs and "apply_by_is_auto" not in attrs:
             attrs["apply_by_is_auto"] = False
+
+        new_status = attrs.get("status")
+        if new_status is None:
+            new_status = (
+                self.instance.status if self.instance else JobApplication.STATUS_APPLIED
+            )
+        previous_status = self.instance.status if self.instance else None
+        if "salary_claim" in attrs:
+            attrs["salary_claim"] = normalize_salary_claim(attrs.get("salary_claim"))
+        salary = attrs.get(
+            "salary_claim",
+            getattr(self.instance, "salary_claim", "") if self.instance else "",
+        )
+        salary = normalize_salary_claim(salary)
+        if salary_claim_missing_on_apply(
+            status=new_status,
+            salary_claim=salary,
+            previous_status=previous_status,
+        ):
+            raise serializers.ValidationError(
+                {"salary_claim": SALARY_CLAIM_REQUIRED_MESSAGE}
+            )
+        if "salary_claim" in attrs and not salary and requires_salary_claim(new_status):
+            raise serializers.ValidationError(
+                {"salary_claim": SALARY_CLAIM_REQUIRED_MESSAGE}
+            )
 
         return attrs
 

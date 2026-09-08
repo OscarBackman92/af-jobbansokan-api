@@ -57,7 +57,15 @@ from .jobtech import (
     suggest_occupation_names,
 )
 from .jobtech import search as jobtech_search
-from .lifecycle import STAGE_BEVAKAD, assert_transition_allowed, stage_for_status
+from .lifecycle import (
+    SALARY_CLAIM_MAX_LENGTH,
+    SALARY_CLAIM_REQUIRED_MESSAGE,
+    STAGE_BEVAKAD,
+    assert_transition_allowed,
+    normalize_salary_claim,
+    salary_claim_missing_on_apply,
+    stage_for_status,
+)
 from .match_snapshot import score_and_store
 from .matching import match_evidence, match_skills
 from .models import ApplicationEvent, JobApplication, Resume, SavedJobSearch
@@ -533,6 +541,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                 Q(company__icontains=term)
                 | Q(title__icontains=term)
                 | Q(notes__icontains=term)
+                | Q(salary_claim__icontains=term)
             )
         return qs
 
@@ -664,6 +673,10 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                         ],
                     },
                     "date": {"type": "string", "format": "date"},
+                    "salary_claim": {
+                        "type": "string",
+                        "description": "Required when marking as applied.",
+                    },
                 },
                 "required": ["ids", "action"],
             }
@@ -712,6 +725,26 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
         if len(apps) != len(ids):
             raise ValidationError({"ids": "One or more applications were not found."})
 
+        salary_claim = ""
+        if action_name == "mark_applied":
+            salary_claim = normalize_salary_claim(request.data.get("salary_claim"))
+            if len(salary_claim) > SALARY_CLAIM_MAX_LENGTH:
+                raise ValidationError(
+                    {"salary_claim": f"Max {SALARY_CLAIM_MAX_LENGTH} tecken."}
+                )
+            missing = [
+                app
+                for app in apps
+                if salary_claim_missing_on_apply(
+                    status=JobApplication.STATUS_APPLIED,
+                    salary_claim=salary_claim
+                    or normalize_salary_claim(app.salary_claim),
+                    previous_status=app.status,
+                )
+            ]
+            if missing:
+                raise ValidationError({"salary_claim": SALARY_CLAIM_REQUIRED_MESSAGE})
+
         updated = []
         status_labels = dict(JobApplication.STATUS_CHOICES)
         for app in apps:
@@ -728,6 +761,8 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                     app.status = JobApplication.STATUS_APPLIED
                     if not app.applied_at:
                         app.applied_at = occurred_at
+                    if salary_claim:
+                        app.salary_claim = salary_claim
                     app.save()
                     from_stage = stage_for_status(previous)
                     to_stage = stage_for_status(app.status)
@@ -847,6 +882,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                 "intent",
                 "applied_at",
                 "deadline",
+                "salary_claim",
                 "apply_by",
                 "contact_name",
                 "contact_info",
@@ -866,6 +902,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                     sanitize_csv_cell(app.get_intent_display()),
                     app.applied_at or "",
                     app.deadline or "",
+                    sanitize_csv_cell(app.salary_claim),
                     app.apply_by or "",
                     sanitize_csv_cell(app.contact_name),
                     sanitize_csv_cell(app.contact_info),

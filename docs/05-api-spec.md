@@ -90,8 +90,9 @@ Response includes read-only `operator_id`.
 - `GET /api/v1/applications/tracked-urls/` — every `ad_url` including
   soft-archived rows (duplicate protection for ad search)
 - `GET /api/v1/applications/saved-summary/` — wishlist lane counts
-- `POST /api/v1/applications/bulk/` — `{ids, action, date?}` for
-  `mark_applied` / `archive` / `pause` / `activate` / `set_apply_by`
+- `POST /api/v1/applications/bulk/` — `{ids, action, date?, salary_claim?}` for
+  `mark_applied` / `archive` / `pause` / `activate` / `set_apply_by`.
+  `salary_claim` is required for `mark_applied` unless the rows already have one.
 - `GET /api/v1/applications/similar/` — notice-only duplicates
   (`company`, `title`, `source_job_id`, `exclude`)
 - `GET /api/v1/applications/export/` — CSV (filters apply)
@@ -99,7 +100,7 @@ Response includes read-only `operator_id`.
 List filters:
 
 - `status`
-- `search` (company, title, notes)
+- `search` (company, title, notes, salary_claim)
 - `from` / `to` (`applied_at`)
 - `archived` (`1` = soft-archived rows only; default hides them)
 - `page_size` (max 200)

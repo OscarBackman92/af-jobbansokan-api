@@ -14,6 +14,7 @@ export const APPLICATION_FIELD_KEYS = [
   "source",
   "applied_at",
   "deadline",
+  "salary_claim",
   "contact_name",
   "contact_info",
   "next_action_at",
@@ -34,7 +35,21 @@ export function normalizeApplicationPayload(form) {
   body.applied_at = emptyToNull(body.applied_at);
   body.next_action_at = emptyToNull(body.next_action_at);
   body.deadline = emptyToNull(body.deadline);
+  body.salary_claim = String(body.salary_claim || "").trim();
   return body;
+}
+
+const SALARY_CLAIM_STATUSES = new Set([
+  "applied",
+  "screening",
+  "interview",
+  "forwarded",
+  "offer",
+  "accepted",
+]);
+
+export function salaryClaimRequired(status) {
+  return SALARY_CLAIM_STATUSES.has(status);
 }
 
 export function changedApplicationFields(form, initialForm) {

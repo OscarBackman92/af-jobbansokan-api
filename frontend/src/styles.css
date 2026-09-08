@@ -4620,6 +4620,27 @@ button.chart-col:focus-visible {
   background: var(--surface-2);
 }
 
+.lane-confirm label,
+.bulk-bar-salary label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.82rem;
+}
+
+.lane-confirm input[type="text"],
+.bulk-bar-salary input[type="text"] {
+  min-width: min(16rem, 100%);
+}
+
+.bulk-bar-salary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-end;
+  flex: 1 1 16rem;
+}
+
 .due {
   display: inline-flex;
   align-items: center;

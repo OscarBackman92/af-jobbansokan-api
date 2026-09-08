@@ -6,6 +6,8 @@ from core.lifecycle import (
     assert_transition_allowed,
     employer_key,
     is_overdue,
+    requires_salary_claim,
+    salary_claim_missing_on_apply,
     stage_for_status,
 )
 from core.models import JobApplication
@@ -33,6 +35,28 @@ def test_wishlist_can_become_applied_or_closed():
     assert "applied" in allowed
     assert "withdrawn" in allowed
     assert "interview" not in allowed
+
+
+def test_salary_claim_required_when_applying():
+    assert requires_salary_claim("applied")
+    assert requires_salary_claim("interview")
+    assert not requires_salary_claim("wishlist")
+    assert not requires_salary_claim("withdrawn")
+    assert salary_claim_missing_on_apply(
+        status="applied", salary_claim="", previous_status=None
+    )
+    assert salary_claim_missing_on_apply(
+        status="applied", salary_claim="", previous_status="wishlist"
+    )
+    assert not salary_claim_missing_on_apply(
+        status="applied", salary_claim="40 000", previous_status="wishlist"
+    )
+    assert not salary_claim_missing_on_apply(
+        status="applied", salary_claim="", previous_status="applied"
+    )
+    assert not salary_claim_missing_on_apply(
+        status="wishlist", salary_claim="", previous_status=None
+    )
 
 
 def test_closed_can_reopen_to_interview():

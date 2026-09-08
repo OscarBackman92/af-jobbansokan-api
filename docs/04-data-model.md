@@ -1,6 +1,6 @@
 # Data Model
 
-Source of truth: `backend/core/models.py` (migrations through `0021`).
+Source of truth: `backend/core/models.py` (migrations through `0022`).
 
 ## User
 
@@ -36,6 +36,7 @@ copied in as a snapshot.
 - Dates: `applied_at`, `deadline`, `next_action_at`, `closed_at`,
   `archived_at`.
 - Contacts and notes: `contact_name`, `contact_info`, `notes`.
+- `salary_claim` — required when creating or marking a row as applied.
 - CV match cache: `match_score`, `match_snapshot`, `match_version`,
   `match_scored_at`, `match_profile_id`.
 - AF report flags: `report_excluded`, `report_note`, `reported_in`.

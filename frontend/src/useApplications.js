@@ -88,9 +88,10 @@ export default function useApplications(token) {
   }, []);
 
   const bulk = useCallback(
-    async ({ ids, action, date }) => {
+    async ({ ids, action, date, salary_claim }) => {
       const body = { ids, action };
       if (date) body.date = date;
+      if (salary_claim) body.salary_claim = salary_claim;
       const result = await request("/api/v1/applications/bulk/", {
         method: "POST",
         body,

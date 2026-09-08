@@ -182,6 +182,11 @@ class JobApplication(models.Model):
     match_profile_id = models.CharField(max_length=32, blank=True)
     applied_at = models.DateField(null=True, blank=True)
     deadline = models.DateField(null=True, blank=True)
+    salary_claim = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text="Löneanspråk vid ansökan, t.ex. 45 000 kr/mån.",
+    )
     contact_name = models.CharField(max_length=255, blank=True)
     contact_info = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)

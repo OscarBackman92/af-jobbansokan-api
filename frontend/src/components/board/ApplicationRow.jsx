@@ -16,6 +16,7 @@ export default function ApplicationRow({
     application.company,
     application.location,
     application.applied_at ? `Sökt ${application.applied_at}` : "",
+    application.salary_claim ? `Löneanspråk ${application.salary_claim}` : "",
     application.contact_name ? `Kontakt: ${application.contact_name}` : "",
   ].filter(Boolean);
 

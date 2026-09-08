@@ -127,7 +127,8 @@ export default function SavedPanel({
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [planningId, setPlanningId] = useState(null);
   const [planForm, setPlanForm] = useState({ apply_by: "", next_action_at: "" });
-  const [confirmAppliedId, setConfirmAppliedId] = useState(null);
+  const [applyPrompt, setApplyPrompt] = useState(null);
+  const [applySalary, setApplySalary] = useState("");
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [expiredCollapsed, setExpiredCollapsed] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -248,14 +249,20 @@ export default function SavedPanel({
     setExpiredCollapsed(true);
   }
 
-  async function runBulk(ids, action, date) {
+  async function runBulk(ids, action, date, salaryClaim) {
     if (!ids.length) return;
     try {
       setBusy(true);
       setError(null);
-      await bulk({ ids, action, ...(date ? { date } : {}) });
+      await bulk({
+        ids,
+        action,
+        ...(date ? { date } : {}),
+        ...(salaryClaim ? { salary_claim: salaryClaim } : {}),
+      });
       setSelectedIds(new Set());
-      setConfirmAppliedId(null);
+      setApplyPrompt(null);
+      setApplySalary("");
       if (planningId && ids.includes(planningId)) setPlanningId(null);
     } catch (err) {
       setError(err.message);
@@ -264,8 +271,41 @@ export default function SavedPanel({
     }
   }
 
-  function markApplied(ids) {
-    return runBulk(ids, "mark_applied", localISODate());
+  function sharedSalary(ids) {
+    const values = ids.map(
+      (id) =>
+        String(
+          applications?.find((app) => app.id === id)?.salary_claim || ""
+        ).trim()
+    );
+    if (values.length && values.every((value) => value && value === values[0])) {
+      return values[0];
+    }
+    return "";
+  }
+
+  function requestMarkApplied(ids, source) {
+    if (!ids.length) return;
+    setApplyPrompt({ ids, source });
+    setApplySalary(sharedSalary(ids));
+    setPlanningId(null);
+    setError(null);
+  }
+
+  function cancelMarkApplied() {
+    setApplyPrompt(null);
+    setApplySalary("");
+  }
+
+  async function confirmMarkApplied() {
+    const ids = applyPrompt?.ids || [];
+    const salary = applySalary.trim();
+    if (!ids.length) return;
+    if (!salary) {
+      setError("Ange löneanspråk när du markerar som ansökt.");
+      return;
+    }
+    await runBulk(ids, "mark_applied", localISODate(), salary);
   }
 
   function requestArchive(ids) {
@@ -300,8 +340,10 @@ export default function SavedPanel({
     if (href) {
       window.open(href, "_blank", "noopener,noreferrer");
     }
-    setConfirmAppliedId(app.id);
+    setApplyPrompt({ ids: [app.id], source: "row" });
+    setApplySalary(sharedSalary([app.id]));
     setPlanningId(null);
+    setError(null);
   }
 
   function startPlanning(app) {
@@ -310,7 +352,7 @@ export default function SavedPanel({
       return;
     }
     setPlanningId(app.id);
-    setConfirmAppliedId(null);
+    cancelMarkApplied();
     setPlanForm({
       apply_by: applyByFor(app) || "",
       next_action_at: app.next_action_at || "",
@@ -446,16 +488,60 @@ export default function SavedPanel({
                   <span className="bulk-bar-count">
                     {selectedVisible.length} valda
                   </span>
-                  <button
-                    type="button"
-                    className="small"
-                    onClick={() =>
-                      markApplied(selectedVisible.map((app) => app.id))
-                    }
-                    disabled={busy}
-                  >
-                    Markera som sökta
-                  </button>
+                  {applyPrompt?.source === "bulk" ? (
+                    <form
+                      className="bulk-bar-salary"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        confirmMarkApplied();
+                      }}
+                    >
+                      <label htmlFor="bulk-salary-claim">
+                        {applyPrompt.ids.length > 1
+                          ? `Löneanspråk (${applyPrompt.ids.length} jobb)`
+                          : "Löneanspråk"}
+                        <input
+                          id="bulk-salary-claim"
+                          type="text"
+                          value={applySalary}
+                          onChange={(e) => setApplySalary(e.target.value)}
+                          placeholder="t.ex. 45 000 kr/mån"
+                          maxLength={80}
+                          autoComplete="off"
+                          required
+                          autoFocus
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        className="small"
+                        disabled={busy}
+                      >
+                        Markera som sökta
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary small"
+                        onClick={cancelMarkApplied}
+                      >
+                        Avbryt
+                      </button>
+                    </form>
+                  ) : (
+                    <button
+                      type="button"
+                      className="small"
+                      onClick={() =>
+                        requestMarkApplied(
+                          selectedVisible.map((app) => app.id),
+                          "bulk"
+                        )
+                      }
+                      disabled={busy}
+                    >
+                      Markera som sökta
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="secondary small"
@@ -469,7 +555,10 @@ export default function SavedPanel({
                   <button
                     type="button"
                     className="secondary small"
-                    onClick={() => setSelectedIds(new Set())}
+                    onClick={() => {
+                      setSelectedIds(new Set());
+                      cancelMarkApplied();
+                    }}
                   >
                     Avmarkera
                   </button>
@@ -693,7 +782,9 @@ export default function SavedPanel({
                                       type="button"
                                       className="small"
                                       disabled={busy}
-                                      onClick={() => markApplied([app.id])}
+                                      onClick={() =>
+                                        requestMarkApplied([app.id], "row")
+                                      }
                                     >
                                       Sökte ändå
                                     </button>
@@ -739,30 +830,49 @@ export default function SavedPanel({
                                 )}
                               </div>
 
-                              {confirmAppliedId === app.id && (
-                                <div
+                              {applyPrompt?.source === "row" &&
+                                applyPrompt.ids[0] === app.id && (
+                                <form
                                   className="lane-confirm"
-                                  role="status"
+                                  onSubmit={(event) => {
+                                    event.preventDefault();
+                                    confirmMarkApplied();
+                                  }}
                                 >
                                   <span>Markerade du som sökt?</span>
+                                  <label htmlFor={`salary-claim-${app.id}`}>
+                                    Löneanspråk
+                                    <input
+                                      id={`salary-claim-${app.id}`}
+                                      type="text"
+                                      value={applySalary}
+                                      onChange={(e) =>
+                                        setApplySalary(e.target.value)
+                                      }
+                                      placeholder="t.ex. 45 000 kr/mån"
+                                      maxLength={80}
+                                      autoComplete="off"
+                                      required
+                                      autoFocus
+                                    />
+                                  </label>
                                   <div className="row-gap">
                                     <button
-                                      type="button"
+                                      type="submit"
                                       className="small"
                                       disabled={busy}
-                                      onClick={() => markApplied([app.id])}
                                     >
                                       Ja, sökt idag
                                     </button>
                                     <button
                                       type="button"
                                       className="secondary small"
-                                      onClick={() => setConfirmAppliedId(null)}
+                                      onClick={cancelMarkApplied}
                                     >
                                       Inte än
                                     </button>
                                   </div>
-                                </div>
+                                </form>
                               )}
 
                               {planningId === app.id && (

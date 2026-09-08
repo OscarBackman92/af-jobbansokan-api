@@ -35,6 +35,7 @@ function formatErrors(body: ErrorBody): string {
     company: "Företag",
     title: "Roll",
     applied_at: "Sökt datum",
+    salary_claim: "Löneanspråk",
     deadline: "Sista ansökningsdag",
     next_action_at: "Nästa steg",
     status: "Status",

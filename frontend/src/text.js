@@ -21,6 +21,7 @@ export function matchesApplicationSearch(application, query) {
       application.title,
       application.location,
       application.notes,
+      application.salary_claim,
       application.contact_name,
       application.contact_info,
       application.source,

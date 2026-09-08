@@ -10,6 +10,7 @@ import { request } from "../api.js";
 import {
   changedApplicationFields,
   normalizeApplicationPayload,
+  salaryClaimRequired,
 } from "../applicationPayload.js";
 import { localISODate } from "../localDate.js";
 import { STATUSES, statusChoicesFor } from "../statuses.js";
@@ -33,6 +34,7 @@ const EMPTY = {
   source: "",
   applied_at: localISODate(),
   deadline: "",
+  salary_claim: "",
   contact_name: "",
   contact_info: "",
   next_action_at: "",
@@ -268,6 +270,10 @@ export default function ApplicationModal({
   async function save(event) {
     event.preventDefault();
     if (duplicateBlocked || saving) return;
+    if (salaryClaimRequired(form.status) && !String(form.salary_claim || "").trim()) {
+      setError("Ange löneanspråk när du markerar som ansökt.");
+      return;
+    }
     setError(null);
     setSaving(true);
     try {
@@ -592,6 +598,16 @@ function ApplicationFields({
           <input {...field("applied_at", "date")} />
         </label>
       </div>
+      <label htmlFor="app-field-salary_claim">
+        Löneanspråk{salaryClaimRequired(form.status) ? " *" : ""}
+        <input
+          {...field("salary_claim")}
+          required={salaryClaimRequired(form.status)}
+          maxLength={80}
+          autoComplete="off"
+          placeholder="t.ex. 45 000 kr/mån"
+        />
+      </label>
       <div className="grid2">
         <label htmlFor="app-field-deadline">
           Sista ansökningsdag

@@ -51,6 +51,18 @@ OUTCOME_CHOICES = [
     (OUTCOME_TJANSTEN_TILLSATT, "Tjänsten tillsatt"),
 ]
 
+# Statuses that mean the user has applied — salary claim is required.
+SALARY_CLAIM_STATUSES = {
+    "applied",
+    "screening",
+    "interview",
+    "forwarded",
+    "offer",
+    "accepted",
+}
+SALARY_CLAIM_MAX_LENGTH = 80
+SALARY_CLAIM_REQUIRED_MESSAGE = "Ange löneanspråk när du markerar som ansökt."
+
 # Existing JobApplication.status → (stage, outcome).
 STATUS_TO_STAGE_OUTCOME = {
     "wishlist": (STAGE_BEVAKAD, ""),
@@ -79,6 +91,30 @@ _COMPANY_FORM_RE = re.compile(
     r"ek\.?\s*för\.?|co|ab|kb|hb)\b\.?",
     re.IGNORECASE,
 )
+
+
+def requires_salary_claim(status: str) -> bool:
+    return status in SALARY_CLAIM_STATUSES
+
+
+def normalize_salary_claim(value: object) -> str:
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def salary_claim_missing_on_apply(
+    *,
+    status: str,
+    salary_claim: str,
+    previous_status: str | None = None,
+) -> bool:
+    """True when applying (create or leaving wishlist) without a claim."""
+    if not requires_salary_claim(status) or salary_claim:
+        return False
+    if previous_status is None:
+        return True
+    return not requires_salary_claim(previous_status)
 
 
 def employer_key(name: str) -> str:

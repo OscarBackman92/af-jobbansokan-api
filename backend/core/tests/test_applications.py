@@ -23,6 +23,7 @@ def test_create_free_text_row(api_client, user):
             "title": "Backendutvecklare",
             "status": "applied",
             "applied_at": "2026-06-01",
+            "salary_claim": "45 000 kr/mån",
             "contact_name": "Rekryterare Rita",
             "notes": "Hittade annonsen på LinkedIn.",
         },
@@ -31,17 +32,127 @@ def test_create_free_text_row(api_client, user):
     body = response.json()
     assert body["company"] == "Acme AB"
     assert body["status_label"] == "Ansökt"
+    assert body["salary_claim"] == "45 000 kr/mån"
 
 
 def test_create_from_posting_snapshots_fields(api_client, user, posting):
     api_client.force_authenticate(user)
-    response = api_client.post(URL, {"posting": posting.id, "applied_at": "2026-06-01"})
+    response = api_client.post(
+        URL,
+        {
+            "posting": posting.id,
+            "applied_at": "2026-06-01",
+            "salary_claim": "42 000 kr/mån",
+        },
+    )
     assert response.status_code == 201
     body = response.json()
     assert body["company"] == "Acme AB"
     assert body["title"] == "Backend Developer"
     assert body["location"] == "Stockholm"
     assert body["ad_url"] == "https://example.com/annons/1"
+    assert body["salary_claim"] == "42 000 kr/mån"
+
+
+def test_create_applied_requires_salary_claim(api_client, user):
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        URL,
+        {"company": "Acme", "title": "Dev", "status": "applied"},
+    )
+    assert response.status_code == 400
+    assert "salary_claim" in response.json()
+
+
+def test_create_wishlist_does_not_require_salary_claim(api_client, user):
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        URL,
+        {"company": "Acme", "title": "Dev", "status": "wishlist"},
+    )
+    assert response.status_code == 201
+    assert response.json()["salary_claim"] == ""
+
+
+def test_mark_applied_requires_salary_claim(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user, company="Acme", title="Dev", status="wishlist"
+    )
+    api_client.force_authenticate(user)
+    response = api_client.patch(
+        f"{URL}{application.id}/", {"status": "applied"}, format="json"
+    )
+    assert response.status_code == 400
+    assert "salary_claim" in response.json()
+    application.refresh_from_db()
+    assert application.status == "wishlist"
+
+
+def test_legacy_applied_can_update_without_salary_claim(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user, company="Acme", title="Dev", status="applied"
+    )
+    api_client.force_authenticate(user)
+    response = api_client.patch(
+        f"{URL}{application.id}/", {"notes": "Ringde."}, format="json"
+    )
+    assert response.status_code == 200
+    application.refresh_from_db()
+    assert application.notes == "Ringde."
+    assert application.salary_claim == ""
+
+
+def test_cannot_clear_salary_claim_once_applied(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user,
+        company="Acme",
+        title="Dev",
+        status="applied",
+        salary_claim="40 000 kr/mån",
+    )
+    api_client.force_authenticate(user)
+    response = api_client.patch(
+        f"{URL}{application.id}/", {"salary_claim": "  "}, format="json"
+    )
+    assert response.status_code == 400
+    application.refresh_from_db()
+    assert application.salary_claim == "40 000 kr/mån"
+
+
+def test_bulk_mark_applied_requires_salary_claim(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user, company="Acme", title="Dev", status="wishlist"
+    )
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        f"{URL}bulk/",
+        {"ids": [application.id], "action": "mark_applied"},
+        format="json",
+    )
+    assert response.status_code == 400
+    assert "salary_claim" in response.json()
+    application.refresh_from_db()
+    assert application.status == "wishlist"
+
+
+def test_bulk_mark_applied_uses_existing_salary_claim(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user,
+        company="Acme",
+        title="Dev",
+        status="wishlist",
+        salary_claim="38 000 kr/mån",
+    )
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        f"{URL}bulk/",
+        {"ids": [application.id], "action": "mark_applied"},
+        format="json",
+    )
+    assert response.status_code == 200
+    application.refresh_from_db()
+    assert application.status == "applied"
+    assert application.salary_claim == "38 000 kr/mån"
 
 
 def test_create_with_platsbanken_snapshot(api_client, user):
@@ -110,7 +221,7 @@ def test_status_applied_rewrites_match_snapshot(api_client, user):
     api_client.force_authenticate(user)
     response = api_client.patch(
         f"{URL}{app.id}/",
-        {"status": "applied", "applied_at": "2026-08-01"},
+        {"status": "applied", "applied_at": "2026-08-01", "salary_claim": "40 000"},
         format="json",
     )
     assert response.status_code == 200
@@ -184,6 +295,7 @@ def test_create_normalizes_ad_url(api_client, user):
             "company": "Acme AB",
             "title": "Backend Developer",
             "ad_url": "http://Example.com/jobb/42/?utm_campaign=x",
+            "salary_claim": "40 000 kr/mån",
         },
     )
     assert response.status_code == 201
@@ -194,7 +306,13 @@ def test_applied_at_cannot_be_in_the_future(api_client, user):
     tomorrow = (date.today() + timedelta(days=1)).isoformat()
     api_client.force_authenticate(user)
     response = api_client.post(
-        URL, {"company": "Acme", "title": "Dev", "applied_at": tomorrow}
+        URL,
+        {
+            "company": "Acme",
+            "title": "Dev",
+            "applied_at": tomorrow,
+            "salary_claim": "40 000",
+        },
     )
     assert response.status_code == 400
     assert "applied_at" in response.json()
@@ -304,7 +422,10 @@ def test_status_to_applied_sets_applied_at(api_client, user):
     assert application.applied_at is None
 
     api_client.force_authenticate(user)
-    response = api_client.patch(f"{URL}{application.id}/", {"status": "applied"})
+    response = api_client.patch(
+        f"{URL}{application.id}/",
+        {"status": "applied", "salary_claim": "41 000 kr/mån"},
+    )
     assert response.status_code == 200
 
     application.refresh_from_db()
@@ -322,7 +443,10 @@ def test_status_to_applied_keeps_existing_applied_at(api_client, user):
         applied_at=date(2026, 6, 1),
     )
     api_client.force_authenticate(user)
-    api_client.patch(f"{URL}{application.id}/", {"status": "applied"})
+    api_client.patch(
+        f"{URL}{application.id}/",
+        {"status": "applied", "salary_claim": "41 000 kr/mån"},
+    )
     application.refresh_from_db()
     assert str(application.applied_at) == "2026-06-01"
 
@@ -429,6 +553,19 @@ def test_filter_by_status_and_search(api_client, user):
     assert body["count"] == 1
     assert body["results"][0]["company"] == "Beta"
 
+    JobApplication.objects.create(
+        owner=user,
+        company="Gamma",
+        title="Dev",
+        status="applied",
+        salary_claim="47 500 kr/mån",
+    )
+    body = api_client.get(URL, {"search": "47500"}).json()
+    assert body["count"] == 0
+    body = api_client.get(URL, {"search": "47 500"}).json()
+    assert body["count"] == 1
+    assert body["results"][0]["company"] == "Gamma"
+
 
 def test_export_csv(api_client, user):
     JobApplication.objects.create(
@@ -443,6 +580,7 @@ def test_export_csv(api_client, user):
     assert "Dev" in content
     assert "intent" in content.splitlines()[0]
     assert "apply_by" in content.splitlines()[0]
+    assert "salary_claim" in content.splitlines()[0]
 
 
 def test_wishlist_create_sets_auto_apply_by(api_client, user):
@@ -558,7 +696,12 @@ def test_bulk_mark_applied_is_idempotent_and_logs_event(api_client, user):
     api_client.force_authenticate(user)
     response = api_client.post(
         f"{URL}bulk/",
-        {"ids": [application.id], "action": "mark_applied", "date": "2026-08-01"},
+        {
+            "ids": [application.id],
+            "action": "mark_applied",
+            "date": "2026-08-01",
+            "salary_claim": "43 000 kr/mån",
+        },
         format="json",
     )
     assert response.status_code == 200
@@ -566,6 +709,7 @@ def test_bulk_mark_applied_is_idempotent_and_logs_event(api_client, user):
     application.refresh_from_db()
     assert application.status == "applied"
     assert str(application.applied_at) == "2026-08-01"
+    assert application.salary_claim == "43 000 kr/mån"
     assert application.events.count() == 1
 
     again = api_client.post(

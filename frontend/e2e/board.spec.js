@@ -11,6 +11,7 @@ test("create an application, move status, timeline logs the change", async ({
   await page.getByRole("button", { name: "+ Ny ansökan" }).click();
   await page.getByLabel(/^Företag/).fill("Testföretaget AB");
   await page.getByLabel(/^Roll/).fill("QA-ingenjör");
+  await page.getByLabel(/^Löneanspråk/).fill("45 000 kr/mån");
   await page.getByRole("button", { name: "Spara", exact: true }).click();
 
   const row = page.locator(".pipeline-row", { hasText: "QA-ingenjör" });
@@ -48,6 +49,7 @@ test("save job then mark applied moves it to Ansökningar", async ({ page }) => 
 
   await savedRow.getByRole("button", { name: "Ansök ↗" }).click();
   await expect(savedRow.getByText("Markerade du som sökt?")).toBeVisible();
+  await savedRow.getByLabel(/^Löneanspråk/).fill("42 000 kr/mån");
   await savedRow.getByRole("button", { name: "Ja, sökt idag" }).click();
 
   await expect(
@@ -72,6 +74,7 @@ test("save and log updates the board without a page reload", async ({ page }) =>
   await page.getByRole("button", { name: "+ Ny ansökan" }).click();
   await page.getByLabel(/^Företag/).fill("Direkt AB");
   await page.getByLabel(/^Roll/).fill("Originalroll");
+  await page.getByLabel(/^Löneanspråk/).fill("40 000 kr/mån");
   await page.getByRole("button", { name: "Spara", exact: true }).click();
 
   const row = page.locator(".pipeline-row", { hasText: "Originalroll" });
