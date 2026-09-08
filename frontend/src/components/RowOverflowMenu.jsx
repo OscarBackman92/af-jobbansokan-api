@@ -26,8 +26,13 @@ export default function RowOverflowMenu({ items = [], disabled = false }) {
 
   if (visibleItems.length === 0) return null;
 
+  const hasDesktopItems = visibleItems.some((item) => !item.mobileOnly);
+
   return (
-    <div className="row-menu" ref={rootRef}>
+    <div
+      className={`row-menu${hasDesktopItems ? "" : " row-menu--mobile-only"}`}
+      ref={rootRef}
+    >
       <button
         type="button"
         className="secondary small row-menu-toggle"
@@ -47,7 +52,9 @@ export default function RowOverflowMenu({ items = [], disabled = false }) {
               key={item.label}
               type="button"
               role="menuitem"
-              className={item.danger ? "danger" : "secondary"}
+              className={`${item.danger ? "danger" : "secondary"}${
+                item.mobileOnly ? " row-menu-item--mobile" : ""
+              }`}
               disabled={disabled || item.disabled}
               onClick={() => {
                 setOpen(false);

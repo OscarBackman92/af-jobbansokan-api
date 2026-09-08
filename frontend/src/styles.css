@@ -339,6 +339,11 @@ h3 {
   font-size: var(--text-lg);
 }
 
+b,
+strong {
+  font-weight: var(--fw-bold);
+}
+
 a {
   color: var(--brand-2);
   text-decoration-thickness: 1px;
@@ -2351,6 +2356,8 @@ tbody tr:last-child td {
 .pipeline-row-meta {
   color: var(--muted);
   font-size: var(--text-sm);
+  min-width: 0;
+  max-width: 100%;
   overflow-wrap: anywhere;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -2701,6 +2708,11 @@ tbody tr:last-child td {
   max-width: 68ch;
 }
 
+.cv-read > .muted,
+.cv-desc {
+  font-size: var(--text-base);
+}
+
 .cv-headline {
   font-size: var(--text-lg);
   font-weight: var(--fw-bold);
@@ -2863,7 +2875,6 @@ tbody tr:last-child td {
 .cv-desc {
   margin: var(--space-1) 0 0;
   white-space: pre-wrap;
-  font-size: var(--text-sm);
 }
 
 /* ---------- Job search (live ads) ---------- */
@@ -4692,6 +4703,11 @@ button.chart-col:focus-visible {
 .lane-row-meta {
   font-size: var(--text-sm);
   color: var(--muted);
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lane-actions {
@@ -4726,6 +4742,13 @@ button.chart-col:focus-visible {
   padding-left: var(--space-2);
   padding-right: var(--space-2);
   letter-spacing: 0.12em;
+}
+
+@media (min-width: 640px) {
+  .row-menu--mobile-only,
+  .row-menu-item--mobile {
+    display: none;
+  }
 }
 
 .row-menu-list {
@@ -5925,21 +5948,57 @@ code {
   .lane-row-toggle {
     display: inline-flex;
     grid-area: toggle;
+    align-self: start;
   }
 
   .lane-row {
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "select main toggle";
-    align-items: center;
+    grid-template-areas:
+      "select main toggle"
+      ". actions actions";
+    align-items: start;
+    padding: var(--space-2);
   }
 
-  .lane-row:not(.lane-row--open) .lane-actions,
-  .lane-row:not(.lane-row--open) .pipeline-row-actions .small,
-  .lane-row:not(.lane-row--open) .pipeline-row-actions .row-menu,
   .lane-row:not(.lane-row--open) .match-score,
   .lane-row:not(.lane-row--open) .profile-fit-row,
-  .lane-row:not(.lane-row--open) .pipeline-row-badges {
+  .lane-row:not(.lane-row--open) .pipeline-row-badges,
+  .lane-row:not(.lane-row--open) .lane-row-main > :not(.lane-row-title):not(.lane-row-meta) {
     display: none;
+  }
+
+  .pipeline-row-actions .status-chip {
+    display: none;
+  }
+
+  .lane-actions,
+  .pipeline-row-actions {
+    display: flex;
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .pipeline-row-actions .small,
+  .pipeline-row-actions .row-menu-toggle,
+  .lane-actions .small,
+  .lane-actions .row-menu-toggle {
+    display: inline-flex;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .lane-row > .pipeline-row {
+    gap: var(--space-2);
+  }
+
+  .pipeline-row-title,
+  .lane-row-title {
+    display: block;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: unset;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
   }
 
   .lane-row--open {

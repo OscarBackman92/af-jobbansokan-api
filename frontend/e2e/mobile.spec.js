@@ -141,3 +141,38 @@ test("annonser KPI uses tracked wording, not sparade", async ({ page }) => {
   await expect(summary.locator(".metric-label", { hasText: /^Sparade$/ })).toHaveCount(0);
   await expect(summary.locator(".metric-detail", { hasText: /^sparade$/ })).toHaveCount(0);
 });
+
+test("applied row keeps follow-up and overflow on a phone", async ({ page }) => {
+  await login(page);
+  await page.getByRole("link", { name: "Ansökningar", exact: true }).click();
+  await page.getByRole("button", { name: "+ Ny ansökan" }).click();
+  await page.getByLabel(/^Företag/).fill("Mobiltest AB");
+  await page.getByLabel(/^Roll/).fill("Mobilutvecklare");
+  await page.getByLabel(/^Löneanspråk/).fill("40 000 kr/mån");
+  await page.getByRole("button", { name: "Spara", exact: true }).click();
+
+  const row = page.locator(".pipeline-row", { hasText: "Mobilutvecklare" });
+  await expect(row).toBeVisible();
+  const followUp = row.getByRole("button", { name: "Följ upp" });
+  const overflow = row.getByRole("button", { name: "Fler åtgärder" });
+  await expect(followUp).toBeVisible();
+  await expect(overflow).toBeVisible();
+
+  const display = await row.evaluate((el) => {
+    const primary = el.querySelector(".pipeline-row-actions .small");
+    const menu = el.querySelector(".row-menu-toggle");
+    const status = el.querySelector(".status-chip");
+    const title = el.querySelector(".pipeline-row-title");
+    const cs = (node) => (node ? getComputedStyle(node) : null);
+    return {
+      primary: cs(primary)?.display,
+      menu: cs(menu)?.display,
+      status: cs(status)?.display,
+      titleWhiteSpace: cs(title)?.whiteSpace,
+    };
+  });
+  expect(display.primary).not.toBe("none");
+  expect(display.menu).not.toBe("none");
+  expect(display.status).toBe("none");
+  expect(display.titleWhiteSpace).toBe("nowrap");
+});

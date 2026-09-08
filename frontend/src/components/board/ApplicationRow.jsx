@@ -36,6 +36,13 @@ export default function ApplicationRow({
     (pendingStatus && STATUS_LABELS[pendingStatus]) ||
     application.status_label ||
     STATUS_LABELS[application.status];
+  const statusMenuItems = statusChoices
+    .filter((choice) => choice.id !== displayStatus)
+    .map((choice) => ({
+      label: choice.label,
+      onClick: () => onMove(choice.id),
+      mobileOnly: true,
+    }));
 
   return (
     <div className={`pipeline-row pipeline-row--${displayStatus}`}>
@@ -101,7 +108,10 @@ export default function ApplicationRow({
             ))}
           </select>
         </label>
-        <RowOverflowMenu items={overflowActions} disabled={saving} />
+        <RowOverflowMenu
+          items={[...overflowActions, ...statusMenuItems]}
+          disabled={saving}
+        />
       </div>
     </div>
   );
