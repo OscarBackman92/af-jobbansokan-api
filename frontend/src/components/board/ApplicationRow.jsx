@@ -15,7 +15,6 @@ export default function ApplicationRow({
   overflowActions = [],
 }) {
   const meta = [
-    application.company,
     application.location,
     application.applied_at ? `Sökt ${application.applied_at}` : "",
     application.salary_claim ? `Löneanspråk ${application.salary_claim}` : "",
@@ -47,6 +46,9 @@ export default function ApplicationRow({
   return (
     <div className={`pipeline-row pipeline-row--${displayStatus}`}>
       <div className="pipeline-row-main" onClick={onOpen}>
+        {application.company ? (
+          <span className="pipeline-row-company">{application.company}</span>
+        ) : null}
         <button
           type="button"
           className="pipeline-row-title"
@@ -54,7 +56,9 @@ export default function ApplicationRow({
         >
           {application.title}
         </button>
-        <span className="pipeline-row-meta">{meta.join(" · ")}</span>
+        {meta.length > 0 ? (
+          <span className="pipeline-row-meta">{meta.join(" · ")}</span>
+        ) : null}
         {application.match && (
           <MatchScore
             match={application.match}
@@ -81,6 +85,13 @@ export default function ApplicationRow({
           </span>
         )}
       </div>
+      {application.applied_at ? (
+        <time className="pipeline-row-when" dateTime={application.applied_at}>
+          {application.applied_at}
+        </time>
+      ) : (
+        <span className="pipeline-row-when" aria-hidden="true" />
+      )}
       <div className="pipeline-row-actions">
         {primaryAction && (
           <button

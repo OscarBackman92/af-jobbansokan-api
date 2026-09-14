@@ -59,7 +59,21 @@ describe("ApplicationRow", () => {
         onMove={vi.fn()}
       />
     );
-    fireEvent.click(screen.getByText("Test AB · Stockholm · Sökt 2026-09-01"));
+    fireEvent.click(screen.getByText("Stockholm · Sökt 2026-09-01"));
     expect(onOpen).toHaveBeenCalled();
+  });
+
+  it("shows company above the role so the list is easy to scan", () => {
+    render(
+      <ApplicationRow
+        application={application}
+        onOpen={vi.fn()}
+        onMove={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Test AB")).toHaveClass("pipeline-row-company");
+    expect(
+      screen.queryByText("Test AB · Stockholm · Sökt 2026-09-01")
+    ).not.toBeInTheDocument();
   });
 });

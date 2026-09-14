@@ -2148,88 +2148,8 @@ tbody tr:last-child td {
 
 .pipeline {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-5);
   margin-top: var(--space-4);
-}
-
-@media (min-width: 1100px) {
-  .pipeline {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    align-items: stretch;
-    gap: var(--space-3);
-  }
-
-  .pipeline > .lane,
-  .pipeline > .pipeline-stage {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    min-height: 18rem;
-    max-height: min(70vh, 46rem);
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: var(--space-3);
-  }
-
-  .pipeline-rows {
-    overflow-y: auto;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-
-  .pipeline .lane-row {
-    grid-template-columns: auto minmax(0, 1fr);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: var(--space-2);
-    border-bottom: 0;
-    align-items: start;
-  }
-
-  .pipeline .pipeline-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
-  }
-
-  .pipeline .pipeline-row-actions {
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-start;
-  }
-
-  .pipeline .pipeline-row-actions select {
-    min-width: 0;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .pipeline .pipeline-row-meta {
-    white-space: normal;
-  }
-
-  .lanes {
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-    align-items: start;
-  }
-
-  .lanes > .lane {
-    min-width: 0;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: var(--space-3);
-  }
-
-  .lanes > .lane .lane-row {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: var(--space-2);
-    border-bottom: 0;
-  }
 }
 
 .pipeline-stage--wishlist,
@@ -2248,11 +2168,12 @@ tbody tr:last-child td {
 
 .pipeline-stage {
   --accent: var(--st-applied);
-  background: var(--surface-2);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-left: 4px solid var(--accent);
   border-radius: var(--radius);
-  padding: var(--space-3);
+  padding: 0;
+  overflow: hidden;
 }
 
 .pipeline-show-more {
@@ -2264,7 +2185,10 @@ tbody tr:last-child td {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-bottom: var(--space-3);
+  margin-bottom: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
 }
 
 .pipeline-stage-filter {
@@ -2354,7 +2278,7 @@ tbody tr:last-child td {
 
 .pipeline-rows {
   display: grid;
-  gap: var(--space-2);
+  gap: 0;
 }
 
 [data-theme="command"] .metric-tile,
@@ -2366,26 +2290,14 @@ tbody tr:last-child td {
   --accent: var(--st-applied);
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3) var(--space-4);
+  gap: var(--space-2) var(--space-4);
   align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius);
-  padding: var(--space-3) var(--space-4);
-  box-shadow: var(--shadow-sm);
-  transition:
-    border-color 0.2s var(--ease-out),
-    box-shadow 0.2s var(--ease-out),
-    transform 0.2s var(--ease-out);
-}
-
-@media (hover: hover) {
-  .pipeline-row:hover {
-    border-color: var(--border);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-  }
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  transition: background-color 0.18s var(--ease-out);
 }
 
 .pipeline-row-main {
@@ -2409,12 +2321,22 @@ tbody tr:last-child td {
   transform: none;
 }
 
+.pipeline-row-company,
+.lane-row-company {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--brand-2);
+  line-height: 1.3;
+}
+
 .pipeline-row-title {
   color: var(--ink);
-  font-size: var(--text-base);
+  font-size: var(--text-lg);
   font-weight: var(--fw-bold);
   font-family: var(--font-display);
-  line-height: 1.3;
+  line-height: 1.25;
   overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -2444,6 +2366,14 @@ tbody tr:last-child td {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+}
+
+.pipeline-row-when {
+  display: none;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .pipeline-row-badges {
@@ -2481,6 +2411,24 @@ tbody tr:last-child td {
   width: auto;
 }
 
+@media (min-width: 900px) {
+  .lane-row > .pipeline-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 8rem auto;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .pipeline-row-when {
+    display: block;
+  }
+
+  .pipeline-row-actions,
+  .lane-actions {
+    flex-wrap: nowrap;
+  }
+}
+
 .status-chip {
   display: grid;
   gap: 0;
@@ -2508,7 +2456,7 @@ tbody tr:last-child td {
 
 [data-theme="command"] .pipeline-stage,
 [data-theme="signal"] .pipeline-stage {
-  background: var(--surface-2);
+  background: var(--surface);
 }
 
 [data-theme="command"] .pipeline-stage-count,
@@ -2518,8 +2466,8 @@ tbody tr:last-child td {
 
 [data-theme="command"] .pipeline-row,
 [data-theme="signal"] .pipeline-row {
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  background: transparent;
+  box-shadow: none;
 }
 
 /* ---------- Command hero & metrics ---------- */
@@ -4601,13 +4549,18 @@ button.chart-col:focus-visible {
 
 .lanes {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-5);
   margin-top: var(--space-4);
 }
 
 .lane {
-  border-left: 3px solid var(--brand);
-  padding-left: var(--space-3);
+  --accent: var(--brand);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0;
+  overflow: hidden;
 }
 
 .lane[data-lane="urgent"],
@@ -4633,7 +4586,10 @@ button.chart-col:focus-visible {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-bottom: var(--space-2);
+  margin-bottom: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
 }
 
 .lane-head h3 {
@@ -4680,19 +4636,22 @@ button.chart-col:focus-visible {
   column-gap: var(--space-3);
   row-gap: var(--space-2);
   align-items: center;
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
   background: transparent;
-  border-left: 3px solid transparent;
+  border-left: 0;
   position: relative;
   transition:
     background-color 0.18s var(--ease-out),
     border-color 0.18s var(--ease-out);
 }
 
+.lane-row:last-child {
+  border-bottom: 0;
+}
+
 .lane-row--selected {
-  background: color-mix(in srgb, var(--brand-2) 12%, var(--surface));
-  border-left-color: var(--brand-2);
+  background: color-mix(in srgb, var(--brand-2) 10%, var(--surface));
 }
 
 .lane-row:has(.row-menu-list) {
@@ -4701,7 +4660,7 @@ button.chart-col:focus-visible {
 
 @media (hover: hover) {
   .lane-row:not(.lane-row--urgent):not(.lane-row--late):hover {
-    background: color-mix(in srgb, var(--hover) 55%, transparent);
+    background: color-mix(in srgb, var(--hover) 70%, var(--surface));
   }
 }
 
@@ -4726,7 +4685,6 @@ button.chart-col:focus-visible {
 .lane-row--urgent,
 .lane-row--late {
   background: color-mix(in srgb, var(--amber) 8%, transparent);
-  border-left-color: var(--amber);
 }
 
 .lane-row--dim {
@@ -4764,7 +4722,10 @@ button.chart-col:focus-visible {
 }
 
 .lane-row-title {
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-lg);
+  font-family: var(--font-display);
+  line-height: 1.25;
   background: none;
   border: 0;
   padding: 0;
@@ -6061,7 +6022,12 @@ code {
   .lane-row:not(.lane-row--open) .match-score,
   .lane-row:not(.lane-row--open) .profile-fit-row,
   .lane-row:not(.lane-row--open) .pipeline-row-badges,
-  .lane-row:not(.lane-row--open) .lane-row-main > :not(.lane-row-title):not(.lane-row-meta) {
+  .lane-row:not(.lane-row--open)
+    .lane-row-main
+    > :not(.lane-row-title):not(.lane-row-meta):not(.lane-row-company),
+  .lane-row:not(.lane-row--open)
+    .pipeline-row-main
+    > :not(.pipeline-row-title):not(.pipeline-row-meta):not(.pipeline-row-company) {
     display: none;
   }
 

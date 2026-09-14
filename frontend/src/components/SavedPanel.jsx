@@ -811,7 +811,6 @@ export default function SavedPanel({
                             .filter(Boolean)
                             .join(" ");
                           const meta = [
-                            app.company,
                             app.location,
                             applyBy ? `sök senast ${applyBy}` : "",
                           ]
@@ -842,6 +841,11 @@ export default function SavedPanel({
                                 />
                               </label>
                               <div className="lane-row-main">
+                                {app.company ? (
+                                  <span className="lane-row-company">
+                                    {app.company}
+                                  </span>
+                                ) : null}
                                 <button
                                   type="button"
                                   className="lane-row-title"
@@ -849,9 +853,11 @@ export default function SavedPanel({
                                 >
                                   {app.title}
                                 </button>
-                                <span className="lane-row-meta muted">
-                                  {meta}
-                                </span>
+                                {meta ? (
+                                  <span className="lane-row-meta muted">
+                                    {meta}
+                                  </span>
+                                ) : null}
                                 {app.match && (
                                   <MatchScore
                                     match={app.match}
