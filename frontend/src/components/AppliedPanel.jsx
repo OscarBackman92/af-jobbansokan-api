@@ -635,7 +635,14 @@ export default function AppliedPanel({
             )}
 
             <div className="pipeline">
-              {groups.map((group) => {
+              {groups.every((group) => group.applications.length === 0) ? (
+                <p className="muted job-list-empty">
+                  Inga ansökningar matchar filtret.
+                </p>
+              ) : null}
+              {groups
+                .filter((group) => group.applications.length > 0)
+                .map((group) => {
                 const isClosedLane = group.id === "closed";
                 const visibleApps =
                   isClosedLane && !closedExpanded

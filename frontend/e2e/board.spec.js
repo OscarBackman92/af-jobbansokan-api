@@ -183,11 +183,36 @@ test("wide screen keeps applications as a list, not columns", async ({
     return value.split(" ").filter(Boolean).length;
   });
   expect(tracks).toBe(1);
+  await expect(page.locator(".lane[data-lane='dialog']")).toHaveCount(0);
+  await expect(page.locator(".lane[data-lane='offer']")).toHaveCount(0);
 
   const artifactDir = process.env.ARTIFACT_DIR;
   if (artifactDir) {
     await page.screenshot({
       path: `${artifactDir}/ansokningar_lista.png`,
+      fullPage: true,
+    });
+  }
+
+  await page.getByRole("link", { name: "Sparade jobb", exact: true }).click();
+  await page.getByRole("button", { name: "+ Spara jobb" }).click();
+  await page.getByLabel(/^Företag/).fill("Listbolaget AB");
+  await page.getByLabel(/^Roll/).fill("Sparad listutvecklare");
+  await page.getByLabel("Status").selectOption("wishlist");
+  await page.getByRole("button", { name: "Spara", exact: true }).click();
+
+  const savedRow = page.locator(".lane-row", {
+    hasText: "Sparad listutvecklare",
+  });
+  await expect(savedRow).toBeVisible();
+  await expect(savedRow.locator(".lane-row-company")).toHaveText(
+    "Listbolaget AB"
+  );
+  await expect(page.locator(".lanes")).toHaveCSS("flex-direction", "column");
+
+  if (artifactDir) {
+    await page.screenshot({
+      path: `${artifactDir}/sparade_lista.png`,
       fullPage: true,
     });
   }

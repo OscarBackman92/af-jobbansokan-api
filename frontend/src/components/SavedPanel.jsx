@@ -762,7 +762,14 @@ export default function SavedPanel({
             )}
 
             <div className="lanes">
-              {groups.map((lane) => {
+              {groups.every((lane) => lane.applications.length === 0) ? (
+                <p className="muted job-list-empty">
+                  Inga sparade jobb matchar filtret.
+                </p>
+              ) : null}
+              {groups
+                .filter((lane) => lane.applications.length > 0)
+                .map((lane) => {
                 const isExpired = lane.id === "expired";
                 const canCollapseExpired = isExpired && hasLiveSaved;
                 const collapsed = canCollapseExpired && expiredCollapsed;
@@ -894,7 +901,13 @@ export default function SavedPanel({
                                 onToggle={() => toggleRowOpen(app.id)}
                                 label={app.title}
                               />
-
+                              {applyBy ? (
+                                <time className="lane-row-when" dateTime={applyBy}>
+                                  {applyBy}
+                                </time>
+                              ) : (
+                                <span className="lane-row-when" aria-hidden="true" />
+                              )}
                               <div className="lane-actions">
                                 {isExpired ? (
                                   <>
