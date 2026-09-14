@@ -159,3 +159,36 @@ test("save and log updates the board without a page reload", async ({ page }) =>
   await page.getByRole("button", { name: "Logga", exact: true }).click();
   await expect(page.locator(".timeline")).toContainText("Ringde rekryteraren");
 });
+
+test("wide screen keeps applications as a list, not columns", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await login(page);
+
+  await page.getByRole("link", { name: "Ansökningar", exact: true }).click();
+  await page.getByRole("button", { name: "+ Ny ansökan" }).click();
+  await page.getByLabel(/^Företag/).fill("Listbolaget AB");
+  await page.getByLabel(/^Roll/).fill("Listutvecklare");
+  await page.getByLabel(/^Löneanspråk/).fill("45 000 kr/mån");
+  await page.getByRole("button", { name: "Spara", exact: true }).click();
+
+  const row = page.locator(".pipeline-row", { hasText: "Listutvecklare" });
+  await expect(row).toBeVisible();
+  await expect(row.locator(".pipeline-row-company")).toHaveText("Listbolaget AB");
+
+  const tracks = await page.locator(".pipeline").evaluate((el) => {
+    const value = getComputedStyle(el).gridTemplateColumns;
+    if (!value || value === "none") return 1;
+    return value.split(" ").filter(Boolean).length;
+  });
+  expect(tracks).toBe(1);
+
+  const artifactDir = process.env.ARTIFACT_DIR;
+  if (artifactDir) {
+    await page.screenshot({
+      path: `${artifactDir}/ansokningar_lista.png`,
+      fullPage: true,
+    });
+  }
+});
