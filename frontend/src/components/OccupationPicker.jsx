@@ -6,6 +6,8 @@ export default function OccupationPicker({
   label = "Yrke (AF-taxonomi)",
   value = "",
   conceptId = "",
+  autoOpen = false,
+  ariaLabel = "",
   onChange,
 }) {
   const [query, setQuery] = useState(value || "");
@@ -32,11 +34,18 @@ export default function OccupationPicker({
     return () => clearTimeout(timer.current);
   }, [query]);
 
+  useEffect(() => {
+    if (autoOpen && !conceptId && options.length > 0) {
+      setOpen(true);
+    }
+  }, [autoOpen, conceptId, options]);
+
   return (
     <label className="occupation-picker">
       {label}
       <input
         value={query}
+        aria-label={ariaLabel || label || "Yrke"}
         onChange={(event) => {
           setQuery(event.target.value);
           setOpen(true);

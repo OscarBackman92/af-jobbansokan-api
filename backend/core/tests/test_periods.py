@@ -4,10 +4,12 @@ from types import SimpleNamespace
 import pytest
 from core.models import Activity, JobApplication, ReportPeriod
 from core.periods import clipboard_line, report_rows, status_for, submit_period, window
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
 
+User = get_user_model()
 URL = "/api/v1/periods/"
 
 
@@ -231,6 +233,87 @@ def test_report_row_includes_occupation_and_hours(api_client, user):
     header = csv_text.splitlines()[0]
     assert header == "Yrkesroll;Arbetsgivaren;Omfattning;Ort;Svarade på annons;Datum"
     assert "Ekonomiassistent;Acme AB;Heltid;Stockholm;Ja;2026-08-05" in csv_text
+
+
+def test_fill_occupations_from_title(api_client, user, monkeypatch):
+    app = _applied(
+        user,
+        company="Hankook Tire Sweden AB",
+        applied_at=date(2026, 9, 14),
+        title="Ekonomiassistent",
+    )
+    monkeypatch.setattr(
+        "core.periods.match_occupation_name",
+        lambda *parts: {"id": "BK8D_hZe_dtk", "label": "Ekonomiassistent"},
+    )
+    api_client.force_authenticate(user)
+    body = api_client.post(f"{URL}2026-09/fill-occupations/").json()
+    assert body["filled_occupation_count"] == 1
+    assert body["missing_occupation_count"] == 0
+    assert body["jobs"][0]["occupation_label"] == "Ekonomiassistent"
+    assert body["jobs"][0]["occupation_concept_id"] == "BK8D_hZe_dtk"
+    app.refresh_from_db()
+    assert app.occupation_concept_id == "BK8D_hZe_dtk"
+
+
+def test_fill_occupations_from_platsbanken_ad(api_client, user, monkeypatch):
+    app = JobApplication.objects.create(
+        owner=user,
+        company="Acme AB",
+        title="Vi söker en ekonomiassistent till teamet",
+        status="applied",
+        source="platsbanken",
+        source_job_id="31419416",
+        applied_at=date(2026, 9, 3),
+    )
+    monkeypatch.setattr(
+        "core.periods.fetch_historical_ad",
+        lambda job_id: {
+            "occupation_concept_id": "BK8D_hZe_dtk",
+            "occupation_label": "Ekonomiassistent",
+            "occupation_group_label": "Ekonomiassistenter m.fl.",
+            "working_hours_type": "Heltid",
+            "scope_of_work_min": 100,
+            "scope_of_work_max": 100,
+        },
+    )
+    monkeypatch.setattr(
+        "core.periods.match_occupation_name",
+        lambda *parts: None,
+    )
+    api_client.force_authenticate(user)
+    body = api_client.post(f"{URL}2026-09/fill-occupations/").json()
+    assert body["filled_occupation_count"] == 1
+    app.refresh_from_db()
+    assert app.occupation_label == "Ekonomiassistent"
+    assert app.working_hours_type == "Heltid"
+
+
+def test_fill_occupations_skips_filled_and_other_users(
+    api_client, user, monkeypatch
+):
+    filled = _applied(user, company="Acme", applied_at=date(2026, 9, 8), title="Dev")
+    filled.occupation_concept_id = "already"
+    filled.occupation_label = "Systemutvecklare"
+    filled.save(update_fields=["occupation_concept_id", "occupation_label"])
+    other = User.objects.create_user(
+        username="bo", email="bo@example.com", password="x"
+    )
+    _applied(
+        other,
+        company="Other AB",
+        applied_at=date(2026, 9, 8),
+        title="Ekonomiassistent",
+    )
+    monkeypatch.setattr(
+        "core.periods.match_occupation_name",
+        lambda *parts: {"id": "BK8D_hZe_dtk", "label": "Ekonomiassistent"},
+    )
+    api_client.force_authenticate(user)
+    body = api_client.post(f"{URL}2026-09/fill-occupations/").json()
+    assert body["filled_occupation_count"] == 0
+    filled.refresh_from_db()
+    assert filled.occupation_concept_id == "already"
 
 
 def test_activity_crud(api_client, user):

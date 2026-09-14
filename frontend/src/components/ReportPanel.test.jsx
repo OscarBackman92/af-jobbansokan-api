@@ -93,4 +93,78 @@ describe("ReportPanel", () => {
       expect(request).toHaveBeenCalledWith("/api/v1/periods/2026-08/");
     });
   });
+
+  it("fills missing occupations when the period has incomplete jobs", async () => {
+    request.mockImplementation((url) => {
+      if (String(url).includes("fill-occupations")) {
+        return Promise.resolve({
+          jobs: [
+            {
+              id: 1,
+              title: "Ekonomiassistent",
+              company: "Hankook",
+              occupation_label: "Ekonomiassistent",
+              occupation_concept_id: "BK8D_hZe_dtk",
+              applied_at: "2026-09-14",
+            },
+          ],
+          events: [],
+          activities: [],
+          excluded_jobs: [],
+          missing_occupation_count: 0,
+          filled_occupation_count: 1,
+          label: "September 2026",
+          status: "pagaende",
+          window_closes: "2026-10-14",
+        });
+      }
+      return Promise.resolve({
+        jobs: [
+          {
+            id: 1,
+            title: "Ekonomiassistent",
+            company: "Hankook",
+            occupation_label: "",
+            occupation_concept_id: "",
+            applied_at: "2026-09-14",
+          },
+        ],
+        events: [],
+        activities: [],
+        excluded_jobs: [],
+        missing_occupation_count: 1,
+        label: "September 2026",
+        status: "pagaende",
+        window_closes: "2026-10-14",
+      });
+    });
+
+    render(
+      <ReportPanel
+        token="t"
+        periods={[
+          {
+            key: "2026-09",
+            label: "September 2026",
+            status: "pagaende",
+            job_count: 1,
+          },
+        ]}
+        onPeriodsReload={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        "/api/v1/periods/2026-09/fill-occupations/",
+        { method: "POST" }
+      );
+    });
+    await waitFor(() => {
+      expect(
+        screen.queryByPlaceholderText("Sök yrke, t.ex. systemutvecklare")
+      ).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Hankook")).toBeInTheDocument();
+  });
 });

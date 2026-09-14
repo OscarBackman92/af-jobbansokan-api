@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from .models import Activity, ApplicationEvent, JobApplication
 from .periods import (
     export_csv_bytes,
+    fill_period_occupations,
     get_or_create_period,
     list_periods,
     parse_period_key,
@@ -71,6 +72,18 @@ class PeriodReopenView(APIView):
         reopen_period(period)
         period.refresh_from_db()
         return Response(serialize_period(period, detail=True))
+
+
+class PeriodFillOccupationsView(APIView):
+    permission_classes = [IsAuthenticatedUser]
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def post(self, request, key: str):
+        period = _period_or_404(request.user, key)
+        filled = fill_period_occupations(period)
+        payload = serialize_period(period, detail=True)
+        payload["filled_occupation_count"] = filled
+        return Response(payload)
 
 
 class PeriodExportView(APIView):

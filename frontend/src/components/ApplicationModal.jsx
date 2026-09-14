@@ -166,6 +166,9 @@ export default function ApplicationModal({
           ad_description: job.description || "",
           apply_url: job.application_url || "",
           source_job_id: job.id || "",
+          occupation_label: job.occupation_label || "",
+          occupation_concept_id: job.occupation_concept_id || "",
+          working_hours_type: job.working_hours_type || "",
         };
         setForm((prev) => {
           const hydrated = {
@@ -173,16 +176,34 @@ export default function ApplicationModal({
             apply_url: prev.apply_url || snapshot.apply_url,
             source_job_id: prev.source_job_id || snapshot.source_job_id,
             ad_url: prev.ad_url || job.webpage_url || "",
+            occupation_label: prev.occupation_label || snapshot.occupation_label,
+            occupation_concept_id:
+              prev.occupation_concept_id || snapshot.occupation_concept_id,
+            working_hours_type:
+              prev.working_hours_type || snapshot.working_hours_type,
           };
           rememberHydrated(initialFormRef, hydrated);
           return { ...prev, ...hydrated };
         });
-        if (snapshot.ad_description || snapshot.apply_url) {
+        if (
+          snapshot.ad_description ||
+          snapshot.apply_url ||
+          snapshot.occupation_concept_id
+        ) {
           const body = {};
           if (snapshot.ad_description) body.ad_description = snapshot.ad_description;
           const apply = externalUrl(snapshot.apply_url);
           if (apply) body.apply_url = apply;
           if (snapshot.source_job_id) body.source_job_id = snapshot.source_job_id;
+          if (snapshot.occupation_concept_id) {
+            body.occupation_concept_id = snapshot.occupation_concept_id;
+            if (snapshot.occupation_label) {
+              body.occupation_label = snapshot.occupation_label;
+            }
+          }
+          if (snapshot.working_hours_type) {
+            body.working_hours_type = snapshot.working_hours_type;
+          }
           try {
             await request(`/api/v1/applications/${applicationId}/`, {
               method: "PATCH",

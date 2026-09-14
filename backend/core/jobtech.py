@@ -257,6 +257,72 @@ def suggest_occupation_names(query: str, *, limit: int = 8) -> list[dict[str, st
     return options
 
 
+_OCCUPATION_PREFIX = re.compile(
+    r"^(junior|senior|ledande|erfar(?:en|na)|head of|chef(?:en)? för|"
+    r"vikarierande)\s+",
+    re.IGNORECASE,
+)
+_OCCUPATION_SPLIT = re.compile(r"\s*[-–/|:]\s+|\s+till\s+", re.IGNORECASE)
+_MIN_WORD_MATCH = 4
+
+
+def occupation_search_terms(*parts: str) -> list[str]:
+    """Build taxonomy queries from a job title or existing label."""
+    terms: list[str] = []
+    seen: set[str] = set()
+    for part in parts:
+        text = " ".join((part or "").split())
+        if len(text) < 2:
+            continue
+        candidates = [text]
+        stripped = _OCCUPATION_PREFIX.sub("", text).strip()
+        if stripped:
+            candidates.append(stripped)
+            chunk = _OCCUPATION_SPLIT.split(stripped, maxsplit=1)[0].strip()
+            if chunk:
+                candidates.append(chunk)
+        for candidate in candidates:
+            key = candidate.casefold()
+            if key in seen or len(candidate) < 2:
+                continue
+            seen.add(key)
+            terms.append(candidate)
+    return terms
+
+
+def pick_occupation_match(
+    query: str, options: list[dict[str, str]]
+) -> dict[str, str] | None:
+    """Pick a taxonomy concept only when the label clearly matches the query."""
+    needle = " ".join((query or "").split()).casefold()
+    if not needle or not options:
+        return None
+    for option in options:
+        label = str(option.get("label") or "").casefold()
+        if label and label == needle:
+            return option
+    for option in options:
+        label = str(option.get("label") or "").casefold()
+        if len(label) < _MIN_WORD_MATCH:
+            continue
+        if re.search(rf"(^|[\s/&\-]){re.escape(label)}($|[\s/&\-])", needle):
+            return option
+    return None
+
+
+def match_occupation_name(*parts: str) -> dict[str, str] | None:
+    """Resolve a title/label to an AF occupation-name concept, or None."""
+    for term in occupation_search_terms(*parts):
+        try:
+            options = suggest_occupation_names(term)
+        except JobTechError:
+            return None
+        match = pick_occupation_match(term, options)
+        if match:
+            return match
+    return None
+
+
 @lru_cache(maxsize=64)
 def occupation_groups(field_id: str) -> list[dict[str, str]]:
     """Return JobTech ssyk-level-4 occupation groups for one occupation field."""

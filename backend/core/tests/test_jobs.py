@@ -338,6 +338,41 @@ def test_suggest_occupation_names_uses_autocomplete(monkeypatch):
     assert calls[0]["params"]["type"] == "occupation-name"
 
 
+def test_occupation_search_terms_strips_seniority_and_suffix():
+    assert jobtech.occupation_search_terms("Junior Inköpare") == [
+        "Junior Inköpare",
+        "Inköpare",
+    ]
+    assert jobtech.occupation_search_terms("Ekonomiassistent – rest")[0] == (
+        "Ekonomiassistent – rest"
+    )
+    assert "Ekonomiassistent" in jobtech.occupation_search_terms(
+        "Ekonomiassistent – rest"
+    )
+
+
+def test_pick_occupation_match_requires_clear_label():
+    option = {"id": "KVVN_sqH_Wpz", "label": "Inköpare"}
+    assert jobtech.pick_occupation_match("Inköpare", [option]) == option
+    assert jobtech.pick_occupation_match("Junior Inköpare", [option]) == option
+    assert jobtech.pick_occupation_match("Operations Specialist", [option]) is None
+
+
+def test_match_occupation_name_uses_taxonomy_suggestions(monkeypatch):
+    monkeypatch.setattr(
+        jobtech,
+        "suggest_occupation_names",
+        lambda query, limit=8: (
+            [{"id": "BK8D_hZe_dtk", "label": "Ekonomiassistent"}]
+            if "ekonomi" in query.casefold() or query.casefold() == "ekonomiassistent"
+            else []
+        ),
+    )
+    match = jobtech.match_occupation_name("Ekonomiassistent")
+    assert match == {"id": "BK8D_hZe_dtk", "label": "Ekonomiassistent"}
+    assert jobtech.match_occupation_name("Operations Specialist") is None
+
+
 def test_job_detail_endpoint(api_client, user, monkeypatch):
     payload = {
         "id": "31258362",

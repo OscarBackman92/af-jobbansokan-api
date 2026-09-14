@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { downloadBlob, request } from "../api.js";
 import { parseMonthFilter } from "../dates.js";
@@ -95,6 +95,8 @@ export default function ReportPanel({
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [filling, setFilling] = useState(false);
+  const autoFilledKey = useRef("");
   const [activity, setActivity] = useState({
     type: "kurs",
     occurred_on: new Date().toISOString().slice(0, 10),
@@ -126,6 +128,10 @@ export default function ReportPanel({
     };
   }, [token, selectedKey]);
 
+  useEffect(() => {
+    autoFilledKey.current = "";
+  }, [selectedKey]);
+
   const jobs = useMemo(() => detail?.jobs || [], [detail]);
   const events = detail?.events || [];
   const activities = detail?.activities || [];
@@ -136,6 +142,17 @@ export default function ReportPanel({
     for (const job of excludedJobs) map.set(job.id, job);
     return map;
   }, [jobs, excludedJobs]);
+
+  useEffect(() => {
+    if (!detail || !selectedKey || filling) return undefined;
+    if ((detail.missing_occupation_count || 0) === 0) return undefined;
+    if (autoFilledKey.current === selectedKey) return undefined;
+    autoFilledKey.current = selectedKey;
+    fillOccupations();
+    return undefined;
+    // fillOccupations is recreated each render; the key guard avoids a loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detail, selectedKey, filling]);
 
   async function reloadDetail() {
     const body = await request(`/api/v1/periods/${selectedKey}/`);
@@ -160,6 +177,7 @@ export default function ReportPanel({
   }
 
   async function saveOccupation(job, fields) {
+    if (!fields.occupation_concept_id) return;
     try {
       await request(`/api/v1/applications/${job.id}/`, {
         method: "PATCH",
@@ -168,6 +186,25 @@ export default function ReportPanel({
       await reloadDetail();
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function fillOccupations() {
+    if (!selectedKey || filling) return;
+    setFilling(true);
+    setError(null);
+    try {
+      const body = await request(
+        `/api/v1/periods/${selectedKey}/fill-occupations/`,
+        { method: "POST" }
+      );
+      setDetail(body);
+      onPeriodsReload?.();
+    } catch (err) {
+      autoFilledKey.current = "";
+      setError(err.message);
+    } finally {
+      setFilling(false);
     }
   }
 
@@ -296,10 +333,21 @@ export default function ReportPanel({
         {missing > 0 && (
           <p className="error">
             {missing} sökta jobb saknar yrke och går inte att rapportera som de
-            är.
+            är. Appen föreslår yrke från AF-taxonomin — välj rätt om det inte
+            stämmer.
           </p>
         )}
         <div className="row-gap" style={{ flexWrap: "wrap" }}>
+          {missing > 0 && (
+            <button
+              type="button"
+              className="small"
+              onClick={fillOccupations}
+              disabled={busy || filling}
+            >
+              {filling ? "Fyller yrken…" : "Fyll yrken"}
+            </button>
+          )}
           <button type="button" className="secondary small" onClick={copyAll}>
             Kopiera alla rader
           </button>
@@ -351,8 +399,10 @@ export default function ReportPanel({
                       ) : (
                         <OccupationPicker
                           label=""
-                          value={job.occupation_label || ""}
+                          ariaLabel={`Yrke för ${job.title}`}
+                          value={job.occupation_label || job.title || ""}
                           conceptId={job.occupation_concept_id || ""}
+                          autoOpen
                           onChange={(fields) => saveOccupation(job, fields)}
                         />
                       )}

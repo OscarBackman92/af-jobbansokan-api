@@ -10,6 +10,12 @@ from io import StringIO
 from django.utils import timezone
 
 from .csv_safety import sanitize_csv_cell
+from .jobtech import (
+    JobTechError,
+    empty_snapshot_updates,
+    fetch_historical_ad,
+    match_occupation_name,
+)
 from .models import Activity, ApplicationEvent, JobApplication, ReportPeriod
 
 STATUS_PAGAENDE = "pagaende"
@@ -414,3 +420,49 @@ def export_csv_bytes(period) -> bytes:
             ]
         )
     return ("\ufeff" + buf.getvalue()).encode("utf-8")
+
+
+def _apply_occupation_updates(job, updates: dict) -> bool:
+    if not updates.get("occupation_concept_id"):
+        return False
+    for key, value in updates.items():
+        setattr(job, key, value)
+    job.save(update_fields=[*updates, "updated_at"])
+    return True
+
+
+def fill_period_occupations(period) -> int:
+    """Fill missing AF occupation ids from Platsbanken ads or the job title."""
+    jobs = (
+        _sought_qs(period.user, period.year, period.month)
+        .filter(report_excluded=False, occupation_concept_id="")
+        .order_by("id")
+    )
+    filled = 0
+    for job in jobs:
+        if (
+            job.source == JobApplication.SOURCE_PLATSBANKEN
+            and (job.source_job_id or "").strip()
+        ):
+            try:
+                mapped = fetch_historical_ad(job.source_job_id.strip())
+            except JobTechError:
+                mapped = None
+            if mapped:
+                updates = empty_snapshot_updates(job, mapped)
+                if _apply_occupation_updates(job, updates):
+                    filled += 1
+                    continue
+
+        match = match_occupation_name(job.occupation_label, job.title)
+        if not match:
+            continue
+        if _apply_occupation_updates(
+            job,
+            {
+                "occupation_concept_id": match["id"],
+                "occupation_label": match["label"],
+            },
+        ):
+            filled += 1
+    return filled
