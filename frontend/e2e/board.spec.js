@@ -122,7 +122,7 @@ test("ansök keeps Jobbdjungeln in front and opens the employer page behind", as
   await savedRow.getByRole("button", { name: "Ansök ↗" }).click();
   const popup = await popupPromise;
   await expect(savedRow.getByText("Markerade du som sökt?")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Sparade jobb" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Sparade jobb" })).toBeVisible();
   await expect(popup).toHaveURL(/example\.com\/ansok/);
   await popup.close();
 });

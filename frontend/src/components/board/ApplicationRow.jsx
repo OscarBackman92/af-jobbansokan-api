@@ -46,7 +46,7 @@ export default function ApplicationRow({
 
   return (
     <div className={`pipeline-row pipeline-row--${displayStatus}`}>
-      <div className="pipeline-row-main">
+      <div className="pipeline-row-main" onClick={onOpen}>
         <button
           type="button"
           className="pipeline-row-title"

@@ -49,4 +49,17 @@ describe("ApplicationRow", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Intervju" }));
     expect(onMove).toHaveBeenCalledWith("interview");
   });
+
+  it("opens the application when the card body is clicked", () => {
+    const onOpen = vi.fn();
+    render(
+      <ApplicationRow
+        application={application}
+        onOpen={onOpen}
+        onMove={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByText("Test AB · Stockholm · Sökt 2026-09-01"));
+    expect(onOpen).toHaveBeenCalled();
+  });
 });

@@ -2398,6 +2398,7 @@ tbody tr:last-child td {
   padding: 0;
   color: inherit;
   text-align: left;
+  cursor: pointer;
 }
 
 .pipeline-row-main:hover {
