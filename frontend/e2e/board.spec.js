@@ -183,8 +183,8 @@ test("wide screen keeps applications as a list, not columns", async ({
     return value.split(" ").filter(Boolean).length;
   });
   expect(tracks).toBe(1);
-  await expect(page.locator(".lane[data-lane='dialog']")).toHaveCount(0);
-  await expect(page.locator(".lane[data-lane='offer']")).toHaveCount(0);
+  await expect(page.locator(".pipeline")).toHaveCSS("flex-direction", "column");
+  await expect(page.locator(".pipeline")).toHaveCSS("display", "flex");
 
   const artifactDir = process.env.ARTIFACT_DIR;
   if (artifactDir) {
@@ -198,7 +198,6 @@ test("wide screen keeps applications as a list, not columns", async ({
   await page.getByRole("button", { name: "+ Spara jobb" }).click();
   await page.getByLabel(/^Företag/).fill("Listbolaget AB");
   await page.getByLabel(/^Roll/).fill("Sparad listutvecklare");
-  await page.getByLabel("Status").selectOption("wishlist");
   await page.getByRole("button", { name: "Spara", exact: true }).click();
 
   const savedRow = page.locator(".lane-row", {
