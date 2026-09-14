@@ -138,7 +138,7 @@ def _drop_prefetched_events(application):
 def _apply_status_change(
     application, next_status, occurred_at, *, salary_claim="", user=None
 ):
-    """Move one application to next_status, log a timeline event, return True if changed."""
+    """Move one application, log the status change, return True if changed."""
     previous = application.status
     if previous == next_status:
         return False
