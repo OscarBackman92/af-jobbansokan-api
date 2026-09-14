@@ -1,10 +1,10 @@
+import pytest
 from allauth.account.models import EmailAddress
 from core.admin_dashboard import dashboard_callback
 from core.models import JobApplication
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
-import pytest
 
 pytestmark = pytest.mark.django_db
 
