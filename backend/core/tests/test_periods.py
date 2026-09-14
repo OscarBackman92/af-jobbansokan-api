@@ -289,9 +289,7 @@ def test_fill_occupations_from_platsbanken_ad(api_client, user, monkeypatch):
     assert app.working_hours_type == "Heltid"
 
 
-def test_fill_occupations_skips_filled_and_other_users(
-    api_client, user, monkeypatch
-):
+def test_fill_occupations_skips_filled_and_other_users(api_client, user, monkeypatch):
     filled = _applied(user, company="Acme", applied_at=date(2026, 9, 8), title="Dev")
     filled.occupation_concept_id = "already"
     filled.occupation_label = "Systemutvecklare"
