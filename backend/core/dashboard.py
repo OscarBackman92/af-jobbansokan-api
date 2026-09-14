@@ -212,7 +212,7 @@ def _next_actions(base, today, week_end):
         )
         .exclude(id__in=taken)
         .order_by("next_action_at")
-        .values("id", "title", "company", "status", "next_action_at")[: 5]
+        .values("id", "title", "company", "status", "next_action_at")[:5]
     )
     rows.extend(serialize_followup(row, overdue=False) for row in upcoming)
 

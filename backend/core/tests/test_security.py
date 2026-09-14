@@ -62,8 +62,9 @@ def test_api_docs_public_in_debug(client):
 
 
 def test_auth_throttle_scope_configured():
-    assert settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["dj_rest_auth"] == "5/min"
-    assert settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["token_refresh"] == "30/min"
+    rates = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
+    assert rates["dj_rest_auth"] == "5/min"
+    assert rates["token_refresh"] == "30/min"
 
 
 def test_auth_throttle_trusts_single_proxy():

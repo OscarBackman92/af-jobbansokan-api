@@ -31,6 +31,8 @@ class JobPosting(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "sparad annons (legacy)"
+        verbose_name_plural = "sparade annonser (legacy)"
         constraints = [
             models.UniqueConstraint(
                 fields=["source", "external_id"],
@@ -195,6 +197,8 @@ class JobApplication(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        verbose_name = "ansökan"
+        verbose_name_plural = "ansökningar"
         constraints = [
             models.UniqueConstraint(
                 fields=["owner", "posting"],
@@ -279,6 +283,8 @@ class ApplicationEvent(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "händelse"
+        verbose_name_plural = "händelser"
         ordering = ["-occurred_at", "-id"]
 
     def __str__(self) -> str:
@@ -306,6 +312,8 @@ class SavedJobSearch(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "sparad sökning"
+        verbose_name_plural = "sparade sökningar"
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
@@ -328,6 +336,8 @@ class OperatorProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "operatorprofil"
+        verbose_name_plural = "operatorprofiler"
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
@@ -355,6 +365,10 @@ class Resume(models.Model):
     job_profiles = models.JSONField(default=list, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        verbose_name = "CV"
+        verbose_name_plural = "CV"
+
     def __str__(self) -> str:
         return f"CV: {self.user.get_username()}"
 
@@ -373,6 +387,8 @@ class ReportPeriod(models.Model):
     note = models.TextField(blank=True)
 
     class Meta:
+        verbose_name = "rapportperiod"
+        verbose_name_plural = "rapportperioder"
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "year", "month"],
@@ -433,6 +449,8 @@ class Activity(models.Model):
     report_note = models.CharField(max_length=255, blank=True)
 
     class Meta:
+        verbose_name = "aktivitet"
+        verbose_name_plural = "aktiviteter"
         ordering = ["-occurred_on", "-id"]
 
     def __str__(self) -> str:

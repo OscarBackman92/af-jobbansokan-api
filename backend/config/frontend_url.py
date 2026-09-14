@@ -51,8 +51,6 @@ def public_origin_parts(url: str) -> tuple[str, str]:
     parsed = urlparse(url if "://" in url else f"https://{url}")
     host = (parsed.hostname or "").strip()
     origin = (
-        f"{parsed.scheme}://{parsed.netloc}"
-        if parsed.scheme and parsed.netloc
-        else ""
+        f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else ""
     )
     return host, origin

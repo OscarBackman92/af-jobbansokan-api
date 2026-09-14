@@ -1,8 +1,9 @@
+from datetime import timedelta
+
 import pytest
 from core.insights import build_skill_insights
 from core.job_profiles import add_evidence_to_profile, empty_profile
 from core.models import JobApplication, Resume
-from datetime import timedelta
 from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
@@ -95,7 +96,8 @@ def test_scope_since_is_earliest_snapshot_not_a_365_day_window(user):
     )
     body = build_skill_insights(user)
     assert body["scope"]["since"] == timezone.localdate().isoformat()
-    assert body["scope"]["since"] != (timezone.localdate() - timedelta(days=365)).isoformat()
+    year_ago = (timezone.localdate() - timedelta(days=365)).isoformat()
+    assert body["scope"]["since"] != year_ago
 
 
 def test_response_bands_include_unscored_snapshots(user):

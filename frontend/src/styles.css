@@ -1981,6 +1981,7 @@ tbody tr:last-child td {
 
 .report-table-wrap {
   overflow-x: auto;
+  max-width: 100%;
 }
 
 .report-table {

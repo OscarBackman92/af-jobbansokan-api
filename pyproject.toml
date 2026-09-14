@@ -1,6 +1,7 @@
 [tool.black]
 line-length = 88
 target-version = ["py312"]
+extend-exclude = "/migrations/"
 
 [tool.ruff]
 line-length = 88
@@ -12,6 +13,8 @@ select = ["E", "F", "I", "B", "UP"]
 [tool.ruff.lint.per-file-ignores]
 # Verbatim PDF extraction fixtures must keep their original line lengths.
 "backend/core/tests/test_resume.py" = ["E501"]
+# Generated migrations keep historical imports and wrapping.
+"backend/core/migrations/*.py" = ["E501", "F401", "F841", "I"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"

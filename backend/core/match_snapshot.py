@@ -55,9 +55,7 @@ def score_and_store(application, *, user=None) -> dict | None:
     requirement extract yields low confidence / empty coverage.
     """
     if not _has_match_fields(application):
-        logger.error(
-            "match_snapshot columns missing — run migrate before scoring"
-        )
+        logger.error("match_snapshot columns missing — run migrate before scoring")
         return None
 
     owner = user or application.owner

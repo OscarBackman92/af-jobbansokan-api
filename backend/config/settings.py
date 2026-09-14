@@ -18,6 +18,7 @@ from pathlib import Path
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from django.urls import reverse_lazy
 from dotenv import load_dotenv
 
 from config.frontend_url import public_origin_parts, resolve_frontend_url
@@ -45,6 +46,7 @@ ALLOWED_HOSTS = [
 INSTALLED_APPS = [
     # Admin theme (must precede django.contrib.admin)
     "unfold",
+    "unfold.contrib.filters",
     # Django core
     "django.contrib.admin",
     "django.contrib.auth",
@@ -265,9 +267,132 @@ SPECTACULAR_SETTINGS = {
 # Admin theme (django-unfold)
 
 UNFOLD = {
-    "SITE_TITLE": "Jobbdjungeln",
+    "SITE_TITLE": "Jobbdjungeln admin",
     "SITE_HEADER": "Jobbdjungeln",
     "SITE_SUBHEADER": "Koll på hela ditt jobbsök",
+    "SITE_SYMBOL": "park",
+    "SITE_URL": "/app/",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "SHOW_BACK_BUTTON": True,
+    "ENVIRONMENT": ["Utveckling", "info"] if DEBUG else ["Produktion", "danger"],
+    "DASHBOARD_CALLBACK": "core.admin_dashboard.dashboard_callback",
+    "COMMAND": {
+        "search_models": True,
+        "show_history": True,
+    },
+    "COLORS": {
+        "primary": {
+            "50": "oklch(96.1% 0.018 293)",
+            "100": "oklch(93% 0.04 293)",
+            "200": "oklch(87% 0.07 293)",
+            "300": "oklch(78% 0.11 293)",
+            "400": "oklch(64% 0.14 293)",
+            "500": "oklch(42% 0.12 293)",
+            "600": "oklch(36% 0.12 293)",
+            "700": "oklch(32% 0.11 293)",
+            "800": "oklch(28% 0.09 293)",
+            "900": "oklch(24% 0.07 293)",
+            "950": "oklch(18% 0.05 293)",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "command_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "Översikt",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Dashboard",
+                        "icon": "dashboard",
+                        "link": reverse_lazy("admin:index"),
+                    },
+                    {
+                        "title": "Användare",
+                        "icon": "group",
+                        "link": reverse_lazy("admin:auth_user_changelist"),
+                        "badge": "core.admin_dashboard.user_badge",
+                    },
+                    {
+                        "title": "E-postadresser",
+                        "icon": "alternate_email",
+                        "link": reverse_lazy("admin:account_emailaddress_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "Jobbsök",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Ansökningar",
+                        "icon": "work",
+                        "link": reverse_lazy("admin:core_jobapplication_changelist"),
+                        "badge": "core.admin_dashboard.application_badge",
+                    },
+                    {
+                        "title": "Händelser",
+                        "icon": "timeline",
+                        "link": reverse_lazy("admin:core_applicationevent_changelist"),
+                    },
+                    {
+                        "title": "Sparade sökningar",
+                        "icon": "saved_search",
+                        "link": reverse_lazy("admin:core_savedjobsearch_changelist"),
+                    },
+                    {
+                        "title": "CV",
+                        "icon": "description",
+                        "link": reverse_lazy("admin:core_resume_changelist"),
+                    },
+                    {
+                        "title": "Operator-id",
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:core_operatorprofile_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "AF-rapport",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Rapportperioder",
+                        "icon": "calendar_month",
+                        "link": reverse_lazy("admin:core_reportperiod_changelist"),
+                    },
+                    {
+                        "title": "Aktiviteter",
+                        "icon": "event_note",
+                        "link": reverse_lazy("admin:core_activity_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "Underhåll",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Legacy-annonser",
+                        "icon": "inventory_2",
+                        "link": reverse_lazy("admin:core_jobposting_changelist"),
+                    },
+                    {
+                        "title": "Grupper",
+                        "icon": "admin_panel_settings",
+                        "link": reverse_lazy("admin:auth_group_changelist"),
+                    },
+                ],
+            },
+        ],
+    },
 }
 
 # Auth (dj-rest-auth + SimpleJWT)
@@ -315,7 +440,10 @@ elif os.getenv("EMAIL_HOST"):
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Jobbdjungeln <no-reply@ansokt.app>")
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL",
+    "Jobbdjungeln <no-reply@ansokt.app>",
+)
 
 # Public contact address for privacy questions and vulnerability reports.
 # Shown in the privacy policy and served at /.well-known/security.txt.

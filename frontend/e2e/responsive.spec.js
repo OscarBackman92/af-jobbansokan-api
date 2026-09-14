@@ -31,8 +31,21 @@ async function assertResponsiveLayout(page) {
         if (style.textOverflow === "ellipsis") return false;
         const box = el.getBoundingClientRect();
         if (box.width < 4 || box.height < 4) return false;
-        if (box.right > window.innerWidth + 2) return true;
-        return false;
+        if (box.right <= window.innerWidth + 2) return false;
+        let parent = el.parentElement;
+        while (parent && parent !== document.body) {
+          const overflowX = window.getComputedStyle(parent).overflowX;
+          if (
+            overflowX === "auto" ||
+            overflowX === "scroll" ||
+            overflowX === "hidden"
+          ) {
+            const parentBox = parent.getBoundingClientRect();
+            if (parentBox.right <= window.innerWidth + 2) return false;
+          }
+          parent = parent.parentElement;
+        }
+        return true;
       }
     );
 
