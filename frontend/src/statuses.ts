@@ -83,6 +83,48 @@ export function statusChoicesFor(application: {
   return STATUSES.filter((entry) => allowedSet.has(entry.id));
 }
 
+/** Statuses every selected job can move to (excludes each job's current status). */
+export function commonAllowedStatuses(
+  applications: Array<{
+    status: ApplicationStatus;
+    allowed_next_statuses?: string[];
+  }>
+): StatusEntry[] {
+  if (!applications.length) return [];
+  const sets = applications.map((application) => {
+    return new Set(
+      statusChoicesFor(application)
+        .map((entry) => entry.id)
+        .filter((id) => id !== application.status)
+    );
+  });
+  const [first, ...rest] = sets;
+  if (!first) return [];
+  const common = [...first].filter((id) => rest.every((set) => set.has(id)));
+  return STATUSES.filter((entry) => common.includes(entry.id));
+}
+
 export const STATUS_LABELS: Record<ApplicationStatus, string> = Object.fromEntries(
   STATUSES.map((status) => [status.id, status.label])
 ) as Record<ApplicationStatus, string>;
+
+const SALARY_CLAIM_STATUS_IDS: ApplicationStatus[] = [
+  "applied",
+  "screening",
+  "interview",
+  "forwarded",
+  "offer",
+  "accepted",
+];
+
+export function salaryClaimMissingOnApply(
+  status: ApplicationStatus,
+  salaryClaim: string,
+  previousStatus?: ApplicationStatus | null
+): boolean {
+  if (!SALARY_CLAIM_STATUS_IDS.includes(status) || Boolean(salaryClaim?.trim())) {
+    return false;
+  }
+  if (previousStatus == null) return true;
+  return !SALARY_CLAIM_STATUS_IDS.includes(previousStatus);
+}

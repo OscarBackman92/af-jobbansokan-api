@@ -738,6 +738,98 @@ def test_bulk_mark_applied_rejects_illegal_stage_jump(api_client, user):
     assert application.status == "interview"
 
 
+def test_bulk_set_status_moves_selected_rows(api_client, user):
+    first = JobApplication.objects.create(
+        owner=user,
+        company="Acme",
+        title="Dev",
+        status="applied",
+        salary_claim="40 000 kr/mån",
+        applied_at="2026-08-01",
+    )
+    second = JobApplication.objects.create(
+        owner=user,
+        company="Beta",
+        title="QA",
+        status="applied",
+        salary_claim="41 000 kr/mån",
+        applied_at="2026-08-02",
+    )
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        f"{URL}bulk/",
+        {
+            "ids": [first.id, second.id],
+            "action": "set_status",
+            "status": "interview",
+            "date": "2026-08-20",
+        },
+        format="json",
+    )
+    assert response.status_code == 200
+    assert set(response.json()["updated"]) == {first.id, second.id}
+    first.refresh_from_db()
+    second.refresh_from_db()
+    assert first.status == "interview"
+    assert second.status == "interview"
+    assert first.events.filter(status="interview").count() == 1
+    assert second.events.filter(status="interview").count() == 1
+
+
+def test_bulk_set_status_requires_valid_status(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user, company="Acme", title="Dev", status="applied"
+    )
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        f"{URL}bulk/",
+        {"ids": [application.id], "action": "set_status"},
+        format="json",
+    )
+    assert response.status_code == 400
+    application.refresh_from_db()
+    assert application.status == "applied"
+
+
+def test_bulk_set_status_rejects_illegal_stage_jump(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user, company="Acme", title="Dev", status="wishlist"
+    )
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        f"{URL}bulk/",
+        {
+            "ids": [application.id],
+            "action": "set_status",
+            "status": "interview",
+        },
+        format="json",
+    )
+    assert response.status_code == 400
+    application.refresh_from_db()
+    assert application.status == "wishlist"
+
+
+def test_bulk_set_status_requires_salary_when_leaving_wishlist(api_client, user):
+    application = JobApplication.objects.create(
+        owner=user, company="Acme", title="Dev", status="wishlist"
+    )
+    api_client.force_authenticate(user)
+    response = api_client.post(
+        f"{URL}bulk/",
+        {
+            "ids": [application.id],
+            "action": "set_status",
+            "status": "applied",
+        },
+        format="json",
+    )
+    assert response.status_code == 400
+    assert "salary_claim" in response.json()
+    application.refresh_from_db()
+    assert application.status == "wishlist"
+
+
 def test_saved_summary_shape(api_client, user):
     today = timezone.localdate()
     JobApplication.objects.create(

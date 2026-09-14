@@ -135,6 +135,49 @@ def _drop_prefetched_events(application):
         prefetched.pop("events", None)
 
 
+def _apply_status_change(
+    application, next_status, occurred_at, *, salary_claim="", user=None
+):
+    """Move one application to next_status, log a timeline event, return True if changed."""
+    previous = application.status
+    if previous == next_status:
+        return False
+    try:
+        assert_transition_allowed(previous, next_status)
+    except DjangoValidationError as exc:
+        detail = getattr(exc, "message_dict", None) or exc.messages
+        raise ValidationError(detail) from exc
+
+    from_stage = stage_for_status(previous)
+    to_stage = stage_for_status(next_status)
+    application.status = next_status
+    if salary_claim:
+        application.salary_claim = salary_claim
+    if not application.applied_at and (
+        (from_stage == STAGE_BEVAKAD and to_stage != STAGE_BEVAKAD)
+        or next_status == JobApplication.STATUS_APPLIED
+    ):
+        application.applied_at = occurred_at
+    application.save()
+    status_labels = dict(JobApplication.STATUS_CHOICES)
+    application.events.create(
+        occurred_at=occurred_at,
+        note=(
+            f"Status: {status_labels[previous]}"
+            f" → {application.get_status_display()}"
+        ),
+        status=application.status,
+        from_stage=from_stage,
+        to_stage=to_stage,
+        event_type="avslutad" if to_stage == "avslutad" else "",
+        origin="auto",
+    )
+    _drop_prefetched_events(application)
+    if application.status == JobApplication.STATUS_APPLIED:
+        score_and_store(application, user=user)
+    return True
+
+
 @extend_schema(
     responses={200: {"type": "object", "properties": {"status": {"type": "string"}}}}
 )
@@ -664,6 +707,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                         "type": "string",
                         "enum": [
                             "mark_applied",
+                            "set_status",
                             "archive",
                             "unarchive",
                             "pause",
@@ -673,6 +717,10 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                         ],
                     },
                     "date": {"type": "string", "format": "date"},
+                    "status": {
+                        "type": "string",
+                        "description": "Required when action is set_status.",
+                    },
                     "salary_claim": {
                         "type": "string",
                         "description": "Required when marking as applied.",
@@ -698,6 +746,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
 
         allowed = {
             "mark_applied",
+            "set_status",
             "archive",
             "unarchive",
             "pause",
@@ -719,6 +768,17 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
         if action_name == "set_apply_by" and date_raw in (None, ""):
             raise ValidationError({"date": "Required for set_apply_by."})
 
+        target_status = None
+        if action_name == "mark_applied":
+            target_status = JobApplication.STATUS_APPLIED
+        elif action_name == "close_no_response":
+            target_status = JobApplication.STATUS_NO_RESPONSE
+        elif action_name == "set_status":
+            target_status = request.data.get("status")
+            valid_statuses = {choice[0] for choice in JobApplication.STATUS_CHOICES}
+            if target_status not in valid_statuses:
+                raise ValidationError({"status": "Required for set_status."})
+
         apps = list(
             JobApplication.objects.filter(owner=request.user, id__in=ids).order_by("id")
         )
@@ -726,7 +786,13 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
             raise ValidationError({"ids": "One or more applications were not found."})
 
         salary_claim = ""
-        if action_name == "mark_applied":
+        if target_status is not None:
+            for app in apps:
+                try:
+                    assert_transition_allowed(app.status, target_status)
+                except DjangoValidationError as exc:
+                    detail = getattr(exc, "message_dict", None) or exc.messages
+                    raise ValidationError(detail) from exc
             salary_claim = normalize_salary_claim(request.data.get("salary_claim"))
             if len(salary_claim) > SALARY_CLAIM_MAX_LENGTH:
                 raise ValidationError(
@@ -736,7 +802,7 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                 app
                 for app in apps
                 if salary_claim_missing_on_apply(
-                    status=JobApplication.STATUS_APPLIED,
+                    status=target_status,
                     salary_claim=salary_claim
                     or normalize_salary_claim(app.salary_claim),
                     previous_status=app.status,
@@ -746,63 +812,15 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
                 raise ValidationError({"salary_claim": SALARY_CLAIM_REQUIRED_MESSAGE})
 
         updated = []
-        status_labels = dict(JobApplication.STATUS_CHOICES)
         for app in apps:
-            if action_name == "mark_applied":
-                previous = app.status
-                if previous != JobApplication.STATUS_APPLIED:
-                    try:
-                        assert_transition_allowed(
-                            previous, JobApplication.STATUS_APPLIED
-                        )
-                    except DjangoValidationError as exc:
-                        detail = getattr(exc, "message_dict", None) or exc.messages
-                        raise ValidationError(detail) from exc
-                    app.status = JobApplication.STATUS_APPLIED
-                    if not app.applied_at:
-                        app.applied_at = occurred_at
-                    if salary_claim:
-                        app.salary_claim = salary_claim
-                    app.save()
-                    from_stage = stage_for_status(previous)
-                    to_stage = stage_for_status(app.status)
-                    app.events.create(
-                        occurred_at=occurred_at,
-                        note=(
-                            f"Status: {status_labels[previous]}"
-                            f" → {app.get_status_display()}"
-                        ),
-                        status=JobApplication.STATUS_APPLIED,
-                        from_stage=from_stage,
-                        to_stage=to_stage,
-                        origin="auto",
-                    )
-                    score_and_store(app, user=request.user)
-                updated.append(app.id)
-            elif action_name == "close_no_response":
-                previous = app.status
-                if previous != JobApplication.STATUS_NO_RESPONSE:
-                    try:
-                        assert_transition_allowed(
-                            previous, JobApplication.STATUS_NO_RESPONSE
-                        )
-                    except DjangoValidationError as exc:
-                        detail = getattr(exc, "message_dict", None) or exc.messages
-                        raise ValidationError(detail) from exc
-                    app.status = JobApplication.STATUS_NO_RESPONSE
-                    app.save()
-                    app.events.create(
-                        occurred_at=occurred_at,
-                        note=(
-                            f"Status: {status_labels[previous]}"
-                            f" → {app.get_status_display()}"
-                        ),
-                        status=JobApplication.STATUS_NO_RESPONSE,
-                        event_type="avslutad",
-                        from_stage=stage_for_status(previous),
-                        to_stage="avslutad",
-                        origin="auto",
-                    )
+            if action_name in {"mark_applied", "set_status", "close_no_response"}:
+                _apply_status_change(
+                    app,
+                    target_status,
+                    occurred_at,
+                    salary_claim=salary_claim,
+                    user=request.user,
+                )
                 updated.append(app.id)
             elif action_name == "archive":
                 if app.archived_at is None:

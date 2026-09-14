@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { addEvidenceTerm, coverGapInMatch } from "../addEvidence.js";
 import { buildIcsCalendar, downloadIcs } from "../calendar.js";
+import { externalUrl, openBehind } from "../adUrl.js";
 import {
   applyByFor,
   compareByDateThenMatch,
@@ -10,6 +11,7 @@ import {
 } from "../dates.js";
 import { localISODate } from "../localDate.js";
 import { matchesApplicationSearch } from "../text.js";
+import { commonAllowedStatuses, salaryClaimMissingOnApply } from "../statuses.js";
 import ApplicationModal from "./ApplicationModal.jsx";
 import MetricTile from "./board/MetricTile.jsx";
 import ConfirmDialog from "./ConfirmDialog.jsx";
@@ -18,6 +20,7 @@ import ProfileFitRow from "./ProfileFitRow.jsx";
 import LaneRowToggle from "./LaneRowToggle.jsx";
 import RowOverflowMenu from "./RowOverflowMenu.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
+import StatusChangeDialog from "./StatusChangeDialog.jsx";
 import { countSummary } from "../plural.js";
 
 const GOOD_MATCH_PERCENT = 60;
@@ -135,6 +138,9 @@ export default function SavedPanel({
   const [expiredCollapsed, setExpiredCollapsed] = useState(true);
   const [selected, setSelected] = useState(null);
   const [showWarmHint, setShowWarmHint] = useState(false);
+  const [pendingMove, setPendingMove] = useState(null);
+  const [pendingDate, setPendingDate] = useState(() => localISODate());
+  const [savingMove, setSavingMove] = useState(false);
 
   useEffect(() => {
     if (applications) return undefined;
@@ -221,6 +227,7 @@ export default function SavedPanel({
     visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
 
   const selectedVisible = filtered.filter((app) => selectedIds.has(app.id));
+  const bulkStatusChoices = commonAllowedStatuses(selectedVisible);
   const visibleUrgent = filtered.filter(
     (app) => savedBucket(app) === "urgent"
   );
@@ -252,7 +259,7 @@ export default function SavedPanel({
     setExpiredCollapsed(true);
   }
 
-  async function runBulk(ids, action, date, salaryClaim) {
+  async function runBulk(ids, action, date, salaryClaim, status) {
     if (!ids.length) return;
     try {
       setBusy(true);
@@ -262,6 +269,7 @@ export default function SavedPanel({
         action,
         ...(date ? { date } : {}),
         ...(salaryClaim ? { salary_claim: salaryClaim } : {}),
+        ...(status ? { status } : {}),
       });
       setSelectedIds(new Set());
       setApplyPrompt(null);
@@ -302,13 +310,67 @@ export default function SavedPanel({
 
   async function confirmMarkApplied() {
     const ids = applyPrompt?.ids || [];
+    const nextStatus = applyPrompt?.nextStatus || "applied";
     const salary = applySalary.trim();
     if (!ids.length) return;
     if (!salary) {
       setError("Ange löneanspråk när du markerar som ansökt.");
       return;
     }
-    await runBulk(ids, "mark_applied", localISODate(), salary);
+    if (nextStatus === "applied") {
+      await runBulk(ids, "mark_applied", localISODate(), salary);
+      return;
+    }
+    await runBulk(ids, "set_status", localISODate(), salary, nextStatus);
+  }
+
+  function requestBulkStatus(status) {
+    const ids = selectedVisible.map((app) => app.id);
+    if (!ids.length || !status) return;
+    const needsSalary = selectedVisible.some((app) =>
+      salaryClaimMissingOnApply(status, app.salary_claim || "", app.status)
+    );
+    if (needsSalary) {
+      setApplyPrompt({ ids, source: "bulk", nextStatus: status });
+      setApplySalary(sharedSalary(ids));
+      setPlanningId(null);
+      setError(null);
+      return;
+    }
+    if (status === "applied") {
+      requestMarkApplied(ids, "bulk");
+      return;
+    }
+    setPendingDate(localISODate());
+    setPendingMove({
+      ids,
+      nextStatus: status,
+      summary:
+        ids.length === 1
+          ? `${selectedVisible[0].title} @ ${selectedVisible[0].company}`
+          : `${ids.length} jobb`,
+    });
+  }
+
+  async function confirmPendingMove() {
+    if (!pendingMove || savingMove) return;
+    const { ids, nextStatus } = pendingMove;
+    setSavingMove(true);
+    try {
+      setError(null);
+      await bulk({
+        ids,
+        action: "set_status",
+        status: nextStatus,
+        date: pendingDate.trim() || localISODate(),
+      });
+      setPendingMove(null);
+      setSelectedIds(new Set());
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingMove(false);
+    }
   }
 
   function requestArchive(ids) {
@@ -339,9 +401,9 @@ export default function SavedPanel({
   }
 
   function openApply(app) {
-    const href = app.apply_url || app.ad_url;
+    const href = externalUrl(app.apply_url) || externalUrl(app.ad_url);
     if (href) {
-      window.open(href, "_blank", "noopener,noreferrer");
+      openBehind(href);
     }
     setApplyPrompt({ ids: [app.id], source: "row" });
     setApplySalary(sharedSalary([app.id]));
@@ -539,19 +601,41 @@ export default function SavedPanel({
                       </button>
                     </form>
                   ) : (
-                    <button
-                      type="button"
-                      className="small"
-                      onClick={() =>
-                        requestMarkApplied(
-                          selectedVisible.map((app) => app.id),
-                          "bulk"
-                        )
-                      }
-                      disabled={busy}
-                    >
-                      Markera som sökta
-                    </button>
+                    <>
+                      {bulkStatusChoices.length > 0 && (
+                        <label className="bulk-status">
+                          <select
+                            value=""
+                            onChange={(event) => {
+                              const next = event.target.value;
+                              if (next) requestBulkStatus(next);
+                            }}
+                            aria-label="Ändra status för valda"
+                            disabled={busy}
+                          >
+                            <option value="">Ändra status</option>
+                            {bulkStatusChoices.map((status) => (
+                              <option key={status.id} value={status.id}>
+                                {status.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+                      <button
+                        type="button"
+                        className="small"
+                        onClick={() =>
+                          requestMarkApplied(
+                            selectedVisible.map((app) => app.id),
+                            "bulk"
+                          )
+                        }
+                        disabled={busy}
+                      >
+                        Markera som sökta
+                      </button>
+                    </>
                   )}
                   <button
                     type="button"
@@ -743,9 +827,11 @@ export default function SavedPanel({
                           return (
                             <div
                               key={app.id}
-                              className={`${rowClass}${
-                                rowOpen ? " lane-row--open" : ""
-                              }`}
+                            className={`${rowClass}${
+                              rowOpen ? " lane-row--open" : ""
+                            }${
+                              selectedIds.has(app.id) ? " lane-row--selected" : ""
+                            }`}
                             >
                               <label className="lane-select">
                                 <input
@@ -984,6 +1070,20 @@ export default function SavedPanel({
           </>
         )}
       </section>
+
+      {pendingMove && (
+        <StatusChangeDialog
+          summary={pendingMove.summary}
+          nextStatus={pendingMove.nextStatus}
+          pendingDate={pendingDate}
+          saving={savingMove}
+          onPendingDateChange={setPendingDate}
+          onConfirm={confirmPendingMove}
+          onClose={() => {
+            if (!savingMove) setPendingMove(null);
+          }}
+        />
+      )}
 
       {archiveTarget && (
         <ConfirmDialog

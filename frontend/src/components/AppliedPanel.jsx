@@ -15,16 +15,15 @@ import {
   parseMonthFilter,
 } from "../dates.js";
 import { localISODate } from "../localDate.js";
-import { STATUS_LABELS, STATUSES } from "../statuses.js";
+import { STATUS_LABELS, STATUSES, commonAllowedStatuses } from "../statuses.js";
 import { matchesApplicationSearch } from "../text.js";
 import ApplicationModal from "./ApplicationModal.jsx";
 import MetricTile from "./board/MetricTile.jsx";
 import ApplicationRow from "./board/ApplicationRow.jsx";
 import LaneRowToggle from "./LaneRowToggle.jsx";
 import ModalErrorBoundary from "./ModalErrorBoundary.jsx";
-import ModalCloseButton from "./ModalCloseButton.jsx";
-import ModalOverlay, { useModalClose } from "./ModalOverlay.jsx";
 import PeriodStrip from "./PeriodStrip.jsx";
+import StatusChangeDialog from "./StatusChangeDialog.jsx";
 
 const STAGE_VISIBLE = 25;
 
@@ -143,30 +142,51 @@ export default function AppliedPanel({
     return () => window.removeEventListener("jobbdjungeln-deselect", onDeselect);
   }, []);
 
-  function requestMove(applicationId, status) {
-    const current = applications?.find((a) => a.id === applicationId);
-    const previousStatus = current?.status;
-    if (!previousStatus || previousStatus === status) return;
+  function requestMove(applicationIds, status) {
+    const ids = Array.isArray(applicationIds)
+      ? applicationIds
+      : [applicationIds];
+    const rows = (applications || []).filter((row) => ids.includes(row.id));
+    if (!rows.length || !status) return;
+    if (rows.every((row) => row.status === status)) return;
     setPendingDate(localISODate());
     setPendingMove({
-      id: applicationId,
-      previousStatus,
+      ids: rows.map((row) => row.id),
       nextStatus: status,
-      title: current.title,
-      company: current.company,
+      previousById: Object.fromEntries(rows.map((row) => [row.id, row.status])),
+      summary:
+        rows.length === 1
+          ? `${rows[0].title} @ ${rows[0].company}`
+          : `${rows.length} jobb`,
     });
   }
 
   async function confirmPendingMove() {
     if (!pendingMove || savingMove) return;
-    const { id, previousStatus, nextStatus, title } = pendingMove;
+    const { ids, previousById, nextStatus, summary } = pendingMove;
     const status_changed_at = pendingDate.trim() || localISODate();
     setSavingMove(true);
     try {
       setError(null);
-      await patch(id, { status: nextStatus, status_changed_at });
+      if (ids.length === 1) {
+        await patch(ids[0], { status: nextStatus, status_changed_at });
+      } else {
+        await bulk({
+          ids,
+          action: "set_status",
+          status: nextStatus,
+          date: status_changed_at,
+        });
+      }
       setPendingMove(null);
-      setUndo({ id, previousStatus, title });
+      setSelectedIds(new Set());
+      setUndo({
+        items: ids.map((id) => ({
+          id,
+          previousStatus: previousById[id],
+        })),
+        title: summary,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -175,10 +195,14 @@ export default function AppliedPanel({
   }
 
   async function undoStatusChange() {
-    if (!undo) return;
+    if (!undo?.items?.length) return;
     try {
       setError(null);
-      await patch(undo.id, { status: undo.previousStatus });
+      await Promise.all(
+        undo.items.map((item) =>
+          patch(item.id, { status: item.previousStatus })
+        )
+      );
       setUndo(null);
     } catch (err) {
       setError(err.message);
@@ -321,6 +345,7 @@ export default function AppliedPanel({
   const selectedApps = sought.filter((a) => selectedIds.has(a.id));
   const allVisibleSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  const bulkStatusChoices = commonAllowedStatuses(selectedApps);
 
   return (
     <div className="stack">
@@ -466,6 +491,25 @@ export default function AppliedPanel({
               {selectedIds.size > 0 && (
                 <div className="bulk-bar" role="toolbar" aria-label="Massåtgärder">
                   <span className="bulk-bar-count">{selectedIds.size} valda</span>
+                  {bulkStatusChoices.length > 0 && (
+                    <label className="bulk-status">
+                      <select
+                        value=""
+                        onChange={(event) => {
+                          const next = event.target.value;
+                          if (next) requestMove([...selectedIds], next);
+                        }}
+                        aria-label="Ändra status för valda"
+                      >
+                        <option value="">Ändra status</option>
+                        {bulkStatusChoices.map((status) => (
+                          <option key={status.id} value={status.id}>
+                            {status.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                   <button
                     type="button"
                     className="small"
@@ -649,6 +693,10 @@ export default function AppliedPanel({
                               openRowIds.has(application.id)
                                 ? " lane-row--open"
                                 : ""
+                            }${
+                              selectedIds.has(application.id)
+                                ? " lane-row--selected"
+                                : ""
                             }`}
                           >
                             <label className="lane-select">
@@ -664,12 +712,13 @@ export default function AppliedPanel({
                             <ApplicationRow
                               application={application}
                               pendingStatus={
-                                pendingMove?.id === application.id
+                                pendingMove?.ids?.includes(application.id)
                                   ? pendingMove.nextStatus
                                   : null
                               }
                               saving={
-                                savingMove && pendingMove?.id === application.id
+                                savingMove &&
+                                pendingMove?.ids?.includes(application.id)
                               }
                               onOpen={() => {
                                 setModalFocus(null);
@@ -739,7 +788,8 @@ export default function AppliedPanel({
 
       {pendingMove && (
         <StatusChangeDialog
-          pendingMove={pendingMove}
+          summary={pendingMove.summary}
+          nextStatus={pendingMove.nextStatus}
           pendingDate={pendingDate}
           saving={savingMove}
           onPendingDateChange={setPendingDate}
@@ -800,80 +850,5 @@ export default function AppliedPanel({
         </ModalErrorBoundary>
       )}
     </div>
-  );
-}
-
-function StatusChangeDialog({
-  pendingMove,
-  pendingDate,
-  saving = false,
-  onPendingDateChange,
-  onConfirm,
-  onClose,
-}) {
-  return (
-    <ModalOverlay
-      onClose={onClose}
-      onBeforeClose={() => !saving}
-      className="modal status-change-modal"
-      labelledBy="status-change-title"
-    >
-      <StatusChangeDialogBody
-        pendingMove={pendingMove}
-        pendingDate={pendingDate}
-        saving={saving}
-        onPendingDateChange={onPendingDateChange}
-        onConfirm={onConfirm}
-      />
-    </ModalOverlay>
-  );
-}
-
-function StatusChangeDialogBody({
-  pendingMove,
-  pendingDate,
-  saving = false,
-  onPendingDateChange,
-  onConfirm,
-}) {
-  const requestClose = useModalClose();
-
-  return (
-    <>
-      <div className="modal-head">
-        <div className="modal-head-text">
-          <h2 id="status-change-title">Byt status</h2>
-          <p className="muted">
-            {pendingMove.title} @ {pendingMove.company}
-            {" → "}
-            {STATUS_LABELS[pendingMove.nextStatus] || pendingMove.nextStatus}
-          </p>
-        </div>
-        <ModalCloseButton />
-      </div>
-      <label htmlFor="applied-status-change-date">
-        Datum för statusbytet
-        <input
-          id="applied-status-change-date"
-          type="date"
-          value={pendingDate}
-          disabled={saving}
-          onChange={(e) => onPendingDateChange(e.target.value)}
-        />
-      </label>
-      <div className="row-gap" style={{ marginTop: "1rem" }}>
-        <button type="button" onClick={onConfirm} disabled={saving}>
-          {saving ? "Sparar…" : "Bekräfta"}
-        </button>
-        <button
-          type="button"
-          className="secondary"
-          onClick={requestClose}
-          disabled={saving}
-        >
-          Avbryt
-        </button>
-      </div>
-    </>
   );
 }

@@ -2151,6 +2151,86 @@ tbody tr:last-child td {
   margin-top: var(--space-4);
 }
 
+@media (min-width: 1100px) {
+  .pipeline {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .pipeline > .lane,
+  .pipeline > .pipeline-stage {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 18rem;
+    max-height: min(70vh, 46rem);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-3);
+  }
+
+  .pipeline-rows {
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .pipeline .lane-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-2);
+    border-bottom: 0;
+    align-items: start;
+  }
+
+  .pipeline .pipeline-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .pipeline .pipeline-row-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .pipeline .pipeline-row-actions select {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .pipeline .pipeline-row-meta {
+    white-space: normal;
+  }
+
+  .lanes {
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    align-items: start;
+  }
+
+  .lanes > .lane {
+    min-width: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-3);
+  }
+
+  .lanes > .lane .lane-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-2);
+    border-bottom: 0;
+  }
+}
+
 .pipeline-stage--wishlist,
 .pipeline-row--wishlist { --accent: var(--st-wishlist); }
 .pipeline-stage--applied,
@@ -4608,6 +4688,11 @@ button.chart-col:focus-visible {
     border-color 0.18s var(--ease-out);
 }
 
+.lane-row--selected {
+  background: color-mix(in srgb, var(--brand-2) 12%, var(--surface));
+  border-left-color: var(--brand-2);
+}
+
 .lane-row:has(.row-menu-list) {
   z-index: 4;
 }
@@ -4988,6 +5073,17 @@ button.chart-col:focus-visible {
 .bulk-bar-count {
   font-weight: var(--fw-medium);
   margin-right: var(--space-1);
+}
+
+.bulk-status {
+  display: grid;
+  min-width: 11rem;
+}
+
+.bulk-status select {
+  margin: 0;
+  min-height: 36px;
+  width: 100%;
 }
 
 .command-hero--compact .metric-grid,

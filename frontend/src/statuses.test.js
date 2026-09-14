@@ -6,6 +6,8 @@ import {
   STATUS_LABELS,
   STATUSES,
   allowedNextStatuses,
+  commonAllowedStatuses,
+  salaryClaimMissingOnApply,
 } from "./statuses.js";
 
 describe("statuses", () => {
@@ -36,5 +38,27 @@ describe("statuses", () => {
     expect(allowedNextStatuses("applied")).toEqual(
       expect.arrayContaining(["rejected", "no_response", "withdrawn", "accepted"])
     );
+  });
+
+  it("intersects allowed next statuses for a bulk selection", () => {
+    const common = commonAllowedStatuses([
+      { status: "applied" },
+      { status: "screening" },
+    ]);
+    const ids = common.map((entry) => entry.id);
+    expect(ids).toEqual(
+      expect.arrayContaining(["interview", "rejected", "no_response"])
+    );
+    expect(ids).not.toContain("applied");
+    expect(ids).not.toContain("wishlist");
+  });
+
+  it("requires a salary claim when leaving Sparad for a sought status", () => {
+    expect(salaryClaimMissingOnApply("applied", "", "wishlist")).toBe(true);
+    expect(salaryClaimMissingOnApply("applied", "40 000", "wishlist")).toBe(
+      false
+    );
+    expect(salaryClaimMissingOnApply("interview", "", "applied")).toBe(false);
+    expect(salaryClaimMissingOnApply("rejected", "", "wishlist")).toBe(false);
   });
 });

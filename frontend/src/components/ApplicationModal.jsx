@@ -15,6 +15,7 @@ import {
 import { localISODate } from "../localDate.js";
 import { STATUSES, statusChoicesFor } from "../statuses.js";
 import ConfirmDialog from "./ConfirmDialog.jsx";
+import ExternalApplyLink from "./ExternalApplyLink.jsx";
 import ModalCloseButton from "./ModalCloseButton.jsx";
 import ModalOverlay, { useModalClose } from "./ModalOverlay.jsx";
 import OccupationPicker from "./OccupationPicker.jsx";
@@ -372,14 +373,9 @@ export default function ApplicationModal({
           <div className="application-ad-toolbar">
             <div className="modal-actions">
               {applyHref && (
-                <a
-                  className="btn-primary"
-                  href={applyHref}
-                  target="_blank"
-                  rel="noreferrer"
-                >
+                <ExternalApplyLink className="btn-primary" href={applyHref}>
                   {form.apply_url ? "Ansök hos arbetsgivaren ↗" : "Öppna annons ↗"}
-                </a>
+                </ExternalApplyLink>
               )}
               {platsbankenHref && platsbankenHref !== applyHref && (
                 <a

@@ -67,6 +67,66 @@ test("save job then mark applied moves it to Ansökningar", async ({ page }) => 
   ).toHaveCount(0);
 });
 
+test("select several applications and change status together", async ({
+  page,
+}) => {
+  await login(page);
+
+  await page.getByRole("link", { name: "Ansökningar", exact: true }).click();
+  for (const title of ["Bulk ett", "Bulk två"]) {
+    await page.getByRole("button", { name: "+ Ny ansökan" }).click();
+    await page.getByLabel(/^Företag/).fill("Bulk AB");
+    await page.getByLabel(/^Roll/).fill(title);
+    await page.getByLabel(/^Löneanspråk/).fill("45 000 kr/mån");
+    await page.getByRole("button", { name: "Spara", exact: true }).click();
+    await expect(page.locator(".pipeline-row", { hasText: title })).toBeVisible();
+  }
+
+  await page.getByRole("checkbox", { name: "Markera Bulk ett" }).check();
+  await page.getByRole("checkbox", { name: "Markera Bulk två" }).check();
+  await page.getByLabel("Ändra status för valda").selectOption("interview");
+  await expect(page.getByRole("heading", { name: "Byt status" })).toBeVisible();
+  await expect(page.getByText("2 jobb")).toBeVisible();
+  await page.getByRole("button", { name: "Bekräfta" }).click();
+
+  await expect(
+    page.locator(".lane[data-lane='dialog'] .pipeline-row", {
+      hasText: "Bulk ett",
+    })
+  ).toBeVisible();
+  await expect(
+    page.locator(".lane[data-lane='dialog'] .pipeline-row", {
+      hasText: "Bulk två",
+    })
+  ).toBeVisible();
+});
+
+test("ansök keeps Jobbdjungeln in front and opens the employer page behind", async ({
+  page,
+}) => {
+  await login(page);
+
+  await page.getByRole("link", { name: "Sparade jobb", exact: true }).click();
+  await page.getByRole("button", { name: "+ Spara jobb" }).click();
+  await page.getByLabel(/^Företag/).fill("Bakom AB");
+  await page.getByLabel(/^Roll/).fill("Bakomutvecklare");
+  await page.getByLabel("Status").selectOption("wishlist");
+  await page.getByText("Redigera länkar").click();
+  await page.getByLabel("Länk till ansökan").fill("https://example.com/ansok");
+  await page.getByRole("button", { name: "Spara", exact: true }).click();
+
+  const savedRow = page.locator(".lane-row", { hasText: "Bakomutvecklare" });
+  await expect(savedRow).toBeVisible();
+
+  const popupPromise = page.waitForEvent("popup");
+  await savedRow.getByRole("button", { name: "Ansök ↗" }).click();
+  const popup = await popupPromise;
+  await expect(savedRow.getByText("Markerade du som sökt?")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sparade jobb" })).toBeVisible();
+  await expect(popup).toHaveURL(/example\.com\/ansok/);
+  await popup.close();
+});
+
 test("save and log updates the board without a page reload", async ({ page }) => {
   await login(page);
 

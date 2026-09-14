@@ -50,6 +50,52 @@ export function externalUrl(value) {
   return null;
 }
 
+/**
+ * Open an external URL in a new tab and try to keep this window focused,
+ * so Ansök can stay on Jobbdjungeln while the employer form loads behind.
+ */
+export function openBehind(url) {
+  const href = externalUrl(url);
+  if (!href || typeof window === "undefined") return false;
+
+  const tab = window.open("about:blank", "_blank");
+  if (!tab) return false;
+
+  try {
+    tab.opener = null;
+    tab.location.replace(href);
+  } catch {
+    try {
+      tab.location.href = href;
+    } catch {
+      return false;
+    }
+  }
+
+  const refocus = () => {
+    try {
+      window.focus();
+    } catch {
+      /* ignore */
+    }
+  };
+  refocus();
+  window.setTimeout(refocus, 0);
+  window.setTimeout(refocus, 50);
+  return true;
+}
+
+/** True when a click should keep the browser's native new-tab behavior. */
+export function isModifiedClick(event) {
+  return Boolean(
+    event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button !== 0
+  );
+}
+
 export function platsbankenJobId(value) {
   const normalized = normalizeAdUrl(value) || value?.trim();
   if (!normalized) return null;

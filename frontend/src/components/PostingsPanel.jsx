@@ -16,6 +16,7 @@ import ModalCloseButton from "./ModalCloseButton.jsx";
 import ModalOverlay, { useModalClose } from "./ModalOverlay.jsx";
 import MultiSelectFilter from "./MultiSelectFilter.jsx";
 import ProfileFitRow from "./ProfileFitRow.jsx";
+import ExternalApplyLink from "./ExternalApplyLink.jsx";
 
 const LAST_SEARCH_KEY = "jobbdjungeln-last-job-search";
 const LAST_MUNICIPALITIES_KEY = "jobbdjungeln-last-municipalities";
@@ -1457,16 +1458,11 @@ function JobDetailBody({
       <div className="modal-body">
         <div className="modal-actions">
           {applyHref && (
-            <a
-              className="btn-primary"
-              href={applyHref}
-              target="_blank"
-              rel="noreferrer"
-            >
+            <ExternalApplyLink className="btn-primary" href={applyHref}>
               {job.application_url
                 ? "Ansök hos arbetsgivaren ↗"
                 : "Ansök på platsannonsen ↗"}
-            </a>
+            </ExternalApplyLink>
           )}
           {platsbankenHref && platsbankenHref !== applyHref && (
             <a
